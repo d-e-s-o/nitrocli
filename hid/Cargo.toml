@@ -1,0 +1,18 @@
+[package]
+name    = "hid"
+version = "0.3.0"
+
+authors = ["meh. <meh@schizofreni.co>"]
+license = "WTFPL"
+
+description = "Safe hidapi wrapper"
+repository  = "https://github.com/meh/rust-hid"
+keywords    = ["hid"]
+
+[features]
+static = ["hidapi-sys/static"]
+build  = ["static", "hidapi-sys/build"]
+
+[dependencies]
+libc       = "0.2.21"
+hidapi-sys = "0.1.2"
