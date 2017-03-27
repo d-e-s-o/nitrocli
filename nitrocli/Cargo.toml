@@ -29,3 +29,25 @@ keywords = ["hid", "nitrokey", "nitrokey-storage", "usb", "cli"]
 description = """
 A command line tool for interacting with the Nitrokey Storage device.
 """
+
+[dependencies.gcc]
+path = "../gcc"
+
+[dependencies.hid]
+path = "../hid"
+
+[dependencies.hidapi-sys]
+path = "../hidapi-sys"
+
+[dependencies.libc]
+path = "../libc"
+
+[dependencies.pkg-config]
+path = "../pkg-config"
+
+[replace]
+"gcc:0.3.45" = { path = "../gcc" }
+"hid:0.3.0" = { path = "../hid" }
+"hidapi-sys:0.1.2" = { path = "../hidapi-sys" }
+"libc:0.2.21" = { path = "../libc" }
+"pkg-config:0.3.9" = { path = "../pkg-config" }
