@@ -1,0 +1,24 @@
+[package]
+name    = "hidapi-sys"
+version = "0.1.2"
+build   = "build.rs"
+links   = "hidapi"
+
+authors = ["meh. <meh@schizofreni.co>"]
+license = "WTFPL"
+
+description = "FFI bindings to hidapi"
+repository  = "https://github.com/meh/rust-hidapi-sys"
+keywords    = ["hid"]
+categories  = ["external-ffi-bindings", "hardware-support", "os"]
+
+[features]
+static = []
+build  = ["static"]
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+gcc        = "0.3"
+pkg-config = "0.3"
