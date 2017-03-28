@@ -1,6 +1,6 @@
 [package]
 name    = "hid"
-version = "0.3.0"
+version = "0.4.0"
 
 authors = ["meh. <meh@schizofreni.co>"]
 license = "WTFPL"

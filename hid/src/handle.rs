@@ -29,11 +29,11 @@ impl Handle {
 
 impl Handle {
 	/// Set the handle in blocking or non-blocking mode.
-	pub fn blocking(&mut self, value: bool) -> error::Result<()> {
+	pub fn blocking(&mut self, value: bool) -> error::Result<&mut Self> {
 		unsafe {
 			match hid_set_nonblocking(self.as_mut_ptr(), if value { 1 } else { 0 }) {
 				0 =>
-					Ok(()),
+					Ok(self),
 
 				_ =>
 					Err(Error::General)
@@ -87,10 +87,10 @@ impl<'a> Data<'a> {
 	/// Write data to the device with the given report ID.
 	pub fn write_to<T: AsRef<[u8]>>(&mut self, id: u8, data: T) -> error::Result<usize> {
 		let     data   = data.as_ref();
-		let mut buffer = Vec::with_capacity(data.len() + 1);
+		let mut buffer = vec![0u8; data.len() + 1];
 
-		buffer.push(id);
-		buffer.extend(data);
+		buffer[0] = id;
+		(&mut buffer[1 ..]).copy_from_slice(data);
 
 		self.write(&buffer)
 	}
@@ -134,16 +134,13 @@ impl<'a> Data<'a> {
 		let mut data   = data.as_mut();
 		let mut buffer = Vec::with_capacity(data.len() + 1);
 
-		match try!(self.read(&mut buffer, timeout)) {
-			None => {
-				Ok(None)
-			}
+		if let Some(length) = self.read(&mut buffer, timeout)? {
+			data[0..length - 1].copy_from_slice(&buffer[1..length]);
 
-			Some(length) => {
-				data.clone_from_slice(&buffer[1..length]);
-
-				Ok(Some((data[0], length - 1)))
-			}
+			Ok(Some((buffer[0], length - 1)))
+		}
+		else {
+			Ok(None)
 		}
 	}
 }
@@ -190,7 +187,7 @@ impl<'a> Feature<'a> {
 	/// Get a feature request.
 	///
 	/// The first byte must be the report ID.
-	pub fn get<T: AsMut<[u8]>>(&mut self, mut data: T) -> error::Result<Option<usize>> {
+	pub fn get<T: AsMut<[u8]>>(&mut self, mut data: T) -> error::Result<usize> {
 		let data = data.as_mut();
 
 		unsafe {
@@ -198,22 +195,22 @@ impl<'a> Feature<'a> {
 				-1 =>
 					Err(Error::Read),
 
-				0 =>
-					Ok(None),
-
-				v =>
-					Ok(Some(v as usize))
+				length =>
+					Ok(length as usize)
 			}
 		}
 	}
 
 	/// Get a feature request from the given report ID.
-	pub fn get_from<T: AsMut<[u8]>>(&mut self, id: u8, mut data: T) -> error::Result<Option<usize>> {
+	pub fn get_from<T: AsMut<[u8]>>(&mut self, id: u8, mut data: T) -> error::Result<usize> {
 		let     data   = data.as_mut();
 		let mut buffer = vec![0u8; data.len() + 1];
-
 		buffer[0] = id;
-		self.get(&mut buffer)
+
+		let length = self.get(&mut buffer)?;
+		data[0..length - 1].copy_from_slice(&buffer[1..length]);
+
+		Ok(length - 1)
 	}
 }
 
