@@ -26,8 +26,10 @@
 extern crate hid as libhid;
 
 
+mod crc32;
 mod error;
 mod nitrokey;
+mod pinentry;
 
 use error::Error;
 use std::process;
@@ -54,7 +56,11 @@ fn nitrokey_do(function: &NitroFunc) -> Result<()> {
 /// Open the encrypted volume on the nitrokey.
 fn open() -> Result<()> {
   return nitrokey_do(&|handle| {
-    println!("Found nitrokey. Opening encrypted volume...");
+    let passphrase = pinentry::inquire_passphrase()?;
+    let payload = nitrokey::EnableEncryptedVolumeCommand::new(&passphrase);
+    let report = nitrokey::Report::from(payload);
+
+    handle.feature().send_to(0, report.as_ref())?;
     return Ok(());
   });
 }
@@ -63,7 +69,10 @@ fn open() -> Result<()> {
 /// Close the previously opened encrypted volume.
 fn close() -> Result<()> {
   return nitrokey_do(&|handle| {
-    println!("Found nitrokey. Closing encrypted volume...");
+    let payload = nitrokey::DisableEncryptedVolumeCommand::new();
+    let report = nitrokey::Report::from(payload);
+
+    handle.feature().send_to(0, report.as_ref())?;
     return Ok(());
   });
 }

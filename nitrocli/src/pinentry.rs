@@ -17,7 +17,7 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use error::Error as Error;
+use error::Error;
 use std::process;
 
 
@@ -50,14 +50,11 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
 
 
 pub fn inquire_passphrase() -> Result<Vec<u8>, Error> {
-  const PINENTRY_DESCR:  &'static str = "+";
-  const PINENTRY_TITLE:  &'static str = "Please+enter+user+PIN";
+  const PINENTRY_DESCR: &'static str = "+";
+  const PINENTRY_TITLE: &'static str = "Please+enter+user+PIN";
   const PINENTRY_PASSWD: &'static str = "PIN";
 
-  let args = vec![CACHE_ID,
-                  PINENTRY_DESCR,
-                  PINENTRY_PASSWD,
-                  PINENTRY_TITLE].join(" ");
+  let args = vec![CACHE_ID, PINENTRY_DESCR, PINENTRY_PASSWD, PINENTRY_TITLE].join(" ");
   let command = "GET_PASSPHRASE --data ".to_string() + &args;
   // We could also use the --data parameter here to have a more direct
   // representation of the passphrase but the resulting response was
@@ -65,10 +62,9 @@ pub fn inquire_passphrase() -> Result<Vec<u8>, Error> {
   // reported for the GET_PASSPHRASE command does not actually cause
   // gpg-connect-agent to exit with a non-zero error code, we have to
   // evaluate the output to determine success/failure.
-  let output = process::Command::new("gpg-connect-agent")
-                                .arg(command)
-                                .arg("/bye")
-                                .output()?;
+  let output = process::Command::new("gpg-connect-agent").arg(command)
+    .arg("/bye")
+    .output()?;
   return parse_pinentry_passphrase(output.stdout);
 }
 
