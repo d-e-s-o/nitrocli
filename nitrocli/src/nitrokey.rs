@@ -79,6 +79,51 @@ impl<P> From<P> for Report<P>
 }
 
 
+macro_rules! defaultCommandType {
+  ( $name:ident ) => {
+    #[allow(dead_code)]
+    #[repr(packed)]
+    pub struct $name {
+      command: Command,
+      padding: [u8; 59],
+    }
+  }
+}
+
+macro_rules! defaultCommandNew {
+  ( $name:ident, $command:ident ) => {
+    impl $name {
+      pub fn new() -> $name {
+        return $name{
+          command: Command::$command,
+          padding: [0; 59],
+        };
+      }
+    }
+  }
+}
+
+macro_rules! defaultPayloadAsRef {
+  ( $name:ty ) => {
+    impl AsRef<[u8]> for $name {
+      fn as_ref(&self) -> &[u8] {
+        unsafe {
+          return mem::transmute::<&$name, &[u8; 60]>(self)
+        };
+      }
+    }
+  }
+}
+
+macro_rules! defaultCommand {
+  ( $name:ident, $command:ident ) => {
+    defaultCommandType!($name);
+    defaultCommandNew!($name, $command);
+    defaultPayloadAsRef!($name);
+  }
+}
+
+
 #[allow(dead_code)]
 #[repr(packed)]
 pub struct EnableEncryptedVolumeCommand {
@@ -109,34 +154,9 @@ impl EnableEncryptedVolumeCommand {
   }
 }
 
-impl AsRef<[u8]> for EnableEncryptedVolumeCommand {
-  fn as_ref(&self) -> &[u8] {
-    unsafe { return mem::transmute::<&EnableEncryptedVolumeCommand, &[u8; 60]>(self) };
-  }
-}
+defaultPayloadAsRef!(EnableEncryptedVolumeCommand);
 
-
-#[allow(dead_code)]
-#[repr(packed)]
-pub struct DisableEncryptedVolumeCommand {
-  command: Command,
-  padding: [u8; 59],
-}
-
-impl DisableEncryptedVolumeCommand {
-  pub fn new() -> DisableEncryptedVolumeCommand {
-    return DisableEncryptedVolumeCommand {
-      command: Command::DisableEncryptedVolume,
-      padding: [0; 59],
-    };
-  }
-}
-
-impl AsRef<[u8]> for DisableEncryptedVolumeCommand {
-  fn as_ref(&self) -> &[u8] {
-    unsafe { return mem::transmute::<&DisableEncryptedVolumeCommand, &[u8; 60]>(self) };
-  }
-}
+defaultCommand!(DisableEncryptedVolumeCommand, DisableEncryptedVolume);
 
 
 #[cfg(test)]
