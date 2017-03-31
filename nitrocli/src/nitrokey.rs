@@ -27,6 +27,9 @@ pub const VID: u16 = 0x20A0;
 // The Nitrokey Storage product ID.
 pub const PID: u16 = 0x4109;
 
+// Magic number identifying a storage response.
+pub const MAGIC_NUMBER_STICK20_CONFIG: u16 = 0x3318;
+
 
 #[derive(Debug)]
 #[derive(PartialEq)]
@@ -36,6 +39,8 @@ pub enum Command {
   EnableEncryptedVolume = 0x20,
   // The command to disable the encrypted volume.
   DisableEncryptedVolume = 0x21,
+  // Retrieve the device status.
+  GetDeviceStatus = 0x2E,
 }
 
 
@@ -57,6 +62,22 @@ pub struct Report<Payload>
 }
 
 
+impl<P> Report<P>
+  where P: AsRef<[u8]> + Default,
+{
+  pub fn new() -> Report<P> {
+    return Report {
+      data: P::default(),
+      crc: 0,
+    };
+  }
+
+  pub fn is_valid(&self) -> bool {
+    return self.crc == crc(self.data.as_ref());
+  }
+}
+
+
 impl<P> AsRef<[u8]> for Report<P>
   where P: AsRef<[u8]>,
 {
@@ -75,6 +96,40 @@ impl<P> From<P> for Report<P>
       data: payload,
       crc: crc,
     };
+  }
+}
+
+
+impl<P> AsMut<[u8]> for Report<P>
+  where P: AsRef<[u8]>,
+{
+  fn as_mut(&mut self) -> &mut [u8] {
+    unsafe { return mem::transmute::<&mut Report<P>, &mut [u8; 64]>(self) };
+  }
+}
+
+
+pub struct EmptyPayload {
+  pub data: [u8; 60],
+}
+
+impl Default for EmptyPayload {
+  fn default() -> EmptyPayload {
+    return EmptyPayload {
+      data: [0u8; 60],
+    };
+  }
+}
+
+impl AsRef<[u8]> for EmptyPayload {
+  fn as_ref(&self) -> &[u8] {
+    unsafe { return mem::transmute::<&EmptyPayload, &[u8; 60]>(self) };
+  }
+}
+
+impl<P> AsRef<Response<P>> for EmptyPayload {
+  fn as_ref(&self) -> &Response<P> {
+    unsafe { return mem::transmute::<&EmptyPayload, &Response<P>>(self) };
   }
 }
 
@@ -157,6 +212,79 @@ impl EnableEncryptedVolumeCommand {
 defaultPayloadAsRef!(EnableEncryptedVolumeCommand);
 
 defaultCommand!(DisableEncryptedVolumeCommand, DisableEncryptedVolume);
+defaultCommand!(DeviceStatusCommand, GetDeviceStatus);
+
+
+#[allow(dead_code)]
+#[derive(Debug)]
+#[derive(PartialEq)]
+#[repr(u8)]
+pub enum CommandStatus {
+  Okay = 0,
+  WrongCrc = 1,
+  WrongSlot = 2,
+  SlotNotProgrammed = 3,
+  WrongPassword = 4,
+  NotAuthorized = 5,
+  TimestampWarning = 6,
+  NoNameError = 7,
+}
+
+
+#[allow(dead_code)]
+#[derive(PartialEq)]
+#[repr(u8)]
+pub enum StorageStatus {
+  Idle = 0,
+  Okay = 1,
+  Busy = 2,
+  WrongPassword = 3,
+  BusyProgressbar = 4,
+  PasswordMatrixReady = 5,
+  NoUserPasswordUnlock = 6,
+  SmartcardError = 7,
+  SecurityBitActive = 8,
+}
+
+
+#[repr(packed)]
+pub struct Response<Payload> {
+  pub device_status: StorageStatus,
+  pub command: Command,
+  pub command_crc: u32,
+  pub command_status: CommandStatus,
+  pub data: Payload,
+}
+
+impl<P> AsRef<[u8]> for Response<P> {
+  fn as_ref(&self) -> &[u8] {
+    unsafe { return mem::transmute::<&Response<P>, &[u8; 60]>(self) };
+  }
+}
+
+
+#[repr(packed)]
+pub struct DeviceStatusResponse {
+  pub padding0: [u8; 22],
+  pub magic: u16,
+  pub unencrypted_volume_read_only: u8,
+  pub encrypted_volume_read_only: u8,
+  pub padding1: u8,
+  pub version_major: u8,
+  pub padding2: u8,
+  pub version_minor: u8,
+  pub hidden_volume_read_only: u8,
+  pub firmware_locked: u8,
+  pub new_sdcard_found: u8,
+  pub sdcard_fill_with_random: u8,
+  pub active_sdcard_id: u32,
+  pub volume_active: u8,
+  pub new_smartcard_found: u8,
+  pub user_password_retry_count: u8,
+  pub admin_password_retry_count: u8,
+  pub active_smartcard_id: u32,
+  pub storage_keys_missing: u8,
+}
 
 
 #[cfg(test)]
