@@ -117,6 +117,23 @@ fn receive<P>(handle: &mut libhid::Handle) -> Result<nitrokey::Report<P>>
 }
 
 
+/// Transmit a HID feature report to the nitrokey and receive a response.
+fn transmit<PS, PR>(handle: &mut libhid::Handle,
+                    report: &nitrokey::Report<PS>)
+                    -> Result<nitrokey::Report<PR>>
+  where PS: AsRef<[u8]>,
+        PR: AsRef<[u8]> + Default,
+{
+  send(handle, &report)?;
+
+  // We need to give the stick some time to handle the command. If we
+  // don't, we might just receive stale data from before.
+  thread::sleep(time::Duration::from_millis(SEND_RECV_DELAY_MS));
+
+  return receive::<PR>(handle);
+}
+
+
 /// Find and open the nitrokey device and execute a function on it.
 fn nitrokey_do(function: &NitroFunc) -> Result<()> {
   let hid = libhid::init()?;
@@ -138,12 +155,7 @@ fn open() -> Result<()> {
     let payload = nitrokey::EnableEncryptedVolumeCommand::new(&passphrase);
     let report = nitrokey::Report::from(payload);
 
-    send(handle, &report)?;
-    // We need to give the stick some time to handle the command. If we
-    // don't, we might just receive stale data from before.
-    thread::sleep(time::Duration::from_millis(SEND_RECV_DELAY_MS));
-
-    receive::<nitrokey::EmptyPayload>(handle)?;
+    transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
     return Ok(());
   });
 }
@@ -155,7 +167,7 @@ fn close() -> Result<()> {
     let payload = nitrokey::DisableEncryptedVolumeCommand::new();
     let report = nitrokey::Report::from(payload);
 
-    send(handle, &report)?;
+    transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
     return Ok(());
   });
 }
@@ -205,6 +217,8 @@ mod tests {
 
   #[test]
   fn wrong_crc() {
+    type Response = nitrokey::Response<nitrokey::DeviceStatusResponse>;
+
     nitrokey_do(&|handle| {
       let payload = nitrokey::DeviceStatusCommand::new();
       let mut report = nitrokey::Report::from(payload);
@@ -213,14 +227,10 @@ mod tests {
       // report of the CRC mismatch) repeatedly.
       for _ in 0..10 {
         report.crc += 1;
-        send(handle, &report).unwrap();
-        thread::sleep(time::Duration::from_millis(SEND_RECV_DELAY_MS));
 
-        let new_report = receive::<nitrokey::EmptyPayload>(handle).unwrap();
-        assert!(new_report.is_valid());
+        let new_report = transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
+        let response = AsRef::<Response>::as_ref(&new_report.data);
 
-        let response: &nitrokey::Response<nitrokey::DeviceStatusResponse> = new_report.data
-                                                                                      .as_ref();
         assert_eq!(response.command, nitrokey::Command::GetDeviceStatus);
         assert_eq!(response.command_crc, report.crc);
         assert_eq!(response.command_status, nitrokey::CommandStatus::WrongCrc);
@@ -232,17 +242,14 @@ mod tests {
 
   #[test]
   fn device_status() {
+    type Response = nitrokey::Response<nitrokey::DeviceStatusResponse>;
+
     nitrokey_do(&|handle| {
       let payload = nitrokey::DeviceStatusCommand::new();
       let report = nitrokey::Report::from(payload);
 
-      send(handle, &report).unwrap();
-      thread::sleep(time::Duration::from_millis(SEND_RECV_DELAY_MS));
-
-      let new_report = receive::<nitrokey::EmptyPayload>(handle).unwrap();
-      assert!(new_report.is_valid());
-
-      let response: &nitrokey::Response<nitrokey::DeviceStatusResponse> = new_report.data.as_ref();
+      let report = transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
+      let response = AsRef::<Response>::as_ref(&report.data);
 
       assert!(response.device_status == nitrokey::StorageStatus::Idle ||
               response.device_status == nitrokey::StorageStatus::Okay);
