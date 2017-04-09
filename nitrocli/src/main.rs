@@ -32,6 +32,7 @@ mod nitrokey;
 mod pinentry;
 
 use error::Error;
+use std::mem;
 use std::process;
 use std::result;
 use std::thread;
@@ -41,6 +42,8 @@ type Result<T> = result::Result<T, Error>;
 type NitroFunc = Fn(&mut libhid::Handle) -> Result<()>;
 
 
+const SEND_TRY_COUNT: i8 = 3;
+const RECV_TRY_COUNT: i8 = 40;
 const SEND_RECV_DELAY_MS: u64 = 200;
 
 
@@ -48,8 +51,25 @@ const SEND_RECV_DELAY_MS: u64 = 200;
 fn send<P>(handle: &mut libhid::Handle, report: &nitrokey::Report<P>) -> Result<()>
   where P: AsRef<[u8]>,
 {
-  handle.feature().send_to(0, report.as_ref())?;
-  return Ok(());
+  let mut retry = SEND_TRY_COUNT;
+  loop {
+    let result = handle.feature().send_to(0, report.as_ref());
+    retry -= 1;
+
+    match result {
+      Ok(_) => {
+        return Ok(());
+      },
+      Err(err) => {
+        if retry > 0 {
+          thread::sleep(time::Duration::from_millis(SEND_RECV_DELAY_MS));
+          continue;
+        } else {
+          return Err(Error::HidError(err));
+        }
+      },
+    }
+  }
 }
 
 
@@ -57,9 +77,43 @@ fn send<P>(handle: &mut libhid::Handle, report: &nitrokey::Report<P>) -> Result<
 fn receive<P>(handle: &mut libhid::Handle) -> Result<nitrokey::Report<P>>
   where P: AsRef<[u8]> + Default,
 {
-  let mut report = nitrokey::Report::<P>::new();
-  handle.feature().get_from(0, report.as_mut())?;
-  return Ok(report);
+  let mut retry = RECV_TRY_COUNT;
+  loop {
+    let mut report = nitrokey::Report::<P>::new();
+    let result = handle.feature().get_from(0, report.as_mut());
+
+    retry -= 1;
+
+    match result {
+      Ok(size) => {
+        if size < mem::size_of_val(&report) {
+          if retry > 0 {
+            continue;
+          } else {
+            return Err(Error::Error("Failed to receive complete report".to_string()));
+          }
+        }
+
+        if !report.is_valid() {
+          if retry > 0 {
+            continue;
+          } else {
+            return Err(Error::Error("Failed to receive report: CRC mismatch".to_string()));
+          }
+        }
+        return Ok(report);
+      },
+
+      Err(err) => {
+        if retry > 0 {
+          thread::sleep(time::Duration::from_millis(SEND_RECV_DELAY_MS));
+          continue;
+        } else {
+          return Err(Error::HidError(err));
+        }
+      },
+    }
+  }
 }
 
 
