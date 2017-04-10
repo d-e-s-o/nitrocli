@@ -148,6 +148,86 @@ fn nitrokey_do(function: &NitroFunc) -> Result<()> {
 }
 
 
+/// Pretty print the response of a status command.
+fn print_status(response: &nitrokey::DeviceStatusResponse) {
+  println!("Status:");
+  // We omit displaying information about the smartcard here as this
+  // program really is only about the SD card portion of the device.
+  println!("  SD card ID:        {:#x}", response.active_sdcard_id);
+  println!("  firmware version:  {}.{}",
+           response.version_major,
+           response.version_minor);
+  println!("  firmware:          {}",
+           if response.firmware_locked != 0 {
+             "locked".to_string()
+           } else {
+             "unlocked".to_string()
+           });
+  println!("  storage keys:      {}",
+           if response.storage_keys_missing == 0 {
+             "created".to_string()
+           } else {
+             "not created".to_string()
+           });
+  println!("  user retry count:  {}",
+           response.user_password_retry_count);
+  println!("  admin retry count: {}",
+           response.admin_password_retry_count);
+  println!("  volumes:");
+  println!("    unencrypted:     {}",
+           if response.volume_active & nitrokey::VOLUME_ACTIVE_UNENCRYPTED == 0 {
+             "inactive"
+           } else if response.unencrypted_volume_read_only != 0 {
+             "read-only"
+           } else {
+             "active"
+           });
+  println!("    encrypted:       {}",
+           if response.volume_active & nitrokey::VOLUME_ACTIVE_ENCRYPTED == 0 {
+             "inactive"
+           } else if response.encrypted_volume_read_only != 0 {
+             "read-only"
+           } else {
+             "active"
+           });
+  println!("    hidden:          {}",
+           if response.volume_active & nitrokey::VOLUME_ACTIVE_HIDDEN == 0 {
+             "inactive"
+           } else if response.hidden_volume_read_only != 0 {
+             "read-only"
+           } else {
+             "active"
+           });
+}
+
+
+/// Inquire the status of the nitrokey.
+fn status() -> Result<()> {
+  type Response = nitrokey::Response<nitrokey::DeviceStatusResponse>;
+
+  return nitrokey_do(&|handle| {
+    let payload = nitrokey::DeviceStatusCommand::new();
+    let report = nitrokey::Report::from(payload);
+
+    let report = transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
+    let response = &AsRef::<Response>::as_ref(&report.data).data;
+
+    // TODO: We should probably check the success of the command as
+    //       well.
+    if response.magic != nitrokey::MAGIC_NUMBER_STICK20_CONFIG {
+      let error = format!("Status response contains invalid magic: {:#x} \
+                           (expected: {:#x})",
+                          response.magic,
+                          nitrokey::MAGIC_NUMBER_STICK20_CONFIG);
+      return Err(Error::Error(error.to_string()));
+    }
+
+    print_status(response);
+    return Ok(());
+  });
+}
+
+
 /// Open the encrypted volume on the nitrokey.
 fn open() -> Result<()> {
   return nitrokey_do(&|handle| {
@@ -203,7 +283,7 @@ fn run() -> i32 {
     return 1;
   }
 
-  commands!(&argv[1], [open, close]);
+  commands!(&argv[1], [open, close, status]);
 }
 
 fn main() {

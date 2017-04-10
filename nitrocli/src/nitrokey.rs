@@ -30,6 +30,11 @@ pub const PID: u16 = 0x4109;
 // Magic number identifying a storage response.
 pub const MAGIC_NUMBER_STICK20_CONFIG: u16 = 0x3318;
 
+// Flags indicating whether the respective volume is active or not.
+pub const VOLUME_ACTIVE_UNENCRYPTED: u8 = 0b001;
+pub const VOLUME_ACTIVE_ENCRYPTED: u8 = 0b010;
+pub const VOLUME_ACTIVE_HIDDEN: u8 = 0b100;
+
 
 #[derive(Debug)]
 #[derive(PartialEq)]

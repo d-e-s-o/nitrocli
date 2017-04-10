@@ -7,6 +7,7 @@ certain commands on the [Nitrokey Storage][nitrokey] device.
 The following commands are currently supported:
 - open: Open the encrypted volume. The user PIN needs to be entered.
 - close: Close the encrypted volume.
+- status: Report status information about the Nitrokey.
 
 
 Usage
@@ -17,6 +18,20 @@ parameter, e.g.:
 ```bash
 # Open the nitrokey's encrypted volume.
 $ nitrocli open
+
+$ nitrocli status
+Status:
+  SD card ID:        0xdeadbeef
+  firmware version:  44.0
+  firmware:          unlocked
+  storage keys:      created
+  user retry count:  3
+  admin retry count: 3
+  volumes:
+    unencrypted:     active
+    encrypted:       active
+    hidden:          inactive
+
 # Close it again.
 $ nitrocli close
 ```
