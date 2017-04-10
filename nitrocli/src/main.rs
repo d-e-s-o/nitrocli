@@ -288,11 +288,22 @@ fn open() -> Result<()> {
 }
 
 
+#[link(name = "c")]
+extern "C" {
+  fn sync();
+}
+
 /// Close the previously opened encrypted volume.
 fn close() -> Result<()> {
   type Response = nitrokey::Response<nitrokey::StorageResponse>;
 
   return nitrokey_do(&|handle| {
+    // Flush all filesystem caches to disk. We are mostly interested in
+    // making sure that the encrypted volume on the nitrokey we are
+    // about to close is not closed while not all data was written to
+    // it.
+    unsafe { sync() };
+
     let payload = nitrokey::DisableEncryptedVolumeCommand::new();
     let report = nitrokey::Report::from(payload);
 
