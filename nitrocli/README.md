@@ -8,6 +8,7 @@ The following commands are currently supported:
 - open: Open the encrypted volume. The user PIN needs to be entered.
 - close: Close the encrypted volume.
 - status: Report status information about the Nitrokey.
+- clear: Remove the user PIN from gpg-agent's cache.
 
 
 Usage

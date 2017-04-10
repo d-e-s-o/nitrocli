@@ -277,6 +277,12 @@ fn close() -> Result<()> {
 }
 
 
+/// Clear the PIN stored when opening the nitrokey's encrypted volume.
+fn clear() -> Result<()> {
+  return pinentry::clear_passphrase();
+}
+
+
 // A macro for generating a match of the different supported commands.
 // Each supplied command is converted into a string and matched against.
 macro_rules! commands {
@@ -307,7 +313,7 @@ fn run() -> i32 {
     return 1;
   }
 
-  commands!(&argv[1], [open, close, status]);
+  commands!(&argv[1], [status, open, close, clear]);
 }
 
 fn main() {
