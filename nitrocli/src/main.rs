@@ -228,6 +228,25 @@ fn status() -> Result<()> {
 }
 
 
+/// Poll the nitrokey until it reports to no longer be busy.
+fn wait(handle: &mut libhid::Handle) -> Result<nitrokey::StorageStatus> {
+  type Response = nitrokey::Response<nitrokey::StorageResponse>;
+
+  loop {
+    thread::sleep(time::Duration::from_millis(SEND_RECV_DELAY_MS));
+
+    let report = receive::<nitrokey::EmptyPayload>(handle)?;
+    let response = AsRef::<Response>::as_ref(&report.data);
+    let status = response.data.storage_status;
+
+    if status != nitrokey::StorageStatus::Busy &&
+       status != nitrokey::StorageStatus::BusyProgressbar {
+      return Ok(status);
+    }
+  }
+}
+
+
 /// Open the encrypted volume on the nitrokey.
 fn open() -> Result<()> {
   type Response = nitrokey::Response<nitrokey::StorageResponse>;
@@ -241,7 +260,7 @@ fn open() -> Result<()> {
 
       let report = transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
       let response = AsRef::<Response>::as_ref(&report.data);
-      let status = response.data.storage_status;
+      let mut status = response.data.storage_status;
 
       if status == nitrokey::StorageStatus::WrongPassword {
         pinentry::clear_passphrase()?;
@@ -253,6 +272,10 @@ fn open() -> Result<()> {
         }
         let error = "Opening encrypted volume failed: Wrong password";
         return Err(Error::Error(error.to_string()));
+      }
+      if status == nitrokey::StorageStatus::Busy ||
+         status == nitrokey::StorageStatus::BusyProgressbar {
+        status = wait(handle)?;
       }
       if status != nitrokey::StorageStatus::Okay && status != nitrokey::StorageStatus::Idle {
         let status = format!("{:?}", status);
@@ -267,11 +290,25 @@ fn open() -> Result<()> {
 
 /// Close the previously opened encrypted volume.
 fn close() -> Result<()> {
+  type Response = nitrokey::Response<nitrokey::StorageResponse>;
+
   return nitrokey_do(&|handle| {
     let payload = nitrokey::DisableEncryptedVolumeCommand::new();
     let report = nitrokey::Report::from(payload);
 
-    transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
+    let report = transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
+    let response = AsRef::<Response>::as_ref(&report.data);
+    let mut status = response.data.storage_status;
+
+    if status == nitrokey::StorageStatus::Busy ||
+       status == nitrokey::StorageStatus::BusyProgressbar {
+      status = wait(handle)?;
+    }
+    if status != nitrokey::StorageStatus::Okay && status != nitrokey::StorageStatus::Idle {
+      let status = format!("{:?}", status);
+      let error = format!("Closing encrypted volume failed: {}", status);
+      return Err(Error::Error(error));
+    }
     return Ok(());
   });
 }
