@@ -241,6 +241,9 @@ pub enum CommandStatus {
 
 
 #[allow(dead_code)]
+#[derive(Copy)]
+#[derive(Clone)]
+#[derive(Debug)]
 #[derive(PartialEq)]
 #[repr(u8)]
 pub enum StorageStatus {
@@ -269,6 +272,17 @@ impl<P> AsRef<[u8]> for Response<P> {
   fn as_ref(&self) -> &[u8] {
     unsafe { return mem::transmute::<&Response<P>, &[u8; 60]>(self) };
   }
+}
+
+
+#[repr(packed)]
+pub struct StorageResponse {
+  pub padding1: [u8; 13],
+  pub command_counter: u8,
+  pub last_storage_command: Command,
+  pub storage_status: StorageStatus,
+  pub progress: u8,
+  pub padding2: [u8; 2],
 }
 
 

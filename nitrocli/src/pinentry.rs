@@ -69,6 +69,29 @@ pub fn inquire_passphrase() -> Result<Vec<u8>, Error> {
 }
 
 
+fn parse_pinentry_response(response: Vec<u8>) -> Result<(), Error> {
+  let string = String::from_utf8(response)?;
+  let lines: Vec<&str> = string.lines().collect();
+
+  if lines.len() == 1 && lines[0] == "OK" {
+    // We got the only valid answer we accept.
+    return Ok(());
+  }
+  return Err(Error::Error("Unexpected response: ".to_string() + &string));
+}
+
+
+/// Clear the cached passphrase.
+pub fn clear_passphrase() -> Result<(), Error> {
+  let command = "CLEAR_PASSPHRASE ".to_string() + CACHE_ID;
+  let output = process::Command::new("gpg-connect-agent").arg(command)
+    .arg("/bye")
+    .output()?;
+
+  return parse_pinentry_response(output.stdout);
+}
+
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -102,6 +125,32 @@ mod tests {
     let expected = "Unexpected response: ".to_string() + response;
 
     let error = parse_pinentry_passphrase(response.to_string().into_bytes());
+
+    if let Error::Error(ref e) = error.err().unwrap() {
+      assert_eq!(e, &expected);
+    } else {
+      panic!("Unexpected result");
+    }
+  }
+
+  #[test]
+  fn parse_pinentry_response_ok() {
+    let response = "OK\n".to_string().into_bytes();
+    assert!(parse_pinentry_response(response).is_ok())
+  }
+
+  #[test]
+  fn parse_pinentry_response_ok_no_newline() {
+    let response = "OK".to_string().into_bytes();
+    assert!(parse_pinentry_response(response).is_ok())
+  }
+
+  #[test]
+  fn parse_pinentry_response_unexpected() {
+    let response = "ERR 42";
+    let expected = "Unexpected response: ".to_string() + response;
+
+    let error = parse_pinentry_response(response.to_string().into_bytes());
 
     if let Error::Error(ref e) = error.err().unwrap() {
       assert_eq!(e, &expected);

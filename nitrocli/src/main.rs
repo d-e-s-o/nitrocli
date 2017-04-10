@@ -230,13 +230,37 @@ fn status() -> Result<()> {
 
 /// Open the encrypted volume on the nitrokey.
 fn open() -> Result<()> {
-  return nitrokey_do(&|handle| {
-    let passphrase = pinentry::inquire_passphrase()?;
-    let payload = nitrokey::EnableEncryptedVolumeCommand::new(&passphrase);
-    let report = nitrokey::Report::from(payload);
+  type Response = nitrokey::Response<nitrokey::StorageResponse>;
 
-    transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
-    return Ok(());
+  return nitrokey_do(&|handle| {
+    let mut retry = 3;
+    loop {
+      let passphrase = pinentry::inquire_passphrase()?;
+      let payload = nitrokey::EnableEncryptedVolumeCommand::new(&passphrase);
+      let report = nitrokey::Report::from(payload);
+
+      let report = transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
+      let response = AsRef::<Response>::as_ref(&report.data);
+      let status = response.data.storage_status;
+
+      if status == nitrokey::StorageStatus::WrongPassword {
+        pinentry::clear_passphrase()?;
+        retry -= 1;
+
+        if retry > 0 {
+          println!("Wrong password, please reenter");
+          continue;
+        }
+        let error = "Opening encrypted volume failed: Wrong password";
+        return Err(Error::Error(error.to_string()));
+      }
+      if status != nitrokey::StorageStatus::Okay && status != nitrokey::StorageStatus::Idle {
+        let status = format!("{:?}", status);
+        let error = format!("Opening encrypted volume failed: {}", status);
+        return Err(Error::Error(error));
+      }
+      return Ok(());
+    }
   });
 }
 
