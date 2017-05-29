@@ -57,8 +57,18 @@ use std::process::{Command, Stdio, Child};
 use std::io::{self, BufReader, BufRead, Read, Write};
 use std::thread::{self, JoinHandle};
 
+// These modules are all glue to support reading the MSVC version from
+// the registry and from COM interfaces
 #[cfg(windows)]
 mod registry;
+#[cfg(windows)]
+#[macro_use]
+mod winapi;
+#[cfg(windows)]
+mod com;
+#[cfg(windows)]
+mod setup_config;
+
 pub mod windows_registry;
 
 /// Extra configuration to pass to gcc.
@@ -81,6 +91,7 @@ pub struct Config {
     archiver: Option<PathBuf>,
     cargo_metadata: bool,
     pic: Option<bool>,
+    static_crt: Option<bool>,
 }
 
 /// Configuration used to represent an invocation of a C compiler.
@@ -187,6 +198,7 @@ impl Config {
             archiver: None,
             cargo_metadata: true,
             pic: None,
+            static_crt: None,
         }
     }
 
@@ -363,6 +375,14 @@ impl Config {
         self
     }
 
+    /// Configures whether the /MT flag or the /MD flag will be passed to msvc build tools.
+    ///
+    /// This option defaults to `false`, and affect only msvc targets.
+    pub fn static_crt(&mut self, static_crt: bool) -> &mut Config {
+        self.static_crt = Some(static_crt);
+        self
+    }
+
 
     #[doc(hidden)]
     pub fn __set_env<A, B>(&mut self, a: A, b: B) -> &mut Config
@@ -434,12 +454,13 @@ impl Config {
         let mut cfg = rayon::Configuration::new();
         if let Ok(amt) = env::var("NUM_JOBS") {
             if let Ok(amt) = amt.parse() {
-                cfg = cfg.set_num_threads(amt);
+                cfg = cfg.num_threads(amt);
             }
         }
         drop(rayon::initialize(cfg));
 
-        objs.par_iter().weight_max().for_each(|&(ref src, ref dst)| self.compile_object(src, dst));
+        objs.par_iter().with_max_len(1)
+            .for_each(|&(ref src, ref dst)| self.compile_object(src, dst));
     }
 
     #[cfg(not(feature = "parallel"))]
@@ -533,13 +554,22 @@ impl Config {
         match cmd.family {
             ToolFamily::Msvc => {
                 cmd.args.push("/nologo".into());
-                let features = env::var("CARGO_CFG_TARGET_FEATURE")
+
+                let crt_flag = match self.static_crt {
+                    Some(true) => "/MT",
+                    Some(false) => "/MD",
+                    None => {
+                        let features = env::var("CARGO_CFG_TARGET_FEATURE")
                                   .unwrap_or(String::new());
-                if features.contains("crt-static") {
-                    cmd.args.push("/MT".into());
-                } else {
-                    cmd.args.push("/MD".into());
-                }
+                        if features.contains("crt-static") {
+                            "/MT"
+                        } else {
+                            "/MD"
+                        }
+                    },
+                };
+                cmd.args.push(crt_flag.into());
+
                 match &opt_level[..] {
                     "z" | "s" => cmd.args.push("/Os".into()),
                     "1" => cmd.args.push("/O1".into()),
@@ -593,7 +623,7 @@ impl Config {
                 }
 
                 // armv7 targets get to use armv7 instructions
-                if target.starts_with("armv7-unknown-linux-") {
+                if target.starts_with("armv7-") && target.contains("-linux-") {
                     cmd.args.push("-march=armv7-a".into());
                 }
 
@@ -602,11 +632,21 @@ impl Config {
                 if target.starts_with("armv7-linux-androideabi") {
                     cmd.args.push("-march=armv7-a".into());
                     cmd.args.push("-mfpu=vfpv3-d16".into());
+                    cmd.args.push("-mfloat-abi=softfp".into());
                 }
 
                 // For us arm == armv6 by default
                 if target.starts_with("arm-unknown-linux-") {
                     cmd.args.push("-march=armv6".into());
+                    cmd.args.push("-marm".into());
+                }
+
+                // We can guarantee some settings for FRC
+                if target.starts_with("arm-frc-") {
+                    cmd.args.push("-march=armv7-a".into());
+                    cmd.args.push("-mcpu=cortex-a9".into());
+                    cmd.args.push("-mfpu=vfpv3".into());
+                    cmd.args.push("-mfloat-abi=softfp".into());
                     cmd.args.push("-marm".into());
                 }
 
@@ -683,7 +723,7 @@ impl Config {
 
         for &(ref key, ref value) in self.definitions.iter() {
             let lead = if let ToolFamily::Msvc = cmd.family {"/"} else {"-"};
-            if let &Some(ref value) = value {
+            if let Some(ref value) = *value {
                 cmd.args.push(format!("{}D{}={}", lead, key, value).into());
             } else {
                 cmd.args.push(format!("{}D{}", lead, key).into());
@@ -704,7 +744,7 @@ impl Config {
             cmd.arg("/I").arg(directory);
         }
         for &(ref key, ref value) in self.definitions.iter() {
-            if let &Some(ref value) = value {
+            if let Some(ref value) = *value {
                 cmd.arg(&format!("/D{}={}", key, value));
             } else {
                 cmd.arg(&format!("/D{}", key));
@@ -730,7 +770,7 @@ impl Config {
         if target.contains("msvc") {
             let mut cmd = match self.archiver {
                 Some(ref s) => self.cmd(s),
-                None => windows_registry::find(&target, "lib.exe").unwrap_or(self.cmd("lib.exe")),
+                None => windows_registry::find(&target, "lib.exe").unwrap_or_else(|| self.cmd("lib.exe")),
             };
             let mut out = OsString::from("/OUT:");
             out.push(dst);
@@ -750,7 +790,6 @@ impl Config {
                     // if hard-link fails, just copy (ignoring the number of bytes written)
                     fs::copy(&dst, &lib_dst).map(|_| ())
                 })
-                .ok()
                 .expect("Copying from {:?} to {:?} failed.");;
         } else {
             let ar = self.get_ar();
@@ -816,7 +855,7 @@ impl Config {
         for &(ref a, ref b) in self.env.iter() {
             cmd.env(a, b);
         }
-        return cmd;
+        cmd
     }
 
     fn get_base_compiler(&self) -> Tool {
@@ -846,15 +885,26 @@ impl Config {
                 for arg in args {
                     t.args.push(arg.into());
                 }
-                return t;
+                t
             })
             .or_else(|| {
                 if target.contains("emscripten") {
-                    if self.cpp {
-                        Some(Tool::new(PathBuf::from("em++")))
+                    //Windows uses bat file so we have to be a bit more specific
+                    let tool = if self.cpp {
+                        if cfg!(windows) {
+                            "em++.bat"
+                        } else {
+                            "em++"
+                        }
                     } else {
-                        Some(Tool::new(PathBuf::from("emcc")))
-                    }
+                        if cfg!(windows) {
+                            "emcc.bat"
+                        } else {
+                            "emcc"
+                        }
+                    };
+
+                    Some(Tool::new(PathBuf::from(tool)))
                 } else {
                     None
                 }
@@ -876,6 +926,7 @@ impl Config {
                     let prefix = cross_compile.or(match &target[..] {
                         "aarch64-unknown-linux-gnu" => Some("aarch64-linux-gnu"),
                         "arm-unknown-linux-gnueabi" => Some("arm-linux-gnueabi"),
+                        "arm-frc-linux-gnueabi" => Some("arm-frc-linux-gnueabi"),
                         "arm-unknown-linux-gnueabihf" => Some("arm-linux-gnueabihf"),
                         "arm-unknown-linux-musleabi" => Some("arm-linux-musleabi"),
                         "arm-unknown-linux-musleabihf" => Some("arm-linux-musleabihf"),
@@ -948,7 +999,7 @@ impl Config {
         self.get_var(name).ok().map(|tool| {
             let whitelist = ["ccache", "distcc"];
             for t in whitelist.iter() {
-                if tool.starts_with(t) && tool[t.len()..].starts_with(" ") {
+                if tool.starts_with(t) && tool[t.len()..].starts_with(' ') {
                     return (t.to_string(), vec![tool[t.len()..].trim_left().to_string()]);
                 }
             }
@@ -981,7 +1032,14 @@ impl Config {
                 if self.get_target().contains("android") {
                     PathBuf::from(format!("{}-ar", self.get_target().replace("armv7", "arm")))
                 } else if self.get_target().contains("emscripten") {
-                    PathBuf::from("emar")
+                    //Windows use bat files so we have to be a bit more specific
+                    let tool = if cfg!(windows) {
+                        "emar.bat"
+                    } else {
+                        "emar"
+                    };
+
+                    PathBuf::from(tool)
                 } else {
                     PathBuf::from("ar")
                 }
@@ -1034,7 +1092,7 @@ impl Tool {
         let family = if let Some(fname) = path.file_name().and_then(|p| p.to_str()) {
             if fname.contains("clang") {
                 ToolFamily::Clang
-            } else if fname.contains("cl") {
+            } else if fname.contains("cl") && !fname.contains("uclibc") {
                 ToolFamily::Msvc
             } else {
                 ToolFamily::Gnu
@@ -1091,7 +1149,7 @@ fn run(cmd: &mut Command, program: &str) {
     let (mut child, print) = spawn(cmd, program);
     let status = child.wait().expect("failed to wait on child process");
     print.join().unwrap();
-    println!("{:?}", status);
+    println!("{}", status);
     if !status.success() {
         fail(&format!("command did not execute successfully, got: {}", status));
     }
@@ -1104,11 +1162,11 @@ fn run_output(cmd: &mut Command, program: &str) -> Vec<u8> {
     child.stdout.take().unwrap().read_to_end(&mut stdout).unwrap();
     let status = child.wait().expect("failed to wait on child process");
     print.join().unwrap();
-    println!("{:?}", status);
+    println!("{}", status);
     if !status.success() {
         fail(&format!("command did not execute successfully, got: {}", status));
     }
-    return stdout
+    stdout
 }
 
 fn spawn(cmd: &mut Command, program: &str) -> (Child, JoinHandle<()>) {
