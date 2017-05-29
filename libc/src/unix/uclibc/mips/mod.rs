@@ -1,5 +1,3 @@
-pub const CLONE_NEWCGROUP: ::c_int = 0x02000000;
-
 pub const SFD_CLOEXEC: ::c_int = 0x080000;
 
 pub const NCCS: usize = 32;
@@ -32,7 +30,7 @@ pub const EPOLL_CLOEXEC: ::c_int = 0x80000;
 
 pub const EFD_CLOEXEC: ::c_int = 0x80000;
 
-pub const BUFSIZ: ::c_uint = 8192;
+pub const BUFSIZ: ::c_uint = 4096;
 pub const TMP_MAX: ::c_uint = 238328;
 pub const FOPEN_MAX: ::c_uint = 16;
 pub const POSIX_FADV_DONTNEED: ::c_int = 4;
@@ -51,17 +49,17 @@ pub const RLIMIT_AS: ::c_int = 6;
 pub const RLIMIT_RSS: ::c_int = 7;
 pub const RLIMIT_NPROC: ::c_int = 8;
 pub const RLIMIT_MEMLOCK: ::c_int = 9;
-pub const RLIMIT_NLIMITS: ::c_int = 16;
+pub const RLIMIT_NLIMITS: ::c_int = 15;
 
 pub const O_APPEND: ::c_int = 8;
 pub const O_CREAT: ::c_int = 256;
 pub const O_EXCL: ::c_int = 1024;
 pub const O_NOCTTY: ::c_int = 2048;
 pub const O_NONBLOCK: ::c_int = 128;
-pub const O_SYNC: ::c_int = 0x4010;
-pub const O_RSYNC: ::c_int = 0x4010;
+pub const O_SYNC: ::c_int = 0x10;
+pub const O_RSYNC: ::c_int = 0x10;
 pub const O_DSYNC: ::c_int = 0x10;
-pub const O_FSYNC: ::c_int = 0x4010;
+pub const O_FSYNC: ::c_int = 0x10;
 pub const O_ASYNC: ::c_int = 0x1000;
 pub const O_NDELAY: ::c_int = 0x80;
 
@@ -152,31 +150,6 @@ pub const EOWNERDEAD: ::c_int = 165;
 pub const ENOTRECOVERABLE: ::c_int = 166;
 pub const ERFKILL: ::c_int = 167;
 
-pub const LC_PAPER: ::c_int = 7;
-pub const LC_NAME: ::c_int = 8;
-pub const LC_ADDRESS: ::c_int = 9;
-pub const LC_TELEPHONE: ::c_int = 10;
-pub const LC_MEASUREMENT: ::c_int = 11;
-pub const LC_IDENTIFICATION: ::c_int = 12;
-pub const LC_PAPER_MASK: ::c_int = (1 << LC_PAPER);
-pub const LC_NAME_MASK: ::c_int = (1 << LC_NAME);
-pub const LC_ADDRESS_MASK: ::c_int = (1 << LC_ADDRESS);
-pub const LC_TELEPHONE_MASK: ::c_int = (1 << LC_TELEPHONE);
-pub const LC_MEASUREMENT_MASK: ::c_int = (1 << LC_MEASUREMENT);
-pub const LC_IDENTIFICATION_MASK: ::c_int = (1 << LC_IDENTIFICATION);
-pub const LC_ALL_MASK: ::c_int = ::LC_CTYPE_MASK
-                               | ::LC_NUMERIC_MASK
-                               | ::LC_TIME_MASK
-                               | ::LC_COLLATE_MASK
-                               | ::LC_MONETARY_MASK
-                               | ::LC_MESSAGES_MASK
-                               | LC_PAPER_MASK
-                               | LC_NAME_MASK
-                               | LC_ADDRESS_MASK
-                               | LC_TELEPHONE_MASK
-                               | LC_MEASUREMENT_MASK
-                               | LC_IDENTIFICATION_MASK;
-
 pub const MAP_NORESERVE: ::c_int = 0x400;
 pub const MAP_ANON: ::c_int = 0x800;
 pub const MAP_ANONYMOUS: ::c_int = 0x800;
@@ -247,9 +220,6 @@ pub const SO_SELECT_ERR_QUEUE: ::c_int = 45;
 pub const SO_BUSY_POLL: ::c_int = 46;
 pub const SO_MAX_PACING_RATE: ::c_int = 47;
 pub const SO_BPF_EXTENSIONS: ::c_int = 48;
-pub const SO_INCOMING_CPU: ::c_int = 49;
-pub const SO_ATTACH_BPF: ::c_int = 50;
-pub const SO_DETACH_BPF: ::c_int = SO_DETACH_FILTER;
 
 pub const FIOCLEX: ::c_ulong = 0x6601;
 pub const FIONBIO: ::c_ulong = 0x667e;
@@ -286,7 +256,7 @@ pub const POLLWRNORM: ::c_short = 0x004;
 pub const POLLRDBAND: ::c_short = 0x080;
 pub const POLLWRBAND: ::c_short = 0x100;
 
-pub const PTHREAD_STACK_MIN: ::size_t = 131072;
+pub const PTHREAD_STACK_MIN: ::size_t = 16384;
 
 pub const ADFS_SUPER_MAGIC: ::c_long = 0x0000adf5;
 pub const AFFS_SUPER_MAGIC: ::c_long = 0x0000adff;
@@ -322,7 +292,7 @@ pub const VMIN: usize = 4;
 pub const IEXTEN: ::tcflag_t = 0x00000100;
 pub const TOSTOP: ::tcflag_t = 0x00008000;
 pub const FLUSHO: ::tcflag_t = 0x00002000;
-pub const EXTPROC: ::tcflag_t = 0o200000;
+pub const IUTF8: ::tcflag_t = 0x00004000;
 pub const TCSANOW: ::c_int = 0x540e;
 pub const TCSADRAIN: ::c_int = 0x540f;
 pub const TCSAFLUSH: ::c_int = 0x5410;
@@ -352,8 +322,6 @@ pub const PTRACE_GETFPXREGS: ::c_uint = 18;
 pub const PTRACE_SETFPXREGS: ::c_uint = 19;
 pub const PTRACE_GETREGS: ::c_uint = 12;
 pub const PTRACE_SETREGS: ::c_uint = 13;
-
-pub const MAP_HUGETLB: ::c_int = 0x080000;
 
 pub const EFD_NONBLOCK: ::c_int = 0x80;
 
@@ -420,7 +388,6 @@ pub const MCL_CURRENT: ::c_int = 0x0001;
 pub const MCL_FUTURE: ::c_int = 0x0002;
 
 pub const SIGSTKSZ: ::size_t = 8192;
-pub const MINSIGSTKSZ: ::size_t = 2048;
 pub const CBAUD: ::tcflag_t = 0o0010017;
 pub const TAB1: ::c_int = 0x00000800;
 pub const TAB2: ::c_int = 0x00001000;

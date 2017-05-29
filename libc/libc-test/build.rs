@@ -14,6 +14,7 @@ fn main() {
     let android = target.contains("android");
     let apple = target.contains("apple");
     let musl = target.contains("musl");
+    let uclibc = target.contains("uclibc");
     let freebsd = target.contains("freebsd");
     let dragonfly = target.contains("dragonfly");
     let mips = target.contains("mips");
@@ -77,6 +78,7 @@ fn main() {
         cfg.header("netinet/in.h");
         cfg.header("netinet/ip.h");
         cfg.header("netinet/tcp.h");
+        cfg.header("resolv.h");
         cfg.header("pthread.h");
         cfg.header("dlfcn.h");
         cfg.header("signal.h");
@@ -106,8 +108,8 @@ fn main() {
     }
 
     if android {
-        if !aarch64 {
-            // time64_t is not define for aarch64
+        if !aarch64 && !x86_64 {
+            // time64_t is not define for aarch64 and x86_64
             // If included it will generate the error 'Your time_t is already 64-bit'
             cfg.header("time64.h");
         }
@@ -125,8 +127,10 @@ fn main() {
 
         if !musl {
             cfg.header("sys/sysctl.h");
+        }
+        if !musl && !uclibc {
 
-            if !netbsd && !openbsd {
+            if !netbsd && !openbsd && !uclibc {
                 cfg.header("execinfo.h");
                 cfg.header("xlocale.h");
             }
@@ -144,6 +148,7 @@ fn main() {
         cfg.header("mach/mach_time.h");
         cfg.header("malloc/malloc.h");
         cfg.header("util.h");
+        cfg.header("sys/xattr.h");
         if target.starts_with("x86") {
             cfg.header("crt_externs.h");
         }
@@ -163,7 +168,10 @@ fn main() {
         cfg.header("mqueue.h");
         cfg.header("ucontext.h");
         cfg.header("sys/signalfd.h");
-        cfg.header("sys/xattr.h");
+        if !uclibc {
+            // optionally included in uclibc
+            cfg.header("sys/xattr.h");
+        }
         cfg.header("sys/ipc.h");
         cfg.header("sys/msg.h");
         cfg.header("sys/shm.h");
@@ -183,7 +191,9 @@ fn main() {
         cfg.header("sys/sendfile.h");
         cfg.header("sys/vfs.h");
         cfg.header("sys/syscall.h");
-        cfg.header("sys/sysinfo.h");
+        if !uclibc {
+            cfg.header("sys/sysinfo.h");
+        }
         cfg.header("sys/reboot.h");
         if !musl {
             cfg.header("linux/netlink.h");
@@ -201,6 +211,9 @@ fn main() {
         cfg.header("sched.h");
         cfg.header("ufs/ufs/quota.h");
         cfg.header("sys/jail.h");
+        cfg.header("sys/ipc.h");
+        cfg.header("sys/msg.h");
+        cfg.header("sys/shm.h");
     }
 
     if netbsd {
@@ -222,7 +235,9 @@ fn main() {
     }
 
     if linux || freebsd || dragonfly || netbsd || apple {
-        cfg.header("aio.h");
+        if !uclibc {
+            cfg.header("aio.h");
+        }
     }
 
     cfg.type_name(move |ty, is_struct| {
@@ -384,6 +399,15 @@ fn main() {
             "KERN_KDENABLE_BG_TRACE" if apple => true,
             "KERN_KDDISABLE_BG_TRACE" if apple => true,
 
+            // These are either unimplemented or optionally built into uClibc
+            "LC_CTYPE_MASK" | "LC_NUMERIC_MASK" | "LC_TIME_MASK" | "LC_COLLATE_MASK" | "LC_MONETARY_MASK" | "LC_MESSAGES_MASK" |
+            "MADV_MERGEABLE" | "MADV_UNMERGEABLE" | "MADV_HWPOISON" | "IPV6_ADD_MEMBERSHIP" | "IPV6_DROP_MEMBERSHIP" | "IPV6_MULTICAST_LOOP" | "IPV6_V6ONLY" |
+            "MAP_STACK" | "RTLD_DEEPBIND" | "SOL_IPV6" | "SOL_ICMPV6" if uclibc => true,
+
+            // Defined by libattr not libc on linux (hard to test).
+            // See constant definition for more details.
+            "ENOATTR" if linux => true,
+
             _ => false,
         }
     });
@@ -400,6 +424,11 @@ fn main() {
             "setrlimit" | "setrlimit64" |    // non-int in 1st arg
             "prlimit" | "prlimit64" |        // non-int in 2nd arg
             "strerror_r" if linux => true,   // actually xpg-something-or-other
+
+            // int vs uint. Sorry musl, your prototype declarations are "correct" in the sense that
+            // they match the interface defined by Linux verbatim, but they conflict with other
+            // send*/recv* syscalls
+            "sendmmsg" | "recvmmsg" if musl => true,
 
             // typed 2nd arg on linux and android
             "gettimeofday" if linux || android || freebsd || openbsd || dragonfly => true,
@@ -464,6 +493,27 @@ fn main() {
             // Apparently the NDK doesn't have this defined on android, but
             // it's in a header file?
             "endpwent" if android => true,
+
+
+            // These are either unimplemented or optionally built into uClibc
+            // or "sysinfo", where it's defined but the structs in linux/sysinfo.h and sys/sysinfo.h
+            // clash so it can't be tested
+            "getxattr" | "lgetxattr" | "fgetxattr" | "setxattr" | "lsetxattr" | "fsetxattr" |
+            "listxattr" | "llistxattr" | "flistxattr" | "removexattr" | "lremovexattr" |
+            "fremovexattr" |
+            "backtrace" |
+            "sysinfo" | "newlocale" | "duplocale" | "freelocale" | "uselocale" |
+            "nl_langinfo_l" | "wcslen" | "wcstombs" if uclibc => true,
+          
+            // Apparently res_init exists on Android, but isn't defined in a header:
+            // https://mail.gnome.org/archives/commits-list/2013-May/msg01329.html
+            "res_init" if android => true,
+
+            // On macOS and iOS, res_init is available, but requires linking with libresolv:
+            // http://blog.achernya.com/2013/03/os-x-has-silly-libsystem.html
+            // See discussion for skipping here:
+            // https://github.com/rust-lang/libc/pull/585#discussion_r114561460
+            "res_init" if apple => true,
 
             _ => false,
         }

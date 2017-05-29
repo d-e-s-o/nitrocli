@@ -246,6 +246,12 @@ s! {
     }
 }
 
+pub const AT_FDCWD: ::c_int = -100;
+pub const AT_EACCESS: ::c_int = 0x100;
+pub const AT_SYMLINK_NOFOLLOW: ::c_int = 0x200;
+pub const AT_SYMLINK_FOLLOW: ::c_int = 0x400;
+pub const AT_REMOVEDIR: ::c_int = 0x800;
+
 pub const LC_COLLATE_MASK: ::c_int = (1 << ::LC_COLLATE);
 pub const LC_CTYPE_MASK: ::c_int = (1 << ::LC_CTYPE);
 pub const LC_MONETARY_MASK: ::c_int = (1 << ::LC_MONETARY);
@@ -634,6 +640,9 @@ pub const WNOWAIT: ::c_int = 0x00010000;
 pub const P_ALL: idtype_t = 0;
 pub const P_PID: idtype_t = 1;
 pub const P_PGID: idtype_t = 4;
+
+pub const B460800: ::speed_t = 460800;
+pub const B921600: ::speed_t = 921600;
 
 extern {
     pub fn aio_read(aiocbp: *mut aiocb) -> ::c_int;

@@ -49,5 +49,5 @@ path = "../pkg-config"
 "gcc:0.3.48" = { path = "../gcc" }
 "hid:0.4.0" = { path = "../hid" }
 "hidapi-sys:0.1.2" = { path = "../hidapi-sys" }
-"libc:0.2.21" = { path = "../libc" }
+"libc:0.2.23" = { path = "../libc" }
 "pkg-config:0.3.9" = { path = "../pkg-config" }

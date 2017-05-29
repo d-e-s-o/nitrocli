@@ -3,36 +3,36 @@ use dox::{mem, Option};
 pub type c_char = i8;
 pub type c_long = i64;
 pub type c_ulong = u64;
-pub type clockid_t = ::c_int;
 
-pub type blkcnt_t = i64;
-pub type clock_t = i64;
-pub type daddr_t = i64;
-pub type dev_t = u64;
-pub type fsblkcnt_t = u64;
-pub type fsfilcnt_t = u64;
-pub type ino_t = i64;
-pub type key_t = i32;
-pub type major_t = u32;
-pub type minor_t = u32;
-pub type mode_t = u32;
-pub type nlink_t = u32;
-pub type rlim_t = u64;
-pub type speed_t = u32;
-pub type tcflag_t = u32;
-pub type time_t = i64;
-pub type wchar_t = i32;
+pub type clockid_t = ::c_int;
+pub type blkcnt_t = ::c_long;
+pub type clock_t = ::c_long;
+pub type daddr_t = ::c_long;
+pub type dev_t = ::c_ulong;
+pub type fsblkcnt_t = ::c_ulong;
+pub type fsfilcnt_t = ::c_ulong;
+pub type ino_t = ::c_ulong;
+pub type key_t = ::c_int;
+pub type major_t = ::c_uint;
+pub type minor_t = ::c_uint;
+pub type mode_t = ::c_uint;
+pub type nlink_t = ::c_uint;
+pub type rlim_t = ::c_ulong;
+pub type speed_t = ::c_uint;
+pub type tcflag_t = ::c_uint;
+pub type time_t = ::c_long;
+pub type wchar_t = ::c_int;
 pub type nfds_t = ::c_ulong;
 
 pub type suseconds_t = ::c_long;
-pub type off_t = i64;
+pub type off_t = ::c_long;
 pub type useconds_t = ::c_uint;
-pub type socklen_t = u32;
-pub type sa_family_t = u8;
+pub type socklen_t = ::c_uint;
+pub type sa_family_t = u16;
 pub type pthread_t = ::c_uint;
 pub type pthread_key_t = ::c_uint;
-pub type blksize_t = u32;
-pub type fflags_t = u32;
+pub type blksize_t = ::c_int;
+pub type fflags_t = ::c_int;
 pub type nl_item = ::c_int;
 pub type id_t = ::c_int;
 pub type idtype_t = ::c_uint;
@@ -340,6 +340,14 @@ s! {
         pub if_index: ::c_uint,
         pub if_name: *mut ::c_char,
     }
+
+    pub struct port_event {
+        pub portev_events: ::c_int,
+        pub portev_source: ::c_ushort,
+        pub portev_pad: ::c_ushort,
+        pub portev_object: ::uintptr_t,
+        pub portev_user: ::uintptr_t,
+    }
 }
 
 pub const LC_CTYPE: ::c_int = 0;
@@ -441,7 +449,13 @@ pub const SA_NOCLDSTOP: ::c_int = 0x00020000;
 pub const SS_ONSTACK: ::c_int = 1;
 pub const SS_DISABLE: ::c_int = 2;
 
+pub const FIOCLEX: ::c_int = 0x20006601;
+pub const FIONCLEX: ::c_int = 0x20006602;
+pub const FIONREAD: ::c_int = 0x4004667f;
 pub const FIONBIO: ::c_int = 0x8004667e;
+pub const FIOASYNC: ::c_int = 0x8004667d;
+pub const FIOSETOWN: ::c_int = 0x8004667c;
+pub const FIOGETOWN: ::c_int = 0x4004667b;
 
 pub const SIGCHLD: ::c_int = 18;
 pub const SIGBUS: ::c_int = 10;
@@ -485,6 +499,8 @@ pub const TMP_MAX: ::c_uint = 17576;
 pub const O_RDONLY: ::c_int = 0;
 pub const O_WRONLY: ::c_int = 1;
 pub const O_RDWR: ::c_int = 2;
+pub const O_SEARCH: ::c_int = 0x200000;
+pub const O_EXEC: ::c_int = 0x400000;
 pub const O_APPEND: ::c_int = 8;
 pub const O_CREAT: ::c_int = 256;
 pub const O_EXCL: ::c_int = 1024;
@@ -609,7 +625,7 @@ pub const E2BIG: ::c_int = 7;
 pub const ENOEXEC: ::c_int = 8;
 pub const EBADF: ::c_int = 9;
 pub const ECHILD: ::c_int = 10;
-pub const EDEADLK: ::c_int = 45;
+pub const EAGAIN: ::c_int = 11;
 pub const ENOMEM: ::c_int = 12;
 pub const EACCES: ::c_int = 13;
 pub const EFAULT: ::c_int = 14;
@@ -633,11 +649,65 @@ pub const EMLINK: ::c_int = 31;
 pub const EPIPE: ::c_int = 32;
 pub const EDOM: ::c_int = 33;
 pub const ERANGE: ::c_int = 34;
+pub const ENOMSG: ::c_int = 35;
+pub const EIDRM: ::c_int = 36;
+pub const ECHRNG: ::c_int = 37;
+pub const EL2NSYNC: ::c_int = 38;
+pub const EL3HLT: ::c_int = 39;
+pub const EL3RST: ::c_int = 40;
+pub const ELNRNG: ::c_int = 41;
+pub const EUNATCH: ::c_int = 42;
+pub const ENOCSI: ::c_int = 43;
+pub const EL2HLT: ::c_int = 44;
+pub const EDEADLK: ::c_int = 45;
+pub const ENOLCK: ::c_int = 46;
+pub const ECANCELED: ::c_int = 47;
 pub const ENOTSUP: ::c_int = 48;
-pub const EAGAIN: ::c_int = 11;
-pub const EWOULDBLOCK: ::c_int = 11;
-pub const EINPROGRESS: ::c_int = 150;
-pub const EALREADY: ::c_int = 149;
+pub const EDQUOT: ::c_int = 49;
+pub const EBADE: ::c_int = 50;
+pub const EBADR: ::c_int = 51;
+pub const EXFULL: ::c_int = 52;
+pub const ENOANO: ::c_int = 53;
+pub const EBADRQC: ::c_int = 54;
+pub const EBADSLT: ::c_int = 55;
+pub const EDEADLOCK: ::c_int = 56;
+pub const EBFONT: ::c_int = 57;
+pub const EOWNERDEAD: ::c_int = 58;
+pub const ENOTRECOVERABLE: ::c_int = 59;
+pub const ENOSTR: ::c_int = 60;
+pub const ENODATA: ::c_int = 61;
+pub const ETIME: ::c_int = 62;
+pub const ENOSR: ::c_int = 63;
+pub const ENONET: ::c_int = 64;
+pub const ENOPKG: ::c_int = 65;
+pub const EREMOTE: ::c_int = 66;
+pub const ENOLINK: ::c_int = 67;
+pub const EADV: ::c_int = 68;
+pub const ESRMNT: ::c_int = 69;
+pub const ECOMM: ::c_int = 70;
+pub const EPROTO: ::c_int = 71;
+pub const ELOCKUNMAPPED: ::c_int = 72;
+pub const ENOTACTIVE: ::c_int = 73;
+pub const EMULTIHOP: ::c_int = 74;
+pub const EADI: ::c_int = 75;
+pub const EBADMSG: ::c_int = 77;
+pub const ENAMETOOLONG: ::c_int = 78;
+pub const EOVERFLOW: ::c_int = 79;
+pub const ENOTUNIQ: ::c_int = 80;
+pub const EBADFD: ::c_int = 81;
+pub const EREMCHG: ::c_int = 82;
+pub const ELIBACC: ::c_int = 83;
+pub const ELIBBAD: ::c_int = 84;
+pub const ELIBSCN: ::c_int = 85;
+pub const ELIBMAX: ::c_int = 86;
+pub const ELIBEXEC: ::c_int = 87;
+pub const EILSEQ: ::c_int = 88;
+pub const ENOSYS: ::c_int = 89;
+pub const ELOOP: ::c_int = 90;
+pub const ERESTART: ::c_int = 91;
+pub const ESTRPIPE: ::c_int = 92;
+pub const ENOTEMPTY: ::c_int = 93;
+pub const EUSERS: ::c_int = 94;
 pub const ENOTSOCK: ::c_int = 95;
 pub const EDESTADDRREQ: ::c_int = 96;
 pub const EMSGSIZE: ::c_int = 97;
@@ -662,26 +732,11 @@ pub const ESHUTDOWN: ::c_int = 143;
 pub const ETOOMANYREFS: ::c_int = 144;
 pub const ETIMEDOUT: ::c_int = 145;
 pub const ECONNREFUSED: ::c_int = 146;
-pub const ELOOP: ::c_int = 90;
-pub const ENAMETOOLONG: ::c_int = 78;
 pub const EHOSTDOWN: ::c_int = 147;
 pub const EHOSTUNREACH: ::c_int = 148;
-pub const ENOTEMPTY: ::c_int = 93;
-pub const EUSERS: ::c_int = 94;
-pub const EDQUOT: ::c_int = 49;
-pub const ESTALE: ::c_int = 151;
-pub const EREMOTE: ::c_int = 66;
-pub const ENOLCK: ::c_int = 46;
-pub const ENOSYS: ::c_int = 89;
-pub const EIDRM: ::c_int = 36;
-pub const ENOMSG: ::c_int = 35;
-pub const EOVERFLOW: ::c_int = 79;
-pub const ECANCELED: ::c_int = 47;
-pub const EILSEQ: ::c_int = 88;
-pub const EBADMSG: ::c_int = 77;
-pub const EMULTIHOP: ::c_int = 74;
-pub const ENOLINK: ::c_int = 67;
-pub const EPROTO: ::c_int = 71;
+pub const EWOULDBLOCK: ::c_int = EAGAIN;
+pub const EALREADY: ::c_int = 149;
+pub const EINPROGRESS: ::c_int = 150;
 
 pub const EAI_SYSTEM: ::c_int = 11;
 
@@ -957,6 +1012,16 @@ pub const RTLD_NODELETE: ::c_int = 0x1000;
 pub const RTLD_FIRST: ::c_int = 0x2000;
 pub const RTLD_CONFGEN: ::c_int = 0x10000;
 
+pub const PORT_SOURCE_AIO: ::c_int = 1;
+pub const PORT_SOURCE_TIMER: ::c_int = 2;
+pub const PORT_SOURCE_USER: ::c_int = 3;
+pub const PORT_SOURCE_FD: ::c_int = 4;
+pub const PORT_SOURCE_ALERT: ::c_int = 5;
+pub const PORT_SOURCE_MQ: ::c_int = 6;
+pub const PORT_SOURCE_FILE: ::c_int = 7;
+pub const PORT_SOURCE_POSTWAIT: ::c_int = 8;
+pub const PORT_SOURCE_SIGNAL: ::c_int = 9;
+
 f! {
     pub fn FD_CLR(fd: ::c_int, set: *mut fd_set) -> () {
         let bits = mem::size_of_val(&(*set).fds_bits[0]) * 8;
@@ -1052,33 +1117,10 @@ extern {
     pub fn getpriority(which: ::c_int, who: ::c_int) -> ::c_int;
     pub fn setpriority(which: ::c_int, who: ::c_int, prio: ::c_int) -> ::c_int;
 
-    pub fn openat(dirfd: ::c_int, pathname: *const ::c_char,
-                  flags: ::c_int, ...) -> ::c_int;
-    pub fn faccessat(dirfd: ::c_int, pathname: *const ::c_char,
-                     mode: ::c_int, flags: ::c_int) -> ::c_int;
-    pub fn fchmodat(dirfd: ::c_int, pathname: *const ::c_char,
-                    mode: ::mode_t, flags: ::c_int) -> ::c_int;
-    pub fn fchownat(dirfd: ::c_int, pathname: *const ::c_char,
-                    owner: ::uid_t, group: ::gid_t,
-                    flags: ::c_int) -> ::c_int;
-    pub fn fstatat(dirfd: ::c_int, pathname: *const ::c_char,
-                   buf: *mut stat, flags: ::c_int) -> ::c_int;
-    pub fn linkat(olddirfd: ::c_int, oldpath: *const ::c_char,
-                  newdirfd: ::c_int, newpath: *const ::c_char,
-                  flags: ::c_int) -> ::c_int;
-    pub fn mkdirat(dirfd: ::c_int, pathname: *const ::c_char,
-                   mode: ::mode_t) -> ::c_int;
+    pub fn fdopendir(fd: ::c_int) -> *mut ::DIR;
+
     pub fn mknodat(dirfd: ::c_int, pathname: *const ::c_char,
                    mode: ::mode_t, dev: dev_t) -> ::c_int;
-    pub fn readlinkat(dirfd: ::c_int, pathname: *const ::c_char,
-                      buf: *mut ::c_char, bufsiz: ::size_t) -> ::ssize_t;
-    pub fn renameat(olddirfd: ::c_int, oldpath: *const ::c_char,
-                    newdirfd: ::c_int, newpath: *const ::c_char)
-                    -> ::c_int;
-    pub fn symlinkat(target: *const ::c_char, newdirfd: ::c_int,
-                     linkpath: *const ::c_char) -> ::c_int;
-    pub fn unlinkat(dirfd: ::c_int, pathname: *const ::c_char,
-                    flags: ::c_int) -> ::c_int;
     pub fn mkfifoat(dirfd: ::c_int, pathname: *const ::c_char,
                     mode: ::mode_t) -> ::c_int;
     pub fn sethostname(name: *const ::c_char, len: ::size_t) -> ::c_int;
@@ -1138,4 +1180,15 @@ extern {
                    flags: ::c_int) -> ::ssize_t;
     pub fn recvmsg(fd: ::c_int, msg: *mut ::msghdr, flags: ::c_int)
                    -> ::ssize_t;
+
+    pub fn port_create() -> ::c_int;
+    pub fn port_associate(port: ::c_int, source: ::c_int, object: ::uintptr_t,
+                          events: ::c_int, user: ::uintptr_t) -> ::c_int;
+    pub fn port_dissociate(port: ::c_int, source: ::c_int, object: ::uintptr_t)
+                           -> ::c_int;
+    pub fn port_get(port: ::c_int, pe: *mut port_event,
+                    timeout: *const ::timespec) -> ::c_int;
+    pub fn port_getn(port: ::c_int, pe_list: *mut port_event, max: ::c_uint,
+                     nget: *mut ::c_uint, timeout: *const ::timespec)
+                     -> ::c_int;
 }

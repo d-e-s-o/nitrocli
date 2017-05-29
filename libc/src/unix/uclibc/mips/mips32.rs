@@ -15,33 +15,16 @@ pub type fsfilcnt_t = ::c_ulong;
 pub type rlim_t = c_ulong;
 
 s! {
-    pub struct aiocb {
-        pub aio_fildes: ::c_int,
-        pub aio_lio_opcode: ::c_int,
-        pub aio_reqprio: ::c_int,
-        pub aio_buf: *mut ::c_void,
-        pub aio_nbytes: ::size_t,
-        pub aio_sigevent: ::sigevent,
-        __next_prio: *mut aiocb,
-        __abs_prio: ::c_int,
-        __policy: ::c_int,
-        __error_code: ::c_int,
-        __return_value: ::ssize_t,
-        pub aio_offset: off_t,
-        __unused1: [::c_char; 4],
-        __glibc_reserved: [::c_char; 32]
-    }
-
     pub struct stat {
-        pub st_dev: ::c_ulong,
-        st_pad1: [::c_long; 3],
+        pub st_dev: ::dev_t,
+        st_pad1: [::c_long; 2],
         pub st_ino: ::ino_t,
         pub st_mode: ::mode_t,
         pub st_nlink: ::nlink_t,
         pub st_uid: ::uid_t,
         pub st_gid: ::gid_t,
-        pub st_rdev: ::c_ulong,
-        pub st_pad2: [::c_long; 2],
+        pub st_rdev: ::dev_t,
+        pub st_pad2: [::c_long; 1],
         pub st_size: ::off_t,
         st_pad3: ::c_long,
         pub st_atime: ::time_t,
@@ -56,14 +39,14 @@ s! {
     }
 
     pub struct stat64 {
-        pub st_dev: ::c_ulong,
-        st_pad1: [::c_long; 3],
+        pub st_dev: ::dev_t,
+        st_pad1: [::c_long; 2],
         pub st_ino: ::ino64_t,
         pub st_mode: ::mode_t,
         pub st_nlink: ::nlink_t,
         pub st_uid: ::uid_t,
         pub st_gid: ::gid_t,
-        pub st_rdev: ::c_ulong,
+        pub st_rdev: ::dev_t,
         st_pad2: [::c_long; 2],
         pub st_size: ::off64_t,
         pub st_atime: ::time_t,
@@ -83,11 +66,10 @@ s! {
     }
 
     pub struct sigaction {
-        pub sa_flags: ::c_int,
+        pub sa_flags: ::c_uint,
         pub sa_sigaction: ::sighandler_t,
         pub sa_mask: sigset_t,
-        pub sa_restorer: ::dox::Option<extern fn()>,
-        _resv: [::c_int; 1],
+        _restorer: *mut ::c_void,
     }
 
     pub struct stack_t {
@@ -97,7 +79,7 @@ s! {
     }
 
     pub struct sigset_t {
-        __val: [::c_ulong; 32],
+        __val: [::c_ulong; 4],
     }
 
     pub struct siginfo_t {
@@ -191,7 +173,7 @@ s! {
         pub msg_name: *mut ::c_void,
         pub msg_namelen: ::socklen_t,
         pub msg_iov: *mut ::iovec,
-        pub msg_iovlen: ::size_t,
+        pub msg_iovlen: ::c_int,
         pub msg_control: *mut ::c_void,
         pub msg_controllen: ::size_t,
         pub msg_flags: ::c_int,
