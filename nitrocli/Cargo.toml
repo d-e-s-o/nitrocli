@@ -31,18 +31,23 @@ A command line tool for interacting with the Nitrokey Storage device.
 """
 
 [dependencies.gcc]
+version = "0.3.48"
 path = "../gcc"
 
 [dependencies.hid]
+version = "0.4.0"
 path = "../hid"
 
 [dependencies.hidapi-sys]
+version = "0.1.2"
 path = "../hidapi-sys"
 
 [dependencies.libc]
+version = "0.2.23"
 path = "../libc"
 
 [dependencies.pkg-config]
+version = "0.3.9"
 path = "../pkg-config"
 
 [replace]
