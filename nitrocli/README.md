@@ -10,6 +10,14 @@ The following commands are currently supported:
 - status: Report status information about the Nitrokey.
 - clear: Remove the user PIN from gpg-agent's cache.
 
+### *Note:*
+----------------------------------------------------------------------
+> **nitrocli** requires the Nitrokey Storage to be running **firmware
+> version 0.47** or higher. Versions before that reported incorrect
+> checksums which will cause the program to indicate data retrieval
+> errors, causing commands to fail.
+----------------------------------------------------------------------
+
 
 Usage
 -----
@@ -23,7 +31,7 @@ $ nitrocli open
 $ nitrocli status
 Status:
   SD card ID:        0xdeadbeef
-  firmware version:  0.44
+  firmware version:  0.47
   firmware:          unlocked
   storage keys:      created
   user retry count:  3

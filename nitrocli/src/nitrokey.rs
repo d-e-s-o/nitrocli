@@ -78,11 +78,7 @@ impl<P> Report<P>
   }
 
   pub fn is_valid(&self) -> bool {
-    // TODO: Certain commands return a wrong CRC code that does not
-    //       match the actual report content. For now we defuse the
-    //       check but that cannot stay.
-    // return self.crc == crc(self.data.as_ref());
-    return self.crc != 0;
+    return self.crc == crc(self.data.as_ref());
   }
 }
 
