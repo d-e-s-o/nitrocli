@@ -23,7 +23,7 @@ $ nitrocli open
 $ nitrocli status
 Status:
   SD card ID:        0xdeadbeef
-  firmware version:  44.0
+  firmware version:  0.44
   firmware:          unlocked
   storage keys:      created
   user retry count:  3
