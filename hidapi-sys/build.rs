@@ -38,7 +38,7 @@ fn fetch() -> io::Result<()> {
 
 #[cfg(target_os = "linux")]
 fn build() -> io::Result<()> {
-	let mut config = gcc::Config::new();
+	let mut config = gcc::Build::new();
 
 	config.file(source().join("libusb/hid.c"));
 	config.include(source().join("hidapi"));
@@ -54,7 +54,7 @@ fn build() -> io::Result<()> {
 
 #[cfg(target_os = "macos")]
 fn build() -> io::Result<()> {
-	let mut config = gcc::Config::new();
+	let mut config = gcc::Build::new();
 
 	config.file(source().join("libusb/hid.c"));
 	config.include(source().join("hidapi"));
@@ -70,7 +70,7 @@ fn build() -> io::Result<()> {
 
 #[cfg(target_os = "windows")]
 fn build() -> io::Result<()> {
-	let mut config = gcc::Config::new();
+	let mut config = gcc::Build::new();
 
 	config.file(source().join("windows/hid.c"));
 	config.include(source().join("hidapi"));
