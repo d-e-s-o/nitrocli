@@ -87,6 +87,7 @@ pub fn find_tool(target: &str, tool: &str) -> Option<Tool> {
 }
 
 /// A version of Visual Studio
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum VsVers {
     /// Visual Studio 12 (2013)
     Vs12,
@@ -99,6 +100,7 @@ pub enum VsVers {
     /// handle an enumeration of `VsVers` instances should always have a default
     /// case meaning that it's a VS version they don't understand.
     #[doc(hidden)]
+    #[allow(bad_style)]
     __Nonexhaustive_do_not_match_this_or_your_code_will_break,
 }
 
@@ -195,6 +197,10 @@ mod impl_ {
     // In MSVC 15 (2017) MS once again changed the scheme for locating
     // the tooling.  Now we must go through some COM interfaces, which
     // is super fun for Rust.
+    //
+    // Note that much of this logic can be found [online] wrt paths, COM, etc.
+    //
+    // [online]: https://blogs.msdn.microsoft.com/vcblog/2017/03/06/finding-the-visual-c-compiler-tools-in-visual-studio-2017/
     pub fn find_msvc_15(tool: &str, target: &str) -> Option<Tool> {
         otry!(com::initialize().ok());
 
@@ -213,12 +219,12 @@ mod impl_ {
 
     fn tool_from_vs15_instance(tool: &str, target: &str,
                                instance: &SetupInstance) -> Option<Tool> {
-        let (bin_path, lib_path, include_path) = otry!(vs15_vc_paths(target, instance));
+        let (bin_path, host_dylib_path, lib_path, include_path) = otry!(vs15_vc_paths(target, instance));
         let tool_path = bin_path.join(tool);
         if !tool_path.exists() { return None };
 
         let mut tool = MsvcTool::new(tool_path);
-        tool.path.push(bin_path.clone());
+        tool.path.push(host_dylib_path);
         tool.libs.push(lib_path);
         tool.include.push(include_path);
 
@@ -232,7 +238,7 @@ mod impl_ {
         Some(tool.into_tool())
     }
 
-    fn vs15_vc_paths(target: &str, instance: &SetupInstance) -> Option<(PathBuf, PathBuf, PathBuf)> {
+    fn vs15_vc_paths(target: &str, instance: &SetupInstance) -> Option<(PathBuf, PathBuf, PathBuf, PathBuf)> {
         let instance_path: PathBuf = otry!(instance.installation_path().ok()).into();
         let version_path = instance_path.join(r"VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt");
         let mut version_file = otry!(File::open(version_path).ok());
@@ -245,11 +251,18 @@ mod impl_ {
             _ => return None,
         };
         let target = otry!(lib_subdir(target));
+        // The directory layout here is MSVC/bin/Host$host/$target/
         let path = instance_path.join(r"VC\Tools\MSVC").join(version);
+        // This is the path to the toolchain for a particular target, running
+        // on a given host
         let bin_path = path.join("bin").join(&format!("Host{}", host)).join(&target);
+        // But! we also need PATH to contain the target directory for the host
+        // architecture, because it contains dlls like mspdb140.dll compiled for
+        // the host architecture.
+        let host_dylib_path = path.join("bin").join(&format!("Host{}", host)).join(&host.to_lowercase());
         let lib_path = path.join("lib").join(&target);
         let include_path = path.join("include");
-        Some((bin_path, lib_path, include_path))
+        Some((bin_path, host_dylib_path, lib_path, include_path))
     }
 
     fn atl_paths(target: &str, path: &Path) -> Option<(PathBuf, PathBuf)> {

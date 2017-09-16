@@ -1,7 +1,7 @@
 [package]
 
 name = "gcc"
-version = "0.3.48"
+version = "0.3.54"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT/Apache-2.0"
 repository = "https://github.com/alexcrichton/gcc-rs"
@@ -12,13 +12,15 @@ C compiler to compile native C code into a static archive to be linked into Rust
 code.
 """
 keywords = ["build-dependencies"]
+readme = "README.md"
+categories = ["development-tools"]
 
 [badges]
 travis-ci = { repository = "alexcrichton/gcc-rs" }
 appveyor = { repository = "alexcrichton/gcc-rs" }
 
 [dependencies]
-rayon = { version = "0.7", optional = true }
+rayon = { version = "0.8", optional = true }
 
 [features]
 parallel = ["rayon"]

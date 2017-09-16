@@ -31,7 +31,7 @@ A command line tool for interacting with the Nitrokey Storage device.
 """
 
 [dependencies.gcc]
-version = "0.3.48"
+version = "0.3.54"
 path = "../gcc"
 
 [dependencies.hid]
@@ -51,7 +51,7 @@ version = "0.3.9"
 path = "../pkg-config"
 
 [replace]
-"gcc:0.3.48" = { path = "../gcc" }
+"gcc:0.3.54" = { path = "../gcc" }
 "hid:0.4.0" = { path = "../hid" }
 "hidapi-sys:0.1.2" = { path = "../hidapi-sys" }
 "libc:0.2.23" = { path = "../libc" }

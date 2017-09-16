@@ -9,36 +9,38 @@ fn main() {
     fs::remove_dir_all(&out).unwrap();
     fs::create_dir(&out).unwrap();
 
-    gcc::Config::new()
+    gcc::Build::new()
         .file("src/foo.c")
+        .flag_if_supported("-Wall")
+        .flag_if_supported("-Wfoo-bar-this-flag-does-not-exist")
         .define("FOO", None)
-        .define("BAR", Some("1"))
-        .compile("libfoo.a");
+        .define("BAR", "1")
+        .compile("foo");
 
-    gcc::Config::new()
+    gcc::Build::new()
         .file("src/bar1.c")
         .file("src/bar2.c")
         .include("src/include")
-        .compile("libbar.a");
+        .compile("bar");
 
     let target = std::env::var("TARGET").unwrap();
     let file = target.split("-").next().unwrap();
     let file = format!("src/{}.{}",
                        file,
                        if target.contains("msvc") { "asm" } else { "S" });
-    gcc::Config::new()
+    gcc::Build::new()
         .file(file)
-        .compile("libasm.a");
+        .compile("asm");
 
-    gcc::Config::new()
+    gcc::Build::new()
         .file("src/baz.cpp")
         .cpp(true)
-        .compile("libbaz.a");
+        .compile("baz");
 
     if target.contains("windows") {
-        gcc::Config::new()
+        gcc::Build::new()
             .file("src/windows.c")
-            .compile("libwindows.a");
+            .compile("windows");
     }
 
     // Test that the `windows_registry` module will set PATH by looking for
@@ -50,6 +52,7 @@ fn main() {
         println!("nmake 1");
         let status = gcc::windows_registry::find(&target, "nmake.exe")
             .unwrap()
+            .env_remove("MAKEFLAGS")
             .arg("/fsrc/NMakefile")
             .env("OUT_DIR", &out)
             .status()
@@ -66,6 +69,7 @@ fn main() {
         println!("nmake 2");
         let status = gcc::windows_registry::find(&target, "nmake.exe")
             .unwrap()
+            .env_remove("MAKEFLAGS")
             .arg("/fsrc/NMakefile")
             .env("OUT_DIR", &out)
             .status()
@@ -77,12 +81,12 @@ fn main() {
 
     // This tests whether we  can build a library but not link it to the main
     // crate.  The test module will do its own linking.
-    gcc::Config::new()
+    gcc::Build::new()
         .cargo_metadata(false)
         .file("src/opt_linkage.c")
-        .compile("libOptLinkage.a");
+        .compile("OptLinkage");
 
-    let out = gcc::Config::new()
+    let out = gcc::Build::new()
         .file("src/expand.c")
         .expand();
     let out = String::from_utf8(out).unwrap();
