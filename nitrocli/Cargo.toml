@@ -43,7 +43,7 @@ version = "0.1.2"
 path = "../hidapi-sys"
 
 [dependencies.libc]
-version = "0.2.23"
+version = "0.2.30"
 path = "../libc"
 
 [dependencies.pkg-config]
@@ -54,5 +54,5 @@ path = "../pkg-config"
 "gcc:0.3.54" = { path = "../gcc" }
 "hid:0.4.0" = { path = "../hid" }
 "hidapi-sys:0.1.2" = { path = "../hidapi-sys" }
-"libc:0.2.23" = { path = "../libc" }
+"libc:0.2.30" = { path = "../libc" }
 "pkg-config:0.3.9" = { path = "../pkg-config" }
