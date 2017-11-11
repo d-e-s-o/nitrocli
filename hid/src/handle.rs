@@ -4,6 +4,7 @@ use libc::c_int;
 use sys::*;
 use error::{self, Error};
 
+/// A device handle.
 pub struct Handle {
 	ptr: *mut hid_device,
 }
@@ -131,7 +132,7 @@ impl<'a> Data<'a> {
 	///
 	/// Returns the report ID and the amount of read bytes or `None` if there was a timeout.
 	pub fn read_from<T: AsMut<[u8]>>(&mut self, mut data: T, timeout: Duration) -> error::Result<Option<(u8, usize)>> {
-		let mut data   = data.as_mut();
+		let     data   = data.as_mut();
 		let mut buffer = Vec::with_capacity(data.len() + 1);
 
 		if let Some(length) = self.read(&mut buffer, timeout)? {

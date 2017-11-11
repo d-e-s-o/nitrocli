@@ -13,5 +13,5 @@ pub use devices::Devices;
 mod device;
 pub use device::Device;
 
-mod handle;
+pub mod handle;
 pub use handle::Handle;

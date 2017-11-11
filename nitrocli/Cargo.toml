@@ -35,7 +35,7 @@ version = "0.3.54"
 path = "../gcc"
 
 [dependencies.hid]
-version = "0.4.0"
+version = "0.4.1"
 path = "../hid"
 
 [dependencies.hidapi-sys]
@@ -52,7 +52,7 @@ path = "../pkg-config"
 
 [replace]
 "gcc:0.3.54" = { path = "../gcc" }
-"hid:0.4.0" = { path = "../hid" }
+"hid:0.4.1" = { path = "../hid" }
 "hidapi-sys:0.1.2" = { path = "../hidapi-sys" }
 "libc:0.2.30" = { path = "../libc" }
 "pkg-config:0.3.9" = { path = "../pkg-config" }
