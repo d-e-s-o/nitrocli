@@ -1,4 +1,4 @@
-extern crate gcc;
+extern crate cc;
 extern crate pkg_config;
 
 use std::env;
@@ -11,8 +11,8 @@ fn main() {
 		return;
 	}
 
-	fetch().unwrap();
-	build().unwrap();
+	fetch().expect("failed to checkout hidapi sources, internet connection and git are needed");
+	build().expect("failed to build hidapi sources");
 
 	println!("cargo:rustc-link-search=native={}", output().to_string_lossy());
 }
@@ -22,10 +22,19 @@ fn output() -> PathBuf {
 }
 
 fn source() -> PathBuf {
-	output().join("hidapi")
+	if let Ok(path) = env::var("HIDAPI_PATH") {
+		path.into()
+	}
+	else {
+		output().join("hidapi")
+	}
 }
 
 fn fetch() -> io::Result<()> {
+	if env::var("HIDAPI_PATH").is_ok() {
+		return Ok(());
+	}
+
 	Command::new("git")
 		.current_dir(&output())
 		.arg("clone")
@@ -38,44 +47,47 @@ fn fetch() -> io::Result<()> {
 
 #[cfg(target_os = "linux")]
 fn build() -> io::Result<()> {
-	let mut config = gcc::Build::new();
+	let mut build = cc::Build::new();
 
-	config.file(source().join("libusb/hid.c"));
-	config.include(source().join("hidapi"));
+	build.file(source().join("libusb/hid.c"));
+	build.include(source().join("hidapi"));
+	build.static_flag(true);
 
 	for path in pkg_config::find_library("libusb-1.0").unwrap().include_paths {
-		config.include(path.to_str().unwrap());
+		build.include(path.to_str().unwrap());
 	}
 
-	config.compile("libhidapi-libusb.a");
+	build.compile("libhidapi-libusb.a");
 
 	Ok(())
 }
 
 #[cfg(target_os = "macos")]
 fn build() -> io::Result<()> {
-	let mut config = gcc::Build::new();
+	let mut build = cc::Build::new();
 
-	config.file(source().join("libusb/hid.c"));
-	config.include(source().join("hidapi"));
+	build.file(source().join("libusb/hid.c"));
+	build.include(source().join("hidapi"));
+	build.static_flag(true);
 
 	for path in pkg_config::find_library("libusb-1.0").unwrap().include_paths {
-		config.include(path.to_str().unwrap());
+		build.include(path.to_str().unwrap());
 	}
 
-	config.compile("libhidapi.a");
+	build.compile("libhidapi.a");
 
 	Ok(())
 }
 
 #[cfg(target_os = "windows")]
 fn build() -> io::Result<()> {
-	let mut config = gcc::Build::new();
+	let mut build = cc::Build::new();
 
-	config.file(source().join("windows/hid.c"));
-	config.include(source().join("hidapi"));
+	build.file(source().join("windows/hid.c"));
+	build.include(source().join("hidapi"));
+	build.static_flag(true);
 
-	config.compile("libhidapi.a");
+	build.compile("libhidapi.a");
 
 	Ok(())
 }
