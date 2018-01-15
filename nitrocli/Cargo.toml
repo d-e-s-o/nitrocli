@@ -1,7 +1,7 @@
 # Cargo.toml
 
 #/***************************************************************************
-# *   Copyright (C) 2017 Daniel Mueller (deso@posteo.net)                   *
+# *   Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU General Public License as published by  *
@@ -43,7 +43,7 @@ version = "0.1.2"
 path = "../hidapi-sys"
 
 [dependencies.libc]
-version = "0.2.30"
+version = "0.2.36"
 path = "../libc"
 
 [dependencies.pkg-config]
@@ -54,5 +54,5 @@ path = "../pkg-config"
 "gcc:0.3.54" = { path = "../gcc" }
 "hid:0.4.1" = { path = "../hid" }
 "hidapi-sys:0.1.2" = { path = "../hidapi-sys" }
-"libc:0.2.30" = { path = "../libc" }
+"libc:0.2.36" = { path = "../libc" }
 "pkg-config:0.3.9" = { path = "../pkg-config" }

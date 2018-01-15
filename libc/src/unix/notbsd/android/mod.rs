@@ -84,6 +84,17 @@ s! {
         pub c_cc: [::cc_t; ::NCCS],
     }
 
+    pub struct termios2 {
+        pub c_iflag: ::tcflag_t,
+        pub c_oflag: ::tcflag_t,
+        pub c_cflag: ::tcflag_t,
+        pub c_lflag: ::tcflag_t,
+        pub c_line: ::cc_t,
+        pub c_cc: [::cc_t; 19],
+        pub c_ispeed: ::speed_t,
+        pub c_ospeed: ::speed_t,
+    }
+
     pub struct flock {
         pub l_type: ::c_short,
         pub l_whence: ::c_short,
@@ -167,6 +178,12 @@ s! {
         pub ssi_addr: ::c_ulonglong,
         pub ssi_addr_lsb: ::uint16_t,
         _pad: [::uint8_t; 46],
+    }
+
+    pub struct ucred {
+        pub pid: ::pid_t,
+        pub uid: ::uid_t,
+        pub gid: ::gid_t,
     }
 }
 
@@ -485,6 +502,8 @@ pub const ENOTRECOVERABLE: ::c_int = 131;
 pub const SOCK_STREAM: ::c_int = 1;
 pub const SOCK_DGRAM: ::c_int = 2;
 pub const SOCK_SEQPACKET: ::c_int = 5;
+pub const SOCK_DCCP: ::c_int = 6;
+pub const SOCK_PACKET: ::c_int = 10;
 
 pub const SOL_SOCKET: ::c_int = 1;
 pub const SOL_SCTP: ::c_int = 132;
@@ -498,6 +517,27 @@ pub const SOL_ROSE: ::c_int = 260;
 pub const AF_MAX: ::c_int = 43;
 #[doc(hidden)]
 pub const PF_MAX: ::c_int = AF_MAX;
+
+/* DCCP socket options */
+pub const DCCP_SOCKOPT_PACKET_SIZE: ::c_int = 1;
+pub const DCCP_SOCKOPT_SERVICE: ::c_int = 2;
+pub const DCCP_SOCKOPT_CHANGE_L: ::c_int = 3;
+pub const DCCP_SOCKOPT_CHANGE_R: ::c_int = 4;
+pub const DCCP_SOCKOPT_GET_CUR_MPS: ::c_int = 5;
+pub const DCCP_SOCKOPT_SERVER_TIMEWAIT: ::c_int = 6;
+pub const DCCP_SOCKOPT_SEND_CSCOV: ::c_int = 10;
+pub const DCCP_SOCKOPT_RECV_CSCOV: ::c_int = 11;
+pub const DCCP_SOCKOPT_AVAILABLE_CCIDS: ::c_int = 12;
+pub const DCCP_SOCKOPT_CCID: ::c_int = 13;
+pub const DCCP_SOCKOPT_TX_CCID: ::c_int = 14;
+pub const DCCP_SOCKOPT_RX_CCID: ::c_int = 15;
+pub const DCCP_SOCKOPT_QPOLICY_ID: ::c_int = 16;
+pub const DCCP_SOCKOPT_QPOLICY_TXQLEN: ::c_int = 17;
+pub const DCCP_SOCKOPT_CCID_RX_INFO: ::c_int = 128;
+pub const DCCP_SOCKOPT_CCID_TX_INFO: ::c_int = 192;
+
+/// maximum number of services provided on the same listening port
+pub const DCCP_SERVICE_LIST_MAX_LEN: ::c_int = 32;
 
 pub const SO_REUSEADDR: ::c_int = 2;
 pub const SO_TYPE: ::c_int = 3;
@@ -644,6 +684,16 @@ pub const TIOCMSET: ::c_int = 0x5418;
 pub const FIONREAD: ::c_int = 0x541B;
 pub const TIOCCONS: ::c_int = 0x541D;
 
+pub const ST_RDONLY: ::c_ulong = 1;
+pub const ST_NOSUID: ::c_ulong = 2;
+pub const ST_NODEV: ::c_ulong = 4;
+pub const ST_NOEXEC: ::c_ulong = 8;
+pub const ST_SYNCHRONOUS: ::c_ulong = 16;
+pub const ST_MANDLOCK: ::c_ulong = 64;
+pub const ST_NOATIME: ::c_ulong = 1024;
+pub const ST_NODIRATIME: ::c_ulong = 2048;
+pub const ST_RELATIME: ::c_ulong = 4096;
+
 pub const RTLD_NOLOAD: ::c_int = 0x4;
 
 pub const SEM_FAILED: *mut sem_t = 0 as *mut sem_t;
@@ -734,6 +784,7 @@ pub const B19200: ::speed_t = 0o000016;
 pub const B38400: ::speed_t = 0o000017;
 pub const EXTA: ::speed_t = B19200;
 pub const EXTB: ::speed_t = B38400;
+pub const BOTHER: ::speed_t = 0o010000;
 pub const B57600: ::speed_t = 0o010001;
 pub const B115200: ::speed_t = 0o010002;
 pub const B230400: ::speed_t = 0o010003;
@@ -750,7 +801,17 @@ pub const B3000000: ::speed_t = 0o010015;
 pub const B3500000: ::speed_t = 0o010016;
 pub const B4000000: ::speed_t = 0o010017;
 
+pub const EAI_AGAIN: ::c_int = 2;
+pub const EAI_BADFLAGS: ::c_int = 3;
+pub const EAI_FAIL: ::c_int = 4;
+pub const EAI_FAMILY: ::c_int = 5;
+pub const EAI_MEMORY: ::c_int = 6;
+pub const EAI_NODATA: ::c_int = 7;
+pub const EAI_NONAME: ::c_int = 8;
+pub const EAI_SERVICE: ::c_int = 9;
+pub const EAI_SOCKTYPE: ::c_int = 10;
 pub const EAI_SYSTEM: ::c_int = 11;
+pub const EAI_OVERFLOW: ::c_int = 14;
 
 pub const NETLINK_ROUTE: ::c_int = 0;
 pub const NETLINK_UNUSED: ::c_int = 1;
@@ -807,6 +868,13 @@ pub const NETLINK_NO_ENOBUFS: ::c_int = 5;
 pub const NETLINK_RX_RING: ::c_int = 6;
 pub const NETLINK_TX_RING: ::c_int = 7;
 
+pub const GRND_NONBLOCK: ::c_uint = 0x0001;
+pub const GRND_RANDOM: ::c_uint = 0x0002;
+
+pub const SECCOMP_MODE_DISABLED: ::c_uint = 0;
+pub const SECCOMP_MODE_STRICT: ::c_uint = 1;
+pub const SECCOMP_MODE_FILTER: ::c_uint = 2;
+
 pub const NLA_F_NESTED: ::c_int = 1 << 15;
 pub const NLA_F_NET_BYTEORDER: ::c_int = 1 << 14;
 pub const NLA_TYPE_MASK: ::c_int = !(NLA_F_NESTED | NLA_F_NET_BYTEORDER);
@@ -840,6 +908,9 @@ pub const SO_ORIGINAL_DST: ::c_int = 80;
 pub const IUTF8: ::tcflag_t = 0x00004000;
 pub const CMSPAR: ::tcflag_t = 0o10000000000;
 pub const O_TMPFILE: ::c_int = 0o20000000 | O_DIRECTORY;
+
+pub const MFD_CLOEXEC: ::c_uint = 0x0001;
+pub const MFD_ALLOW_SEALING: ::c_uint = 0x0002;
 
 f! {
     pub fn CPU_ZERO(cpuset: &mut cpu_set_t) -> () {
@@ -1009,6 +1080,8 @@ extern {
                     in_fd: ::c_int,
                     offset: *mut off_t,
                     count: ::size_t) -> ::ssize_t;
+    pub fn setfsgid(gid: ::gid_t) -> ::c_int;
+    pub fn setfsuid(uid: ::uid_t) -> ::c_int;
     pub fn sigsuspend(mask: *const ::sigset_t) -> ::c_int;
     #[cfg_attr(target_os = "solaris", link_name = "__posix_getgrgid_r")]
     pub fn getgrgid_r(uid: ::uid_t,
@@ -1065,6 +1138,7 @@ extern {
                         group: ::gid_t,
                         groups: *mut ::gid_t,
                         ngroups: *mut ::c_int) -> ::c_int;
+    pub fn initgroups(user: *const ::c_char, group: ::gid_t) -> ::c_int;
     pub fn pthread_mutexattr_getpshared(attr: *const pthread_mutexattr_t,
                                         pshared: *mut ::c_int) -> ::c_int;
     #[cfg_attr(all(target_os = "macos", target_arch = "x86"),
@@ -1077,6 +1151,7 @@ extern {
                           attr: *const ::pthread_attr_t,
                           f: extern fn(*mut ::c_void) -> *mut ::c_void,
                           value: *mut ::c_void) -> ::c_int;
+    pub fn __errno() -> *mut ::c_int;
 }
 
 cfg_if! {

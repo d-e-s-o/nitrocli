@@ -2,6 +2,7 @@
 //!
 //! This covers *-apple-* triples currently
 
+pub type c_char = i8;
 pub type clock_t = c_ulong;
 pub type time_t = c_long;
 pub type suseconds_t = i32;
@@ -14,6 +15,7 @@ pub type rlim_t = u64;
 pub type mach_timebase_info_data_t = mach_timebase_info;
 pub type pthread_key_t = c_ulong;
 pub type sigset_t = u32;
+pub type clockid_t = ::c_uint;
 pub type fsblkcnt_t = ::c_uint;
 pub type fsfilcnt_t = ::c_uint;
 pub type speed_t = ::c_ulong;
@@ -22,6 +24,10 @@ pub type nl_item = ::c_int;
 pub type id_t = ::c_uint;
 pub type sem_t = ::c_int;
 pub type idtype_t = ::c_uint;
+pub type integer_t = ::c_int;
+pub type cpu_type_t = integer_t;
+pub type cpu_subtype_t = integer_t;
+pub type vm_prot_t = ::c_int;
 
 pub enum timezone {}
 
@@ -410,6 +416,88 @@ s! {
         pub xsu_pagesize: u32,
         pub xsu_encrypted: ::boolean_t,
     }
+
+    pub struct xucred {
+        pub cr_version: ::c_uint,
+        pub cr_uid: ::uid_t,
+        pub cr_ngroups: ::c_short,
+        pub cr_groups: [::gid_t;16]
+    }
+
+    pub struct mach_header {
+        pub magic: u32,
+        pub cputype: cpu_type_t,
+        pub cpusubtype: cpu_subtype_t,
+        pub filetype: u32,
+        pub ncmds: u32,
+        pub sizeofcmds: u32,
+        pub flags: u32,
+    }
+
+    pub struct mach_header_64 {
+        pub magic: u32,
+        pub cputype: cpu_type_t,
+        pub cpusubtype: cpu_subtype_t,
+        pub filetype: u32,
+        pub ncmds: u32,
+        pub sizeofcmds: u32,
+        pub flags: u32,
+        pub reserved: u32,
+    }
+
+    pub struct segment_command {
+        pub cmd: u32,
+        pub cmdsize: u32,
+        pub segname: [::c_char; 16],
+        pub vmaddr: u32,
+        pub vmsize: u32,
+        pub fileoff: u32,
+        pub filesize: u32,
+        pub maxprot: vm_prot_t,
+        pub initprot: vm_prot_t,
+        pub nsects: u32,
+        pub flags: u32,
+    }
+
+    pub struct segment_command_64 {
+        pub cmd: u32,
+        pub cmdsize: u32,
+        pub segname: [::c_char; 16],
+        pub vmaddr: u64,
+        pub vmsize: u64,
+        pub fileoff: u64,
+        pub filesize: u64,
+        pub maxprot: vm_prot_t,
+        pub initprot: vm_prot_t,
+        pub nsects: u32,
+        pub flags: u32,
+    }
+
+    pub struct load_command {
+        pub cmd: u32,
+        pub cmdsize: u32,
+    }
+
+    pub struct sockaddr_dl {
+        pub sdl_len: ::c_uchar,
+        pub sdl_family: ::c_uchar,
+        pub sdl_index: ::c_ushort,
+        pub sdl_type: ::c_uchar,
+        pub sdl_nlen: ::c_uchar,
+        pub sdl_alen: ::c_uchar,
+        pub sdl_slen: ::c_uchar,
+        pub sdl_data: [::c_char; 12],
+    }
+
+    pub struct sockaddr_inarp {
+        pub sin_len: ::c_uchar,
+        pub sin_family: ::c_uchar,
+        pub sin_port: ::c_ushort,
+        pub sin_addr: ::in_addr,
+        pub sin_srcaddr: ::in_addr,
+        pub sin_tos: ::c_ushort,
+        pub sin_other: ::c_ushort,
+    }
 }
 
 pub const _UTX_USERSIZE: usize = 256;
@@ -492,6 +580,11 @@ pub const ABMON_9: ::nl_item = 41;
 pub const ABMON_10: ::nl_item = 42;
 pub const ABMON_11: ::nl_item = 43;
 pub const ABMON_12: ::nl_item = 44;
+
+pub const CLOCK_REALTIME: ::clockid_t = 0;
+pub const CLOCK_MONOTONIC: ::clockid_t = 6;
+pub const CLOCK_PROCESS_CPUTIME_ID: ::clockid_t = 12;
+pub const CLOCK_THREAD_CPUTIME_ID: ::clockid_t = 16;
 
 pub const ERA: ::nl_item = 45;
 pub const ERA_D_FMT: ::nl_item = 46;
@@ -600,6 +693,112 @@ pub const MAP_SHARED: ::c_int = 0x0001;
 pub const MAP_PRIVATE: ::c_int = 0x0002;
 pub const MAP_FIXED: ::c_int = 0x0010;
 pub const MAP_ANON: ::c_int = 0x1000;
+
+pub const VM_FLAGS_FIXED: ::c_int = 0x0000;
+pub const VM_FLAGS_ANYWHERE: ::c_int = 0x0001;
+pub const VM_FLAGS_PURGABLE: ::c_int = 0x0002;
+pub const VM_FLAGS_RANDOM_ADDR: ::c_int = 0x0008;
+pub const VM_FLAGS_NO_CACHE: ::c_int = 0x0010;
+pub const VM_FLAGS_RESILIENT_CODESIGN: ::c_int = 0x0020;
+pub const VM_FLAGS_RESILIENT_MEDIA: ::c_int = 0x0040;
+pub const VM_FLAGS_OVERWRITE: ::c_int = 0x4000;
+pub const VM_FLAGS_SUPERPAGE_MASK: ::c_int = 0x70000;
+pub const VM_FLAGS_RETURN_DATA_ADDR: ::c_int = 0x100000;
+pub const VM_FLAGS_RETURN_4K_DATA_ADDR: ::c_int = 0x800000;
+pub const VM_FLAGS_ALIAS_MASK: ::c_int = 0xFF000000;
+pub const VM_FLAGS_USER_ALLOCATE: ::c_int = VM_FLAGS_FIXED | VM_FLAGS_ANYWHERE |
+                                            VM_FLAGS_PURGABLE |
+                                            VM_FLAGS_RANDOM_ADDR |
+                                            VM_FLAGS_NO_CACHE |
+                                            VM_FLAGS_OVERWRITE |
+                                            VM_FLAGS_SUPERPAGE_MASK |
+                                            VM_FLAGS_ALIAS_MASK;
+pub const VM_FLAGS_USER_MAP: ::c_int = VM_FLAGS_USER_ALLOCATE |
+                                       VM_FLAGS_RETURN_4K_DATA_ADDR |
+                                       VM_FLAGS_RETURN_DATA_ADDR;
+pub const VM_FLAGS_USER_REMAP: ::c_int = VM_FLAGS_FIXED | VM_FLAGS_ANYWHERE |
+                                        VM_FLAGS_RANDOM_ADDR |
+                                        VM_FLAGS_OVERWRITE |
+                                        VM_FLAGS_RETURN_DATA_ADDR |
+                                        VM_FLAGS_RESILIENT_CODESIGN;
+
+pub const VM_FLAGS_SUPERPAGE_SHIFT: ::c_int = 16;
+pub const SUPERPAGE_NONE: ::c_int = 0;
+pub const SUPERPAGE_SIZE_ANY: ::c_int = 1;
+pub const VM_FLAGS_SUPERPAGE_NONE: ::c_int = SUPERPAGE_NONE <<
+                                             VM_FLAGS_SUPERPAGE_SHIFT;
+pub const VM_FLAGS_SUPERPAGE_SIZE_ANY: ::c_int = SUPERPAGE_SIZE_ANY <<
+                                                 VM_FLAGS_SUPERPAGE_SHIFT;
+pub const SUPERPAGE_SIZE_2MB: ::c_int = 2;
+pub const VM_FLAGS_SUPERPAGE_SIZE_2MB: ::c_int = SUPERPAGE_SIZE_2MB <<
+                                                 VM_FLAGS_SUPERPAGE_SHIFT;
+
+pub const VM_MEMORY_MALLOC: ::c_int = 1;
+pub const VM_MEMORY_MALLOC_SMALL: ::c_int = 2;
+pub const VM_MEMORY_MALLOC_LARGE: ::c_int = 3;
+pub const VM_MEMORY_MALLOC_HUGE: ::c_int = 4;
+pub const VM_MEMORY_SBRK: ::c_int = 5;
+pub const VM_MEMORY_REALLOC: ::c_int = 6;
+pub const VM_MEMORY_MALLOC_TINY: ::c_int = 7;
+pub const VM_MEMORY_MALLOC_LARGE_REUSABLE: ::c_int = 8;
+pub const VM_MEMORY_MALLOC_LARGE_REUSED: ::c_int = 9;
+pub const VM_MEMORY_ANALYSIS_TOOL: ::c_int = 10;
+pub const VM_MEMORY_MALLOC_NANO: ::c_int = 11;
+pub const VM_MEMORY_MACH_MSG: ::c_int = 20;
+pub const VM_MEMORY_IOKIT: ::c_int = 21;
+pub const VM_MEMORY_STACK: ::c_int = 30;
+pub const VM_MEMORY_GUARD: ::c_int = 31;
+pub const VM_MEMORY_SHARED_PMAP: ::c_int = 32;
+pub const VM_MEMORY_DYLIB: ::c_int = 33;
+pub const VM_MEMORY_OBJC_DISPATCHERS: ::c_int = 34;
+pub const VM_MEMORY_UNSHARED_PMAP: ::c_int = 35;
+pub const VM_MEMORY_APPKIT: ::c_int = 40;
+pub const VM_MEMORY_FOUNDATION: ::c_int = 41;
+pub const VM_MEMORY_COREGRAPHICS: ::c_int = 42;
+pub const VM_MEMORY_CORESERVICES: ::c_int = 43;
+pub const VM_MEMORY_CARBON: ::c_int = VM_MEMORY_CORESERVICES;
+pub const VM_MEMORY_JAVA: ::c_int = 44;
+pub const VM_MEMORY_COREDATA: ::c_int = 45;
+pub const VM_MEMORY_COREDATA_OBJECTIDS: ::c_int = 46;
+pub const VM_MEMORY_ATS: ::c_int = 50;
+pub const VM_MEMORY_LAYERKIT: ::c_int = 51;
+pub const VM_MEMORY_CGIMAGE: ::c_int = 52;
+pub const VM_MEMORY_TCMALLOC: ::c_int = 53;
+pub const VM_MEMORY_COREGRAPHICS_DATA: ::c_int = 54;
+pub const VM_MEMORY_COREGRAPHICS_SHARED: ::c_int = 55;
+pub const VM_MEMORY_COREGRAPHICS_FRAMEBUFFERS: ::c_int = 56;
+pub const VM_MEMORY_COREGRAPHICS_BACKINGSTORES: ::c_int = 57;
+pub const VM_MEMORY_COREGRAPHICS_XALLOC: ::c_int = 58;
+pub const VM_MEMORY_COREGRAPHICS_MISC: ::c_int = VM_MEMORY_COREGRAPHICS;
+pub const VM_MEMORY_DYLD: ::c_int = 60;
+pub const VM_MEMORY_DYLD_MALLOC: ::c_int = 61;
+pub const VM_MEMORY_SQLITE: ::c_int = 62;
+pub const VM_MEMORY_JAVASCRIPT_CORE: ::c_int = 63;
+pub const VM_MEMORY_JAVASCRIPT_JIT_EXECUTABLE_ALLOCATOR: ::c_int = 64;
+pub const VM_MEMORY_JAVASCRIPT_JIT_REGISTER_FILE: ::c_int = 65;
+pub const VM_MEMORY_GLSL: ::c_int = 66;
+pub const VM_MEMORY_OPENCL: ::c_int = 67;
+pub const VM_MEMORY_COREIMAGE: ::c_int = 68;
+pub const VM_MEMORY_WEBCORE_PURGEABLE_BUFFERS: ::c_int = 69;
+pub const VM_MEMORY_IMAGEIO: ::c_int = 70;
+pub const VM_MEMORY_COREPROFILE: ::c_int = 71;
+pub const VM_MEMORY_ASSETSD: ::c_int = 72;
+pub const VM_MEMORY_OS_ALLOC_ONCE: ::c_int = 73;
+pub const VM_MEMORY_LIBDISPATCH: ::c_int = 74;
+pub const VM_MEMORY_ACCELERATE: ::c_int = 75;
+pub const VM_MEMORY_COREUI: ::c_int = 76;
+pub const VM_MEMORY_COREUIFILE: ::c_int = 77;
+pub const VM_MEMORY_GENEALOGY: ::c_int = 78;
+pub const VM_MEMORY_RAWCAMERA: ::c_int = 79;
+pub const VM_MEMORY_CORPSEINFO: ::c_int = 80;
+pub const VM_MEMORY_ASL: ::c_int = 81;
+pub const VM_MEMORY_SWIFT_RUNTIME: ::c_int = 82;
+pub const VM_MEMORY_SWIFT_METADATA: ::c_int = 83;
+pub const VM_MEMORY_DHMM: ::c_int = 84;
+pub const VM_MEMORY_SCENEKIT: ::c_int = 86;
+pub const VM_MEMORY_SKYWALK: ::c_int = 87;
+pub const VM_MEMORY_APPLICATION_SPECIFIC_1: ::c_int = 240;
+pub const VM_MEMORY_APPLICATION_SPECIFIC_16: ::c_int = 255;
 
 pub const MAP_FAILED: *mut ::c_void = !0 as *mut ::c_void;
 
@@ -722,7 +921,17 @@ pub const EOWNERDEAD: ::c_int = 105;
 pub const EQFULL: ::c_int = 106;
 pub const ELAST: ::c_int = 106;
 
+pub const EAI_AGAIN: ::c_int = 2;
+pub const EAI_BADFLAGS: ::c_int = 3;
+pub const EAI_FAIL: ::c_int = 4;
+pub const EAI_FAMILY: ::c_int = 5;
+pub const EAI_MEMORY: ::c_int = 6;
+pub const EAI_NODATA: ::c_int = 7;
+pub const EAI_NONAME: ::c_int = 8;
+pub const EAI_SERVICE: ::c_int = 9;
+pub const EAI_SOCKTYPE: ::c_int = 10;
 pub const EAI_SYSTEM: ::c_int = 11;
+pub const EAI_OVERFLOW: ::c_int = 14;
 
 pub const F_DUPFD: ::c_int = 0;
 pub const F_DUPFD_CLOEXEC: ::c_int = 67;
@@ -933,6 +1142,223 @@ pub const MINCORE_MODIFIED: ::c_int = 0x4;
 pub const MINCORE_REFERENCED_OTHER: ::c_int = 0x8;
 pub const MINCORE_MODIFIED_OTHER: ::c_int = 0x10;
 
+//
+// sys/netinet/in.h
+// Protocols (RFC 1700)
+// NOTE: These are in addition to the constants defined in src/unix/mod.rs
+
+// IPPROTO_IP defined in src/unix/mod.rs
+/// IP6 hop-by-hop options
+pub const IPPROTO_HOPOPTS: ::c_int = 0;
+// IPPROTO_ICMP defined in src/unix/mod.rs
+/// group mgmt protocol
+pub const IPPROTO_IGMP: ::c_int = 2;
+/// gateway<sup>2</sup> (deprecated)
+pub const IPPROTO_GGP: ::c_int = 3;
+/// for compatibility
+pub const IPPROTO_IPIP: ::c_int = 4;
+// IPPROTO_TCP defined in src/unix/mod.rs
+/// Stream protocol II.
+pub const IPPROTO_ST: ::c_int = 7;
+/// exterior gateway protocol
+pub const IPPROTO_EGP: ::c_int = 8;
+/// private interior gateway
+pub const IPPROTO_PIGP: ::c_int = 9;
+/// BBN RCC Monitoring
+pub const IPPROTO_RCCMON: ::c_int = 10;
+/// network voice protocol
+pub const IPPROTO_NVPII: ::c_int = 11;
+/// pup
+pub const IPPROTO_PUP: ::c_int = 12;
+/// Argus
+pub const IPPROTO_ARGUS: ::c_int = 13;
+/// EMCON
+pub const IPPROTO_EMCON: ::c_int = 14;
+/// Cross Net Debugger
+pub const IPPROTO_XNET: ::c_int = 15;
+/// Chaos
+pub const IPPROTO_CHAOS: ::c_int = 16;
+// IPPROTO_UDP defined in src/unix/mod.rs
+/// Multiplexing
+pub const IPPROTO_MUX: ::c_int = 18;
+/// DCN Measurement Subsystems
+pub const IPPROTO_MEAS: ::c_int = 19;
+/// Host Monitoring
+pub const IPPROTO_HMP: ::c_int = 20;
+/// Packet Radio Measurement
+pub const IPPROTO_PRM: ::c_int = 21;
+/// xns idp
+pub const IPPROTO_IDP: ::c_int = 22;
+/// Trunk-1
+pub const IPPROTO_TRUNK1: ::c_int = 23;
+/// Trunk-2
+pub const IPPROTO_TRUNK2: ::c_int = 24;
+/// Leaf-1
+pub const IPPROTO_LEAF1: ::c_int = 25;
+/// Leaf-2
+pub const IPPROTO_LEAF2: ::c_int = 26;
+/// Reliable Data
+pub const IPPROTO_RDP: ::c_int = 27;
+/// Reliable Transaction
+pub const IPPROTO_IRTP: ::c_int = 28;
+/// tp-4 w/ class negotiation
+pub const IPPROTO_TP: ::c_int = 29;
+/// Bulk Data Transfer
+pub const IPPROTO_BLT: ::c_int = 30;
+/// Network Services
+pub const IPPROTO_NSP: ::c_int = 31;
+/// Merit Internodal
+pub const IPPROTO_INP: ::c_int = 32;
+/// Sequential Exchange
+pub const IPPROTO_SEP: ::c_int = 33;
+/// Third Party Connect
+pub const IPPROTO_3PC: ::c_int = 34;
+/// InterDomain Policy Routing
+pub const IPPROTO_IDPR: ::c_int = 35;
+/// XTP
+pub const IPPROTO_XTP: ::c_int = 36;
+/// Datagram Delivery
+pub const IPPROTO_DDP: ::c_int = 37;
+/// Control Message Transport
+pub const IPPROTO_CMTP: ::c_int = 38;
+/// TP++ Transport
+pub const IPPROTO_TPXX: ::c_int = 39;
+/// IL transport protocol
+pub const IPPROTO_IL: ::c_int = 40;
+// IPPROTO_IPV6 defined in src/unix/mod.rs
+/// Source Demand Routing
+pub const IPPROTO_SDRP: ::c_int = 42;
+/// IP6 routing header
+pub const IPPROTO_ROUTING: ::c_int = 43;
+/// IP6 fragmentation header
+pub const IPPROTO_FRAGMENT: ::c_int = 44;
+/// InterDomain Routing
+pub const IPPROTO_IDRP: ::c_int = 45;
+/// resource reservation
+pub const IPPROTO_RSVP: ::c_int = 46;
+/// General Routing Encap.
+pub const IPPROTO_GRE: ::c_int = 47;
+/// Mobile Host Routing
+pub const IPPROTO_MHRP: ::c_int = 48;
+/// BHA
+pub const IPPROTO_BHA: ::c_int = 49;
+/// IP6 Encap Sec. Payload
+pub const IPPROTO_ESP: ::c_int = 50;
+/// IP6 Auth Header
+pub const IPPROTO_AH: ::c_int = 51;
+/// Integ. Net Layer Security
+pub const IPPROTO_INLSP: ::c_int = 52;
+/// IP with encryption
+pub const IPPROTO_SWIPE: ::c_int = 53;
+/// Next Hop Resolution
+pub const IPPROTO_NHRP: ::c_int = 54;
+/* 55-57: Unassigned */
+// IPPROTO_ICMPV6 defined in src/unix/mod.rs
+/// IP6 no next header
+pub const IPPROTO_NONE: ::c_int = 59;
+/// IP6 destination option
+pub const IPPROTO_DSTOPTS: ::c_int = 60;
+/// any host internal protocol
+pub const IPPROTO_AHIP: ::c_int = 61;
+/// CFTP
+pub const IPPROTO_CFTP: ::c_int = 62;
+/// "hello" routing protocol
+pub const IPPROTO_HELLO: ::c_int = 63;
+/// SATNET/Backroom EXPAK
+pub const IPPROTO_SATEXPAK: ::c_int = 64;
+/// Kryptolan
+pub const IPPROTO_KRYPTOLAN: ::c_int = 65;
+/// Remote Virtual Disk
+pub const IPPROTO_RVD: ::c_int = 66;
+/// Pluribus Packet Core
+pub const IPPROTO_IPPC: ::c_int = 67;
+/// Any distributed FS
+pub const IPPROTO_ADFS: ::c_int = 68;
+/// Satnet Monitoring
+pub const IPPROTO_SATMON: ::c_int = 69;
+/// VISA Protocol
+pub const IPPROTO_VISA: ::c_int = 70;
+/// Packet Core Utility
+pub const IPPROTO_IPCV: ::c_int = 71;
+/// Comp. Prot. Net. Executive
+pub const IPPROTO_CPNX: ::c_int = 72;
+/// Comp. Prot. HeartBeat
+pub const IPPROTO_CPHB: ::c_int = 73;
+/// Wang Span Network
+pub const IPPROTO_WSN: ::c_int = 74;
+/// Packet Video Protocol
+pub const IPPROTO_PVP: ::c_int = 75;
+/// BackRoom SATNET Monitoring
+pub const IPPROTO_BRSATMON: ::c_int = 76;
+/// Sun net disk proto (temp.)
+pub const IPPROTO_ND: ::c_int = 77;
+/// WIDEBAND Monitoring
+pub const IPPROTO_WBMON: ::c_int = 78;
+/// WIDEBAND EXPAK
+pub const IPPROTO_WBEXPAK: ::c_int = 79;
+/// ISO cnlp
+pub const IPPROTO_EON: ::c_int = 80;
+/// VMTP
+pub const IPPROTO_VMTP: ::c_int = 81;
+/// Secure VMTP
+pub const IPPROTO_SVMTP: ::c_int = 82;
+/// Banyon VINES
+pub const IPPROTO_VINES: ::c_int = 83;
+/// TTP
+pub const IPPROTO_TTP: ::c_int = 84;
+/// NSFNET-IGP
+pub const IPPROTO_IGP: ::c_int = 85;
+/// dissimilar gateway prot.
+pub const IPPROTO_DGP: ::c_int = 86;
+/// TCF
+pub const IPPROTO_TCF: ::c_int = 87;
+/// Cisco/GXS IGRP
+pub const IPPROTO_IGRP: ::c_int = 88;
+/// OSPFIGP
+pub const IPPROTO_OSPFIGP: ::c_int = 89;
+/// Strite RPC protocol
+pub const IPPROTO_SRPC: ::c_int = 90;
+/// Locus Address Resoloution
+pub const IPPROTO_LARP: ::c_int = 91;
+/// Multicast Transport
+pub const IPPROTO_MTP: ::c_int = 92;
+/// AX.25 Frames
+pub const IPPROTO_AX25: ::c_int = 93;
+/// IP encapsulated in IP
+pub const IPPROTO_IPEIP: ::c_int = 94;
+/// Mobile Int.ing control
+pub const IPPROTO_MICP: ::c_int = 95;
+/// Semaphore Comm. security
+pub const IPPROTO_SCCSP: ::c_int = 96;
+/// Ethernet IP encapsulation
+pub const IPPROTO_ETHERIP: ::c_int = 97;
+/// encapsulation header
+pub const IPPROTO_ENCAP: ::c_int = 98;
+/// any private encr. scheme
+pub const IPPROTO_APES: ::c_int = 99;
+/// GMTP
+pub const IPPROTO_GMTP: ::c_int = 100;
+
+/* 101-254: Partly Unassigned */
+/// Protocol Independent Mcast
+pub const IPPROTO_PIM: ::c_int = 103;
+/// payload compression (IPComp)
+pub const IPPROTO_IPCOMP: ::c_int = 108;
+/// PGM
+pub const IPPROTO_PGM: ::c_int = 113;
+/// SCTP
+pub const IPPROTO_SCTP: ::c_int = 132;
+
+/* 255: Reserved */
+/* BSD Private, local use, namespace incursion */
+/// divert pseudo-protocol
+pub const IPPROTO_DIVERT: ::c_int = 254;
+/// raw IP packet
+pub const IPPROTO_RAW: ::c_int = 255;
+pub const IPPROTO_MAX: ::c_int = 256;
+/// last return value of *_input(), meaning "all job for this pkt is done".
+pub const IPPROTO_DONE: ::c_int = 257;
+
 pub const AF_UNSPEC: ::c_int = 0;
 pub const AF_LOCAL: ::c_int = 1;
 pub const AF_UNIX: ::c_int = AF_LOCAL;
@@ -1042,6 +1468,15 @@ pub const IPV6_LEAVE_GROUP: ::c_int = 13;
 
 pub const TCP_NODELAY: ::c_int = 0x01;
 pub const TCP_KEEPALIVE: ::c_int = 0x10;
+
+pub const SOL_LOCAL: ::c_int = 0;
+
+pub const LOCAL_PEERCRED: ::c_int = 0x001;
+pub const LOCAL_PEERPID: ::c_int = 0x002;
+pub const LOCAL_PEEREPID: ::c_int = 0x003;
+pub const LOCAL_PEERUUID: ::c_int = 0x004;
+pub const LOCAL_PEEREUUID: ::c_int = 0x005;
+
 pub const SOL_SOCKET: ::c_int = 0xffff;
 
 pub const SO_DEBUG: ::c_int = 0x01;
@@ -1098,7 +1533,24 @@ pub const MSG_RCVMORE: ::c_int = 0x4000;
 pub const SCM_TIMESTAMP: ::c_int = 0x02;
 pub const SCM_CREDS: ::c_int = 0x03;
 
-pub const IFF_LOOPBACK: ::c_int = 0x8;
+// https://github.com/aosm/xnu/blob/master/bsd/net/if.h#L140-L156
+pub const IFF_UP: ::c_int          = 0x1;  // interface is up
+pub const IFF_BROADCAST: ::c_int   = 0x2;  // broadcast address valid
+pub const IFF_DEBUG: ::c_int       = 0x4;  // turn on debugging
+pub const IFF_LOOPBACK: ::c_int    = 0x8;  // is a loopback net
+pub const IFF_POINTOPOINT: ::c_int = 0x10; // interface is point-to-point link
+pub const IFF_NOTRAILERS: ::c_int  = 0x20; // obsolete: avoid use of trailers
+pub const IFF_RUNNING: ::c_int     = 0x40; // resources allocated
+pub const IFF_NOARP: ::c_int       = 0x80; // no address resolution protocol
+pub const IFF_PROMISC: ::c_int     = 0x100;// receive all packets
+pub const IFF_ALLMULTI: ::c_int    = 0x200;// receive all multicast packets
+pub const IFF_OACTIVE: ::c_int     = 0x400;// transmission in progress
+pub const IFF_SIMPLEX: ::c_int     = 0x800;// can't hear own transmissions
+pub const IFF_LINK0: ::c_int       = 0x1000;// per link layer defined bit
+pub const IFF_LINK1: ::c_int   = 0x2000;// per link layer defined bit
+pub const IFF_LINK2: ::c_int   = 0x4000;// per link layer defined bit
+pub const IFF_ALTPHYS: ::c_int = IFF_LINK2;// use alternate physical connection
+pub const IFF_MULTICAST: ::c_int = 0x8000;// supports multicast
 
 pub const SHUT_RD: ::c_int = 0;
 pub const SHUT_WR: ::c_int = 1;
@@ -1116,8 +1568,6 @@ pub const MAP_NOEXTEND: ::c_int = 0x0100;
 pub const MAP_HASSEMAPHORE: ::c_int = 0x0200;
 pub const MAP_NOCACHE: ::c_int = 0x0400;
 pub const MAP_JIT: ::c_int = 0x0800;
-
-pub const IPPROTO_RAW: ::c_int = 255;
 
 pub const _SC_ARG_MAX: ::c_int = 1;
 pub const _SC_CHILD_MAX: ::c_int = 2;
@@ -1612,7 +2062,90 @@ pub const XATTR_NODEFAULT: ::c_int = 0x0010;
 pub const XATTR_SHOWCOMPRESSION: ::c_int = 0x0020;
 
 pub const NET_RT_IFLIST2: ::c_int = 0x0006;
-pub const RTM_IFINFO2: ::c_int = 0x0012;
+
+// net/route.h
+pub const RTF_UP: ::c_int = 0x1;
+pub const RTF_GATEWAY: ::c_int = 0x2;
+pub const RTF_HOST: ::c_int = 0x4;
+pub const RTF_REJECT: ::c_int = 0x8;
+pub const RTF_DYNAMIC: ::c_int = 0x10;
+pub const RTF_MODIFIED: ::c_int = 0x20;
+pub const RTF_DONE: ::c_int = 0x40;
+pub const RTF_DELCLONE: ::c_int = 0x80;
+pub const RTF_CLONING: ::c_int = 0x100;
+pub const RTF_XRESOLVE: ::c_int = 0x200;
+pub const RTF_LLINFO: ::c_int = 0x400;
+pub const RTF_STATIC: ::c_int = 0x800;
+pub const RTF_BLACKHOLE: ::c_int = 0x1000;
+pub const RTF_NOIFREF: ::c_int = 0x2000;
+pub const RTF_PROTO2: ::c_int = 0x4000;
+pub const RTF_PROTO1: ::c_int = 0x8000;
+pub const RTF_PRCLONING: ::c_int = 0x10000;
+pub const RTF_WASCLONED: ::c_int = 0x20000;
+pub const RTF_PROTO3: ::c_int = 0x40000;
+pub const RTF_PINNED: ::c_int = 0x100000;
+pub const RTF_LOCAL: ::c_int = 0x200000;
+pub const RTF_BROADCAST: ::c_int = 0x400000;
+pub const RTF_MULTICAST: ::c_int = 0x800000;
+pub const RTF_IFSCOPE: ::c_int = 0x1000000;
+pub const RTF_CONDEMNED: ::c_int = 0x2000000;
+pub const RTF_IFREF: ::c_int = 0x4000000;
+pub const RTF_PROXY: ::c_int = 0x8000000;
+pub const RTF_ROUTER: ::c_int = 0x10000000;
+
+pub const RTM_VERSION: ::c_int = 5;
+
+// Message types
+pub const RTM_ADD: ::c_int = 0x1;
+pub const RTM_DELETE: ::c_int = 0x2;
+pub const RTM_CHANGE: ::c_int = 0x3;
+pub const RTM_GET: ::c_int = 0x4;
+pub const RTM_LOSING: ::c_int = 0x5;
+pub const RTM_REDIRECT: ::c_int = 0x6;
+pub const RTM_MISS: ::c_int = 0x7;
+pub const RTM_LOCK: ::c_int = 0x8;
+pub const RTM_OLDADD: ::c_int = 0x9;
+pub const RTM_OLDDEL: ::c_int = 0xa;
+pub const RTM_RESOLVE: ::c_int = 0xb;
+pub const RTM_NEWADDR: ::c_int = 0xc;
+pub const RTM_DELADDR: ::c_int = 0xd;
+pub const RTM_IFINFO: ::c_int = 0xe;
+pub const RTM_NEWMADDR: ::c_int = 0xf;
+pub const RTM_DELMADDR: ::c_int = 0x10;
+pub const RTM_IFINFO2: ::c_int = 0x12;
+pub const RTM_NEWMADDR2: ::c_int = 0x13;
+pub const RTM_GET2: ::c_int = 0x14;
+
+// Bitmask values for rtm_inits and rmx_locks.
+pub const RTV_MTU: ::c_int = 0x1;
+pub const RTV_HOPCOUNT: ::c_int = 0x2;
+pub const RTV_EXPIRE: ::c_int = 0x4;
+pub const RTV_RPIPE: ::c_int = 0x8;
+pub const RTV_SPIPE: ::c_int = 0x10;
+pub const RTV_SSTHRESH: ::c_int = 0x20;
+pub const RTV_RTT: ::c_int = 0x40;
+pub const RTV_RTTVAR: ::c_int = 0x80;
+
+// Bitmask values for rtm_addrs.
+pub const RTA_DST: ::c_int = 0x1;
+pub const RTA_GATEWAY: ::c_int = 0x2;
+pub const RTA_NETMASK: ::c_int = 0x4;
+pub const RTA_GENMASK: ::c_int = 0x8;
+pub const RTA_IFP: ::c_int = 0x10;
+pub const RTA_IFA: ::c_int = 0x20;
+pub const RTA_AUTHOR: ::c_int = 0x40;
+pub const RTA_BRD: ::c_int = 0x80;
+
+// Index offsets for sockaddr array for alternate internal encoding.
+pub const RTAX_DST: ::c_int = 0;
+pub const RTAX_GATEWAY: ::c_int = 1;
+pub const RTAX_NETMASK: ::c_int = 2;
+pub const RTAX_GENMASK: ::c_int = 3;
+pub const RTAX_IFP: ::c_int = 4;
+pub const RTAX_IFA: ::c_int = 5;
+pub const RTAX_AUTHOR: ::c_int = 6;
+pub const RTAX_BRD: ::c_int = 7;
+pub const RTAX_MAX: ::c_int = 8;
 
 pub const KERN_PROCARGS2: ::c_int = 49;
 
@@ -1621,6 +2154,38 @@ pub const PROC_PIDTASKINFO: ::c_int = 4;
 pub const PROC_PIDTHREADINFO: ::c_int = 5;
 pub const MAXCOMLEN: usize = 16;
 pub const MAXTHREADNAMESIZE: usize = 64;
+
+pub const XUCRED_VERSION: ::c_uint = 0;
+
+pub const LC_SEGMENT: u32 = 0x1;
+pub const LC_SEGMENT_64: u32 = 0x19;
+
+pub const MH_MAGIC: u32 = 0xfeedface;
+pub const MH_MAGIC_64: u32 = 0xfeedfacf;
+
+// net/if_utun.h
+pub const UTUN_OPT_FLAGS: ::c_int = 1;
+pub const UTUN_OPT_IFNAME: ::c_int = 2;
+
+// net/bpf.h
+pub const DLT_NULL: ::c_uint = 0;         // no link-layer encapsulation
+pub const DLT_EN10MB: ::c_uint = 1;       // Ethernet (10Mb)
+pub const DLT_EN3MB: ::c_uint = 2;        // Experimental Ethernet (3Mb)
+pub const DLT_AX25: ::c_uint = 3;         // Amateur Radio AX.25
+pub const DLT_PRONET: ::c_uint = 4;       // Proteon ProNET Token Ring
+pub const DLT_CHAOS: ::c_uint = 5;        // Chaos
+pub const DLT_IEEE802: ::c_uint = 6;      // IEEE 802 Networks
+pub const DLT_ARCNET: ::c_uint = 7;       // ARCNET
+pub const DLT_SLIP: ::c_uint = 8;         // Serial Line IP
+pub const DLT_PPP: ::c_uint = 9;          // Point-to-point Protocol
+pub const DLT_FDDI: ::c_uint = 10;        // FDDI
+pub const DLT_ATM_RFC1483: ::c_uint = 11; // LLC/SNAP encapsulated atm
+pub const DLT_RAW: ::c_uint = 12;         // raw IP
+pub const DLT_LOOP: ::c_uint = 108;
+
+// https://github.com/apple/darwin-xnu/blob/master/bsd/net/bpf.h#L100
+// sizeof(int32_t)
+pub const BPF_ALIGNMENT: ::c_int = 4;
 
 f! {
     pub fn WSTOPSIG(status: ::c_int) -> ::c_int {
@@ -1655,6 +2220,8 @@ extern {
     pub fn aio_suspend(aiocb_list: *const *const aiocb, nitems: ::c_int,
                        timeout: *const ::timespec) -> ::c_int;
     pub fn aio_cancel(fd: ::c_int, aiocbp: *mut aiocb) -> ::c_int;
+    pub fn clock_getres(clk_id: ::clockid_t, tp: *mut ::timespec) -> ::c_int;
+    pub fn clock_gettime(clk_id: ::clockid_t, tp: *mut ::timespec) -> ::c_int;
     pub fn lio_listio(mode: ::c_int, aiocb_list: *const *mut aiocb,
                       nitems: ::c_int, sevp: *mut sigevent) -> ::c_int;
 
@@ -1811,6 +2378,10 @@ extern {
     pub fn brk(addr: *const ::c_void) -> *mut ::c_void;
     pub fn sbrk(increment: ::c_int) -> *mut ::c_void;
     pub fn settimeofday(tv: *const ::timeval, tz: *const ::timezone) -> ::c_int;
+    pub fn _dyld_image_count() -> u32;
+    pub fn _dyld_get_image_header(image_index: u32) -> *const mach_header;
+    pub fn _dyld_get_image_vmaddr_slide(image_index: u32) -> ::intptr_t;
+    pub fn _dyld_get_image_name(image_index: u32) -> *const ::c_char;
 }
 
 cfg_if! {

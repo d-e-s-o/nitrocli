@@ -578,7 +578,63 @@ pub const EWOULDBLOCK: ::c_int = EAGAIN;
 pub const SCM_RIGHTS: ::c_int = 0x01;
 pub const SCM_CREDENTIALS: ::c_int = 0x02;
 
+// netinet/in.h
+// NOTE: These are in addition to the constants defined in src/unix/mod.rs
+
+// IPPROTO_IP defined in src/unix/mod.rs
+/// Hop-by-hop option header
+pub const IPPROTO_HOPOPTS: ::c_int = 0;
+// IPPROTO_ICMP defined in src/unix/mod.rs
+/// group mgmt protocol
+pub const IPPROTO_IGMP: ::c_int = 2;
+/// for compatibility
+pub const IPPROTO_IPIP: ::c_int = 4;
+// IPPROTO_TCP defined in src/unix/mod.rs
+/// exterior gateway protocol
+pub const IPPROTO_EGP: ::c_int = 8;
+/// pup
+pub const IPPROTO_PUP: ::c_int = 12;
+// IPPROTO_UDP defined in src/unix/mod.rs
+/// xns idp
+pub const IPPROTO_IDP: ::c_int = 22;
+/// tp-4 w/ class negotiation
+pub const IPPROTO_TP: ::c_int = 29;
+/// DCCP
+pub const IPPROTO_DCCP: ::c_int = 33;
+// IPPROTO_IPV6 defined in src/unix/mod.rs
+/// IP6 routing header
+pub const IPPROTO_ROUTING: ::c_int = 43;
+/// IP6 fragmentation header
+pub const IPPROTO_FRAGMENT: ::c_int = 44;
+/// resource reservation
+pub const IPPROTO_RSVP: ::c_int = 46;
+/// General Routing Encap.
+pub const IPPROTO_GRE: ::c_int = 47;
+/// IP6 Encap Sec. Payload
+pub const IPPROTO_ESP: ::c_int = 50;
+/// IP6 Auth Header
+pub const IPPROTO_AH: ::c_int = 51;
+// IPPROTO_ICMPV6 defined in src/unix/mod.rs
+/// IP6 no next header
+pub const IPPROTO_NONE: ::c_int = 59;
+/// IP6 destination option
+pub const IPPROTO_DSTOPTS: ::c_int = 60;
+pub const IPPROTO_MTP: ::c_int = 92;
+pub const IPPROTO_BEETPH: ::c_int = 94;
+/// encapsulation header
+pub const IPPROTO_ENCAP: ::c_int = 98;
+/// Protocol indep. multicast
+pub const IPPROTO_PIM: ::c_int = 103;
+/// IP Payload Comp. Protocol
+pub const IPPROTO_COMP: ::c_int = 108;
+/// SCTP
+pub const IPPROTO_SCTP: ::c_int = 132;
+pub const IPPROTO_MH: ::c_int = 135;
+pub const IPPROTO_UDPLITE: ::c_int = 136;
+pub const IPPROTO_MPLS: ::c_int = 137;
+/// raw IP packet
 pub const IPPROTO_RAW: ::c_int = 255;
+pub const IPPROTO_MAX: ::c_int = 256;
 
 pub const PROT_GROWSDOWN: ::c_int = 0x1000000;
 pub const PROT_GROWSUP: ::c_int = 0x2000000;
@@ -597,21 +653,24 @@ pub const MADV_MERGEABLE: ::c_int = 12;
 pub const MADV_UNMERGEABLE: ::c_int = 13;
 pub const MADV_HWPOISON: ::c_int = 100;
 
-pub const IFF_UP: ::c_int = 0x1;
-pub const IFF_BROADCAST: ::c_int = 0x2;
-pub const IFF_DEBUG: ::c_int = 0x4;
-pub const IFF_LOOPBACK: ::c_int = 0x8;
-pub const IFF_POINTOPOINT: ::c_int = 0x10;
-pub const IFF_NOTRAILERS: ::c_int = 0x20;
-pub const IFF_RUNNING: ::c_int = 0x40;
-pub const IFF_NOARP: ::c_int = 0x80;
-pub const IFF_PROMISC: ::c_int = 0x100;
-pub const IFF_ALLMULTI: ::c_int = 0x200;
-pub const IFF_MASTER: ::c_int = 0x400;
-pub const IFF_SLAVE: ::c_int = 0x800;
-pub const IFF_MULTICAST: ::c_int = 0x1000;
-pub const IFF_PORTSEL: ::c_int = 0x2000;
-pub const IFF_AUTOMEDIA: ::c_int = 0x4000;
+// https://github.com/kraj/uClibc/blob/master/include/net/if.h#L44
+pub const IFF_UP: ::c_int = 0x1; // Interface is up.
+pub const IFF_BROADCAST: ::c_int = 0x2; // Broadcast address valid.
+pub const IFF_DEBUG: ::c_int = 0x4; // Turn on debugging.
+pub const IFF_LOOPBACK: ::c_int = 0x8; // Is a loopback net.
+pub const IFF_POINTOPOINT: ::c_int = 0x10; // Interface is point-to-point link.
+pub const IFF_NOTRAILERS: ::c_int = 0x20; // Avoid use of trailers.
+pub const IFF_RUNNING: ::c_int = 0x40; // Resources allocated.
+pub const IFF_NOARP: ::c_int = 0x80; // No address resolution protocol.
+pub const IFF_PROMISC: ::c_int = 0x100; // Receive all packets.
+// Not supported
+pub const IFF_ALLMULTI: ::c_int = 0x200; // Receive all multicast packets.
+pub const IFF_MASTER: ::c_int = 0x400; // Master of a load balancer.
+pub const IFF_SLAVE: ::c_int = 0x800; // Slave of a load balancer.
+pub const IFF_MULTICAST: ::c_int = 0x1000; // Supports multicast.
+pub const IFF_PORTSEL: ::c_int = 0x2000; // Can set media type.
+pub const IFF_AUTOMEDIA: ::c_int = 0x4000; // Auto media select active.
+// Dialup device with changing addresses.
 pub const IFF_DYNAMIC: ::c_int = 0x8000;
 
 pub const SOL_IP: ::c_int = 0;
@@ -731,6 +790,8 @@ pub const IP_TTL: ::c_int = 2;
 pub const IP_HDRINCL: ::c_int = 3;
 pub const IP_ADD_MEMBERSHIP: ::c_int = 35;
 pub const IP_DROP_MEMBERSHIP: ::c_int = 36;
+pub const IPV6_ADD_MEMBERSHIP: ::c_int = 20;
+pub const IPV6_DROP_MEMBERSHIP: ::c_int = 21;
 
 pub const IPV6_JOIN_GROUP: ::c_int = 20;
 pub const IPV6_LEAVE_GROUP: ::c_int = 21;
@@ -872,6 +933,7 @@ pub const SPLICE_F_MORE: ::c_uint = 0x04;
 pub const SPLICE_F_GIFT: ::c_uint = 0x08;
 
 pub const RTLD_LOCAL: ::c_int = 0;
+pub const RTLD_LAZY: ::c_int = 1;
 
 pub const POSIX_FADV_NORMAL: ::c_int = 0;
 pub const POSIX_FADV_RANDOM: ::c_int = 1;
@@ -887,6 +949,13 @@ pub const LOG_CRON: ::c_int = 9 << 3;
 pub const LOG_AUTHPRIV: ::c_int = 10 << 3;
 pub const LOG_FTP: ::c_int = 11 << 3;
 pub const LOG_PERROR: ::c_int = 0x20;
+
+pub const POLLIN: ::c_short = 0x1;
+pub const POLLPRI: ::c_short = 0x2;
+pub const POLLOUT: ::c_short = 0x4;
+pub const POLLERR: ::c_short = 0x8;
+pub const POLLHUP: ::c_short = 0x10;
+pub const POLLNVAL: ::c_short = 0x20;
 
 pub const PIPE_BUF: usize = 4096;
 
@@ -1419,6 +1488,10 @@ f! {
     pub fn CPU_EQUAL(set1: &cpu_set_t, set2: &cpu_set_t) -> bool {
         set1.bits == set2.bits
     }
+
+    pub fn QCMD(cmd: ::c_int, type_: ::c_int) -> ::c_int {
+        (cmd << 8) | (type_ & 0x00ff)
+    }
 }
 
 extern {
@@ -1805,6 +1878,10 @@ extern {
     pub fn pthread_atfork(prepare: Option<unsafe extern fn()>,
                           parent: Option<unsafe extern fn()>,
                           child: Option<unsafe extern fn()>) -> ::c_int;
+    pub fn pthread_create(native: *mut ::pthread_t,
+                          attr: *const ::pthread_attr_t,
+                          f: extern fn(*mut ::c_void) -> *mut ::c_void,
+                          value: *mut ::c_void) -> ::c_int;
     pub fn getgrgid(gid: ::gid_t) -> *mut ::group;
     #[cfg_attr(all(target_os = "macos", target_arch = "x86"),
                link_name = "popen$UNIX2003")]
@@ -1823,3 +1900,4 @@ cfg_if! {
         pub use unsupported_target;
     }
 }
+

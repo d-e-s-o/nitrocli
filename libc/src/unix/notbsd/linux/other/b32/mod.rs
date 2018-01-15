@@ -10,6 +10,12 @@ pub type off_t = i32;
 pub type blkcnt_t = i32;
 pub type __fsword_t = i32;
 
+pub type fsblkcnt_t = ::c_ulong;
+pub type fsfilcnt_t = ::c_ulong;
+pub type rlim_t = c_ulong;
+pub type shmatt_t = ::c_ulong;
+pub type msgqnum_t = ::c_ulong;
+pub type msglen_t = ::c_ulong;
 pub type blksize_t = i32;
 pub type nlink_t = u32;
 pub type __u64 = ::c_ulonglong;
@@ -81,6 +87,7 @@ pub const O_DSYNC: ::c_int = 4096;
 pub const O_FSYNC: ::c_int = 0x101000;
 pub const O_NOATIME: ::c_int = 0o1000000;
 pub const O_PATH: ::c_int = 0o10000000;
+pub const O_TMPFILE: ::c_int = 0o20000000 | O_DIRECTORY;
 
 pub const MAP_GROWSDOWN: ::c_int = 0x0100;
 
@@ -280,6 +287,17 @@ pub const PTRACE_GETFPREGS: ::c_uint = 14;
 pub const PTRACE_SETFPREGS: ::c_uint = 15;
 pub const PTRACE_GETREGS: ::c_uint = 12;
 pub const PTRACE_SETREGS: ::c_uint = 13;
+
+#[link(name = "util")]
+extern {
+    pub fn sysctl(name: *mut ::c_int,
+                  namelen: ::c_int,
+                  oldp: *mut ::c_void,
+                  oldlenp: *mut ::size_t,
+                  newp: *mut ::c_void,
+                  newlen: ::size_t)
+                  -> ::c_int;
+}
 
 cfg_if! {
     if #[cfg(target_arch = "x86")] {
