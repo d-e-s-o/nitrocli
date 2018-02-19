@@ -1,7 +1,7 @@
 // error.rs
 
 // *************************************************************************
-// * Copyright (C) 2017 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -34,32 +34,32 @@ pub enum Error {
 
 impl From<libhid::Error> for Error {
   fn from(e: libhid::Error) -> Error {
-    return Error::HidError(e);
+    Error::HidError(e)
   }
 }
 
 
 impl From<io::Error> for Error {
   fn from(e: io::Error) -> Error {
-    return Error::IoError(e);
+    Error::IoError(e)
   }
 }
 
 
 impl From<string::FromUtf8Error> for Error {
   fn from(e: string::FromUtf8Error) -> Error {
-    return Error::Utf8Error(e);
+    Error::Utf8Error(e)
   }
 }
 
 
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    match *&self {
-      &Error::HidError(ref e) => return write!(f, "hidapi error: {}", e),
-      &Error::Utf8Error(_) => return write!(f, "Encountered UTF-8 conversion error"),
-      &Error::IoError(ref e) => return write!(f, "IO error: {}", e.get_ref().unwrap()),
-      &Error::Error(ref e) => return write!(f, "{}", e),
+    match *self {
+      Error::HidError(ref e) => write!(f, "hidapi error: {}", e),
+      Error::Utf8Error(_) => write!(f, "Encountered UTF-8 conversion error"),
+      Error::IoError(ref e) => write!(f, "IO error: {}", e.get_ref().unwrap()),
+      Error::Error(ref e) => write!(f, "{}", e),
     }
   }
 }

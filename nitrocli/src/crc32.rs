@@ -1,7 +1,7 @@
 // crc32.rs
 
 // *************************************************************************
-// * Copyright (C) 2017 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -18,20 +18,20 @@
 // *************************************************************************
 
 /// Polynomial used in STM32.
-const CRC32_POLYNOMIAL: u32 = 0x04c11db7;
+const CRC32_POLYNOMIAL: u32 = 0x04c1_1db7;
 
 
 fn crc32(mut crc: u32, data: u32) -> u32 {
-  crc = crc ^ data;
+  crc ^= data;
 
   for _ in 0..32 {
-    if crc & 0x80000000 != 0 {
+    if crc & 0x8000_0000 != 0 {
       crc = (crc << 1) ^ CRC32_POLYNOMIAL;
     } else {
-      crc = crc << 1;
+      crc <<= 1;
     }
   }
-  return crc;
+  crc
 }
 
 
@@ -45,20 +45,20 @@ fn as_slice_u32(data: &[u8]) -> &[u32] {
   unsafe {
     let ptr = data.as_ptr() as *const u32;
     let len = data.len() / ::std::mem::size_of::<u32>();
-    return ::std::slice::from_raw_parts(ptr, len);
+    ::std::slice::from_raw_parts(ptr, len)
   }
 }
 
 
 /// Calculate the CRC of a byte slice.
 pub fn crc(data: &[u8]) -> u32 {
-  let mut crc = 0xffffffff;
+  let mut crc = 0xffff_ffff;
   let data = as_slice_u32(data);
 
-  for i in 0..data.len() {
-    crc = crc32(crc, data[i]);
+  for byte in data {
+    crc = crc32(crc, *byte);
   }
-  return crc;
+  crc
 }
 
 

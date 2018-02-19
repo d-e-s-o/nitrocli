@@ -1,7 +1,7 @@
 // pinentry.rs
 
 // *************************************************************************
-// * Copyright (C) 2017 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -21,7 +21,7 @@ use error::Error;
 use std::process;
 
 
-const CACHE_ID: &'static str = "nitrokey";
+const CACHE_ID: &str = "nitrokey";
 
 
 fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
@@ -45,14 +45,14 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
     let (_, error) = lines[0].split_at(4);
     return Err(Error::Error(error.to_string()));
   }
-  return Err(Error::Error("Unexpected response: ".to_string() + &string));
+  Err(Error::Error("Unexpected response: ".to_string() + &string))
 }
 
 
 pub fn inquire_passphrase() -> Result<Vec<u8>, Error> {
-  const PINENTRY_DESCR: &'static str = "+";
-  const PINENTRY_TITLE: &'static str = "Please+enter+user+PIN";
-  const PINENTRY_PASSWD: &'static str = "PIN";
+  const PINENTRY_DESCR: &str = "+";
+  const PINENTRY_TITLE: &str = "Please+enter+user+PIN";
+  const PINENTRY_PASSWD: &str = "PIN";
 
   let args = vec![CACHE_ID, PINENTRY_DESCR, PINENTRY_PASSWD, PINENTRY_TITLE].join(" ");
   let command = "GET_PASSPHRASE --data ".to_string() + &args;
@@ -65,7 +65,7 @@ pub fn inquire_passphrase() -> Result<Vec<u8>, Error> {
   let output = process::Command::new("gpg-connect-agent").arg(command)
     .arg("/bye")
     .output()?;
-  return parse_pinentry_passphrase(output.stdout);
+  parse_pinentry_passphrase(output.stdout)
 }
 
 
@@ -77,7 +77,7 @@ fn parse_pinentry_response(response: Vec<u8>) -> Result<(), Error> {
     // We got the only valid answer we accept.
     return Ok(());
   }
-  return Err(Error::Error("Unexpected response: ".to_string() + &string));
+  Err(Error::Error("Unexpected response: ".to_string() + &string))
 }
 
 
@@ -88,7 +88,7 @@ pub fn clear_passphrase() -> Result<(), Error> {
     .arg("/bye")
     .output()?;
 
-  return parse_pinentry_response(output.stdout);
+  parse_pinentry_response(output.stdout)
 }
 
 

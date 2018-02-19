@@ -1,7 +1,7 @@
 // nitrokey.rs
 
 // *************************************************************************
-// * Copyright (C) 2017 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -71,14 +71,14 @@ impl<P> Report<P>
   where P: AsRef<[u8]> + Default,
 {
   pub fn new() -> Report<P> {
-    return Report {
+    Report {
       data: P::default(),
       crc: 0,
-    };
+    }
   }
 
   pub fn is_valid(&self) -> bool {
-    return self.crc == crc(self.data.as_ref());
+    self.crc == crc(self.data.as_ref())
   }
 }
 
@@ -87,7 +87,7 @@ impl<P> AsRef<[u8]> for Report<P>
   where P: AsRef<[u8]>,
 {
   fn as_ref(&self) -> &[u8] {
-    unsafe { return mem::transmute::<&Report<P>, &[u8; 64]>(self) };
+    unsafe { mem::transmute::<&Report<P>, &[u8; 64]>(self) }
   }
 }
 
@@ -97,10 +97,10 @@ impl<P> From<P> for Report<P>
 {
   fn from(payload: P) -> Report<P> {
     let crc = crc(payload.as_ref());
-    return Report {
+    Report {
       data: payload,
       crc: crc,
-    };
+    }
   }
 }
 
@@ -109,7 +109,7 @@ impl<P> AsMut<[u8]> for Report<P>
   where P: AsRef<[u8]>,
 {
   fn as_mut(&mut self) -> &mut [u8] {
-    unsafe { return mem::transmute::<&mut Report<P>, &mut [u8; 64]>(self) };
+    unsafe { mem::transmute::<&mut Report<P>, &mut [u8; 64]>(self) }
   }
 }
 
@@ -120,21 +120,21 @@ pub struct EmptyPayload {
 
 impl Default for EmptyPayload {
   fn default() -> EmptyPayload {
-    return EmptyPayload {
+    EmptyPayload {
       data: [0u8; 60],
-    };
+    }
   }
 }
 
 impl AsRef<[u8]> for EmptyPayload {
   fn as_ref(&self) -> &[u8] {
-    unsafe { return mem::transmute::<&EmptyPayload, &[u8; 60]>(self) };
+    unsafe { mem::transmute::<&EmptyPayload, &[u8; 60]>(self) }
   }
 }
 
 impl<P> AsRef<Response<P>> for EmptyPayload {
   fn as_ref(&self) -> &Response<P> {
-    unsafe { return mem::transmute::<&EmptyPayload, &Response<P>>(self) };
+    unsafe { mem::transmute::<&EmptyPayload, &Response<P>>(self) }
   }
 }
 
@@ -154,10 +154,10 @@ macro_rules! defaultCommandNew {
   ( $name:ident, $command:ident ) => {
     impl $name {
       pub fn new() -> $name {
-        return $name{
+        $name{
           command: Command::$command,
           padding: [0; 59],
-        };
+        }
       }
     }
   }
@@ -167,9 +167,7 @@ macro_rules! defaultPayloadAsRef {
   ( $name:ty ) => {
     impl AsRef<[u8]> for $name {
       fn as_ref(&self) -> &[u8] {
-        unsafe {
-          return mem::transmute::<&$name, &[u8; 60]>(self)
-        };
+        unsafe { mem::transmute::<&$name, &[u8; 60]>(self) }
       }
     }
   }
@@ -198,10 +196,10 @@ pub struct EnableEncryptedVolumeCommand {
 
 
 impl EnableEncryptedVolumeCommand {
-  pub fn new(password: &Vec<u8>) -> EnableEncryptedVolumeCommand {
+  pub fn new(password: &[u8]) -> EnableEncryptedVolumeCommand {
     let mut report = EnableEncryptedVolumeCommand {
       command: Command::EnableEncryptedVolume,
-      kind: 'P' as u8,
+      kind: b'P',
       password: [0; 20],
       padding: [0; 38],
     };
@@ -210,7 +208,7 @@ impl EnableEncryptedVolumeCommand {
 
     let len = cmp::min(report.password.len(), password.len());
     report.password[..len].copy_from_slice(&password[..len]);
-    return report;
+    report
   }
 }
 
@@ -266,7 +264,7 @@ pub struct Response<Payload> {
 
 impl<P> AsRef<[u8]> for Response<P> {
   fn as_ref(&self) -> &[u8] {
-    unsafe { return mem::transmute::<&Response<P>, &[u8; 60]>(self) };
+    unsafe { mem::transmute::<&Response<P>, &[u8; 60]>(self) }
   }
 }
 

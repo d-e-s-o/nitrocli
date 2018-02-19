@@ -1,7 +1,7 @@
 // main.rs
 
 // *************************************************************************
-// * Copyright (C) 2017 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -124,13 +124,13 @@ fn transmit<PS, PR>(handle: &mut libhid::Handle,
   where PS: AsRef<[u8]>,
         PR: AsRef<[u8]> + Default,
 {
-  send(handle, &report)?;
+  send(handle, report)?;
 
   // We need to give the stick some time to handle the command. If we
   // don't, we might just receive stale data from before.
   thread::sleep(time::Duration::from_millis(SEND_RECV_DELAY_MS));
 
-  return receive::<PR>(handle);
+  receive::<PR>(handle)
 }
 
 
@@ -144,7 +144,7 @@ fn nitrokey_do(function: &NitroFunc) -> Result<()> {
       return function(&mut device.open()?);
     }
   }
-  return Err(Error::Error("Nitrokey device not found".to_string()));
+  Err(Error::Error("Nitrokey device not found".to_string()))
 }
 
 
@@ -205,7 +205,7 @@ fn print_status(response: &nitrokey::DeviceStatusResponse) {
 fn status() -> Result<()> {
   type Response = nitrokey::Response<nitrokey::DeviceStatusResponse>;
 
-  return nitrokey_do(&|handle| {
+  nitrokey_do(&|handle| {
     let payload = nitrokey::DeviceStatusCommand::new();
     let report = nitrokey::Report::from(payload);
 
@@ -223,8 +223,8 @@ fn status() -> Result<()> {
     }
 
     print_status(response);
-    return Ok(());
-  });
+    Ok(())
+  })
 }
 
 
@@ -251,7 +251,7 @@ fn wait(handle: &mut libhid::Handle) -> Result<nitrokey::StorageStatus> {
 fn open() -> Result<()> {
   type Response = nitrokey::Response<nitrokey::StorageResponse>;
 
-  return nitrokey_do(&|handle| {
+  nitrokey_do(&|handle| {
     let mut retry = 3;
     loop {
       let passphrase = pinentry::inquire_passphrase()?;
@@ -284,7 +284,7 @@ fn open() -> Result<()> {
       }
       return Ok(());
     }
-  });
+  })
 }
 
 
@@ -297,7 +297,7 @@ extern "C" {
 fn close() -> Result<()> {
   type Response = nitrokey::Response<nitrokey::StorageResponse>;
 
-  return nitrokey_do(&|handle| {
+  nitrokey_do(&|handle| {
     // Flush all filesystem caches to disk. We are mostly interested in
     // making sure that the encrypted volume on the nitrokey we are
     // about to close is not closed while not all data was written to
@@ -320,14 +320,14 @@ fn close() -> Result<()> {
       let error = format!("Closing encrypted volume failed: {}", status);
       return Err(Error::Error(error));
     }
-    return Ok(());
-  });
+    Ok(())
+  })
 }
 
 
 /// Clear the PIN stored when opening the nitrokey's encrypted volume.
 fn clear() -> Result<()> {
-  return pinentry::clear_passphrase();
+  pinentry::clear_passphrase()
 }
 
 
