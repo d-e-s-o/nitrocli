@@ -50,11 +50,11 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
 
 
 pub fn inquire_passphrase() -> Result<Vec<u8>, Error> {
-  const PINENTRY_DESCR: &str = "+";
-  const PINENTRY_TITLE: &str = "Please+enter+user+PIN";
-  const PINENTRY_PASSWD: &str = "PIN";
+  const PINENTRY_ERROR_MSG: &str = "+";
+  const PINENTRY_PROMPT: &str = "PIN";
+  const PINENTRY_DESCR: &str = "Please+enter+user+PIN";
 
-  let args = vec![CACHE_ID, PINENTRY_DESCR, PINENTRY_PASSWD, PINENTRY_TITLE].join(" ");
+  let args = vec![CACHE_ID, PINENTRY_ERROR_MSG, PINENTRY_PROMPT, PINENTRY_DESCR].join(" ");
   let command = "GET_PASSPHRASE --data ".to_string() + &args;
   // We could also use the --data parameter here to have a more direct
   // representation of the passphrase but the resulting response was
