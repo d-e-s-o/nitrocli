@@ -28,29 +28,6 @@ version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "hid"
-version = "0.4.1"
-dependencies = [
- "hidapi-sys 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.45 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "hidapi-sys"
-version = "0.1.4"
-dependencies = [
- "cc 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.45 (registry+https://github.com/rust-lang/crates.io-index)",
- "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "hidapi-sys"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-replace = "hidapi-sys 0.1.4"
-
-[[package]]
 name = "libc"
 version = "0.2.45"
 
@@ -64,12 +41,7 @@ replace = "libc 0.2.45"
 name = "nitrocli"
 version = "0.1.3"
 dependencies = [
- "cc 1.0.25",
- "hid 0.4.1",
- "hidapi-sys 0.1.4",
- "libc 0.2.45",
  "nitrokey 0.2.1",
- "pkg-config 0.3.14",
 ]
 
 [[package]]
@@ -93,16 +65,6 @@ name = "nitrokey-sys"
 version = "3.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 replace = "nitrokey-sys 3.4.1"
-
-[[package]]
-name = "pkg-config"
-version = "0.3.14"
-
-[[package]]
-name = "pkg-config"
-version = "0.3.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-replace = "pkg-config 0.3.14"
 
 [[package]]
 name = "rand"
@@ -143,10 +105,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum cc 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)" = "f159dfd43363c4d08055a07703eb7a3406b0dac4d0584d96965a3262db3c9d16"
 "checksum fuchsia-zircon 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e9763c69ebaae630ba35f74888db465e49e259ba1bc0eda7d06f4a067615d82"
 "checksum fuchsia-zircon-sys 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
-"checksum hidapi-sys 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "dd8a9410aec7ca9f4571ff40c7b1813a28503c2a664a028921fc973073dcd4bf"
 "checksum libc 0.2.45 (registry+https://github.com/rust-lang/crates.io-index)" = "2d2857ec59fadc0773853c664d2d18e7198e83883e7060b63c924cb077bd5c74"
 "checksum nitrokey-sys 3.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "34794d630d40a093a3f0e31b821b38ee1c16e6909dc42064feff28f4798484f4"
-"checksum pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)" = "676e8eb2b1b4c9043511a9b7bea0915320d7e502b0a079fb03f9635a5252b18c"
 "checksum rand 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "8356f47b32624fef5b3301c1be97e5944ecdd595409cc5da11d05f211db6cfbd"
 "checksum winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "92c1eb33641e276cfa214a0522acad57be5c56b10cb348b3c5117db75f3ac4b0"
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"

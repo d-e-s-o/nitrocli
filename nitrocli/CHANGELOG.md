@@ -4,6 +4,7 @@ Unreleased
   version `3.4.1` as well as `rand` version `0.4.3` as indirect dependencies
 - Use the nitrokey crate for the `open`, `close` and `status` commands instead
   of direct communication with the Nitrokey device
+- Removed the `hid`, `hidapi-sys` and `pkg-config` dependencies
 
 
 0.1.3
