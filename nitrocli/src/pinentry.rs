@@ -21,7 +21,7 @@ use error::Error;
 use std::process;
 
 
-const CACHE_ID: &str = "nitrokey";
+const CACHE_ID: &str = "nitrocli:user";
 
 
 fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
