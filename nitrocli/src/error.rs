@@ -26,17 +26,9 @@ use libhid;
 
 #[derive(Debug)]
 pub enum Error {
-  HidError(libhid::Error),
   IoError(io::Error),
   Utf8Error(string::FromUtf8Error),
   Error(String),
-}
-
-
-impl From<libhid::Error> for Error {
-  fn from(e: libhid::Error) -> Error {
-    Error::HidError(e)
-  }
 }
 
 
@@ -57,7 +49,6 @@ impl From<string::FromUtf8Error> for Error {
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
-      Error::HidError(ref e) => write!(f, "hidapi error: {}", e),
       Error::Utf8Error(_) => write!(f, "Encountered UTF-8 conversion error"),
       Error::IoError(ref e) => write!(f, "IO error: {}", e.get_ref().unwrap()),
       Error::Error(ref e) => write!(f, "{}", e),
