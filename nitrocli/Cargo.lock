@@ -1,12 +1,12 @@
 [[package]]
 name = "cc"
-version = "1.0.4"
+version = "1.0.25"
 
 [[package]]
 name = "cc"
-version = "1.0.4"
+version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-replace = "cc 1.0.4"
+replace = "cc 1.0.25"
 
 [[package]]
 name = "hid"
@@ -20,7 +20,7 @@ dependencies = [
 name = "hidapi-sys"
 version = "0.1.4"
 dependencies = [
- "cc 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.45 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -45,7 +45,7 @@ replace = "libc 0.2.45"
 name = "nitrocli"
 version = "0.1.2"
 dependencies = [
- "cc 1.0.4",
+ "cc 1.0.25",
  "hid 0.4.1",
  "hidapi-sys 0.1.4",
  "libc 0.2.45",
@@ -63,7 +63,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 replace = "pkg-config 0.3.14"
 
 [metadata]
-"checksum cc 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "deaf9ec656256bb25b404c51ef50097207b9cbb29c933d31f92cae5a8a0ffee0"
+"checksum cc 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)" = "f159dfd43363c4d08055a07703eb7a3406b0dac4d0584d96965a3262db3c9d16"
 "checksum hidapi-sys 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "dd8a9410aec7ca9f4571ff40c7b1813a28503c2a664a028921fc973073dcd4bf"
 "checksum libc 0.2.45 (registry+https://github.com/rust-lang/crates.io-index)" = "2d2857ec59fadc0773853c664d2d18e7198e83883e7060b63c924cb077bd5c74"
 "checksum pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)" = "676e8eb2b1b4c9043511a9b7bea0915320d7e502b0a079fb03f9635a5252b18c"

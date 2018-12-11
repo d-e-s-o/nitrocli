@@ -51,7 +51,7 @@ version = "0.3"
 path = "../pkg-config"
 
 [replace]
-"cc:1.0.4" = { path = "../cc" }
+"cc:1.0.25" = { path = "../cc" }
 "hid:0.4.1" = { path = "../hid" }
 "hidapi-sys:0.1.4" = { path = "../hidapi-sys" }
 "libc:0.2.45" = { path = "../libc" }
