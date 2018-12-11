@@ -17,9 +17,10 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use crc32::crc;
 use std::cmp;
 use std::mem;
+
+use crate::crc32::crc;
 
 
 // The Nitrokey Storage vendor ID.

@@ -17,8 +17,8 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-
 #![deny(missing_docs)]
+#![warn(rust_2018_compatibility)]
 
 //! Nitrocli is a program providing a command line interface to certain
 //! commands of the Nitrokey Storage device.
@@ -31,12 +31,13 @@ mod error;
 mod nitrokey;
 mod pinentry;
 
-use error::Error;
 use std::mem;
 use std::process;
 use std::result;
 use std::thread;
 use std::time;
+
+use crate::error::Error;
 
 type Result<T> = result::Result<T, Error>;
 type NitroFunc = Fn(&mut libhid::Handle) -> Result<()>;

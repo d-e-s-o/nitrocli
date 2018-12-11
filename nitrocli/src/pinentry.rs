@@ -17,8 +17,9 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use error::Error;
 use std::process;
+
+use crate::error::Error;
 
 
 /// PIN type requested from pinentry.
