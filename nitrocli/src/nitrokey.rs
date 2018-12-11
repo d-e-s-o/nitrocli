@@ -17,7 +17,6 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use std::cmp;
 use std::mem;
 
 use crate::crc32::crc;
@@ -41,10 +40,6 @@ pub const VOLUME_ACTIVE_HIDDEN: u8 = 0b100;
 #[derive(PartialEq)]
 #[repr(u8)]
 pub enum Command {
-  // The command to enable the encrypted volume.
-  EnableEncryptedVolume = 0x20,
-  // The command to disable the encrypted volume.
-  DisableEncryptedVolume = 0x21,
   // Retrieve the device status.
   GetDeviceStatus = 0x2E,
 }
@@ -183,39 +178,6 @@ macro_rules! defaultCommand {
 }
 
 
-#[allow(dead_code)]
-#[repr(packed)]
-pub struct EnableEncryptedVolumeCommand {
-  command: Command,
-  // The kind of password. Unconditionally 'P' because the User PIN is
-  // used to enable the encrypted volume.
-  kind: u8,
-  // The password has a maximum length of twenty characters.
-  password: [u8; 20],
-  padding: [u8; 38],
-}
-
-
-impl EnableEncryptedVolumeCommand {
-  pub fn new(password: &[u8]) -> EnableEncryptedVolumeCommand {
-    let mut report = EnableEncryptedVolumeCommand {
-      command: Command::EnableEncryptedVolume,
-      kind: b'P',
-      password: [0; 20],
-      padding: [0; 38],
-    };
-
-    debug_assert!(password.len() <= report.password.len());
-
-    let len = cmp::min(report.password.len(), password.len());
-    report.password[..len].copy_from_slice(&password[..len]);
-    report
-  }
-}
-
-defaultPayloadAsRef!(EnableEncryptedVolumeCommand);
-
-defaultCommand!(DisableEncryptedVolumeCommand, DisableEncryptedVolume);
 defaultCommand!(DeviceStatusCommand, GetDeviceStatus);
 
 
@@ -271,17 +233,6 @@ impl<P> AsRef<[u8]> for Response<P> {
 
 
 #[repr(packed)]
-pub struct StorageResponse {
-  pub padding1: [u8; 13],
-  pub command_counter: u8,
-  pub last_storage_command: Command,
-  pub storage_status: StorageStatus,
-  pub progress: u8,
-  pub padding2: [u8; 2],
-}
-
-
-#[repr(packed)]
 pub struct DeviceStatusResponse {
   pub padding0: [u8; 22],
   pub magic: u16,
@@ -302,38 +253,4 @@ pub struct DeviceStatusResponse {
   pub admin_password_retry_count: u8,
   pub active_smartcard_id: u32,
   pub storage_keys_missing: u8,
-}
-
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  #[test]
-  fn encrypted_volume_report() {
-    let password = "test42".to_string().into_bytes();
-    let report = EnableEncryptedVolumeCommand::new(&password);
-    let expected = ['t' as u8, 'e' as u8, 's' as u8, 't' as u8, '4' as u8, '2' as u8, 0u8, 0u8,
-                    0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
-    assert_eq!(report.password, expected);
-  }
-
-  #[test]
-  #[cfg(debug)]
-  #[should_panic(expected = "assertion failed")]
-  fn overly_long_password() {
-    let password = "012345678912345678901".to_string().into_bytes();
-    EnableEncryptedVolumeCommand::new(&password);
-  }
-
-  #[test]
-  fn report_crc() {
-    let password = "passphrase".to_string().into_bytes();
-    let payload = EnableEncryptedVolumeCommand::new(&password);
-    let report = Report::from(payload);
-
-    // The expected checksum was computed using the original
-    // functionality.
-    assert_eq!(report.crc, 0xeeb583c);
-  }
 }
