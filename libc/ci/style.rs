@@ -72,6 +72,8 @@ fn walk(path: &Path, err: &mut Errors) {
 
             "dox.rs" |
             "lib.rs" |
+            "ctypes.rs" |
+            "libc.rs" |
             "macros.rs" => continue,
 
             _ => {}
@@ -127,7 +129,10 @@ fn check_style(file: &str, path: &Path, err: &mut Errors) {
         if line.contains("extern \"C\"") {
             err.error(path, i, "use `extern` instead of `extern \"C\"");
         }
-        if line.contains("#[cfg(") && !line.contains(" if ") {
+        if line.contains("#[cfg(") && !line.contains(" if ")
+            && !(line.contains("target_endian") ||
+                 line.contains("target_arch"))
+        {
             if state != State::Structs {
                 err.error(path, i, "use cfg_if! and submodules \
                                     instead of #[cfg]");

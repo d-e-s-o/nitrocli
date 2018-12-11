@@ -1,5 +1,7 @@
 //! SPARC64-specific definitions for 64-bit linux-like values
 
+use pthread_mutex_t;
+
 pub type c_long = i64;
 pub type c_ulong = u64;
 pub type c_char = i8;
@@ -67,6 +69,21 @@ s! {
         pub f_frsize: ::__fsword_t,
         pub f_flags: ::__fsword_t,
         pub f_spare: [::__fsword_t; 4],
+    }
+
+    pub struct statvfs {
+        pub f_bsize: ::c_ulong,
+        pub f_frsize: ::c_ulong,
+        pub f_blocks: ::fsblkcnt_t,
+        pub f_bfree: ::fsblkcnt_t,
+        pub f_bavail: ::fsblkcnt_t,
+        pub f_files: ::fsfilcnt_t,
+        pub f_ffree: ::fsfilcnt_t,
+        pub f_favail: ::fsfilcnt_t,
+        pub f_fsid: ::c_ulong,
+        pub f_flag: ::c_ulong,
+        pub f_namemax: ::c_ulong,
+        __f_spare: [::c_int; 6],
     }
 
     pub struct statvfs64 {
@@ -145,7 +162,7 @@ pub const O_DSYNC: ::c_int = 0x2000;
 pub const O_FSYNC: ::c_int = 0x802000;
 pub const O_NOATIME: ::c_int = 0x200000;
 pub const O_PATH: ::c_int = 0x1000000;
-pub const O_TMPFILE: ::c_int = 0o200000000 | O_DIRECTORY;
+pub const O_TMPFILE: ::c_int = 0x2000000 | O_DIRECTORY;
 
 pub const MAP_GROWSDOWN: ::c_int = 0x0200;
 
@@ -230,6 +247,7 @@ pub const ERFKILL: ::c_int = 134;
 
 pub const SOL_SOCKET: ::c_int = 0xffff;
 
+pub const SO_PASSCRED: ::c_int = 2;
 pub const SO_REUSEADDR: ::c_int = 4;
 pub const SO_BINDTODEVICE: ::c_int = 0x000d;
 pub const SO_TIMESTAMP: ::c_int = 0x001d;
@@ -243,6 +261,8 @@ pub const SO_DONTROUTE: ::c_int = 16;
 pub const SO_BROADCAST: ::c_int = 32;
 pub const SO_SNDBUF: ::c_int = 0x1001;
 pub const SO_RCVBUF: ::c_int = 0x1002;
+pub const SO_SNDBUFFORCE: ::c_int = 0x100a;
+pub const SO_RCVBUFFORCE: ::c_int = 0x100b;
 pub const SO_DOMAIN: ::c_int = 0x1029;
 pub const SO_KEEPALIVE: ::c_int = 8;
 pub const SO_OOBINLINE: ::c_int = 0x100;
@@ -285,6 +305,10 @@ pub const F_GETOWN: ::c_int = 5;
 pub const F_SETOWN: ::c_int = 6;
 pub const F_SETLK: ::c_int = 8;
 pub const F_SETLKW: ::c_int = 9;
+
+pub const F_RDLCK: ::c_int = 1;
+pub const F_WRLCK: ::c_int = 2;
+pub const F_UNLCK: ::c_int = 3;
 
 pub const SFD_NONBLOCK: ::c_int = 0x4000;
 
@@ -331,6 +355,30 @@ pub const EFD_CLOEXEC: ::c_int = 0x400000;
 pub const __SIZEOF_PTHREAD_CONDATTR_T: usize = 4;
 pub const __SIZEOF_PTHREAD_MUTEX_T: usize = 40;
 pub const __SIZEOF_PTHREAD_MUTEXATTR_T: usize = 4;
+
+align_const! {
+    pub const PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP: ::pthread_mutex_t =
+        pthread_mutex_t {
+            size: [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+        };
+    pub const PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP: ::pthread_mutex_t =
+        pthread_mutex_t {
+            size: [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+        };
+    pub const PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP: ::pthread_mutex_t =
+        pthread_mutex_t {
+            size: [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+        };
+}
 
 pub const O_DIRECTORY: ::c_int = 0o200000;
 pub const O_NOFOLLOW: ::c_int = 0o400000;
@@ -406,6 +454,41 @@ pub const BSDLY:  ::tcflag_t = 0o020000;
 pub const FFDLY:  ::tcflag_t = 0o100000;
 pub const VTDLY:  ::tcflag_t = 0o040000;
 pub const XTABS:  ::tcflag_t = 0o014000;
+
+pub const B0: ::speed_t = 0o000000;
+pub const B50: ::speed_t = 0o000001;
+pub const B75: ::speed_t = 0o000002;
+pub const B110: ::speed_t = 0o000003;
+pub const B134: ::speed_t = 0o000004;
+pub const B150: ::speed_t = 0o000005;
+pub const B200: ::speed_t = 0o000006;
+pub const B300: ::speed_t = 0o000007;
+pub const B600: ::speed_t = 0o000010;
+pub const B1200: ::speed_t = 0o000011;
+pub const B1800: ::speed_t = 0o000012;
+pub const B2400: ::speed_t = 0o000013;
+pub const B4800: ::speed_t = 0o000014;
+pub const B9600: ::speed_t = 0o000015;
+pub const B19200: ::speed_t = 0o000016;
+pub const B38400: ::speed_t = 0o000017;
+pub const EXTA: ::speed_t = B19200;
+pub const EXTB: ::speed_t = B38400;
+pub const BOTHER: ::speed_t = 0x1000;
+pub const B57600: ::speed_t = 0x1001;
+pub const B115200: ::speed_t = 0x1002;
+pub const B230400: ::speed_t = 0x1003;
+pub const B460800: ::speed_t = 0x1004;
+pub const B76800: ::speed_t = 0x1005;
+pub const B153600: ::speed_t = 0x1006;
+pub const B307200: ::speed_t = 0x1007;
+pub const B614400: ::speed_t = 0x1008;
+pub const B921600: ::speed_t = 0x1009;
+pub const B500000: ::speed_t = 0x100a;
+pub const B576000: ::speed_t = 0x100b;
+pub const B1000000: ::speed_t = 0x100c;
+pub const B1152000: ::speed_t = 0x100d;
+pub const B1500000: ::speed_t = 0x100e;
+pub const B2000000: ::speed_t = 0x100f;
 
 pub const VEOL: usize = 5;
 pub const VEOL2: usize = 6;

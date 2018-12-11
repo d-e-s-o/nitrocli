@@ -1,5 +1,33 @@
 //! Windows CRT definitions
 
+pub type int8_t = i8;
+pub type int16_t = i16;
+pub type int32_t = i32;
+pub type int64_t = i64;
+pub type uint8_t = u8;
+pub type uint16_t = u16;
+pub type uint32_t = u32;
+pub type uint64_t = u64;
+
+pub type c_schar = i8;
+pub type c_uchar = u8;
+pub type c_short = i16;
+pub type c_ushort = u16;
+pub type c_int = i32;
+pub type c_uint = u32;
+pub type c_float = f32;
+pub type c_double = f64;
+pub type c_longlong = i64;
+pub type c_ulonglong = u64;
+pub type intmax_t = i64;
+pub type uintmax_t = u64;
+
+pub type size_t = usize;
+pub type ptrdiff_t = isize;
+pub type intptr_t = isize;
+pub type uintptr_t = usize;
+pub type ssize_t = isize;
+
 pub type c_char = i8;
 pub type c_long = i32;
 pub type c_ulong = u32;
@@ -66,6 +94,9 @@ s! {
     }
 }
 
+pub const INT_MIN: c_int = -2147483648;
+pub const INT_MAX: c_int = 2147483647;
+
 pub const EXIT_FAILURE: ::c_int = 1;
 pub const EXIT_SUCCESS: ::c_int = 0;
 pub const RAND_MAX: ::c_int = 32767;
@@ -79,18 +110,6 @@ pub const _IOLBF: ::c_int = 64;
 pub const BUFSIZ: ::c_uint = 512;
 pub const FOPEN_MAX: ::c_uint = 20;
 pub const FILENAME_MAX: ::c_uint = 260;
-
-cfg_if! {
-    if #[cfg(all(target_env = "gnu"))] {
-        pub const L_tmpnam: ::c_uint = 14;
-        pub const TMP_MAX: ::c_uint = 0x7fff;
-    } else if #[cfg(all(target_env = "msvc"))] {
-        pub const L_tmpnam: ::c_uint = 260;
-        pub const TMP_MAX: ::c_uint = 0x7fff_ffff;
-    } else {
-        // Unknown target_env
-    }
-}
 
 pub const O_RDONLY: ::c_int = 0;
 pub const O_WRONLY: ::c_int = 1;
@@ -159,12 +178,115 @@ pub const EILSEQ: ::c_int = 42;
 pub const STRUNCATE: ::c_int = 80;
 
 // inline comment below appeases style checker
-#[cfg(all(target_env = "msvc", feature = "stdbuild"))] // " if "
+#[cfg(all(target_env = "msvc", feature = "rustc-dep-of-std"))] // " if "
 #[link(name = "msvcrt", cfg(not(target_feature = "crt-static")))]
 #[link(name = "libcmt", cfg(target_feature = "crt-static"))]
 extern {}
 
+pub enum FILE {}
+pub enum fpos_t {} // TODO: fill this out with a struct
+
 extern {
+    pub fn isalnum(c: c_int) -> c_int;
+    pub fn isalpha(c: c_int) -> c_int;
+    pub fn iscntrl(c: c_int) -> c_int;
+    pub fn isdigit(c: c_int) -> c_int;
+    pub fn isgraph(c: c_int) -> c_int;
+    pub fn islower(c: c_int) -> c_int;
+    pub fn isprint(c: c_int) -> c_int;
+    pub fn ispunct(c: c_int) -> c_int;
+    pub fn isspace(c: c_int) -> c_int;
+    pub fn isupper(c: c_int) -> c_int;
+    pub fn isxdigit(c: c_int) -> c_int;
+    pub fn tolower(c: c_int) -> c_int;
+    pub fn toupper(c: c_int) -> c_int;
+    pub fn fopen(filename: *const c_char, mode: *const c_char) -> *mut FILE;
+    pub fn freopen(filename: *const c_char, mode: *const c_char,
+                   file: *mut FILE) -> *mut FILE;
+    pub fn fflush(file: *mut FILE) -> c_int;
+    pub fn fclose(file: *mut FILE) -> c_int;
+    pub fn remove(filename: *const c_char) -> c_int;
+    pub fn rename(oldname: *const c_char, newname: *const c_char) -> c_int;
+    pub fn tmpfile() -> *mut FILE;
+    pub fn setvbuf(stream: *mut FILE, buffer: *mut c_char, mode: c_int,
+                   size: size_t) -> c_int;
+    pub fn setbuf(stream: *mut FILE, buf: *mut c_char);
+    pub fn getchar() -> c_int;
+    pub fn putchar(c: c_int) -> c_int;
+    pub fn fgetc(stream: *mut FILE) -> c_int;
+    pub fn fgets(buf: *mut c_char, n: c_int, stream: *mut FILE) -> *mut c_char;
+    pub fn fputc(c: c_int, stream: *mut FILE) -> c_int;
+    pub fn fputs(s: *const c_char, stream: *mut FILE) -> c_int;
+    pub fn puts(s: *const c_char) -> c_int;
+    pub fn ungetc(c: c_int, stream: *mut FILE) -> c_int;
+    pub fn fread(ptr: *mut c_void, size: size_t, nobj: size_t,
+                 stream: *mut FILE) -> size_t;
+    pub fn fwrite(ptr: *const c_void, size: size_t, nobj: size_t,
+                  stream: *mut FILE) -> size_t;
+    pub fn fseek(stream: *mut FILE, offset: c_long, whence: c_int) -> c_int;
+    pub fn ftell(stream: *mut FILE) -> c_long;
+    pub fn rewind(stream: *mut FILE);
+    pub fn fgetpos(stream: *mut FILE, ptr: *mut fpos_t) -> c_int;
+    pub fn fsetpos(stream: *mut FILE, ptr: *const fpos_t) -> c_int;
+    pub fn feof(stream: *mut FILE) -> c_int;
+    pub fn ferror(stream: *mut FILE) -> c_int;
+    pub fn perror(s: *const c_char);
+    pub fn atoi(s: *const c_char) -> c_int;
+    pub fn strtod(s: *const c_char, endp: *mut *mut c_char) -> c_double;
+    pub fn strtol(s: *const c_char, endp: *mut *mut c_char,
+                  base: c_int) -> c_long;
+    pub fn strtoul(s: *const c_char, endp: *mut *mut c_char,
+                   base: c_int) -> c_ulong;
+    pub fn calloc(nobj: size_t, size: size_t) -> *mut c_void;
+    pub fn malloc(size: size_t) -> *mut c_void;
+    pub fn realloc(p: *mut c_void, size: size_t) -> *mut c_void;
+    pub fn free(p: *mut c_void);
+    pub fn abort() -> !;
+    pub fn exit(status: c_int) -> !;
+    pub fn _exit(status: c_int) -> !;
+    pub fn atexit(cb: extern fn()) -> c_int;
+    pub fn system(s: *const c_char) -> c_int;
+    pub fn getenv(s: *const c_char) -> *mut c_char;
+
+    pub fn strcpy(dst: *mut c_char, src: *const c_char) -> *mut c_char;
+    pub fn strncpy(dst: *mut c_char, src: *const c_char,
+                   n: size_t) -> *mut c_char;
+    pub fn strcat(s: *mut c_char, ct: *const c_char) -> *mut c_char;
+    pub fn strncat(s: *mut c_char, ct: *const c_char,
+                   n: size_t) -> *mut c_char;
+    pub fn strcmp(cs: *const c_char, ct: *const c_char) -> c_int;
+    pub fn strncmp(cs: *const c_char, ct: *const c_char, n: size_t) -> c_int;
+    pub fn strcoll(cs: *const c_char, ct: *const c_char) -> c_int;
+    pub fn strchr(cs: *const c_char, c: c_int) -> *mut c_char;
+    pub fn strrchr(cs: *const c_char, c: c_int) -> *mut c_char;
+    pub fn strspn(cs: *const c_char, ct: *const c_char) -> size_t;
+    pub fn strcspn(cs: *const c_char, ct: *const c_char) -> size_t;
+    pub fn strdup(cs: *const c_char) -> *mut c_char;
+    pub fn strpbrk(cs: *const c_char, ct: *const c_char) -> *mut c_char;
+    pub fn strstr(cs: *const c_char, ct: *const c_char) -> *mut c_char;
+    pub fn strlen(cs: *const c_char) -> size_t;
+    pub fn strnlen(cs: *const c_char, maxlen: size_t) -> size_t;
+    pub fn strerror(n: c_int) -> *mut c_char;
+    pub fn strtok(s: *mut c_char, t: *const c_char) -> *mut c_char;
+    pub fn strxfrm(s: *mut c_char, ct: *const c_char, n: size_t) -> size_t;
+    pub fn wcslen(buf: *const wchar_t) -> size_t;
+    pub fn wcstombs(dest: *mut c_char, src: *const wchar_t,
+                    n: size_t) -> ::size_t;
+
+    pub fn memchr(cx: *const c_void, c: c_int, n: size_t) -> *mut c_void;
+    pub fn memcmp(cx: *const c_void, ct: *const c_void, n: size_t) -> c_int;
+    pub fn memcpy(dest: *mut c_void, src: *const c_void,
+                  n: size_t) -> *mut c_void;
+    pub fn memmove(dest: *mut c_void, src: *const c_void,
+                   n: size_t) -> *mut c_void;
+    pub fn memset(dest: *mut c_void, c: c_int, n: size_t) -> *mut c_void;
+
+    pub fn abs(i: c_int) -> c_int;
+    pub fn atof(s: *const c_char) -> c_double;
+    pub fn labs(i: c_long) -> c_long;
+    pub fn rand() -> c_int;
+    pub fn srand(seed: c_uint);
+
     #[link_name = "_chmod"]
     pub fn chmod(path: *const c_char, mode: ::c_int) -> ::c_int;
     #[link_name = "_wchmod"]
@@ -245,4 +367,34 @@ extern {
     #[link_name = "_wsetlocale"]
     pub fn wsetlocale(category: ::c_int,
                       locale: *const wchar_t) -> *mut wchar_t;
+}
+
+cfg_if! {
+    if #[cfg(core_cvoid)] {
+        pub use core::ffi::c_void;
+    } else {
+        // Use repr(u8) as LLVM expects `void*` to be the same as `i8*` to help
+        // enable more optimization opportunities around it recognizing things
+        // like malloc/free.
+        #[repr(u8)]
+        pub enum c_void {
+            // Two dummy variants so the #[repr] attribute can be used.
+            #[doc(hidden)]
+            __variant1,
+            #[doc(hidden)]
+            __variant2,
+        }
+    }
+}
+
+cfg_if! {
+    if #[cfg(all(target_env = "gnu"))] {
+        mod gnu;
+        pub use self::gnu::*;
+    } else if #[cfg(all(target_env = "msvc"))] {
+        mod msvc;
+        pub use self::msvc::*;
+    } else {
+        // Unknown target_env
+    }
 }

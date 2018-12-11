@@ -28,6 +28,10 @@ pub type integer_t = ::c_int;
 pub type cpu_type_t = integer_t;
 pub type cpu_subtype_t = integer_t;
 pub type vm_prot_t = ::c_int;
+pub type posix_spawnattr_t = *mut ::c_void;
+pub type posix_spawn_file_actions_t = *mut ::c_void;
+pub type key_t = ::c_int;
+pub type shmatt_t = ::c_ushort;
 
 pub enum timezone {}
 
@@ -241,7 +245,7 @@ s! {
         pub f_reserved: [::uint32_t; 8],
     }
 
-    // FIXME: this should have align 4 but it's got align 8 on 64-bit
+    #[cfg_attr(feature = "rustc-dep-of-std", repr(packed(4)))]
     pub struct kevent {
         pub ident: ::uintptr_t,
         pub filter: ::int16_t,
@@ -498,6 +502,90 @@ s! {
         pub sin_tos: ::c_ushort,
         pub sin_other: ::c_ushort,
     }
+
+    pub struct sockaddr_ctl {
+        pub sc_len: ::c_uchar,
+        pub sc_family: ::c_uchar,
+        pub ss_sysaddr: ::uint16_t,
+        pub sc_id: ::uint32_t,
+        pub sc_unit: ::uint32_t,
+        pub sc_reserved: [::uint32_t; 5],
+    }
+
+    pub struct in_pktinfo {
+        pub ipi_ifindex: ::c_uint,
+        pub ipi_spec_dst: ::in_addr,
+        pub ipi_addr: ::in_addr,
+    }
+
+    pub struct in6_pktinfo {
+        pub ipi6_addr: ::in6_addr,
+        pub ipi6_ifindex: ::c_uint,
+    }
+
+    // sys/ipc.h:
+
+    pub struct ipc_perm {
+        pub uid: ::uid_t,
+        pub gid: ::gid_t,
+        pub cuid: ::uid_t,
+        pub cgid: ::gid_t,
+        pub mode: ::mode_t,
+        pub _seq: ::c_ushort,
+        pub _key: ::key_t,
+    }
+
+    // sys/sem.h
+
+    pub struct sembuf {
+        pub sem_num: ::c_ushort,
+        pub sem_op: ::c_short,
+        pub sem_flg: ::c_short,
+    }
+
+    #[cfg_attr(feature = "rustc-dep-of-std", repr(packed(4)))]
+    pub struct semid_ds {
+        // Note the manpage shows different types than the system header.
+        pub sem_perm: ipc_perm,
+        pub sem_base: ::int32_t,
+        pub sem_nsems: ::c_ushort,
+        pub sem_otime: ::time_t,
+        pub sem_pad1: ::int32_t,
+        pub sem_ctime: ::time_t,
+        pub sem_pad2: ::int32_t,
+        pub sem_pad3: [::int32_t; 4],
+    }
+
+    pub union semun {
+        pub val: ::c_int,
+        pub buf: *mut semid_ds,
+        pub array: *mut ::c_ushort,
+    }
+
+    // sys/shm.h
+
+    #[cfg_attr(feature = "rustc-dep-of-std", repr(packed(4)))]
+    pub struct shmid_ds {
+        pub shm_perm: ipc_perm,
+        pub shm_segsz: ::size_t,
+        pub shm_lpid: ::pid_t,
+        pub shm_cpid: ::pid_t,
+        pub shm_nattch: ::shmatt_t,
+        pub shm_atime: ::time_t,  // FIXME: 64-bit wrong align => wrong offset
+        pub shm_dtime: ::time_t,  // FIXME: 64-bit wrong align => wrong offset
+        pub shm_ctime: ::time_t,  // FIXME: 64-bit wrong align => wrong offset
+        // FIXME: 64-bit wrong align => wrong offset:
+        pub shm_internal: *mut ::c_void,
+
+    }
+
+    pub struct arphdr {
+        pub ar_hrd: u16,
+        pub ar_pro: u16,
+        pub ar_hln: u8,
+        pub ar_pln: u8,
+        pub ar_op: u16,
+    }
 }
 
 pub const _UTX_USERSIZE: usize = 256;
@@ -688,11 +776,32 @@ pub const PROT_READ: ::c_int = 1;
 pub const PROT_WRITE: ::c_int = 2;
 pub const PROT_EXEC: ::c_int = 4;
 
+pub const PT_TRACE_ME: ::c_int = 0;
+pub const PT_READ_I: ::c_int = 1;
+pub const PT_READ_D: ::c_int = 2;
+pub const PT_READ_U: ::c_int = 3;
+pub const PT_WRITE_I: ::c_int = 4;
+pub const PT_WRITE_D: ::c_int = 5;
+pub const PT_WRITE_U: ::c_int = 6;
+pub const PT_CONTINUE: ::c_int = 7;
+pub const PT_KILL: ::c_int = 8;
+pub const PT_STEP: ::c_int = 9;
+pub const PT_ATTACH: ::c_int = 10;
+pub const PT_DETACH: ::c_int = 11;
+pub const PT_SIGEXC: ::c_int = 12;
+pub const PT_THUPDATE: ::c_int = 13;
+pub const PT_ATTACHEXC: ::c_int = 14;
+
+pub const PT_FORCEQUOTA: ::c_int = 30;
+pub const PT_DENY_ATTACH: ::c_int = 31;
+pub const PT_FIRSTMACH: ::c_int = 32;
+
 pub const MAP_FILE: ::c_int = 0x0000;
 pub const MAP_SHARED: ::c_int = 0x0001;
 pub const MAP_PRIVATE: ::c_int = 0x0002;
 pub const MAP_FIXED: ::c_int = 0x0010;
 pub const MAP_ANON: ::c_int = 0x1000;
+pub const MAP_ANONYMOUS: ::c_int = MAP_ANON;
 
 pub const VM_FLAGS_FIXED: ::c_int = 0x0000;
 pub const VM_FLAGS_ANYWHERE: ::c_int = 0x0001;
@@ -706,16 +815,8 @@ pub const VM_FLAGS_SUPERPAGE_MASK: ::c_int = 0x70000;
 pub const VM_FLAGS_RETURN_DATA_ADDR: ::c_int = 0x100000;
 pub const VM_FLAGS_RETURN_4K_DATA_ADDR: ::c_int = 0x800000;
 pub const VM_FLAGS_ALIAS_MASK: ::c_int = 0xFF000000;
-pub const VM_FLAGS_USER_ALLOCATE: ::c_int = VM_FLAGS_FIXED | VM_FLAGS_ANYWHERE |
-                                            VM_FLAGS_PURGABLE |
-                                            VM_FLAGS_RANDOM_ADDR |
-                                            VM_FLAGS_NO_CACHE |
-                                            VM_FLAGS_OVERWRITE |
-                                            VM_FLAGS_SUPERPAGE_MASK |
-                                            VM_FLAGS_ALIAS_MASK;
-pub const VM_FLAGS_USER_MAP: ::c_int = VM_FLAGS_USER_ALLOCATE |
-                                       VM_FLAGS_RETURN_4K_DATA_ADDR |
-                                       VM_FLAGS_RETURN_DATA_ADDR;
+pub const VM_FLAGS_USER_ALLOCATE: ::c_int = 0xff07401f;
+pub const VM_FLAGS_USER_MAP: ::c_int = 0xff97401f;
 pub const VM_FLAGS_USER_REMAP: ::c_int = VM_FLAGS_FIXED | VM_FLAGS_ANYWHERE |
                                         VM_FLAGS_RANDOM_ADDR |
                                         VM_FLAGS_OVERWRITE |
@@ -1026,6 +1127,13 @@ pub const TIOCPTYGRANT: ::c_uint = 0x20007454;
 pub const TIOCPTYGNAME: ::c_uint = 0x40807453;
 pub const TIOCPTYUNLK: ::c_uint = 0x20007452;
 
+pub const FIONCLEX: ::c_uint = 0x20006602;
+pub const FIONREAD: ::c_ulong = 0x4004667f;
+pub const FIOASYNC: ::c_ulong = 0x8004667d;
+pub const FIOSETOWN: ::c_ulong = 0x8004667c;
+pub const FIOGETOWN: ::c_ulong = 0x4004667b;
+pub const FIODTYPE: ::c_ulong = 0x4004667a;
+
 pub const B0: speed_t = 0;
 pub const B50: speed_t = 50;
 pub const B75: speed_t = 75;
@@ -1100,6 +1208,7 @@ pub const _SC_XOPEN_SHM: ::c_int = 113;
 pub const _SC_XOPEN_UNIX: ::c_int = 115;
 pub const _SC_XOPEN_VERSION: ::c_int = 116;
 pub const _SC_XOPEN_XCU_VERSION: ::c_int = 121;
+pub const _SC_PHYS_PAGES: ::c_int = 200;
 
 pub const PTHREAD_PROCESS_PRIVATE: ::c_int = 2;
 pub const PTHREAD_PROCESS_SHARED: ::c_int = 1;
@@ -1463,10 +1572,14 @@ pub const IP_TTL: ::c_int = 4;
 pub const IP_HDRINCL: ::c_int = 2;
 pub const IP_ADD_MEMBERSHIP: ::c_int = 12;
 pub const IP_DROP_MEMBERSHIP: ::c_int = 13;
+pub const IP_PKTINFO: ::c_int = 26;
 pub const IPV6_JOIN_GROUP: ::c_int = 12;
 pub const IPV6_LEAVE_GROUP: ::c_int = 13;
+pub const IPV6_PKTINFO: ::c_int = 46;
+pub const IPV6_RECVPKTINFO: ::c_int = 61;
 
-pub const TCP_NODELAY: ::c_int = 0x01;
+pub const TCP_NOPUSH: ::c_int = 4;
+pub const TCP_NOOPT: ::c_int = 8;
 pub const TCP_KEEPALIVE: ::c_int = 0x10;
 
 pub const SOL_LOCAL: ::c_int = 0;
@@ -1804,6 +1917,9 @@ pub const NI_MAXHOST: ::socklen_t = 1025;
 
 pub const Q_GETQUOTA: ::c_int = 0x300;
 pub const Q_SETQUOTA: ::c_int = 0x400;
+
+pub const RENAME_SWAP: ::c_uint = 0x00000002;
+pub const RENAME_EXCL: ::c_uint = 0x00000004;
 
 pub const RTLD_LOCAL: ::c_int = 0x4;
 pub const RTLD_FIRST: ::c_int = 0x100;
@@ -2187,6 +2303,61 @@ pub const DLT_LOOP: ::c_uint = 108;
 // sizeof(int32_t)
 pub const BPF_ALIGNMENT: ::c_int = 4;
 
+// sys/spawn.h:
+pub const POSIX_SPAWN_RESETIDS: ::c_int = 0x01;
+pub const POSIX_SPAWN_SETPGROUP: ::c_int = 0x02;
+pub const POSIX_SPAWN_SETSIGDEF: ::c_int = 0x04;
+pub const POSIX_SPAWN_SETSIGMASK: ::c_int = 0x08;
+pub const POSIX_SPAWN_SETEXEC: ::c_int = 0x40;
+pub const POSIX_SPAWN_START_SUSPENDED: ::c_int = 0x80;
+pub const POSIX_SPAWN_CLOEXEC_DEFAULT: ::c_int = 0x4000;
+
+// sys/ipc.h:
+pub const IPC_CREAT: ::c_int = 0x200;
+pub const IPC_EXCL: ::c_int = 0x400;
+pub const IPC_NOWAIT: ::c_int = 0x800;
+pub const IPC_PRIVATE: key_t = 0;
+
+pub const IPC_RMID: ::c_int = 0;
+pub const IPC_SET: ::c_int = 1;
+pub const IPC_STAT: ::c_int = 2;
+
+pub const IPC_R: ::c_int = 0x100;
+pub const IPC_W: ::c_int = 0x80;
+pub const IPC_M: ::c_int = 0x1000;
+
+// sys/sem.h
+pub const SEM_UNDO: ::c_int = 0o10000;
+
+pub const GETNCNT: ::c_int = 3;
+pub const GETPID: ::c_int = 4;
+pub const GETVAL: ::c_int = 5;
+pub const GETALL: ::c_int = 6;
+pub const GETZCNT: ::c_int = 7;
+pub const SETVAL: ::c_int = 8;
+pub const SETALL: ::c_int = 9;
+
+// sys/shm.h
+pub const SHM_RDONLY: ::c_int = 0x1000;
+pub const SHM_RND: ::c_int = 0x2000;
+pub const SHMLBA: ::c_int = 4096;
+pub const SHM_R: ::c_int = IPC_R;
+pub const SHM_W: ::c_int = IPC_W;
+
+// Flags for chflags(2)
+pub const UF_SETTABLE:      ::c_uint = 0x0000ffff;
+pub const UF_NODUMP:        ::c_uint = 0x00000001;
+pub const UF_IMMUTABLE:     ::c_uint = 0x00000002;
+pub const UF_APPEND:        ::c_uint = 0x00000004;
+pub const UF_OPAQUE:        ::c_uint = 0x00000008;
+pub const UF_COMPRESSED:    ::c_uint = 0x00000020;
+pub const UF_TRACKED:       ::c_uint = 0x00000040;
+pub const SF_SETTABLE:      ::c_uint = 0xffff0000;
+pub const SF_ARCHIVED:      ::c_uint = 0x00010000;
+pub const SF_IMMUTABLE:     ::c_uint = 0x00020000;
+pub const SF_APPEND:        ::c_uint = 0x00040000;
+pub const UF_HIDDEN:        ::c_uint = 0x00008000;
+
 f! {
     pub fn WSTOPSIG(status: ::c_int) -> ::c_int {
         status >> 8
@@ -2220,6 +2391,8 @@ extern {
     pub fn aio_suspend(aiocb_list: *const *const aiocb, nitems: ::c_int,
                        timeout: *const ::timespec) -> ::c_int;
     pub fn aio_cancel(fd: ::c_int, aiocbp: *mut aiocb) -> ::c_int;
+    pub fn chflags(path: *const ::c_char, flags: ::c_uint) -> ::c_int;
+    pub fn fchflags(fd: ::c_int, flags: ::c_uint) -> ::c_int;
     pub fn clock_getres(clk_id: ::clockid_t, tp: *mut ::timespec) -> ::c_int;
     pub fn clock_gettime(clk_id: ::clockid_t, tp: *mut ::timespec) -> ::c_int;
     pub fn lio_listio(mode: ::c_int, aiocb_list: *const *mut aiocb,
@@ -2254,7 +2427,23 @@ extern {
                link_name = "mprotect$UNIX2003")]
     pub fn mprotect(addr: *mut ::c_void, len: ::size_t, prot: ::c_int)
                     -> ::c_int;
+    pub fn semget(key: key_t, nsems: ::c_int, semflg: ::c_int) -> ::c_int;
+    #[cfg_attr(all(target_os = "macos", target_arch = "x86"),
+               link_name = "semctl$UNIX2003")]
+    pub fn semctl(semid: ::c_int,
+                  semnum: ::c_int,
+                  cmd: ::c_int, ...) -> ::c_int;
+    pub fn semop(semid: ::c_int, sops: *mut sembuf, nsops: ::size_t) -> ::c_int;
     pub fn shm_open(name: *const ::c_char, oflag: ::c_int, ...) -> ::c_int;
+    pub fn ftok(pathname : *const c_char, proj_id : ::c_int) -> key_t;
+    pub fn shmat(shmid: ::c_int, shmaddr: *const ::c_void,
+                 shmflg: ::c_int) -> *mut ::c_void;
+    pub fn shmdt(shmaddr: *const ::c_void) -> ::c_int;
+    #[cfg_attr(all(target_os = "macos", target_arch = "x86"),
+               link_name = "shmctl$UNIX2003")]
+    pub fn shmctl(shmid: ::c_int, cmd: ::c_int,
+                  buf: *mut ::shmid_ds) -> ::c_int;
+    pub fn shmget(key: key_t, size: ::size_t, shmflg: ::c_int) -> ::c_int;
     pub fn sysctl(name: *mut ::c_int,
                   namelen: ::c_uint,
                   oldp: *mut ::c_void,
@@ -2324,6 +2513,9 @@ extern {
                     len: *mut ::off_t,
                     hdtr: *mut ::sf_hdtr,
                     flags: ::c_int) -> ::c_int;
+    pub fn futimens(fd: ::c_int, times: *const ::timespec) -> ::c_int;
+    pub fn utimensat(dirfd: ::c_int, path: *const ::c_char,
+                     times: *const ::timespec, flag: ::c_int) -> ::c_int;
     pub fn openpty(amaster: *mut ::c_int,
                    aslave: *mut ::c_int,
                    name: *mut ::c_char,
@@ -2343,7 +2535,8 @@ extern {
     pub fn querylocale(mask: ::c_int, loc: ::locale_t) -> *const ::c_char;
     pub fn getpriority(which: ::c_int, who: ::id_t) -> ::c_int;
     pub fn setpriority(which: ::c_int, who: ::id_t, prio: ::c_int) -> ::c_int;
-
+    pub fn getdomainname(name: *mut ::c_char, len: ::c_int) -> ::c_int;
+    pub fn setdomainname(name: *const ::c_char, len: ::c_int) -> ::c_int;
     pub fn getxattr(path: *const ::c_char, name: *const ::c_char,
                     value: *mut ::c_void, size: ::size_t, position: u32,
                     flags: ::c_int) -> ::ssize_t;
@@ -2362,6 +2555,11 @@ extern {
                       size: ::size_t, flags: ::c_int) -> ::ssize_t;
     pub fn removexattr(path: *const ::c_char, name: *const ::c_char,
                        flags: ::c_int) -> ::c_int;
+    pub fn renamex_np(from: *const ::c_char, to: *const ::c_char,
+                      flags: ::c_uint) -> ::c_int;
+    pub fn renameatx_np(fromfd: ::c_int, from: *const ::c_char,
+                        tofd: ::c_int, to: *const ::c_char,
+                        flags: ::c_uint) -> ::c_int;
     pub fn fremovexattr(filedes: ::c_int, name: *const ::c_char,
                         flags: ::c_int) -> ::c_int;
 
@@ -2382,6 +2580,60 @@ extern {
     pub fn _dyld_get_image_header(image_index: u32) -> *const mach_header;
     pub fn _dyld_get_image_vmaddr_slide(image_index: u32) -> ::intptr_t;
     pub fn _dyld_get_image_name(image_index: u32) -> *const ::c_char;
+
+    pub fn posix_spawn(pid: *mut ::pid_t,
+                       path: *const ::c_char,
+                       file_actions: *const ::posix_spawn_file_actions_t,
+                       attrp: *const ::posix_spawnattr_t,
+                       argv: *const *mut ::c_char,
+                       envp: *const *mut ::c_char) -> ::c_int;
+    pub fn posix_spawnp(pid: *mut ::pid_t,
+                       file: *const ::c_char,
+                        file_actions: *const ::posix_spawn_file_actions_t,
+                        attrp: *const ::posix_spawnattr_t,
+                        argv: *const *mut ::c_char,
+                        envp: *const *mut ::c_char) -> ::c_int;
+    pub fn posix_spawnattr_init(attr: *mut posix_spawnattr_t) -> ::c_int;
+    pub fn posix_spawnattr_destroy(attr: *mut posix_spawnattr_t) -> ::c_int;
+    pub fn posix_spawnattr_getsigdefault(attr: *const posix_spawnattr_t,
+                                         default: *mut ::sigset_t) -> ::c_int;
+    pub fn posix_spawnattr_setsigdefault(attr: *mut posix_spawnattr_t,
+                                         default: *const ::sigset_t) -> ::c_int;
+    pub fn posix_spawnattr_getsigmask(attr: *const posix_spawnattr_t,
+                                      default: *mut ::sigset_t) -> ::c_int;
+    pub fn posix_spawnattr_setsigmask(attr: *mut posix_spawnattr_t,
+                                      default: *const ::sigset_t) -> ::c_int;
+    pub fn posix_spawnattr_getflags(attr: *const posix_spawnattr_t,
+                                    flags: *mut ::c_short) -> ::c_int;
+    pub fn posix_spawnattr_setflags(attr: *mut posix_spawnattr_t,
+                                    flags: ::c_short) -> ::c_int;
+    pub fn posix_spawnattr_getpgroup(attr: *const posix_spawnattr_t,
+                                     flags: *mut ::pid_t) -> ::c_int;
+    pub fn posix_spawnattr_setpgroup(attr: *mut posix_spawnattr_t,
+                                     flags: ::pid_t) -> ::c_int;
+
+    pub fn posix_spawn_file_actions_init(
+        actions: *mut posix_spawn_file_actions_t,
+    ) -> ::c_int;
+    pub fn posix_spawn_file_actions_destroy(
+        actions: *mut posix_spawn_file_actions_t,
+    ) -> ::c_int;
+    pub fn posix_spawn_file_actions_addopen(
+        actions: *mut posix_spawn_file_actions_t,
+        fd: ::c_int,
+        path: *const ::c_char,
+        oflag: ::c_int,
+        mode: ::mode_t,
+    ) -> ::c_int;
+    pub fn posix_spawn_file_actions_addclose(
+        actions: *mut posix_spawn_file_actions_t,
+        fd: ::c_int,
+    ) -> ::c_int;
+    pub fn posix_spawn_file_actions_adddup2(
+        actions: *mut posix_spawn_file_actions_t,
+        fd: ::c_int,
+        newfd: ::c_int,
+    ) -> ::c_int;
 }
 
 cfg_if! {

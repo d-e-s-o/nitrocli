@@ -35,6 +35,11 @@ s! {
         pub sin_zero: [::int8_t; 8],
     }
 
+    pub struct in6_pktinfo {
+        pub ipi6_addr: ::in6_addr,
+        pub ipi6_ifindex: ::c_uint,
+    }
+
     pub struct termios {
         pub c_iflag: ::tcflag_t,
         pub c_oflag: ::tcflag_t,
@@ -177,7 +182,6 @@ pub const SIGSEGV : ::c_int = 11;
 pub const SIGPIPE : ::c_int = 13;
 pub const SIGALRM : ::c_int = 14;
 pub const SIGTERM : ::c_int = 15;
-pub const SIGSTKSZ : ::size_t = 40960;
 
 pub const PROT_NONE : ::c_int = 0;
 pub const PROT_READ : ::c_int = 1;
@@ -310,6 +314,17 @@ pub const POSIX_MADV_DONTNEED : ::c_int = 4;
 pub const PTHREAD_CREATE_JOINABLE : ::c_int = 0;
 pub const PTHREAD_CREATE_DETACHED : ::c_int = 1;
 
+pub const PT_TRACE_ME: ::c_int = 0;
+pub const PT_READ_I: ::c_int = 1;
+pub const PT_READ_D: ::c_int = 2;
+pub const PT_WRITE_I: ::c_int = 4;
+pub const PT_WRITE_D: ::c_int = 5;
+pub const PT_CONTINUE: ::c_int = 7;
+pub const PT_KILL: ::c_int = 8;
+pub const PT_ATTACH: ::c_int = 9;
+pub const PT_DETACH: ::c_int = 10;
+pub const PT_IO: ::c_int = 11;
+
 // http://man.openbsd.org/OpenBSD-current/man2/clock_getres.2
 // The man page says clock_gettime(3) can accept various values as clockid_t but
 // http://fxr.watson.org/fxr/source/kern/kern_time.c?v=OPENBSD;im=excerpts#L161
@@ -413,8 +428,9 @@ pub const IP_TTL: ::c_int = 4;
 pub const IP_HDRINCL: ::c_int = 2;
 pub const IP_ADD_MEMBERSHIP: ::c_int = 12;
 pub const IP_DROP_MEMBERSHIP: ::c_int = 13;
+pub const IPV6_RECVPKTINFO: ::c_int = 36;
+pub const IPV6_PKTINFO: ::c_int = 46;
 
-pub const TCP_NODELAY: ::c_int = 0x01;
 pub const SOL_SOCKET: ::c_int = 0xffff;
 pub const SO_DEBUG: ::c_int = 0x01;
 pub const SO_ACCEPTCONN: ::c_int = 0x0002;
@@ -532,6 +548,24 @@ pub const CRTS_IFLOW: ::tcflag_t = CRTSCTS;
 pub const CCTS_OFLOW: ::tcflag_t = CRTSCTS;
 pub const OCRNL: ::tcflag_t = 0x10;
 
+pub const TIOCEXCL: ::c_ulong = 0x2000740d;
+pub const TIOCNXCL: ::c_ulong = 0x2000740e;
+pub const TIOCFLUSH: ::c_ulong = 0x80047410;
+pub const TIOCGETA: ::c_ulong = 0x402c7413;
+pub const TIOCSETA: ::c_ulong = 0x802c7414;
+pub const TIOCSETAW: ::c_ulong = 0x802c7415;
+pub const TIOCSETAF: ::c_ulong = 0x802c7416;
+pub const TIOCGETD: ::c_ulong = 0x4004741a;
+pub const TIOCSETD: ::c_ulong = 0x8004741b;
+pub const TIOCMGET: ::c_ulong = 0x4004746a;
+pub const TIOCMBIC: ::c_ulong = 0x8004746b;
+pub const TIOCMBIS: ::c_ulong = 0x8004746c;
+pub const TIOCMSET: ::c_ulong = 0x8004746d;
+pub const TIOCSTART: ::c_ulong = 0x2000746e;
+pub const TIOCSTOP: ::c_ulong = 0x2000746f;
+pub const TIOCSCTTY: ::c_ulong = 0x20007461;
+pub const TIOCGWINSZ: ::c_ulong = 0x40087468;
+pub const TIOCSWINSZ: ::c_ulong = 0x80087467;
 pub const TIOCM_LE: ::c_int = 0o0001;
 pub const TIOCM_DTR: ::c_int = 0o0002;
 pub const TIOCM_RTS: ::c_int = 0o0004;
@@ -543,6 +577,19 @@ pub const TIOCM_RNG: ::c_int = 0o0200;
 pub const TIOCM_DSR: ::c_int = 0o0400;
 pub const TIOCM_CD: ::c_int = TIOCM_CAR;
 pub const TIOCM_RI: ::c_int = TIOCM_RNG;
+
+// Flags for chflags(2)
+pub const UF_SETTABLE:      ::c_ulong = 0x0000ffff;
+pub const UF_NODUMP:        ::c_ulong = 0x00000001;
+pub const UF_IMMUTABLE:     ::c_ulong = 0x00000002;
+pub const UF_APPEND:        ::c_ulong = 0x00000004;
+pub const UF_OPAQUE:        ::c_ulong = 0x00000008;
+pub const SF_SETTABLE:      ::c_ulong = 0xffff0000;
+pub const SF_ARCHIVED:      ::c_ulong = 0x00010000;
+pub const SF_IMMUTABLE:     ::c_ulong = 0x00020000;
+pub const SF_APPEND:        ::c_ulong = 0x00040000;
+
+pub const TIMER_ABSTIME: ::c_int = 1;
 
 f! {
     pub fn WSTOPSIG(status: ::c_int) -> ::c_int {
@@ -602,14 +649,14 @@ extern {
     pub fn getpriority(which: ::c_int, who: ::id_t) -> ::c_int;
     pub fn setpriority(which: ::c_int, who: ::id_t, prio: ::c_int) -> ::c_int;
 
-    pub fn fdopendir(fd: ::c_int) -> *mut ::DIR;
-
     pub fn mknodat(dirfd: ::c_int, pathname: *const ::c_char,
                    mode: ::mode_t, dev: dev_t) -> ::c_int;
     pub fn mkfifoat(dirfd: ::c_int, pathname: *const ::c_char,
                     mode: ::mode_t) -> ::c_int;
     pub fn sem_timedwait(sem: *mut sem_t,
                          abstime: *const ::timespec) -> ::c_int;
+    pub fn sem_getvalue(sem: *mut sem_t,
+                        sval: *mut ::c_int) -> ::c_int;
     pub fn pthread_condattr_setclock(attr: *mut pthread_condattr_t,
                                      clock_id: ::clockid_t) -> ::c_int;
     pub fn sethostname(name: *const ::c_char, len: ::size_t) -> ::c_int;
@@ -625,6 +672,8 @@ extern {
     pub fn fexecve(fd: ::c_int, argv: *const *const ::c_char,
                    envp: *const *const ::c_char)
                    -> ::c_int;
+    pub fn getdomainname(name: *mut ::c_char, len: ::size_t) -> ::c_int;
+    pub fn setdomainname(name: *const ::c_char, len: ::size_t) -> ::c_int;
 }
 
 cfg_if! {

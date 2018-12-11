@@ -7,6 +7,34 @@ use dox::{mem, Option};
 
 // PUB_TYPE
 
+pub type int8_t = i8;
+pub type int16_t = i16;
+pub type int32_t = i32;
+pub type int64_t = i64;
+pub type uint8_t = u8;
+pub type uint16_t = u16;
+pub type uint32_t = u32;
+pub type uint64_t = u64;
+
+pub type c_schar = i8;
+pub type c_uchar = u8;
+pub type c_short = i16;
+pub type c_ushort = u16;
+pub type c_int = i32;
+pub type c_uint = u32;
+pub type c_float = f32;
+pub type c_double = f64;
+pub type c_longlong = i64;
+pub type c_ulonglong = u64;
+pub type intmax_t = i64;
+pub type uintmax_t = u64;
+
+pub type size_t = usize;
+pub type ptrdiff_t = isize;
+pub type intptr_t = isize;
+pub type uintptr_t = usize;
+pub type ssize_t = isize;
+
 pub type pid_t = i32;
 pub type uid_t = u32;
 pub type gid_t = u32;
@@ -97,16 +125,13 @@ s! {
         pub tv_usec: suseconds_t,
     }
 
-    // linux x32 compatibility
-    // See https://sourceware.org/bugzilla/show_bug.cgi?id=16437
     pub struct timespec {
         pub tv_sec: time_t,
-        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
-        pub tv_nsec: i64,
-        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
         pub tv_nsec: ::c_long,
     }
 
+    // FIXME: the rlimit and rusage related functions and types don't exist
+    // within zircon. Are there reasons for keeping them around?
     pub struct rlimit {
         pub rlim_cur: rlim_t,
         pub rlim_max: rlim_t,
@@ -168,7 +193,6 @@ s! {
 
     pub struct in6_addr {
         pub s6_addr: [u8; 16],
-        __align: [u32; 0],
     }
 
     pub struct ip_mreq {
@@ -178,9 +202,6 @@ s! {
 
     pub struct ipv6_mreq {
         pub ipv6mr_multiaddr: in6_addr,
-        #[cfg(target_os = "android")]
-        pub ipv6mr_interface: ::c_int,
-        #[cfg(not(target_os = "android"))]
         pub ipv6mr_interface: ::c_uint,
     }
 
@@ -398,13 +419,9 @@ s! {
 
     pub struct sched_param {
         pub sched_priority: ::c_int,
-        #[cfg(target_env = "musl")]
         pub sched_ss_low_priority: ::c_int,
-        #[cfg(target_env = "musl")]
         pub sched_ss_repl_period: ::timespec,
-        #[cfg(target_env = "musl")]
         pub sched_ss_init_budget: ::timespec,
-        #[cfg(target_env = "musl")]
         pub sched_ss_max_repl: ::c_int,
     }
 
@@ -415,11 +432,6 @@ s! {
         pub dli_saddr: *mut ::c_void,
     }
 
-    #[cfg_attr(any(all(target_arch = "x86",
-                       not(target_env = "musl"),
-                       not(target_os = "android")),
-                   target_arch = "x86_64"),
-               repr(packed))]
     pub struct epoll_event {
         pub events: ::uint32_t,
         pub u64: ::uint64_t,
@@ -465,13 +477,9 @@ s! {
         pub sigev_value: ::sigval,
         pub sigev_signo: ::c_int,
         pub sigev_notify: ::c_int,
-        // Actually a union.  We only expose sigev_notify_thread_id because it's
-        // the most useful member
-        pub sigev_notify_thread_id: ::c_int,
-        #[cfg(target_pointer_width = "64")]
-        __unused1: [::c_int; 11],
-        #[cfg(target_pointer_width = "32")]
-        __unused1: [::c_int; 12]
+        pub sigev_notify_function: fn(::sigval),
+        pub sigev_notify_attributes: *mut pthread_attr_t,
+        pub __pad: [::c_char; 56 - 3 * 8 /* 8 == sizeof(long) */],
     }
 
     pub struct dirent {
@@ -518,71 +526,118 @@ s! {
         pub ifa_data: *mut ::c_void
     }
 
+    #[cfg_attr(all(feature = "align",
+                   target_pointer_width = "32",
+                   any(target_arch = "arm",
+                       target_arch = "x86_64")),
+               repr(align(4)))]
+    #[cfg_attr(all(feature = "align",
+                   any(target_pointer_width = "64",
+                       not(any(target_arch = "arm",
+                               target_arch = "x86_64")))),
+               repr(align(8)))]
     pub struct pthread_mutex_t {
-        #[cfg(any(target_arch = "mips",
-                  target_arch = "arm",
-                  target_arch = "powerpc",
-                  all(target_arch = "x86_64",
-                      target_pointer_width = "32")))]
+        #[cfg(all(not(feature = "align"),
+                  any(target_arch = "arm",
+                      all(target_arch = "x86_64",
+                          target_pointer_width = "32"))))]
         __align: [::c_long; 0],
-        #[cfg(not(any(target_arch = "mips",
+        #[cfg(not(any(feature = "align",
                       target_arch = "arm",
-                      target_arch = "powerpc",
                       all(target_arch = "x86_64",
                           target_pointer_width = "32"))))]
         __align: [::c_longlong; 0],
         size: [u8; __SIZEOF_PTHREAD_MUTEX_T],
     }
 
+    #[cfg_attr(all(feature = "align",
+                   target_pointer_width = "32",
+                   any(target_arch = "arm",
+                       target_arch = "x86_64")),
+               repr(align(4)))]
+    #[cfg_attr(all(feature = "align",
+                   any(target_pointer_width = "64",
+                       not(any(target_arch = "arm",
+                               target_arch = "x86_64")))),
+               repr(align(8)))]
     pub struct pthread_rwlock_t {
-        #[cfg(any(target_arch = "mips",
-                  target_arch = "arm",
-                  target_arch = "powerpc",
-                  all(target_arch = "x86_64",
-                      target_pointer_width = "32")))]
+        #[cfg(all(not(feature = "align"),
+                  any(target_arch = "arm",
+                      all(target_arch = "x86_64",
+                          target_pointer_width = "32"))))]
         __align: [::c_long; 0],
-        #[cfg(not(any(target_arch = "mips",
+        #[cfg(not(any(feature = "align",
                       target_arch = "arm",
-                      target_arch = "powerpc",
                       all(target_arch = "x86_64",
                           target_pointer_width = "32"))))]
         __align: [::c_longlong; 0],
         size: [u8; __SIZEOF_PTHREAD_RWLOCK_T],
     }
 
+    #[cfg_attr(all(feature = "align",
+                   any(target_pointer_width = "32",
+                       target_arch = "x86_64",
+                       all(target_arch = "aarch64", target_env = "musl"))),
+               repr(align(4)))]
+    #[cfg_attr(all(feature = "align",
+                   not(any(target_pointer_width = "32",
+                           target_arch = "x86_64",
+                           all(target_arch = "aarch64", target_env = "musl")))),
+               repr(align(8)))]
     pub struct pthread_mutexattr_t {
-        #[cfg(any(target_arch = "x86_64", target_arch = "powerpc64",
-                  target_arch = "mips64", target_arch = "s390x",
-                  target_arch = "sparc64"))]
+        #[cfg(all(not(features = "align"),
+                  any(target_arch = "x86_64",
+                      all(target_arch = "aarch64", target_env = "musl"))))]
         __align: [::c_int; 0],
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "powerpc64",
-                      target_arch = "mips64", target_arch = "s390x",
-                      target_arch = "sparc64", target_arch = "aarch64")))]
+        #[cfg(all(not(features = "align"),
+                  not(any(target_arch = "x86_64",
+                          all(target_arch = "aarch64", target_env = "musl")))))]
         __align: [::c_long; 0],
-        #[cfg(all(target_arch = "aarch64", target_env = "gnu"))]
-        __align: [::c_long; 0],
-        #[cfg(all(target_arch = "aarch64", target_env = "musl"))]
-        __align: [::c_int; 0],
         size: [u8; __SIZEOF_PTHREAD_MUTEXATTR_T],
     }
 
+    #[cfg_attr(all(feature = "align",
+                   any(target_env = "musl", target_pointer_width = "32")),
+               repr(align(4)))]
+    #[cfg_attr(all(feature = "align",
+                   not(target_env = "musl"),
+                   target_pointer_width = "64"),
+               repr(align(8)))]
     pub struct pthread_rwlockattr_t {
-        #[cfg(any(target_env = "musl"))]
+        #[cfg(all(not(feature = "align"), target_env = "musl"))]
         __align: [::c_int; 0],
-        #[cfg(not(any(target_env = "musl")))]
+        #[cfg(all(not(feature = "align"), not(target_env = "musl")))]
         __align: [::c_long; 0],
         size: [u8; __SIZEOF_PTHREAD_RWLOCKATTR_T],
     }
 
+    #[cfg_attr(all(feature = "align",
+                   target_env = "musl",
+                   target_pointer_width = "32"),
+               repr(align(4)))]
+    #[cfg_attr(all(feature = "align",
+                   target_env = "musl",
+                   target_pointer_width = "64"),
+               repr(align(8)))]
+    #[cfg_attr(all(feature = "align",
+                   not(target_env = "musl"),
+                   target_arch = "x86"),
+               repr(align(4)))]
+    #[cfg_attr(all(feature = "align",
+                   not(target_env = "musl"),
+                   not(target_arch = "x86")),
+               repr(align(8)))]
     pub struct pthread_cond_t {
-        #[cfg(any(target_env = "musl"))]
+        #[cfg(all(not(feature = "align"), target_env = "musl"))]
         __align: [*const ::c_void; 0],
-        #[cfg(not(any(target_env = "musl")))]
+        #[cfg(not(any(feature = "align", target_env = "musl")))]
         __align: [::c_longlong; 0],
         size: [u8; __SIZEOF_PTHREAD_COND_T],
     }
 
+    #[cfg_attr(feature = "align", repr(align(4)))]
     pub struct pthread_condattr_t {
+        #[cfg(not(feature = "align"))]
         __align: [::c_int; 0],
         size: [u8; __SIZEOF_PTHREAD_CONDATTR_T],
     }
@@ -658,7 +713,12 @@ s! {
         pub ssi_utime: ::uint64_t,
         pub ssi_stime: ::uint64_t,
         pub ssi_addr: ::uint64_t,
-        _pad: [::uint8_t; 48],
+        pub ssi_addr_lsb: ::uint16_t,
+        _pad2: ::uint16_t,
+        pub ssi_syscall: ::int32_t,
+        pub ssi_call_addr: ::uint64_t,
+        pub ssi_arch: ::uint32_t,
+        _pad: [::uint8_t; 28],
     }
 
     pub struct itimerspec {
@@ -1017,6 +1077,9 @@ s! {
 
 // PUB_CONST
 
+pub const INT_MIN: c_int = -2147483648;
+pub const INT_MAX: c_int = 2147483647;
+
 pub const SIG_DFL: sighandler_t = 0 as sighandler_t;
 pub const SIG_IGN: sighandler_t = 1 as sighandler_t;
 pub const SIG_ERR: sighandler_t = !0 as sighandler_t;
@@ -1351,6 +1414,9 @@ pub const IFF_MULTICAST: ::c_int = 0x1000;
 pub const IFF_PORTSEL: ::c_int = 0x2000;
 pub const IFF_AUTOMEDIA: ::c_int = 0x4000;
 pub const IFF_DYNAMIC: ::c_int = 0x8000;
+pub const IFF_TUN: ::c_int = 0x0001;
+pub const IFF_TAP: ::c_int = 0x0002;
+pub const IFF_NO_PI: ::c_int = 0x1000;
 
 pub const SOL_IP: ::c_int = 0;
 pub const SOL_TCP: ::c_int = 6;
@@ -1483,8 +1549,13 @@ pub const IP_HDRINCL: ::c_int = 3;
 pub const IP_ADD_MEMBERSHIP: ::c_int = 35;
 pub const IP_DROP_MEMBERSHIP: ::c_int = 36;
 pub const IP_TRANSPARENT: ::c_int = 19;
+pub const IPV6_UNICAST_HOPS: ::c_int = 16;
+pub const IPV6_MULTICAST_IF: ::c_int = 17;
+pub const IPV6_MULTICAST_HOPS: ::c_int = 18;
+pub const IPV6_MULTICAST_LOOP: ::c_int = 19;
 pub const IPV6_ADD_MEMBERSHIP: ::c_int = 20;
 pub const IPV6_DROP_MEMBERSHIP: ::c_int = 21;
+pub const IPV6_V6ONLY: ::c_int = 26;
 
 pub const TCP_NODELAY: ::c_int = 1;
 pub const TCP_MAXSEG: ::c_int = 2;
@@ -1499,9 +1570,6 @@ pub const TCP_WINDOW_CLAMP: ::c_int = 10;
 pub const TCP_INFO: ::c_int = 11;
 pub const TCP_QUICKACK: ::c_int = 12;
 pub const TCP_CONGESTION: ::c_int = 13;
-
-pub const IPV6_MULTICAST_LOOP: ::c_int = 19;
-pub const IPV6_V6ONLY: ::c_int = 26;
 
 pub const SO_DEBUG: ::c_int = 1;
 
@@ -1999,18 +2067,17 @@ pub const RTLD_NOW: ::c_int = 0x2;
 
 pub const TCP_MD5SIG: ::c_int = 14;
 
-pub const PTHREAD_MUTEX_INITIALIZER: pthread_mutex_t = pthread_mutex_t {
-    __align: [],
-    size: [0; __SIZEOF_PTHREAD_MUTEX_T],
-};
-pub const PTHREAD_COND_INITIALIZER: pthread_cond_t = pthread_cond_t {
-    __align: [],
-    size: [0; __SIZEOF_PTHREAD_COND_T],
-};
-pub const PTHREAD_RWLOCK_INITIALIZER: pthread_rwlock_t = pthread_rwlock_t {
-    __align: [],
-    size: [0; __SIZEOF_PTHREAD_RWLOCK_T],
-};
+align_const! {
+    pub const PTHREAD_MUTEX_INITIALIZER: pthread_mutex_t = pthread_mutex_t {
+        size: [0; __SIZEOF_PTHREAD_MUTEX_T],
+    };
+    pub const PTHREAD_COND_INITIALIZER: pthread_cond_t = pthread_cond_t {
+        size: [0; __SIZEOF_PTHREAD_COND_T],
+    };
+    pub const PTHREAD_RWLOCK_INITIALIZER: pthread_rwlock_t = pthread_rwlock_t {
+        size: [0; __SIZEOF_PTHREAD_RWLOCK_T],
+    };
+}
 pub const PTHREAD_MUTEX_NORMAL: ::c_int = 0;
 pub const PTHREAD_MUTEX_RECURSIVE: ::c_int = 1;
 pub const PTHREAD_MUTEX_ERRORCHECK: ::c_int = 2;
@@ -2975,7 +3042,110 @@ f! {
 #[link(name = "fdio")]
 extern {}
 
+pub enum FILE {}
+pub enum fpos_t {} // TODO: fill this out with a struct
+
 extern {
+    pub fn isalnum(c: c_int) -> c_int;
+    pub fn isalpha(c: c_int) -> c_int;
+    pub fn iscntrl(c: c_int) -> c_int;
+    pub fn isdigit(c: c_int) -> c_int;
+    pub fn isgraph(c: c_int) -> c_int;
+    pub fn islower(c: c_int) -> c_int;
+    pub fn isprint(c: c_int) -> c_int;
+    pub fn ispunct(c: c_int) -> c_int;
+    pub fn isspace(c: c_int) -> c_int;
+    pub fn isupper(c: c_int) -> c_int;
+    pub fn isxdigit(c: c_int) -> c_int;
+    pub fn tolower(c: c_int) -> c_int;
+    pub fn toupper(c: c_int) -> c_int;
+    pub fn fopen(filename: *const c_char, mode: *const c_char) -> *mut FILE;
+    pub fn freopen(filename: *const c_char, mode: *const c_char,
+                   file: *mut FILE) -> *mut FILE;
+    pub fn fflush(file: *mut FILE) -> c_int;
+    pub fn fclose(file: *mut FILE) -> c_int;
+    pub fn remove(filename: *const c_char) -> c_int;
+    pub fn rename(oldname: *const c_char, newname: *const c_char) -> c_int;
+    pub fn tmpfile() -> *mut FILE;
+    pub fn setvbuf(stream: *mut FILE, buffer: *mut c_char, mode: c_int,
+                   size: size_t) -> c_int;
+    pub fn setbuf(stream: *mut FILE, buf: *mut c_char);
+    pub fn getchar() -> c_int;
+    pub fn putchar(c: c_int) -> c_int;
+    pub fn fgetc(stream: *mut FILE) -> c_int;
+    pub fn fgets(buf: *mut c_char, n: c_int, stream: *mut FILE) -> *mut c_char;
+    pub fn fputc(c: c_int, stream: *mut FILE) -> c_int;
+    pub fn fputs(s: *const c_char, stream: *mut FILE) -> c_int;
+    pub fn puts(s: *const c_char) -> c_int;
+    pub fn ungetc(c: c_int, stream: *mut FILE) -> c_int;
+    pub fn fread(ptr: *mut c_void, size: size_t, nobj: size_t,
+                 stream: *mut FILE) -> size_t;
+    pub fn fwrite(ptr: *const c_void, size: size_t, nobj: size_t,
+                  stream: *mut FILE) -> size_t;
+    pub fn fseek(stream: *mut FILE, offset: c_long, whence: c_int) -> c_int;
+    pub fn ftell(stream: *mut FILE) -> c_long;
+    pub fn rewind(stream: *mut FILE);
+    pub fn fgetpos(stream: *mut FILE, ptr: *mut fpos_t) -> c_int;
+    pub fn fsetpos(stream: *mut FILE, ptr: *const fpos_t) -> c_int;
+    pub fn feof(stream: *mut FILE) -> c_int;
+    pub fn ferror(stream: *mut FILE) -> c_int;
+    pub fn perror(s: *const c_char);
+    pub fn atoi(s: *const c_char) -> c_int;
+    pub fn strtod(s: *const c_char, endp: *mut *mut c_char) -> c_double;
+    pub fn strtol(s: *const c_char, endp: *mut *mut c_char,
+                  base: c_int) -> c_long;
+    pub fn strtoul(s: *const c_char, endp: *mut *mut c_char,
+                   base: c_int) -> c_ulong;
+    pub fn calloc(nobj: size_t, size: size_t) -> *mut c_void;
+    pub fn malloc(size: size_t) -> *mut c_void;
+    pub fn realloc(p: *mut c_void, size: size_t) -> *mut c_void;
+    pub fn free(p: *mut c_void);
+    pub fn abort() -> !;
+    pub fn exit(status: c_int) -> !;
+    pub fn _exit(status: c_int) -> !;
+    pub fn atexit(cb: extern fn()) -> c_int;
+    pub fn system(s: *const c_char) -> c_int;
+    pub fn getenv(s: *const c_char) -> *mut c_char;
+
+    pub fn strcpy(dst: *mut c_char, src: *const c_char) -> *mut c_char;
+    pub fn strncpy(dst: *mut c_char, src: *const c_char,
+                   n: size_t) -> *mut c_char;
+    pub fn strcat(s: *mut c_char, ct: *const c_char) -> *mut c_char;
+    pub fn strncat(s: *mut c_char, ct: *const c_char,
+                   n: size_t) -> *mut c_char;
+    pub fn strcmp(cs: *const c_char, ct: *const c_char) -> c_int;
+    pub fn strncmp(cs: *const c_char, ct: *const c_char, n: size_t) -> c_int;
+    pub fn strcoll(cs: *const c_char, ct: *const c_char) -> c_int;
+    pub fn strchr(cs: *const c_char, c: c_int) -> *mut c_char;
+    pub fn strrchr(cs: *const c_char, c: c_int) -> *mut c_char;
+    pub fn strspn(cs: *const c_char, ct: *const c_char) -> size_t;
+    pub fn strcspn(cs: *const c_char, ct: *const c_char) -> size_t;
+    pub fn strdup(cs: *const c_char) -> *mut c_char;
+    pub fn strpbrk(cs: *const c_char, ct: *const c_char) -> *mut c_char;
+    pub fn strstr(cs: *const c_char, ct: *const c_char) -> *mut c_char;
+    pub fn strlen(cs: *const c_char) -> size_t;
+    pub fn strnlen(cs: *const c_char, maxlen: size_t) -> size_t;
+    pub fn strerror(n: c_int) -> *mut c_char;
+    pub fn strtok(s: *mut c_char, t: *const c_char) -> *mut c_char;
+    pub fn strxfrm(s: *mut c_char, ct: *const c_char, n: size_t) -> size_t;
+    pub fn wcslen(buf: *const wchar_t) -> size_t;
+    pub fn wcstombs(dest: *mut c_char, src: *const wchar_t,
+                    n: size_t) -> ::size_t;
+
+    pub fn memchr(cx: *const c_void, c: c_int, n: size_t) -> *mut c_void;
+    pub fn memcmp(cx: *const c_void, ct: *const c_void, n: size_t) -> c_int;
+    pub fn memcpy(dest: *mut c_void, src: *const c_void,
+                  n: size_t) -> *mut c_void;
+    pub fn memmove(dest: *mut c_void, src: *const c_void,
+                   n: size_t) -> *mut c_void;
+    pub fn memset(dest: *mut c_void, c: c_int, n: size_t) -> *mut c_void;
+
+    pub fn abs(i: c_int) -> c_int;
+    pub fn atof(s: *const c_char) -> c_double;
+    pub fn labs(i: c_long) -> c_long;
+    pub fn rand() -> c_int;
+    pub fn srand(seed: c_uint);
+
     pub fn getpwnam(name: *const ::c_char) -> *mut passwd;
     pub fn getpwuid(uid: ::uid_t) -> *mut passwd;
 
@@ -3115,6 +3285,7 @@ extern {
                 -> ::ssize_t;
     pub fn rmdir(path: *const c_char) -> ::c_int;
     pub fn seteuid(uid: uid_t) -> ::c_int;
+    pub fn setegid(gid: gid_t) -> ::c_int;
     pub fn setgid(gid: gid_t) -> ::c_int;
     pub fn setpgid(pid: pid_t, pgid: pid_t) -> ::c_int;
     pub fn setsid() -> pid_t;
@@ -3791,6 +3962,8 @@ extern {
     pub fn sched_rr_get_interval(pid: ::pid_t, tp: *mut ::timespec) -> ::c_int;
     pub fn sem_timedwait(sem: *mut sem_t,
                          abstime: *const ::timespec) -> ::c_int;
+    pub fn sem_getvalue(sem: *mut sem_t,
+                        sval: *mut ::c_int) -> ::c_int;
     pub fn sched_setparam(pid: ::pid_t, param: *const ::sched_param) -> ::c_int;
     pub fn setns(fd: ::c_int, nstype: ::c_int) -> ::c_int;
     pub fn swapoff(puath: *const ::c_char) -> ::c_int;
@@ -3908,13 +4081,28 @@ cfg_if! {
     if #[cfg(target_arch = "aarch64")] {
         mod aarch64;
         pub use self::aarch64::*;
-    } else if #[cfg(any(target_arch = "powerpc64"))] {
-        mod powerpc64;
-        pub use self::powerpc64::*;
     } else if #[cfg(any(target_arch = "x86_64"))] {
         mod x86_64;
         pub use self::x86_64::*;
     } else {
         // Unknown target_arch
+    }
+}
+
+cfg_if! {
+    if #[cfg(core_cvoid)] {
+        pub use core::ffi::c_void;
+    } else {
+        // Use repr(u8) as LLVM expects `void*` to be the same as `i8*` to help
+        // enable more optimization opportunities around it recognizing things
+        // like malloc/free.
+        #[repr(u8)]
+        pub enum c_void {
+            // Two dummy variants so the #[repr] attribute can be used.
+            #[doc(hidden)]
+            __variant1,
+            #[doc(hidden)]
+            __variant2,
+        }
     }
 }

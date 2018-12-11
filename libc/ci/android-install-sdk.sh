@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # Copyright 2016 The Rust Project Developers. See the COPYRIGHT
 # file at the top-level directory of this distribution and at
 # http://rust-lang.org/COPYRIGHT.
@@ -19,7 +19,7 @@ set -ex
 # which apparently magically accepts the licenses.
 
 mkdir sdk
-curl https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip -O
+curl --retry 5 https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip -O
 unzip -d sdk sdk-tools-linux-3859397.zip
 
 case "$1" in
@@ -56,5 +56,5 @@ echo "yes" | \
 
 echo "no" |
     ./sdk/tools/bin/avdmanager create avd \
-        --name $1 \
+        --name "${1}" \
         --package "system-images;android-24;default;$abi"
