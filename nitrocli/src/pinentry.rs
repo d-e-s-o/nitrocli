@@ -83,6 +83,10 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
 }
 
 
+/// Inquire a PIN of the given type from the user.
+///
+/// This function inquires a PIN of the given type from the user or returns the cached passphrase,
+/// if available.  If an error message is set, it is displayed in the passphrase dialog.
 pub fn inquire_passphrase(pin_type: PinType, error_msg: Option<&str>) -> Result<Vec<u8>, Error> {
   let cache_id = pin_type.cache_id();
   let error_msg = error_msg.map(|msg| msg.replace(" ", "+")).unwrap_or(String::from("+"));
