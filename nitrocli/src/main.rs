@@ -18,7 +18,10 @@
 // *************************************************************************
 
 #![deny(missing_docs)]
-#![warn(rust_2018_compatibility)]
+#![warn(
+  rust_2018_compatibility,
+  rust_2018_idioms,
+)]
 
 //! Nitrocli is a program providing a command line interface to certain
 //! commands of the Nitrokey Storage device.
@@ -40,7 +43,7 @@ use std::time;
 use crate::error::Error;
 
 type Result<T> = result::Result<T, Error>;
-type NitroFunc = Fn(&mut libhid::Handle) -> Result<()>;
+type NitroFunc = dyn Fn(&mut libhid::Handle) -> Result<()>;
 
 
 const PIN_TYPE: pinentry::PinType = pinentry::PinType::User;
