@@ -253,8 +253,9 @@ fn open() -> Result<()> {
 
   nitrokey_do(&|handle| {
     let mut retry = 3;
+    let mut error_msg: Option<&str> = None;
     loop {
-      let passphrase = pinentry::inquire_passphrase()?;
+      let passphrase = pinentry::inquire_passphrase(error_msg)?;
       let payload = nitrokey::EnableEncryptedVolumeCommand::new(&passphrase);
       let report = nitrokey::Report::from(payload);
 
@@ -267,7 +268,7 @@ fn open() -> Result<()> {
         retry -= 1;
 
         if retry > 0 {
-          println!("Wrong password, please reenter");
+          error_msg = Some("Wrong password, please reenter");
           continue;
         }
         let error = "Opening encrypted volume failed: Wrong password";
