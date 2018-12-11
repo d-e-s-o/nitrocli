@@ -61,38 +61,36 @@
 //! }
 //! ```
 
-#![doc(html_root_url = "http://alexcrichton.com/pkg-config-rs")]
-#![cfg_attr(test, deny(warnings))]
+#![doc(html_root_url = "https://docs.rs/pkg-config/0.3")]
 
+#[allow(unused_imports)] // Required for Rust <1.23
 use std::ascii::AsciiExt;
+use std::collections::HashMap;
 use std::env;
 use std::error;
 use std::ffi::{OsStr, OsString};
 use std::fmt;
-use std::fs;
 use std::io;
 use std::path::{PathBuf, Path};
 use std::process::{Command, Output};
 use std::str;
 
 pub fn target_supported() -> bool {
-    let target = env::var("TARGET").unwrap_or(String::new());
-    let host = env::var("HOST").unwrap_or(String::new());
+    let target = env::var("TARGET").unwrap_or_else(|_| String::new());
+    let host = env::var("HOST").unwrap_or_else(|_| String::new());
 
     // Only use pkg-config in host == target situations by default (allowing an
-    // override) and then also don't use pkg-config on MSVC as it's really not
-    // meant to work there but when building MSVC code in a MSYS shell we may be
-    // able to run pkg-config anyway.
-    (host == target || env::var_os("PKG_CONFIG_ALLOW_CROSS").is_some()) &&
-    !target.contains("msvc")
+    // override).
+    (host == target || env::var_os("PKG_CONFIG_ALLOW_CROSS").is_some())
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Config {
     statik: Option<bool>,
     atleast_version: Option<String>,
     extra_args: Vec<OsString>,
     cargo_metadata: bool,
+    env_metadata: bool,
     print_system_libs: bool,
 }
 
@@ -103,6 +101,7 @@ pub struct Library {
     pub frameworks: Vec<String>,
     pub framework_paths: Vec<PathBuf>,
     pub include_paths: Vec<PathBuf>,
+    pub defines: HashMap<String, Option<String>>,
     pub version: String,
     _priv: (),
 }
@@ -118,9 +117,6 @@ pub enum Error {
     ///
     /// Override with `PKG_CONFIG_ALLOW_CROSS=1`.
     CrossCompilation,
-
-    /// Attempted to compile using the MSVC ABI build
-    MSVC,
 
     /// Failed to run `pkg-config`.
     ///
@@ -145,7 +141,6 @@ impl error::Error for Error {
                 "pkg-config doesn't handle cross compilation. \
                  Use PKG_CONFIG_ALLOW_CROSS=1 to override"
             }
-            Error::MSVC => "pkg-config is incompatible with the MSVC ABI build.",
             Error::Command { .. } => "failed to run pkg-config",
             Error::Failure { .. } => "pkg-config did not exit sucessfully",
             Error::__Nonexhaustive => panic!(),
@@ -196,7 +191,6 @@ impl fmt::Debug for Error {
                  .finish()
             }
             Error::CrossCompilation => write!(f, "CrossCompilation"),
-            Error::MSVC => write!(f, "MSVC"),
             Error::Command { ref command, ref cause } => {
                 f.debug_struct("Command")
                  .field("command", command)
@@ -224,22 +218,18 @@ impl fmt::Display for Error {
                 write!(f, "Cross compilation detected. \
                        Use PKG_CONFIG_ALLOW_CROSS=1 to override")
             }
-            Error::MSVC => {
-                write!(f, "MSVC target detected. If you are using the MSVC ABI \
-                       rust build, please use the GNU ABI build instead.")
-            }
             Error::Command { ref command, ref cause } => {
                 write!(f, "Failed to run `{}`: {}", command, cause)
             }
             Error::Failure { ref command, ref output } => {
                 let stdout = str::from_utf8(&output.stdout).unwrap();
                 let stderr = str::from_utf8(&output.stderr).unwrap();
-                try!(write!(f, "`{}` did not exit successfully: {}", command, output.status));
+                write!(f, "`{}` did not exit successfully: {}", command, output.status)?;
                 if !stdout.is_empty() {
-                    try!(write!(f, "\n--- stdout\n{}", stdout));
+                    write!(f, "\n--- stdout\n{}", stdout)?;
                 }
                 if !stderr.is_empty() {
-                    try!(write!(f, "\n--- stderr\n{}", stderr));
+                    write!(f, "\n--- stderr\n{}", stderr)?;
                 }
                 Ok(())
             }
@@ -264,7 +254,8 @@ pub fn probe_library(name: &str) -> Result<Library, Error> {
 pub fn get_variable(package: &str, variable: &str) -> Result<String, Error> {
     let arg = format!("--variable={}", variable);
     let cfg = Config::new();
-    Ok(try!(run(cfg.command(package, &[&arg]))).trim_right().to_owned())
+    let out = run(cfg.command(package, &[&arg]))?;
+    Ok(str::from_utf8(&out).unwrap().trim_right().to_owned())
 }
 
 impl Config {
@@ -277,6 +268,7 @@ impl Config {
             extra_args: vec![],
             print_system_libs: true,
             cargo_metadata: true,
+            env_metadata: false,
         }
     }
 
@@ -310,6 +302,14 @@ impl Config {
         self
     }
 
+    /// Define whether metadata should be emitted for cargo allowing to
+    /// automatically rebuild when environment variables change. Defaults to
+    /// `false`.
+    pub fn env_metadata(&mut self, env_metadata: bool) -> &mut Config {
+        self.env_metadata = env_metadata;
+        self
+    }
+
     /// Enable or disable the `PKG_CONFIG_ALLOW_SYSTEM_LIBS` environment
     /// variable.
     ///
@@ -331,24 +331,19 @@ impl Config {
     /// `pkg-config` is run.
     pub fn probe(&self, name: &str) -> Result<Library, Error> {
         let abort_var_name = format!("{}_NO_PKG_CONFIG", envify(name));
-        if env::var_os(&abort_var_name).is_some() {
+        if self.env_var_os(&abort_var_name).is_some() {
             return Err(Error::EnvNoPkgConfig(abort_var_name))
         } else if !target_supported() {
-            if env::var("TARGET").unwrap_or(String::new()).contains("msvc") {
-                return Err(Error::MSVC);
-            }
-            else {
-                return Err(Error::CrossCompilation);
-            }
+            return Err(Error::CrossCompilation);
         }
 
         let mut library = Library::new();
 
-        let output = try!(run(self.command(name, &["--libs", "--cflags"])));
+        let output = run(self.command(name, &["--libs", "--cflags"]))?;
         library.parse_libs_cflags(name, &output, self);
 
-        let output = try!(run(self.command(name, &["--modversion"])));
-        library.parse_modversion(&output);
+        let output = run(self.command(name, &["--modversion"]))?;
+        library.parse_modversion(str::from_utf8(&output).unwrap());
 
         Ok(library)
     }
@@ -359,12 +354,41 @@ impl Config {
         get_variable(package, variable).map_err(|e| e.to_string())
     }
 
+    fn targetted_env_var(&self, var_base: &str) -> Result<String, env::VarError> {
+        if let Ok(target) = env::var("TARGET") {
+            let host = env::var("HOST")?;
+            let kind = if host == target { "HOST" } else { "TARGET" };
+            let target_u = target.replace("-", "_");
+
+            self.env_var(&format!("{}_{}", var_base, target))
+                .or_else(|_| self.env_var(&format!("{}_{}", var_base, target_u)))
+                .or_else(|_| self.env_var(&format!("{}_{}", kind, var_base)))
+                .or_else(|_| self.env_var(var_base))
+        } else {
+            self.env_var(var_base)
+        }
+    }
+
+    fn env_var(&self, name: &str) -> Result<String, env::VarError> {
+        if self.env_metadata {
+            println!("cargo:rerun-if-env-changed={}", name);
+        }
+        env::var(name)
+    }
+
+    fn env_var_os(&self, name: &str) -> Option<OsString> {
+        if self.env_metadata {
+            println!("cargo:rerun-if-env-changed={}", name);
+        }
+        env::var_os(name)
+    }
+
     fn is_static(&self, name: &str) -> bool {
-        self.statik.unwrap_or_else(|| infer_static(name))
+        self.statik.unwrap_or_else(|| self.infer_static(name))
     }
 
     fn command(&self, name: &str, args: &[&str]) -> Command {
-        let exe = env::var("PKG_CONFIG").unwrap_or(String::from("pkg-config"));
+        let exe = self.env_var("PKG_CONFIG").unwrap_or_else(|_| String::from("pkg-config"));
         let mut cmd = Command::new(exe);
         if self.is_static(name) {
             cmd.arg("--static");
@@ -372,6 +396,15 @@ impl Config {
         cmd.args(args)
            .args(&self.extra_args);
 
+        if let Ok(value) = self.targetted_env_var("PKG_CONFIG_PATH") {
+            cmd.env("PKG_CONFIG_PATH", value);
+        }
+        if let Ok(value) = self.targetted_env_var("PKG_CONFIG_LIBDIR") {
+            cmd.env("PKG_CONFIG_LIBDIR", value);
+        }
+        if let Ok(value) = self.targetted_env_var("PKG_CONFIG_SYSROOT_DIR") {
+            cmd.env("PKG_CONFIG_SYSROOT_DIR", value);
+        }
         if self.print_system_libs {
             cmd.env("PKG_CONFIG_ALLOW_SYSTEM_LIBS", "1");
         }
@@ -388,6 +421,21 @@ impl Config {
             println!("cargo:{}", s);
         }
     }
+
+    fn infer_static(&self, name: &str) -> bool {
+        let name = envify(name);
+        if self.env_var_os(&format!("{}_STATIC", name)).is_some() {
+            true
+        } else if self.env_var_os(&format!("{}_DYNAMIC", name)).is_some() {
+            false
+        } else if self.env_var_os("PKG_CONFIG_ALL_STATIC").is_some() {
+            true
+        } else if self.env_var_os("PKG_CONFIG_ALL_DYNAMIC").is_some() {
+            false
+        } else {
+            false
+        }
+    }
 }
 
 impl Library {
@@ -398,21 +446,29 @@ impl Library {
             include_paths: Vec::new(),
             frameworks: Vec::new(),
             framework_paths: Vec::new(),
+            defines: HashMap::new(),
             version: String::new(),
             _priv: (),
         }
     }
 
-    fn parse_libs_cflags(&mut self, name: &str, output: &str, config: &Config) {
-        let parts = output.trim_right()
-                          .split(' ')
+    fn parse_libs_cflags(&mut self, name: &str, output: &[u8], config: &Config) {
+        let mut is_msvc = false;
+        if let Ok(target) = env::var("TARGET") {
+            if target.contains("msvc") {
+                is_msvc = true;
+            }
+        }
+
+        let words = split_flags(output);
+        let parts = words.iter()
                           .filter(|l| l.len() > 2)
                           .map(|arg| (&arg[0..2], &arg[2..]))
                           .collect::<Vec<_>>();
 
         let mut dirs = Vec::new();
         let statik = config.is_static(name);
-        for &(flag, val) in parts.iter() {
+        for &(flag, val) in &parts {
             match flag {
                 "-L" => {
                     let meta = format!("rustc-link-search=native={}", val);
@@ -429,20 +485,35 @@ impl Library {
                     self.include_paths.push(PathBuf::from(val));
                 }
                 "-l" => {
-                    self.libs.push(val.to_string());
-                    if statik && !is_system(val, &dirs) {
+                    // These are provided by the CRT with MSVC
+                    if is_msvc && ["m", "c", "pthread"].contains(&val) {
+                        continue;
+                    }
+
+                    if statik && is_static_available(val, &dirs) {
                         let meta = format!("rustc-link-lib=static={}", val);
                         config.print_metadata(&meta);
                     } else {
                         let meta = format!("rustc-link-lib={}", val);
                         config.print_metadata(&meta);
                     }
+
+                    self.libs.push(val.to_string());
+                }
+                "-D" => {
+                    let mut iter = val.split("=");
+                    self.defines.insert(iter.next().unwrap().to_owned(), iter.next().map(|s| s.to_owned()));
                 }
                 _ => {}
             }
         }
 
-        let mut iter = output.trim_right().split(' ');
+        let mut iter = words.iter()
+                            .flat_map(|arg| if arg.starts_with("-Wl,") {
+                                 arg[4..].split(',').collect()
+                             } else {
+                                 vec![arg.as_ref()]
+                             });
         while let Some(part) = iter.next() {
             if part != "-framework" {
                 continue
@@ -460,41 +531,32 @@ impl Library {
     }
 }
 
-fn infer_static(name: &str) -> bool {
-    let name = envify(name);
-    if env::var_os(&format!("{}_STATIC", name)).is_some() {
-        true
-    } else if env::var_os(&format!("{}_DYNAMIC", name)).is_some() {
-        false
-    } else if env::var_os("PKG_CONFIG_ALL_STATIC").is_some() {
-        true
-    } else if env::var_os("PKG_CONFIG_ALL_DYNAMIC").is_some() {
-        false
-    } else {
-        false
-    }
-}
-
 fn envify(name: &str) -> String {
     name.chars().map(|c| c.to_ascii_uppercase()).map(|c| {
         if c == '-' {'_'} else {c}
     }).collect()
 }
 
-fn is_system(name: &str, dirs: &[PathBuf]) -> bool {
+/// System libraries should only be linked dynamically
+fn is_static_available(name: &str, dirs: &[PathBuf]) -> bool {
     let libname = format!("lib{}.a", name);
-    let root = Path::new("/usr");
-    !dirs.iter().any(|d| {
-        !d.starts_with(root) && fs::metadata(&d.join(&libname)).is_ok()
+    let system_roots = if cfg!(target_os = "macos") {
+        vec![Path::new("/Library"), Path::new("/System")]
+    } else {
+        vec![Path::new("/usr")]
+    };
+
+    dirs.iter().any(|dir| {
+        !system_roots.iter().any(|sys| dir.starts_with(sys)) &&
+        dir.join(&libname).exists()
     })
 }
 
-fn run(mut cmd: Command) -> Result<String, Error> {
+fn run(mut cmd: Command) -> Result<Vec<u8>, Error> {
     match cmd.output() {
         Ok(output) => {
             if output.status.success() {
-                let stdout = String::from_utf8(output.stdout).unwrap();
-                Ok(stdout)
+                Ok(output.stdout)
             } else {
                 Err(Error::Failure {
                     command: format!("{:?}", cmd),
@@ -507,4 +569,62 @@ fn run(mut cmd: Command) -> Result<String, Error> {
             cause: cause,
         }),
     }
+}
+
+/// Split output produced by pkg-config --cflags and / or --libs into separate flags.
+///
+/// Backslash in output is used to preserve literal meaning of following byte.  Different words are
+/// separated by unescaped space. Other whitespace characters generally should not occur unescaped
+/// at all, apart from the newline at the end of output. For compatibility with what others
+/// consumers of pkg-config output would do in this scenario, they are used here for splitting as
+/// well.
+fn split_flags(output: &[u8]) -> Vec<String> {
+    let mut word = Vec::new();
+    let mut words = Vec::new();
+    let mut escaped = false;
+
+    for &b in output {
+        match b {
+            _ if escaped => {
+                escaped = false;
+                word.push(b);
+            }
+            b'\\' => {
+                escaped = true
+            }
+            b'\t' | b'\n' | b'\r' | b' ' => {
+                if !word.is_empty() {
+                    words.push(String::from_utf8(word).unwrap());
+                    word = Vec::new();
+                }
+            }
+            _ => word.push(b),
+        }
+    }
+
+    if !word.is_empty() {
+        words.push(String::from_utf8(word).unwrap());
+    }
+
+    words
+}
+
+#[test]
+#[cfg(target_os = "macos")]
+fn system_library_mac_test() {
+    assert!(!is_static_available("PluginManager", &[PathBuf::from("/Library/Frameworks")]));
+    assert!(!is_static_available("python2.7", &[PathBuf::from("/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config")]));
+    assert!(!is_static_available("ffi_convenience", &[PathBuf::from("/Library/Ruby/Gems/2.0.0/gems/ffi-1.9.10/ext/ffi_c/libffi-x86_64/.libs")]));
+
+    // Homebrew is in /usr/local, and it's not a part of the OS
+    if Path::new("/usr/local/lib/libpng16.a").exists() {
+        assert!(is_static_available("png16", &[PathBuf::from("/usr/local/lib")]));
+    }
+}
+
+#[test]
+#[cfg(target_os = "linux")]
+fn system_library_linux_test() {
+    assert!(!is_static_available("util", &[PathBuf::from("/usr/lib/x86_64-linux-gnu")]));
+    assert!(!is_static_available("dialog", &[PathBuf::from("/usr/lib")]));
 }
