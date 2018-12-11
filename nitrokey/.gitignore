@@ -1,0 +1,6 @@
+
+/target
+/nitrokey-sys/target
+**/*.rs.bk
+Cargo.lock
+*.swp

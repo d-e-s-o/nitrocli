@@ -1,0 +1,46 @@
+- Add support for the currently unsupported commands:
+    - `NK_set_unencrypted_volume_rorw_pin_type_user`
+    - `NK_factory_reset`
+    - `NK_build_aes_key`
+    - `NK_is_AES_supported`
+    - `NK_send_startup`
+    - `NK_unlock_hidden_volume`
+    - `NK_lock_hidden_volume`
+    - `NK_create_hidden_volume`
+    - `NK_set_unencrypted_read_only`
+    - `NK_set_unencrypted_read_only_admin`
+    - `NK_set_unencrypted_read_write`
+    - `NK_set_unencrypted_read_write_admin`
+    - `NK_set_encrypted_read_only`
+    - `NK_set_encrypted_read_write`
+    - `NK_enable_firmware_update`
+    - `NK_export_firmware`
+    - `NK_clear_new_sd_card_warning`
+    - `NK_fill_SD_card_with_random_data`
+    - `NK_change_update_password`
+    - `NK_get_SD_usage_data_as_string`
+    - `NK_get_progress_bar_value`
+    - `NK_list_devices_by_cpuID`
+    - `NK_connect_with_ID`
+    - `NK_get_device_model`
+    - `NK_get_library_version`
+    - `NK_get_major_library_version`
+    - `NK_get_minor_libray_version`
+    - `NK_get_storage_production_info`
+    - `NK_totp_set_time_soft`
+    - `NK_wink`
+- Fix timing issues with the `totp_no_pin` and `totp_pin` test cases.
+- Clear passwords from memory.
+- Find a nicer syntax for the `write_config` test.
+- Prevent construction of internal types.
+- More specific error checking in the tests.
+- Differentiate empty strings and errors (see `result_from_string`).
+- Check integer conversions.
+- Consider implementing `Into<CommandError>` for `(Device, CommandError)`
+- Lock password safe in `PasswordSafe::drop()` (see [nitrokey-storage-firmware
+  issue 65][]).
+- Disable creation of multiple password safes at the same time.
+- Check timing in Storage tests.
+- Consider restructuring `device::StorageStatus`.
+
+[nitrokey-storage-firmware issue 65]: https://github.com/Nitrokey/nitrokey-storage-firmware/issues/65

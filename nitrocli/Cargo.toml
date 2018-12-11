@@ -49,6 +49,11 @@ version = "0.4"
 path = "../hid"
 package = "hid"
 
+[dependencies.libnitrokey]
+version = "0.2.1"
+path = "../nitrokey"
+package = "nitrokey"
+
 [dependencies.pkg-config]
 version = "0.3"
 path = "../pkg-config"
@@ -58,4 +63,7 @@ path = "../pkg-config"
 "hidapi-sys:0.1.4" = { path = "../hidapi-sys" }
 "libc:0.2.45" = { path = "../libc" }
 "libhid:0.4.1" = { path = "../hid" }
+"libnitrokey:0.2.1" = { path = "../nitrokey" }
+"nitrokey-sys:3.4.1" = { path = "../nitrokey-sys" }
 "pkg-config:0.3.14" = { path = "../pkg-config" }
+"rand:0.4.3" = { path = "../rand" }

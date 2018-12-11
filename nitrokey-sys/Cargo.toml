@@ -1,0 +1,15 @@
+[package]
+name = "nitrokey-sys"
+version = "3.4.1"
+authors = ["Robin Krahl <robin.krahl@ireas.org>"]
+homepage = "https://code.ireas.org/nitrokey-rs/"
+repository = "https://git.ireas.org/nitrokey-sys-rs/"
+description = "Low-level bindings to libnitrokey for communication with Nitrokey devices"
+categories = ["external-ffi-bindings"]
+license = "LGPL-3.0"
+links = "nitrokey"
+build = "build.rs"
+readme = "README.md"
+
+[build-dependencies]
+cc = "1.0"

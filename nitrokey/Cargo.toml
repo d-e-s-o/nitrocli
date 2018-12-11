@@ -1,0 +1,22 @@
+[package]
+name = "nitrokey"
+version = "0.2.1"
+authors = ["Robin Krahl <robin.krahl@ireas.org>"]
+homepage = "https://code.ireas.org/nitrokey-rs/"
+repository = "https://git.ireas.org/nitrokey-rs/"
+documentation = "https://docs.rs/nitrokey"
+description = "Bindings to libnitrokey for communication with Nitrokey devices"
+keywords = ["nitrokey", "otp"]
+categories = ["api-bindings"]
+readme = "README.md"
+license = "MIT"
+
+[features]
+test-no-device = []
+test-pro = []
+test-storage = []
+
+[dependencies]
+libc = "0.2"
+nitrokey-sys = "3.4.1"
+rand = "0.4"
