@@ -21,7 +21,41 @@ use error::Error;
 use std::process;
 
 
-const CACHE_ID: &str = "nitrocli:user";
+/// PIN type requested from pinentry.
+///
+/// The available PIN types correspond to the PIN types used by the Nitrokey devices:  user and
+/// admin.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PinType {
+  /// The admin PIN.
+  Admin,
+  /// The user PIN.
+  User,
+}
+
+
+impl PinType {
+  fn cache_id(self) -> &'static str {
+    match self {
+      PinType::Admin => "nitrocli:admin",
+      PinType::User => "nitrocli:user",
+    }
+  }
+
+  fn prompt(self) -> &'static str {
+    match self {
+      PinType::Admin => "Admin PIN",
+      PinType::User => "User PIN",
+    }
+  }
+
+  fn description(self) -> &'static str {
+    match self {
+      PinType::Admin => "Please enter admin PIN",
+      PinType::User => "Please enter user PIN",
+    }
+  }
+}
 
 
 fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
@@ -49,14 +83,13 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
 }
 
 
-pub fn inquire_passphrase(error_msg: Option<&str>) -> Result<Vec<u8>, Error> {
-  const PINENTRY_ERROR_MSG_EMPTY: &str = "+";
-  const PINENTRY_PROMPT: &str = "PIN";
-  const PINENTRY_DESCR: &str = "Please+enter+user+PIN";
+pub fn inquire_passphrase(pin_type: PinType, error_msg: Option<&str>) -> Result<Vec<u8>, Error> {
+  let cache_id = pin_type.cache_id();
+  let error_msg = error_msg.map(|msg| msg.replace(" ", "+")).unwrap_or(String::from("+"));
+  let prompt = pin_type.prompt();
+  let description = pin_type.description().replace(" ", "+");
 
-  let error_msg = error_msg.map(|msg| msg.replace(" ", "+"))
-    .unwrap_or(PINENTRY_ERROR_MSG_EMPTY.to_string());
-  let args = vec![CACHE_ID, &error_msg, PINENTRY_PROMPT, PINENTRY_DESCR].join(" ");
+  let args = vec![cache_id, &error_msg, prompt, &description].join(" ");
   let command = "GET_PASSPHRASE --data ".to_string() + &args;
   // We could also use the --data parameter here to have a more direct
   // representation of the passphrase but the resulting response was
@@ -83,9 +116,9 @@ fn parse_pinentry_response(response: Vec<u8>) -> Result<(), Error> {
 }
 
 
-/// Clear the cached passphrase.
-pub fn clear_passphrase() -> Result<(), Error> {
-  let command = "CLEAR_PASSPHRASE ".to_string() + CACHE_ID;
+/// Clear the cached passphrase of the given type.
+pub fn clear_passphrase(pin_type: PinType) -> Result<(), Error> {
+  let command = "CLEAR_PASSPHRASE ".to_string() + pin_type.cache_id();
   let output = process::Command::new("gpg-connect-agent").arg(command)
     .arg("/bye")
     .output()?;

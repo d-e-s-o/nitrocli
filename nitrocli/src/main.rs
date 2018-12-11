@@ -42,6 +42,7 @@ type Result<T> = result::Result<T, Error>;
 type NitroFunc = Fn(&mut libhid::Handle) -> Result<()>;
 
 
+const PIN_TYPE: pinentry::PinType = pinentry::PinType::User;
 const SEND_TRY_COUNT: i8 = 3;
 const RECV_TRY_COUNT: i8 = 40;
 const SEND_RECV_DELAY_MS: u64 = 200;
@@ -255,7 +256,7 @@ fn open() -> Result<()> {
     let mut retry = 3;
     let mut error_msg: Option<&str> = None;
     loop {
-      let passphrase = pinentry::inquire_passphrase(error_msg)?;
+      let passphrase = pinentry::inquire_passphrase(PIN_TYPE, error_msg)?;
       let payload = nitrokey::EnableEncryptedVolumeCommand::new(&passphrase);
       let report = nitrokey::Report::from(payload);
 
@@ -264,7 +265,7 @@ fn open() -> Result<()> {
       let mut status = response.data.storage_status;
 
       if status == nitrokey::StorageStatus::WrongPassword {
-        pinentry::clear_passphrase()?;
+        pinentry::clear_passphrase(PIN_TYPE)?;
         retry -= 1;
 
         if retry > 0 {
@@ -328,7 +329,7 @@ fn close() -> Result<()> {
 
 /// Clear the PIN stored when opening the nitrokey's encrypted volume.
 fn clear() -> Result<()> {
-  pinentry::clear_passphrase()
+  pinentry::clear_passphrase(PIN_TYPE)
 }
 
 
