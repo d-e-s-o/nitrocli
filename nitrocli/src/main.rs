@@ -79,6 +79,8 @@ use std::result;
 use std::thread;
 use std::time;
 
+use libnitrokey;
+
 use crate::error::Error;
 
 type Result<T> = result::Result<T, Error>;
@@ -89,6 +91,20 @@ const PIN_TYPE: pinentry::PinType = pinentry::PinType::User;
 const SEND_TRY_COUNT: i8 = 3;
 const RECV_TRY_COUNT: i8 = 40;
 const SEND_RECV_DELAY_MS: u64 = 200;
+
+
+/// Create an `error::Error` with an error message of the format `msg: err`.
+fn get_error(msg: &str, err: &libnitrokey::CommandError) -> Error {
+  let error = format!("{}: {:?}", msg, err);
+  Error::Error(error)
+}
+
+
+/// Connect to a Nitrokey Storage device and return it.
+fn get_storage_device() -> Result<libnitrokey::Storage> {
+  libnitrokey::Storage::connect()
+    .or_else(|_| Err(Error::Error("Nitrokey device not found".to_string())))
+}
 
 
 /// Send a HID feature report to the device represented by the given handle.
@@ -272,64 +288,33 @@ fn status() -> Result<()> {
 }
 
 
-/// Poll the nitrokey until it reports to no longer be busy.
-fn wait(handle: &mut libhid::Handle) -> Result<nitrokey::StorageStatus> {
-  type Response = nitrokey::Response<nitrokey::StorageResponse>;
-
-  loop {
-    thread::sleep(time::Duration::from_millis(SEND_RECV_DELAY_MS));
-
-    let report = receive::<nitrokey::EmptyPayload>(handle)?;
-    let response = AsRef::<Response>::as_ref(&report.data);
-    let status = response.data.storage_status;
-
-    if status != nitrokey::StorageStatus::Busy &&
-       status != nitrokey::StorageStatus::BusyProgressbar {
-      return Ok(status);
-    }
-  }
-}
-
-
 /// Open the encrypted volume on the nitrokey.
 fn open() -> Result<()> {
-  type Response = nitrokey::Response<nitrokey::StorageResponse>;
+  let device = get_storage_device()?;
 
-  nitrokey_do(&|handle| {
-    let mut retry = 3;
-    let mut error_msg: Option<&str> = None;
-    loop {
-      let passphrase = pinentry::inquire_passphrase(PIN_TYPE, error_msg)?;
-      let payload = nitrokey::EnableEncryptedVolumeCommand::new(&passphrase);
-      let report = nitrokey::Report::from(payload);
+  let mut retry = 3;
+  let mut error_msg: Option<&str> = None;
+  loop {
+    let passphrase = pinentry::inquire_passphrase(PIN_TYPE, error_msg)?;
+    let passphrase = String::from_utf8_lossy(&passphrase);
+    match device.enable_encrypted_volume(&passphrase) {
+      Ok(()) => return Ok(()),
+      Err(err) => match err {
+        libnitrokey::CommandError::WrongPassword => {
+          pinentry::clear_passphrase(PIN_TYPE)?;
+          retry -= 1;
 
-      let report = transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
-      let response = AsRef::<Response>::as_ref(&report.data);
-      let mut status = response.data.storage_status;
-
-      if status == nitrokey::StorageStatus::WrongPassword {
-        pinentry::clear_passphrase(PIN_TYPE)?;
-        retry -= 1;
-
-        if retry > 0 {
-          error_msg = Some("Wrong password, please reenter");
-          continue;
-        }
-        let error = "Opening encrypted volume failed: Wrong password";
-        return Err(Error::Error(error.to_string()));
-      }
-      if status == nitrokey::StorageStatus::Busy ||
-         status == nitrokey::StorageStatus::BusyProgressbar {
-        status = wait(handle)?;
-      }
-      if status != nitrokey::StorageStatus::Okay && status != nitrokey::StorageStatus::Idle {
-        let status = format!("{:?}", status);
-        let error = format!("Opening encrypted volume failed: {}", status);
-        return Err(Error::Error(error));
-      }
-      return Ok(());
-    }
-  })
+          if retry > 0 {
+            error_msg = Some("Wrong password, please reenter");
+            continue;
+          }
+          let error = "Opening encrypted volume failed: Wrong password";
+          return Err(Error::Error(error.to_string()));
+        },
+        err => return Err(get_error("Opening encrypted volume failed", &err)),
+      },
+    };
+  }
 }
 
 
@@ -340,33 +325,14 @@ extern "C" {
 
 /// Close the previously opened encrypted volume.
 fn close() -> Result<()> {
-  type Response = nitrokey::Response<nitrokey::StorageResponse>;
+  // Flush all filesystem caches to disk. We are mostly interested in
+  // making sure that the encrypted volume on the nitrokey we are
+  // about to close is not closed while not all data was written to
+  // it.
+  unsafe { sync() };
 
-  nitrokey_do(&|handle| {
-    // Flush all filesystem caches to disk. We are mostly interested in
-    // making sure that the encrypted volume on the nitrokey we are
-    // about to close is not closed while not all data was written to
-    // it.
-    unsafe { sync() };
-
-    let payload = nitrokey::DisableEncryptedVolumeCommand::new();
-    let report = nitrokey::Report::from(payload);
-
-    let report = transmit::<_, nitrokey::EmptyPayload>(handle, &report)?;
-    let response = AsRef::<Response>::as_ref(&report.data);
-    let mut status = response.data.storage_status;
-
-    if status == nitrokey::StorageStatus::Busy ||
-       status == nitrokey::StorageStatus::BusyProgressbar {
-      status = wait(handle)?;
-    }
-    if status != nitrokey::StorageStatus::Okay && status != nitrokey::StorageStatus::Idle {
-      let status = format!("{:?}", status);
-      let error = format!("Closing encrypted volume failed: {}", status);
-      return Err(Error::Error(error));
-    }
-    Ok(())
-  })
+  let device = get_storage_device()?;
+  device.disable_encrypted_volume().map_err(|err| get_error("Closing encrypted volume failed", &err))
 }
 
 

@@ -2,6 +2,8 @@ Unreleased
 ----------
 - Added `nitrokey` version `0.2.1` as a direct dependency and `nitrokey-sys`
   version `3.4.1` as well as `rand` version `0.4.3` as indirect dependencies
+- Use the nitrokey crate for the `open` and `close` commands instead of direct
+  communication with the Nitrokey device
 
 
 0.1.3
