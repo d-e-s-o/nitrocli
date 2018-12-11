@@ -49,12 +49,14 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
 }
 
 
-pub fn inquire_passphrase() -> Result<Vec<u8>, Error> {
-  const PINENTRY_ERROR_MSG: &str = "+";
+pub fn inquire_passphrase(error_msg: Option<&str>) -> Result<Vec<u8>, Error> {
+  const PINENTRY_ERROR_MSG_EMPTY: &str = "+";
   const PINENTRY_PROMPT: &str = "PIN";
   const PINENTRY_DESCR: &str = "Please+enter+user+PIN";
 
-  let args = vec![CACHE_ID, PINENTRY_ERROR_MSG, PINENTRY_PROMPT, PINENTRY_DESCR].join(" ");
+  let error_msg = error_msg.map(|msg| msg.replace(" ", "+"))
+    .unwrap_or(PINENTRY_ERROR_MSG_EMPTY.to_string());
+  let args = vec![CACHE_ID, &error_msg, PINENTRY_PROMPT, PINENTRY_DESCR].join(" ");
   let command = "GET_PASSPHRASE --data ".to_string() + &args;
   // We could also use the --data parameter here to have a more direct
   // representation of the passphrase but the resulting response was
