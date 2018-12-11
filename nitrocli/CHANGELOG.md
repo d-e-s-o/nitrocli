@@ -5,6 +5,7 @@ Unreleased
   - Added `nitrokey` version `0.2.1` as a direct dependency and
     `nitrokey-sys` version `3.4.1` as well as `rand` version `0.4.3` as
     indirect dependencies
+  - Removed the `hid`, `hidapi-sys` and `pkg-config` dependencies
 
 
 0.1.3
