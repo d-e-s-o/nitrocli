@@ -32,10 +32,9 @@ description = """
 A command line tool for interacting with the Nitrokey Storage device.
 """
 
-[dependencies.libnitrokey]
+[dependencies.nitrokey]
 version = "0.2.1"
 path = "../nitrokey"
-package = "nitrokey"
 
 
 [replace]

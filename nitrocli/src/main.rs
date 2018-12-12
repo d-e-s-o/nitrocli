@@ -74,7 +74,7 @@ mod pinentry;
 use std::process;
 use std::result;
 
-use libnitrokey;
+use nitrokey;
 
 use crate::error::Error;
 
@@ -84,20 +84,20 @@ const PIN_TYPE: pinentry::PinType = pinentry::PinType::User;
 
 
 /// Create an `error::Error` with an error message of the format `msg: err`.
-fn get_error(msg: &str, err: &libnitrokey::CommandError) -> Error {
+fn get_error(msg: &str, err: &nitrokey::CommandError) -> Error {
   let error = format!("{}: {:?}", msg, err);
   Error::Error(error)
 }
 
 
 /// Connect to a Nitrokey Storage device and return it.
-fn get_storage_device() -> Result<libnitrokey::Storage> {
-  libnitrokey::Storage::connect()
+fn get_storage_device() -> Result<nitrokey::Storage> {
+  nitrokey::Storage::connect()
     .or_else(|_| Err(Error::Error("Nitrokey device not found".to_string())))
 }
 
 /// Return a string representation of the given volume status.
-fn get_volume_status(status: &libnitrokey::VolumeStatus) -> &'static str {
+fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
   match status.active {
     true => match status.read_only {
       true => "read-only",
@@ -109,7 +109,7 @@ fn get_volume_status(status: &libnitrokey::VolumeStatus) -> &'static str {
 
 
 /// Pretty print the response of a status command.
-fn print_status(status: &libnitrokey::StorageStatus) {
+fn print_status(status: &nitrokey::StorageStatus) {
   println!("Status:");
   // We omit displaying information about the smartcard here as this
   // program really is only about the SD card portion of the device.
@@ -157,7 +157,7 @@ fn open() -> Result<()> {
     match device.enable_encrypted_volume(&passphrase) {
       Ok(()) => return Ok(()),
       Err(err) => match err {
-        libnitrokey::CommandError::WrongPassword => {
+        nitrokey::CommandError::WrongPassword => {
           pinentry::clear_passphrase(PIN_TYPE)?;
           retry -= 1;
 
