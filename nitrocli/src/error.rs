@@ -21,6 +21,8 @@ use std::fmt;
 use std::io;
 use std::string;
 
+use libhid;
+
 
 #[derive(Debug)]
 pub enum Error {

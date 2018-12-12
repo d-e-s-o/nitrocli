@@ -20,6 +20,7 @@
 [package]
 name = "nitrocli"
 version = "0.1.2"
+edition = "2018"
 authors = ["Daniel Mueller <deso@posteo.net>"]
 license = "GPL-3.0+"
 homepage = "https://github.com/d-e-s-o/nitrocli"
@@ -34,10 +35,6 @@ A command line tool for interacting with the Nitrokey Storage device.
 version = "1.0"
 path = "../cc"
 
-[dependencies.hid]
-version = "0.4"
-path = "../hid"
-
 [dependencies.hidapi-sys]
 version = "0.1"
 path = "../hidapi-sys"
@@ -46,13 +43,18 @@ path = "../hidapi-sys"
 version = "0.2"
 path = "../libc"
 
+[dependencies.libhid]
+version = "0.4"
+path = "../hid"
+package = "hid"
+
 [dependencies.pkg-config]
 version = "0.3"
 path = "../pkg-config"
 
 [replace]
 "cc:1.0.25" = { path = "../cc" }
-"hid:0.4.1" = { path = "../hid" }
 "hidapi-sys:0.1.4" = { path = "../hidapi-sys" }
 "libc:0.2.45" = { path = "../libc" }
+"libhid:0.4.1" = { path = "../hid" }
 "pkg-config:0.3.14" = { path = "../pkg-config" }

@@ -2,6 +2,7 @@ Unreleased
 ----------
 - Show PIN related errors through `pinentry` native reporting mechanism
   instead of emitting them to `stdout`
+- Adjusted program to use Rust Edition 2018
 - Applied a couple of `clippy` reported suggestions
 - Changed dependency version requirements to be less strict (only up to
   the minor version and not the patch level)

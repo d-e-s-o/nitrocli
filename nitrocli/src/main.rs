@@ -26,9 +26,6 @@
 //! Nitrocli is a program providing a command line interface to certain
 //! commands of the Nitrokey Storage device.
 
-extern crate hid as libhid;
-
-
 mod crc32;
 mod error;
 mod nitrokey;
