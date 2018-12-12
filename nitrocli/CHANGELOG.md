@@ -4,6 +4,7 @@ Unreleased
   instead of emitting them to `stdout`
 - Adjusted program to use Rust Edition 2018
 - Applied a couple of `clippy` reported suggestions
+- Added categories to `Cargo.toml`
 - Changed dependency version requirements to be less strict (only up to
   the minor version and not the patch level)
 - Bumped `pkg-config` dependency to `0.3.14`
