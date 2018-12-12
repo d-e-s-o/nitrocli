@@ -1,6 +1,8 @@
 nitrocli
 ========
 
+- [Changelog](CHANGELOG.md)
+
 **nitrocli** is a program that provides a command line interface for
 certain commands on the [Nitrokey Storage][nitrokey] device.
 
