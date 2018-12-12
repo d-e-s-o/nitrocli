@@ -29,6 +29,7 @@ use crate::error::Error;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PinType {
   /// The admin PIN.
+  #[allow(unused)]
   Admin,
   /// The user PIN.
   User,
