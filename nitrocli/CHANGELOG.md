@@ -1,7 +1,8 @@
-Unreleased
-----------
+0.1.3
+-----
 - Show PIN related errors through `pinentry` native reporting mechanism
   instead of emitting them to `stdout`
+- Added a `man` page (`nitrocli(1)`) for the program to the repository
 - Adjusted program to use Rust Edition 2018
 - Enabled more lints
 - Applied a couple of `clippy` reported suggestions

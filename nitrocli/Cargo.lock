@@ -43,7 +43,7 @@ replace = "libc 0.2.45"
 
 [[package]]
 name = "nitrocli"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "cc 1.0.25",
  "hid 0.4.1",
