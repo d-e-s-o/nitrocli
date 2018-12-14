@@ -1,0 +1,27 @@
+.TH NITROCLI 1 2018-12-14
+.SH NAME
+nitrocli \- access Nitrokey devices
+.SH SYNOPSIS
+.B nitrocli
+\fBclear\fR|\fBclose\fR|\fBopen\fR|\fBstatus\fR
+.SH DESCRIPTION
+\fBnitrocli\fR provides access to Nitrokey devices.
+Currently, \fBnitrocli\fR only supports accessing the encrypted volume of a
+Nitrokey Storage.
+.SH COMMANDS
+.TP
+.B open
+Open the encrypted volume on the Nitrokey Storage.
+The user PIN that is required to open the volume is queried using 
+\fBpinentry\fR(1) and cached by \fBgpg-agent\fR(1).
+.TP
+.B close
+Close the encrypted volume on the Nitrokey Storage.
+.TP
+.B status
+Print the status of the connected Nitrokey Storage, including the SD card
+serial number, the firmware version, the encryption status, the PIN retry count
+and the status of the volumes.
+.TP
+.B clear
+Clear the passphrase cached by the \fBopen\fR command.
