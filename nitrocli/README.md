@@ -79,9 +79,11 @@ $ cargo install nitrocli --root=$PWD/nitrocli
 ```
 
 #### Via Packages
-If you are using [Gentoo Linux](https://www.gentoo.org/), there is an
-[ebuild](https://github.com/d-e-s-o/nitrocli-ebuild) available that can
-be used directly.
+Packages are available for:
+- Arch Linux: [`nitrocli`](https://aur.archlinux.org/packages/nitrocli/) in the
+  Arch User Repository
+- Gentoo Linux: [ebuild](https://github.com/d-e-s-o/nitrocli-ebuild) for
+  `nitrocli`
 
 [nitrokey]: https://www.nitrokey.com/news/2016/nitrokey-storage-available
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
