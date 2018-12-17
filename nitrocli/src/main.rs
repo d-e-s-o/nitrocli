@@ -68,6 +68,7 @@
 //! Nitrocli is a program providing a command line interface to certain
 //! commands of the Nitrokey Storage device.
 
+mod args;
 mod commands;
 mod error;
 mod pinentry;
@@ -75,43 +76,27 @@ mod pinentry;
 use std::process;
 use std::result;
 
-use nitrokey;
-
 use crate::error::Error;
 
 type Result<T> = result::Result<T, Error>;
 
-// A macro for generating a match of the different supported commands.
-// Each supplied command is converted into a string and matched against.
-macro_rules! commands {
-  ( $str:expr, [ $( $command:expr), *] ) => {
-    match &*$str.to_string() {
-      $(
-        stringify!($command) => {
-          if let Err(err) = $command() {
-            println!("{}", err);
-            return 1
-          }
-          return 0
-        },
-      )*
-      x => {
-        println!("Invalid command: {}", x);
-        println!("Available commands: {}", stringify!( $($command)* ));
-        return 1
-      },
-    }
-  }
-}
-
 fn run() -> i32 {
-  let argv: Vec<String> = std::env::args().collect();
-  if argv.len() != 2 {
-    println!("Usage: {} <command>", argv[0]);
-    return 1;
+  let args = std::env::args().collect();
+  match args::handle_arguments(args) {
+    Ok(()) => 0,
+    Err(err) => match err {
+      Error::ArgparseError(err) => match err {
+        // argparse printed the help message
+        0 => 0,
+        // argparse printed an error message
+        _ => 1,
+      },
+      _ => {
+        println!("{}", err);
+        1
+      }
+    },
   }
-
-  commands!(&argv[1], [commands::status, commands::open, commands::close, commands::clear]);
 }
 
 fn main() {
