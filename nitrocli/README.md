@@ -1,3 +1,5 @@
+[![pipeline](https://gitlab.com/d-e-s-o/nitrocli/badges/devel/pipeline.svg)](https://gitlab.com/d-e-s-o/nitrocli/commits/devel)
+
 nitrocli
 ========
 
