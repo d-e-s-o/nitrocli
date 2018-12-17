@@ -77,7 +77,7 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
 
   // Check if we are dealing with a special "ERR " line and report that
   // specially.
-  if lines.len() >= 1 && lines[0].starts_with("ERR ") {
+  if !lines.is_empty() && lines[0].starts_with("ERR ") {
     let (_, error) = lines[0].split_at(4);
     return Err(Error::Error(error.to_string()));
   }
@@ -91,7 +91,7 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
 /// if available.  If an error message is set, it is displayed in the passphrase dialog.
 pub fn inquire_passphrase(pin_type: PinType, error_msg: Option<&str>) -> Result<Vec<u8>, Error> {
   let cache_id = pin_type.cache_id();
-  let error_msg = error_msg.map(|msg| msg.replace(" ", "+")).unwrap_or(String::from("+"));
+  let error_msg = error_msg.map(|msg| msg.replace(" ", "+")).unwrap_or_else(|| String::from("+"));
   let prompt = pin_type.prompt();
   let description = pin_type.description().replace(" ", "+");
 
