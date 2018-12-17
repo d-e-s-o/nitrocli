@@ -24,7 +24,7 @@ lint:clippy:
   # necessary because consumed dependencies may emit errors otherwise.
   - cd nitrocli
   - cargo clippy --all-targets --all-features --
-    -A warnings -A clippy::float_cmp -A clippy::cast_ptr_alignment
+    -A warnings -A clippy::float_cmp -A clippy::cast_ptr_alignment -A clippy::unused_io_amount
   - cargo clean --package=nitrocli
   - cargo clippy --all-targets --all-features -- -D warnings
 

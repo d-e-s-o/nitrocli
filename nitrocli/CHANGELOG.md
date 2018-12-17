@@ -12,6 +12,7 @@ Unreleased
   version of the crate, and minimum version of `rustc` required
 - Fixed wrong messages in the pinentry dialog that were caused by unescaped
   spaces in a string
+- Added `argparse` dependency in version `0.2.2`
 
 
 0.1.3

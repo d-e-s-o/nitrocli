@@ -1,0 +1,12 @@
+[package]
+
+name = "argparse"
+description = "Powerful command-line argument parsing library"
+license = "MIT"
+readme = "README.rst"
+keywords = ["command-line", "cli", "command", "argument"]
+categories = ["command-line-interface"]
+homepage = "http://github.com/tailhook/rust-argparse"
+version = "0.2.2"
+authors = ["Paul Colomiets <paul@colomiets.name>"]
+

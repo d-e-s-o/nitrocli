@@ -1,0 +1,13 @@
+/.vagga
+*.o
+*.so
+*.rlib
+/argparse_test
+/target
+# examples
+/greeting
+/structure
+/subcommands
+
+# Cargo files
+Cargo.lock
