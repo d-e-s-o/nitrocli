@@ -33,7 +33,7 @@ A command line tool for interacting with the Nitrokey Storage device.
 """
 
 [badges]
-gitlab = { repository = "d-e-s-o/nitrocli", branch = "devel" }
+gitlab = { repository = "d-e-s-o/nitrocli", branch = "master" }
 
 [dependencies.nitrokey]
 version = "0.2.1"
