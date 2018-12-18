@@ -27,3 +27,9 @@ lint:clippy:
     -A warnings -A clippy::float_cmp -A clippy::cast_ptr_alignment
   - cargo clean --package=nitrocli
   - cargo clippy --all-targets --all-features -- -D warnings
+
+format:rustfmt:
+  script:
+  - rustup component add rustfmt
+  - cd nitrocli
+  - cargo fmt --all -- --check
