@@ -54,7 +54,7 @@
   unused_qualifications,
   unused_results,
   where_clauses_object_safety,
-  while_true,
+  while_true
 )]
 #![warn(
   bad_style,
@@ -62,7 +62,7 @@
   nonstandard_style,
   renamed_and_removed_lints,
   rust_2018_compatibility,
-  rust_2018_idioms,
+  rust_2018_idioms
 )]
 
 //! Nitrocli is a program providing a command line interface to certain
@@ -82,12 +82,10 @@ type Result<T> = result::Result<T, Error>;
 
 const PIN_TYPE: pinentry::PinType = pinentry::PinType::User;
 
-
 /// Create an `error::Error` with an error message of the format `msg: err`.
 fn get_error(msg: &str, err: &nitrokey::CommandError) -> Error {
   Error::Error(format!("{}: {:?}", msg, err))
 }
-
 
 /// Connect to a Nitrokey Storage device and return it.
 fn get_storage_device() -> Result<nitrokey::Storage> {
@@ -108,36 +106,42 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
   }
 }
 
-
 /// Pretty print the response of a status command.
 fn print_status(status: &nitrokey::StorageStatus) {
-  println!("Status:");
   // We omit displaying information about the smartcard here as this
   // program really is only about the SD card portion of the device.
-  println!("  SD card ID:        {:#x}", status.serial_number_sd_card);
-  println!("  firmware version:  {}.{}",
-           status.firmware_version_major,
-           status.firmware_version_minor);
-  println!("  firmware:          {}",
-           if status.firmware_locked {
-             "locked".to_string()
-           } else {
-             "unlocked".to_string()
-           });
-  println!("  storage keys:      {}",
-           if status.stick_initialized {
-             "created".to_string()
-           } else {
-             "not created".to_string()
-           });
-  println!("  user retry count:  {}", status.user_retry_count);
-  println!("  admin retry count: {}", status.admin_retry_count);
-  println!("  volumes:");
-  println!("    unencrypted:     {}", get_volume_status(&status.unencrypted_volume));
-  println!("    encrypted:       {}", get_volume_status(&status.encrypted_volume));
-  println!("    hidden:          {}", get_volume_status(&status.hidden_volume));
+  println!(
+    r#"Status:
+  SD card ID:        {id:#x}
+  firmware version:  {fwv0}.{fwv1}
+  firmware:          {fw}
+  storage keys:      {sk}
+  user retry count:  {urc}
+  admin retry count: {arc}
+  volumes:
+    unencrypted:     {vu}
+    encrypted:       {ve}
+    hidden:          {vh}"#,
+    id = status.serial_number_sd_card,
+    fwv0 = status.firmware_version_major,
+    fwv1 = status.firmware_version_minor,
+    fw = if status.firmware_locked {
+      "locked"
+    } else {
+      "unlocked"
+    },
+    sk = if status.stick_initialized {
+      "created"
+    } else {
+      "not created"
+    },
+    urc = status.user_retry_count,
+    arc = status.admin_retry_count,
+    vu = get_volume_status(&status.unencrypted_volume),
+    ve = get_volume_status(&status.encrypted_volume),
+    vh = get_volume_status(&status.hidden_volume),
+  );
 }
-
 
 /// Inquire the status of the nitrokey.
 fn status() -> Result<()> {
@@ -148,7 +152,6 @@ fn status() -> Result<()> {
   print_status(&status);
   Ok(())
 }
-
 
 /// Open the encrypted volume on the nitrokey.
 fn open() -> Result<()> {
@@ -174,13 +177,12 @@ fn open() -> Result<()> {
           }
           let error = "Opening encrypted volume failed: Wrong password";
           return Err(Error::Error(error.to_string()));
-        },
+        }
         err => return Err(get_error("Opening encrypted volume failed", &err)),
       },
     };
   }
 }
-
 
 #[link(name = "c")]
 extern "C" {
@@ -200,12 +202,10 @@ fn close() -> Result<()> {
     .map_err(|err| get_error("Closing encrypted volume failed", &err))
 }
 
-
 /// Clear the PIN stored when opening the nitrokey's encrypted volume.
 fn clear() -> Result<()> {
   pinentry::clear_passphrase(PIN_TYPE)
 }
-
 
 // A macro for generating a match of the different supported commands.
 // Each supplied command is converted into a string and matched against.

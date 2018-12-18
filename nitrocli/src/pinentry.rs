@@ -21,7 +21,6 @@ use std::process;
 
 use crate::error::Error;
 
-
 /// PIN type requested from pinentry.
 ///
 /// The available PIN types correspond to the PIN types used by the Nitrokey devices:  user and
@@ -34,7 +33,6 @@ pub enum PinType {
   /// The user PIN.
   User,
 }
-
 
 impl PinType {
   fn cache_id(self) -> &'static str {
@@ -58,7 +56,6 @@ impl PinType {
     }
   }
 }
-
 
 fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
   let string = String::from_utf8(response)?;
@@ -84,14 +81,15 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
   Err(Error::Error("Unexpected response: ".to_string() + &string))
 }
 
-
 /// Inquire a PIN of the given type from the user.
 ///
 /// This function inquires a PIN of the given type from the user or returns the cached passphrase,
 /// if available.  If an error message is set, it is displayed in the passphrase dialog.
 pub fn inquire_passphrase(pin_type: PinType, error_msg: Option<&str>) -> Result<Vec<u8>, Error> {
   let cache_id = pin_type.cache_id();
-  let error_msg = error_msg.map(|msg| msg.replace(" ", "+")).unwrap_or_else(|| String::from("+"));
+  let error_msg = error_msg
+    .map(|msg| msg.replace(" ", "+"))
+    .unwrap_or_else(|| String::from("+"));
   let prompt = pin_type.prompt();
   let description = pin_type.description().replace(" ", "+");
 
@@ -103,12 +101,12 @@ pub fn inquire_passphrase(pin_type: PinType, error_msg: Option<&str>) -> Result<
   // reported for the GET_PASSPHRASE command does not actually cause
   // gpg-connect-agent to exit with a non-zero error code, we have to
   // evaluate the output to determine success/failure.
-  let output = process::Command::new("gpg-connect-agent").arg(command)
+  let output = process::Command::new("gpg-connect-agent")
+    .arg(command)
     .arg("/bye")
     .output()?;
   parse_pinentry_passphrase(output.stdout)
 }
-
 
 fn parse_pinentry_response(response: Vec<u8>) -> Result<(), Error> {
   let string = String::from_utf8(response)?;
@@ -121,17 +119,16 @@ fn parse_pinentry_response(response: Vec<u8>) -> Result<(), Error> {
   Err(Error::Error("Unexpected response: ".to_string() + &string))
 }
 
-
 /// Clear the cached passphrase of the given type.
 pub fn clear_passphrase(pin_type: PinType) -> Result<(), Error> {
   let command = "CLEAR_PASSPHRASE ".to_string() + pin_type.cache_id();
-  let output = process::Command::new("gpg-connect-agent").arg(command)
+  let output = process::Command::new("gpg-connect-agent")
+    .arg(command)
     .arg("/bye")
     .output()?;
 
   parse_pinentry_response(output.stdout)
 }
-
 
 #[cfg(test)]
 mod tests {

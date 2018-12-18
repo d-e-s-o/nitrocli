@@ -21,7 +21,6 @@ use std::fmt;
 use std::io;
 use std::string;
 
-
 #[derive(Debug)]
 pub enum Error {
   IoError(io::Error),
@@ -29,20 +28,17 @@ pub enum Error {
   Error(String),
 }
 
-
 impl From<io::Error> for Error {
   fn from(e: io::Error) -> Error {
     Error::IoError(e)
   }
 }
 
-
 impl From<string::FromUtf8Error> for Error {
   fn from(e: string::FromUtf8Error) -> Error {
     Error::Utf8Error(e)
   }
 }
-
 
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
