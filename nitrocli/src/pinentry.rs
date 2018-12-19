@@ -90,10 +90,10 @@ pub fn inquire_passphrase(pin_type: PinType, error_msg: Option<&str>) -> Result<
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
     .unwrap_or_else(|| String::from("+"));
-  let prompt = pin_type.prompt();
+  let prompt = pin_type.prompt().replace(" ", "+");
   let description = pin_type.description().replace(" ", "+");
 
-  let args = vec![cache_id, &error_msg, prompt, &description].join(" ");
+  let args = vec![cache_id, &error_msg, &prompt, &description].join(" ");
   let command = "GET_PASSPHRASE --data ".to_string() + &args;
   // We could also use the --data parameter here to have a more direct
   // representation of the passphrase but the resulting response was

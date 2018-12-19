@@ -10,6 +10,8 @@ Unreleased
   and building of the project
 - Added badges indicating pipeline status, current `crates.io` published
   version of the crate, and minimum version of `rustc` required
+- Fixed wrong messages in the pinentry dialog that were caused by unescaped
+  spaces in a string
 
 
 0.1.3
