@@ -39,7 +39,6 @@ gitlab = { repository = "d-e-s-o/nitrocli", branch = "master" }
 version = "0.2.1"
 path = "../nitrokey"
 
-
 [replace]
 "cc:1.0.25" = { path = "../cc" }
 "libc:0.2.45" = { path = "../libc" }
