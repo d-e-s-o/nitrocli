@@ -47,6 +47,79 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
   }
 }
 
+/// Try to execute the given function with a passphrase queried using pinentry and passing on the
+/// given data.
+///
+/// This function will query the passphrase of the given type from the user using pinentry.  It
+/// will then execute the given function.  If this function returns a result, this function will
+/// pass it on.  If it returns a `CommandError::WrongPassword`, the user will be asked again to
+/// enter the passphrase.  Otherwise, this function returns an error containing the given error
+/// message.  The user will have at most three tries to get the passphrase right.
+///
+/// The data argument can be used to pass on data between the tries.  At the first try, this
+/// function will call `op` with `data`.  At the second or third try, it will call `op` with the
+/// data returned by the previous call to `op`.
+fn try_with_passphrase_and_data<D, F, R>(
+  pin: pinentry::PinType,
+  msg: &'static str,
+  data: D,
+  op: F,
+) -> std::result::Result<R, (D, Error)>
+where
+  F: Fn(D, &str) -> std::result::Result<R, (D, nitrokey::CommandError)>,
+{
+  let mut data = data;
+  let mut retry = 3;
+  let mut error_msg: Option<&str> = None;
+  loop {
+    let passphrase = match pinentry::inquire_passphrase(pin, error_msg) {
+      Ok(passphrase) => passphrase,
+      Err(err) => return Err((data, err)),
+    };
+    let passphrase = match String::from_utf8(passphrase) {
+      Ok(passphrase) => passphrase,
+      Err(err) => return Err((data, Error::from(err))),
+    };
+    match op(data, &passphrase) {
+      Ok(result) => return Ok(result),
+      Err((new_data, err)) => match err {
+        nitrokey::CommandError::WrongPassword => {
+          if let Err(err) = pinentry::clear_passphrase(pin) {
+            return Err((new_data, err));
+          }
+          retry -= 1;
+
+          if retry > 0 {
+            error_msg = Some("Wrong password, please reenter");
+            data = new_data;
+            continue;
+          }
+          let error = format!("{}: Wrong password", msg);
+          return Err((new_data, Error::Error(error)));
+        }
+        err => return Err((new_data, get_error("Opening encrypted volume failed", &err))),
+      },
+    };
+  }
+}
+
+/// Try to execute the given function with a passphrase queried using pinentry.
+///
+/// This function will query the passphrase of the given type from the user using pinentry.  It
+/// will then execute the given function.  If this function returns a result, this function will
+/// pass it on.  If it returns a `CommandError::WrongPassword`, the user will be asked again to
+/// enter the passphrase.  Otherwise, this function returns an error containing the given error
+/// message.  The user will have at most three tries to get the passphrase right.
+fn try_with_passphrase<F>(pin: pinentry::PinType, msg: &'static str, op: F) -> Result<()>
+where
+  F: Fn(&str) -> std::result::Result<(), nitrokey::CommandError>,
+{
+  try_with_passphrase_and_data(pin, msg, (), |data, passphrase| {
+    op(passphrase).map_err(|err| (data, err))
+  })
+  .map_err(|(_data, err)| err)
+}
+
 /// Pretty print the response of a status command.
 fn print_status(status: &nitrokey::StorageStatus) {
   // We omit displaying information about the smartcard here as this
@@ -97,30 +170,11 @@ pub fn status() -> Result<()> {
 /// Open the encrypted volume on the nitrokey.
 pub fn open() -> Result<()> {
   let device = get_storage_device()?;
-
-  let mut retry = 3;
-  let mut error_msg: Option<&str> = None;
-  loop {
-    let passphrase = pinentry::inquire_passphrase(PIN_TYPE, error_msg)?;
-    let passphrase = String::from_utf8(passphrase)?;
-    match device.enable_encrypted_volume(&passphrase) {
-      Ok(()) => return Ok(()),
-      Err(err) => match err {
-        nitrokey::CommandError::WrongPassword => {
-          pinentry::clear_passphrase(PIN_TYPE)?;
-          retry -= 1;
-
-          if retry > 0 {
-            error_msg = Some("Wrong password, please reenter");
-            continue;
-          }
-          let error = "Opening encrypted volume failed: Wrong password";
-          return Err(Error::Error(error.to_string()));
-        }
-        err => return Err(get_error("Opening encrypted volume failed", &err)),
-      },
-    };
-  }
+  try_with_passphrase(
+    pinentry::PinType::User,
+    "Opening encrypted volume failed",
+    |passphrase| device.enable_encrypted_volume(&passphrase),
+  )
 }
 
 #[link(name = "c")]
