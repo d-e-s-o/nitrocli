@@ -32,6 +32,50 @@ fn get_storage_device() -> Result<nitrokey::Storage> {
     .or_else(|_| Err(Error::Error("Nitrokey device not found".to_string())))
 }
 
+/// Authenticate the given device using the given PIN type and the given operation.
+///
+/// If an error occurs, the error message `msg` is used.
+fn authenticate<D, A, F>(
+  device: D,
+  pin_type: pinentry::PinType,
+  msg: &'static str,
+  op: F,
+) -> Result<A>
+where
+  D: nitrokey::Device,
+  F: Fn(D, &str) -> std::result::Result<A, (D, nitrokey::CommandError)>,
+{
+  try_with_passphrase_and_data(pin_type, msg, device, op).map_err(|(_device, err)| err)
+}
+
+/// Authenticate the given device with the user PIN.
+#[allow(unused)]
+fn authenticate_user<T>(device: T) -> Result<nitrokey::User<T>>
+where
+  T: nitrokey::Device,
+{
+  authenticate(
+    device,
+    pinentry::PinType::User,
+    "Could not authenticate as user",
+    |device, passphrase| device.authenticate_user(passphrase),
+  )
+}
+
+/// Authenticate the given device with the admin PIN.
+#[allow(unused)]
+fn authenticate_admin<T>(device: T) -> Result<nitrokey::Admin<T>>
+where
+  T: nitrokey::Device,
+{
+  authenticate(
+    device,
+    pinentry::PinType::Admin,
+    "Could not authenticate as admin",
+    |device, passphrase| device.authenticate_admin(passphrase),
+  )
+}
+
 /// Return a string representation of the given volume status.
 fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
   if status.active {
