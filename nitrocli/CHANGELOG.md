@@ -14,7 +14,7 @@ Unreleased
   spaces in a string
 - Use the `argparse` crate to parse the command-line arguments
   - Added `argparse` dependency in version `0.2.2`
-- Added the `otp` command with the subcommand `get` and `set`
+- Added the `otp` command with the subcommand `clear`, `get` and `set`
 
 
 0.1.3

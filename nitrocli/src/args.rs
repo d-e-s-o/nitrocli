@@ -83,6 +83,7 @@ impl str::FromStr for Command {
 
 #[derive(Debug)]
 enum OtpCommand {
+  Clear,
   Get,
   Set,
 }
@@ -90,6 +91,7 @@ enum OtpCommand {
 impl OtpCommand {
   fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
+      OtpCommand::Clear => otp_clear(args),
       OtpCommand::Get => otp_get(args),
       OtpCommand::Set => otp_set(args),
     }
@@ -102,6 +104,7 @@ impl fmt::Display for OtpCommand {
       f,
       "{}",
       match *self {
+        OtpCommand::Clear => "clear",
         OtpCommand::Get => "get",
         OtpCommand::Set => "set",
       }
@@ -114,6 +117,7 @@ impl str::FromStr for OtpCommand {
 
   fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
     match s {
+      "clear" => Ok(OtpCommand::Clear),
       "get" => Ok(OtpCommand::Get),
       "set" => Ok(OtpCommand::Set),
       _ => Err(()),
@@ -245,7 +249,7 @@ fn otp(args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut subcommand).required().add_argument(
     "subcommand",
     argparse::Store,
-    "the subcommand to execute (get|set)",
+    "the subcommand to execute (clear|get|set)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
@@ -346,6 +350,28 @@ pub fn otp_set(args: Vec<String>) -> Result<()> {
     token_id: None,
   };
   commands::otp_set(data, algorithm, counter, time_window, ascii)
+}
+
+/// Clear an OTP slot.
+fn otp_clear(args: Vec<String>) -> Result<()> {
+  let mut slot: u8 = 0;
+  let mut algorithm = OtpAlgorithm::Totp;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Clears a one-time password slot");
+  let _ = parser.refer(&mut slot).required().add_argument(
+    "slot",
+    argparse::Store,
+    "the OTP slot to clear",
+  );
+  let _ = parser.refer(&mut algorithm).add_option(
+    &["-a", "--algorithm"],
+    argparse::Store,
+    "the OTP algorithm to use (hotp|totp)",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  commands::otp_clear(slot, algorithm)
 }
 
 /// Parse the command-line arguments and return the selected command and
