@@ -101,10 +101,8 @@ pub fn open() -> Result<()> {
   let mut retry = 3;
   let mut error_msg: Option<&str> = None;
   loop {
-    // TODO: Rethink the usage of String::from_utf8_lossy here. We may
-    //       not want to silently modify the password!
     let passphrase = pinentry::inquire_passphrase(PIN_TYPE, error_msg)?;
-    let passphrase = String::from_utf8_lossy(&passphrase);
+    let passphrase = String::from_utf8(passphrase)?;
     match device.enable_encrypted_volume(&passphrase) {
       Ok(()) => return Ok(()),
       Err(err) => match err {
