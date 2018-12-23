@@ -21,8 +21,6 @@ use crate::error::Error;
 use crate::pinentry;
 use crate::Result;
 
-const PIN_TYPE: pinentry::PinType = pinentry::PinType::User;
-
 /// Create an `error::Error` with an error message of the format `msg: err`.
 fn get_error(msg: &str, err: &nitrokey::CommandError) -> Error {
   Error::Error(format!("{}: {:?}", msg, err))
@@ -197,5 +195,7 @@ pub fn close() -> Result<()> {
 
 /// Clear the PIN stored when opening the nitrokey's encrypted volume.
 pub fn clear() -> Result<()> {
-  pinentry::clear_passphrase(PIN_TYPE)
+  pinentry::clear_passphrase(pinentry::PinType::Admin)?;
+  pinentry::clear_passphrase(pinentry::PinType::User)?;
+  Ok(())
 }

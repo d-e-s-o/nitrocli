@@ -115,7 +115,7 @@ fn close(args: Vec<String>) -> Result<()> {
 /// Clear the PIN stored when opening the nitrokey's encrypted volume.
 fn clear(args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Clears the cached passphrase");
+  parser.set_description("Clears the cached passphrases");
   parse(&parser, args)?;
 
   commands::clear()
