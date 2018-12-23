@@ -19,6 +19,7 @@
 
 use std::result;
 
+use nitrokey::ConfigureOtp;
 use nitrokey::Device;
 use nitrokey::GenerateOtp;
 
@@ -73,7 +74,6 @@ where
 }
 
 /// Authenticate the given device with the admin PIN.
-#[allow(unused)]
 fn authenticate_admin<T>(device: T) -> Result<nitrokey::Admin<T>>
 where
   T: Device,
@@ -275,4 +275,69 @@ pub fn otp_get(slot: u8, algorithm: args::OtpAlgorithm) -> Result<()> {
   }?;
   println!("{}", otp);
   Ok(())
+}
+
+/// Prepare an ASCII secret string for libnitrokey.
+///
+/// libnitrokey expects secrets as hexadecimal strings.  This function transforms an ASCII string
+/// into a hexadecimal string or returns an error if the given string contains non-ASCII
+/// characters.
+fn prepare_secret(secret: &str) -> Result<String> {
+  if secret.is_ascii() {
+    Ok(
+      secret
+        .as_bytes()
+        .iter()
+        .map(|c| format!("{:x}", c))
+        .collect::<Vec<String>>()
+        .join(""),
+    )
+  } else {
+    Err(Error::Error(
+      "The given secret is not an ASCII string despite --ascii being set".to_string(),
+    ))
+  }
+}
+
+/// Configure a one-time password slot on the Nitrokey device.
+pub fn otp_set(
+  data: nitrokey::OtpSlotData,
+  algorithm: args::OtpAlgorithm,
+  counter: u64,
+  time_window: u16,
+  ascii: bool,
+) -> Result<()> {
+  let secret = if ascii {
+    prepare_secret(&data.secret)?
+  } else {
+    data.secret
+  };
+  let data = nitrokey::OtpSlotData { secret, ..data };
+  let device = authenticate_admin(get_device()?)?;
+  match algorithm {
+    args::OtpAlgorithm::Hotp => device.write_hotp_slot(data, counter),
+    args::OtpAlgorithm::Totp => device.write_totp_slot(data, time_window),
+  }
+  .map_err(|err| get_error("Could not write OTP slot", &err))?;
+  Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn prepare_secret_ascii() {
+    let result = prepare_secret("12345678901234567890");
+    assert_eq!(
+      "3132333435363738393031323334353637383930".to_string(),
+      result.unwrap()
+    );
+  }
+
+  #[test]
+  fn prepare_secret_non_ascii() {
+    let result = prepare_secret("Österreich");
+    assert!(result.is_err());
+  }
 }
