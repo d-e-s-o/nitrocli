@@ -17,7 +17,6 @@
 # *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 # ***************************************************************************/
 
-
 # We do not want to run the tests concurrently as the Nitrokey seems to
 # have problems with that. We also do not want to introduce additional
 # locking because in the normal program work flow we will not have
