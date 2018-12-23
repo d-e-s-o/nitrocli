@@ -87,9 +87,9 @@ enum OtpCommand {
 }
 
 impl OtpCommand {
-  fn execute(&self, _args: Vec<String>) -> Result<()> {
+  fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
-      OtpCommand::Get => Err(Error::Error("Not implementend".to_string())),
+      OtpCommand::Get => otp_get(args),
     }
   }
 }
@@ -112,6 +112,37 @@ impl str::FromStr for OtpCommand {
   fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
     match s {
       "get" => Ok(OtpCommand::Get),
+      _ => Err(()),
+    }
+  }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum OtpAlgorithm {
+  Hotp,
+  Totp,
+}
+
+impl fmt::Display for OtpAlgorithm {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        OtpAlgorithm::Hotp => "hotp",
+        OtpAlgorithm::Totp => "totp",
+      }
+    )
+  }
+}
+
+impl str::FromStr for OtpAlgorithm {
+  type Err = ();
+
+  fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    match s {
+      "hotp" => Ok(OtpAlgorithm::Hotp),
+      "totp" => Ok(OtpAlgorithm::Totp),
       _ => Err(()),
     }
   }
@@ -183,6 +214,28 @@ fn otp(args: Vec<String>) -> Result<()> {
 
   subargs.insert(0, format!("nitrocli otp {}", subcommand));
   subcommand.execute(subargs)
+}
+
+/// Generate a one-time password on the Nitrokey device.
+fn otp_get(args: Vec<String>) -> Result<()> {
+  let mut slot: u8 = 0;
+  let mut algorithm = OtpAlgorithm::Totp;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Generates a one-time password");
+  let _ =
+    parser
+      .refer(&mut slot)
+      .required()
+      .add_argument("slot", argparse::Store, "The OTP slot to use");
+  let _ = parser.refer(&mut algorithm).add_option(
+    &["-a", "--algorithm"],
+    argparse::Store,
+    "The OTP algorithm to use (hotp|totp)",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  commands::otp_get(slot, algorithm)
 }
 
 /// Parse the command-line arguments and return the selected command and

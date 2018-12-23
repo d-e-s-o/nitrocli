@@ -20,7 +20,9 @@
 use std::result;
 
 use nitrokey::Device;
+use nitrokey::GenerateOtp;
 
+use crate::args;
 use crate::error::Error;
 use crate::pinentry;
 use crate::Result;
@@ -28,6 +30,11 @@ use crate::Result;
 /// Create an `error::Error` with an error message of the format `msg: err`.
 fn get_error(msg: &str, err: &nitrokey::CommandError) -> Error {
   Error::Error(format!("{}: {:?}", msg, err))
+}
+
+/// Connect to any Nitrokey device and return it.
+fn get_device() -> Result<nitrokey::DeviceWrapper> {
+  nitrokey::connect().map_err(|_| Error::Error("Nitrokey device not found".to_string()))
 }
 
 /// Connect to a Nitrokey Storage device and return it.
@@ -53,7 +60,6 @@ where
 }
 
 /// Authenticate the given device with the user PIN.
-#[allow(unused)]
 fn authenticate_user<T>(device: T) -> Result<nitrokey::User<T>>
 where
   T: Device,
@@ -244,5 +250,29 @@ pub fn close() -> Result<()> {
 pub fn clear() -> Result<()> {
   pinentry::clear_passphrase(pinentry::PinType::Admin)?;
   pinentry::clear_passphrase(pinentry::PinType::User)?;
+  Ok(())
+}
+
+fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) -> Result<String> {
+  match algorithm {
+    args::OtpAlgorithm::Hotp => device.get_hotp_code(slot),
+    args::OtpAlgorithm::Totp => device.get_totp_code(slot),
+  }
+  .map_err(|err| get_error("Could not generate OTP", &err))
+}
+
+/// Generate a one-time password on the Nitrokey device.
+pub fn otp_get(slot: u8, algorithm: args::OtpAlgorithm) -> Result<()> {
+  let device = get_device()?;
+  let config = device
+    .get_config()
+    .map_err(|err| get_error("Could not get device configuration", &err))?;
+  let otp = if config.user_password {
+    let user = authenticate_user(device)?;
+    get_otp(slot, algorithm, &user)
+  } else {
+    get_otp(slot, algorithm, &device)
+  }?;
+  println!("{}", otp);
   Ok(())
 }
