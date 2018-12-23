@@ -33,6 +33,7 @@ pub enum Command {
   Clear,
   Close,
   Open,
+  Otp,
   Status,
 }
 
@@ -43,6 +44,7 @@ impl Command {
       Command::Clear => clear(args),
       Command::Close => close(args),
       Command::Open => open(args),
+      Command::Otp => otp(args),
       Command::Status => status(args),
     }
   }
@@ -57,6 +59,7 @@ impl fmt::Display for Command {
         Command::Clear => "clear",
         Command::Close => "close",
         Command::Open => "open",
+        Command::Otp => "otp",
         Command::Status => "status",
       }
     )
@@ -71,7 +74,44 @@ impl str::FromStr for Command {
       "clear" => Ok(Command::Clear),
       "close" => Ok(Command::Close),
       "open" => Ok(Command::Open),
+      "otp" => Ok(Command::Otp),
       "status" => Ok(Command::Status),
+      _ => Err(()),
+    }
+  }
+}
+
+#[derive(Debug)]
+enum OtpCommand {
+  Get,
+}
+
+impl OtpCommand {
+  fn execute(&self, _args: Vec<String>) -> Result<()> {
+    match *self {
+      OtpCommand::Get => Err(Error::Error("Not implementend".to_string())),
+    }
+  }
+}
+
+impl fmt::Display for OtpCommand {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        OtpCommand::Get => "get",
+      }
+    )
+  }
+}
+
+impl str::FromStr for OtpCommand {
+  type Err = ();
+
+  fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    match s {
+      "get" => Ok(OtpCommand::Get),
       _ => Err(()),
     }
   }
@@ -121,6 +161,30 @@ fn clear(args: Vec<String>) -> Result<()> {
   commands::clear()
 }
 
+/// Execute an OTP subcommand.
+fn otp(args: Vec<String>) -> Result<()> {
+  let mut subcommand = OtpCommand::Get;
+  let mut subargs = vec![];
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Accesses one-time passwords");
+  let _ = parser.refer(&mut subcommand).required().add_argument(
+    "subcommand",
+    argparse::Store,
+    "the subcommand to execute (get)",
+  );
+  let _ = parser.refer(&mut subargs).add_argument(
+    "arguments",
+    argparse::List,
+    "the arguments for the subcommand",
+  );
+  parser.stop_on_first_argument(true);
+  parse(&parser, args)?;
+  drop(parser);
+
+  subargs.insert(0, format!("nitrocli otp {}", subcommand));
+  subcommand.execute(subargs)
+}
+
 /// Parse the command-line arguments and return the selected command and
 /// the remaining arguments for the command.
 fn parse_arguments(args: Vec<String>) -> Result<(Command, Vec<String>)> {
@@ -131,7 +195,7 @@ fn parse_arguments(args: Vec<String>) -> Result<(Command, Vec<String>)> {
   let _ = parser.refer(&mut command).required().add_argument(
     "command",
     argparse::Store,
-    "The command to execute (clear|close|open|status)",
+    "the command to execute (clear|close|open|otp|status)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
