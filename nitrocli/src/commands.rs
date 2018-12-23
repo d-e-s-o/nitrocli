@@ -322,6 +322,17 @@ pub fn otp_set(
   Ok(())
 }
 
+/// Clear an OTP slot.
+pub fn otp_clear(slot: u8, algorithm: args::OtpAlgorithm) -> Result<()> {
+  let device = authenticate_admin(get_device()?)?;
+  match algorithm {
+    args::OtpAlgorithm::Hotp => device.erase_hotp_slot(slot),
+    args::OtpAlgorithm::Totp => device.erase_totp_slot(slot),
+  }
+  .map_err(|err| get_error("Could not clear OTP slot", &err))?;
+  Ok(())
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
