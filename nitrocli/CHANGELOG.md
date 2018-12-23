@@ -6,6 +6,7 @@ Unreleased
     `nitrokey-sys` version `3.4.1` as well as `rand` version `0.4.3` as
     indirect dependencies
   - Removed the `hid`, `hidapi-sys` and `pkg-config` dependencies
+- Added the `otp` command for working with one-time passwords
 - Enabled CI pipeline comprising code style conformance checks, linting,
   and building of the project
 - Added badges indicating pipeline status, current `crates.io` published
