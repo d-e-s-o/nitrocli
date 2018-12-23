@@ -84,12 +84,14 @@ impl str::FromStr for Command {
 #[derive(Debug)]
 enum OtpCommand {
   Get,
+  Set,
 }
 
 impl OtpCommand {
   fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
       OtpCommand::Get => otp_get(args),
+      OtpCommand::Set => otp_set(args),
     }
   }
 }
@@ -101,6 +103,7 @@ impl fmt::Display for OtpCommand {
       "{}",
       match *self {
         OtpCommand::Get => "get",
+        OtpCommand::Set => "set",
       }
     )
   }
@@ -112,6 +115,7 @@ impl str::FromStr for OtpCommand {
   fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
     match s {
       "get" => Ok(OtpCommand::Get),
+      "set" => Ok(OtpCommand::Set),
       _ => Err(()),
     }
   }
@@ -144,6 +148,46 @@ impl str::FromStr for OtpAlgorithm {
       "hotp" => Ok(OtpAlgorithm::Hotp),
       "totp" => Ok(OtpAlgorithm::Totp),
       _ => Err(()),
+    }
+  }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum OtpMode {
+  SixDigits,
+  EightDigits,
+}
+
+impl fmt::Display for OtpMode {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        OtpMode::SixDigits => "6",
+        OtpMode::EightDigits => "8",
+      }
+    )
+  }
+}
+
+impl str::FromStr for OtpMode {
+  type Err = ();
+
+  fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    match s {
+      "6" => Ok(OtpMode::SixDigits),
+      "8" => Ok(OtpMode::EightDigits),
+      _ => Err(()),
+    }
+  }
+}
+
+impl From<OtpMode> for nitrokey::OtpMode {
+  fn from(mode: OtpMode) -> Self {
+    match mode {
+      OtpMode::SixDigits => nitrokey::OtpMode::SixDigits,
+      OtpMode::EightDigits => nitrokey::OtpMode::EightDigits,
     }
   }
 }
@@ -201,7 +245,7 @@ fn otp(args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut subcommand).required().add_argument(
     "subcommand",
     argparse::Store,
-    "the subcommand to execute (get)",
+    "the subcommand to execute (get|set)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
@@ -236,6 +280,72 @@ fn otp_get(args: Vec<String>) -> Result<()> {
   drop(parser);
 
   commands::otp_get(slot, algorithm)
+}
+
+/// Configure a one-time password slot on the Nitrokey device.
+pub fn otp_set(args: Vec<String>) -> Result<()> {
+  let mut slot: u8 = 0;
+  let mut algorithm = OtpAlgorithm::Totp;
+  let mut name = "".to_owned();
+  let mut secret = "".to_owned();
+  let mut digits = OtpMode::SixDigits;
+  let mut counter: u64 = 0;
+  let mut time_window: u16 = 30;
+  let mut ascii = false;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Configures a one-time password slot");
+  let _ =
+    parser
+      .refer(&mut slot)
+      .required()
+      .add_argument("slot", argparse::Store, "the OTP slot to use");
+  let _ = parser.refer(&mut algorithm).add_option(
+    &["-a", "--algorithm"],
+    argparse::Store,
+    "the OTP algorithm to use (hotp or totp, default: totp",
+  );
+  let _ = parser.refer(&mut name).required().add_argument(
+    "name",
+    argparse::Store,
+    "the name of the slot",
+  );
+  let _ = parser.refer(&mut secret).required().add_argument(
+    "secret",
+    argparse::Store,
+    "the secret to store on the slot as a hexadecimal string (unless --ascii is set)",
+  );
+  let _ = parser.refer(&mut digits).add_option(
+    &["-d", "--digits"],
+    argparse::Store,
+    "the number of digits to use for the one-time password (6 or 8, default: 6)",
+  );
+  let _ = parser.refer(&mut counter).add_option(
+    &["-c", "--counter"],
+    argparse::Store,
+    "the counter value for HOTP (default: 0)",
+  );
+  let _ = parser.refer(&mut time_window).add_option(
+    &["-t", "--time-window"],
+    argparse::Store,
+    "the time window for TOTP (default: 30)",
+  );
+  let _ = parser.refer(&mut ascii).add_option(
+    &["--ascii"],
+    argparse::StoreTrue,
+    "interpret the given secret as an ASCII string of the secret",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  let data = nitrokey::OtpSlotData {
+    number: slot,
+    name,
+    secret,
+    mode: nitrokey::OtpMode::from(digits),
+    use_enter: false,
+    token_id: None,
+  };
+  commands::otp_set(data, algorithm, counter, time_window, ascii)
 }
 
 /// Parse the command-line arguments and return the selected command and
