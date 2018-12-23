@@ -86,6 +86,7 @@ enum OtpCommand {
   Clear,
   Get,
   Set,
+  Status,
 }
 
 impl OtpCommand {
@@ -94,6 +95,7 @@ impl OtpCommand {
       OtpCommand::Clear => otp_clear(args),
       OtpCommand::Get => otp_get(args),
       OtpCommand::Set => otp_set(args),
+      OtpCommand::Status => otp_status(args),
     }
   }
 }
@@ -107,6 +109,7 @@ impl fmt::Display for OtpCommand {
         OtpCommand::Clear => "clear",
         OtpCommand::Get => "get",
         OtpCommand::Set => "set",
+        OtpCommand::Status => "status",
       }
     )
   }
@@ -120,6 +123,7 @@ impl str::FromStr for OtpCommand {
       "clear" => Ok(OtpCommand::Clear),
       "get" => Ok(OtpCommand::Get),
       "set" => Ok(OtpCommand::Set),
+      "status" => Ok(OtpCommand::Status),
       _ => Err(()),
     }
   }
@@ -249,7 +253,7 @@ fn otp(args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut subcommand).required().add_argument(
     "subcommand",
     argparse::Store,
-    "The subcommand to execute (clear|get|set)",
+    "The subcommand to execute (clear|get|set|status)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
@@ -372,6 +376,22 @@ fn otp_clear(args: Vec<String>) -> Result<()> {
   drop(parser);
 
   commands::otp_clear(slot, algorithm)
+}
+
+/// Print the status of the OTP slots.
+fn otp_status(args: Vec<String>) -> Result<()> {
+  let mut all = false;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Prints the status of the OTP slots");
+  let _ = parser.refer(&mut all).add_option(
+    &["-a", "--all"],
+    argparse::StoreTrue,
+    "Show slots that are not programmed",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  commands::otp_status(all)
 }
 
 /// Parse the command-line arguments and return the selected command and

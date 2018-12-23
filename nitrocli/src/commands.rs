@@ -333,6 +333,50 @@ pub fn otp_clear(slot: u8, algorithm: args::OtpAlgorithm) -> Result<()> {
   Ok(())
 }
 
+fn print_otp_status(
+  algorithm: args::OtpAlgorithm,
+  device: &nitrokey::DeviceWrapper,
+  all: bool,
+) -> Result<()> {
+  let mut slot: u8 = 0;
+  loop {
+    let result = match algorithm {
+      args::OtpAlgorithm::Hotp => device.get_hotp_slot_name(slot),
+      args::OtpAlgorithm::Totp => device.get_totp_slot_name(slot),
+    };
+    slot = match slot.checked_add(1) {
+      Some(slot) => slot,
+      None => {
+        return Err(Error::Error(
+          "Integer overflow when iterating OTP slots".to_string(),
+        ))
+      }
+    };
+    let name = match result {
+      Ok(name) => name,
+      Err(nitrokey::CommandError::InvalidSlot) => return Ok(()),
+      Err(nitrokey::CommandError::SlotNotProgrammed) => {
+        if all {
+          "[not programmed]".to_string()
+        } else {
+          continue;
+        }
+      }
+      Err(err) => return Err(get_error("Could not check OTP slot", &err)),
+    };
+    println!("{}\t{}\t{}", algorithm, slot - 1, name);
+  }
+}
+
+/// Print the status of the OTP slots.
+pub fn otp_status(all: bool) -> Result<()> {
+  let device = get_device()?;
+  println!("alg\tslot\tname");
+  print_otp_status(args::OtpAlgorithm::Hotp, &device, all)?;
+  print_otp_status(args::OtpAlgorithm::Totp, &device, all)?;
+  Ok(())
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
