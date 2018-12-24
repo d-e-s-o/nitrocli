@@ -171,25 +171,51 @@ where
   .map_err(|(_data, err)| err)
 }
 
-/// Pretty print the response of a status command for the Nitrokey Storage.
-fn print_storage_status(status: &nitrokey::StorageStatus) {
-  // We omit displaying information about the smartcard here as this
-  // program really is only about the SD card portion of the device.
+/// Pretty print the common status of all Nitrokey devices.
+fn print_status(
+  model: &'static str,
+  smartcard_id: &str,
+  firmware_major: i32,
+  firmware_minor: i32,
+  user_retries: u8,
+  admin_retries: u8,
+) {
   println!(
     r#"Status:
-  SD card ID:        {id:#x}
+  model:             {model}
+  smart card ID:     {id}
   firmware version:  {fwv0}.{fwv1}
+  user retry count:  {urc}
+  admin retry count: {arc}"#,
+    model = model,
+    id = smartcard_id,
+    fwv0 = firmware_major,
+    fwv1 = firmware_minor,
+    urc = user_retries,
+    arc = admin_retries,
+  );
+}
+
+/// Pretty print the response of a status command for the Nitrokey Storage.
+fn print_storage_status(status: &nitrokey::StorageStatus) {
+  print_status(
+    "Storage",
+    &format!("{:#x}", status.serial_number_smart_card),
+    status.firmware_version_major as i32,
+    status.firmware_version_minor as i32,
+    status.user_retry_count,
+    status.admin_retry_count,
+  );
+  println!(
+    r#"
+  SD card ID:        {id:#x}
   firmware:          {fw}
   storage keys:      {sk}
-  user retry count:  {urc}
-  admin retry count: {arc}
   volumes:
     unencrypted:     {vu}
     encrypted:       {ve}
     hidden:          {vh}"#,
     id = status.serial_number_sd_card,
-    fwv0 = status.firmware_version_major,
-    fwv1 = status.firmware_version_minor,
     fw = if status.firmware_locked {
       "locked"
     } else {
@@ -200,8 +226,6 @@ fn print_storage_status(status: &nitrokey::StorageStatus) {
     } else {
       "not created"
     },
-    urc = status.user_retry_count,
-    arc = status.admin_retry_count,
     vu = get_volume_status(&status.unencrypted_volume),
     ve = get_volume_status(&status.encrypted_volume),
     vh = get_volume_status(&status.hidden_volume),
