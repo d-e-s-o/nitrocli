@@ -171,8 +171,8 @@ where
   .map_err(|(_data, err)| err)
 }
 
-/// Pretty print the response of a status command.
-fn print_status(status: &nitrokey::StorageStatus) {
+/// Pretty print the response of a status command for the Nitrokey Storage.
+fn print_storage_status(status: &nitrokey::StorageStatus) {
   // We omit displaying information about the smartcard here as this
   // program really is only about the SD card portion of the device.
   println!(
@@ -214,7 +214,7 @@ pub fn status() -> Result<()> {
     .get_status()
     .map_err(|err| get_error("Getting Storage status failed", &err))?;
 
-  print_status(&status);
+  print_storage_status(&status);
   Ok(())
 }
 
