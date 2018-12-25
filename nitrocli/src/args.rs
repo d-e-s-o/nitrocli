@@ -32,6 +32,7 @@ type Result<T> = result::Result<T, Error>;
 pub enum Command {
   Clear,
   Close,
+  Config,
   Open,
   Otp,
   Status,
@@ -43,6 +44,7 @@ impl Command {
     match *self {
       Command::Clear => clear(args),
       Command::Close => close(args),
+      Command::Config => config(args),
       Command::Open => open(args),
       Command::Otp => otp(args),
       Command::Status => status(args),
@@ -58,6 +60,7 @@ impl fmt::Display for Command {
       match *self {
         Command::Clear => "clear",
         Command::Close => "close",
+        Command::Config => "config",
         Command::Open => "open",
         Command::Otp => "otp",
         Command::Status => "status",
@@ -73,9 +76,46 @@ impl str::FromStr for Command {
     match s {
       "clear" => Ok(Command::Clear),
       "close" => Ok(Command::Close),
+      "config" => Ok(Command::Config),
       "open" => Ok(Command::Open),
       "otp" => Ok(Command::Otp),
       "status" => Ok(Command::Status),
+      _ => Err(()),
+    }
+  }
+}
+
+#[derive(Debug)]
+enum ConfigCommand {
+  Get,
+}
+
+impl ConfigCommand {
+  fn execute(&self, _args: Vec<String>) -> Result<()> {
+    match *self {
+      ConfigCommand::Get => Err(Error::Error("Not implemented".to_string())),
+    }
+  }
+}
+
+impl fmt::Display for ConfigCommand {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        ConfigCommand::Get => "get",
+      }
+    )
+  }
+}
+
+impl str::FromStr for ConfigCommand {
+  type Err = ();
+
+  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
+    match s {
+      "get" => Ok(ConfigCommand::Get),
       _ => Err(()),
     }
   }
@@ -118,7 +158,7 @@ impl fmt::Display for OtpCommand {
 impl str::FromStr for OtpCommand {
   type Err = ();
 
-  fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
     match s {
       "clear" => Ok(OtpCommand::Clear),
       "get" => Ok(OtpCommand::Get),
@@ -151,7 +191,7 @@ impl fmt::Display for OtpAlgorithm {
 impl str::FromStr for OtpAlgorithm {
   type Err = ();
 
-  fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
     match s {
       "hotp" => Ok(OtpAlgorithm::Hotp),
       "totp" => Ok(OtpAlgorithm::Totp),
@@ -182,7 +222,7 @@ impl fmt::Display for OtpMode {
 impl str::FromStr for OtpMode {
   type Err = ();
 
-  fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
     match s {
       "6" => Ok(OtpMode::SixDigits),
       "8" => Ok(OtpMode::EightDigits),
@@ -242,6 +282,30 @@ fn clear(args: Vec<String>) -> Result<()> {
   parse(&parser, args)?;
 
   commands::clear()
+}
+
+/// Execute a config subcommand.
+fn config(args: Vec<String>) -> Result<()> {
+  let mut subcommand = ConfigCommand::Get;
+  let mut subargs = vec![];
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Reads or writes the device configuration");
+  let _ = parser.refer(&mut subcommand).required().add_argument(
+    "subcommand",
+    argparse::Store,
+    "The subcommand to execute (get|set)",
+  );
+  let _ = parser.refer(&mut subargs).add_argument(
+    "arguments",
+    argparse::List,
+    "The arguments for the subcommand",
+  );
+  parser.stop_on_first_argument(true);
+  parse(&parser, args)?;
+  drop(parser);
+
+  subargs.insert(0, format!("nitrocli config {}", subcommand));
+  subcommand.execute(subargs)
 }
 
 /// Execute an OTP subcommand.
@@ -404,7 +468,7 @@ fn parse_arguments(args: Vec<String>) -> Result<(Command, Vec<String>)> {
   let _ = parser.refer(&mut command).required().add_argument(
     "command",
     argparse::Store,
-    "The command to execute (clear|close|open|otp|status)",
+    "The command to execute (clear|close|config|open|otp|status)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
