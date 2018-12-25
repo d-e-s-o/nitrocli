@@ -40,8 +40,11 @@ fn get_device() -> Result<nitrokey::DeviceWrapper> {
 
 /// Connect to a Nitrokey Storage device and return it.
 fn get_storage_device() -> Result<nitrokey::Storage> {
-  nitrokey::Storage::connect()
-    .or_else(|_| Err(Error::Error("Nitrokey device not found".to_string())))
+  nitrokey::Storage::connect().or_else(|_| {
+    Err(Error::Error(
+      "Nitrokey Storage device not found".to_string(),
+    ))
+  })
 }
 
 /// Authenticate the given device using the given PIN type and operation.
@@ -171,41 +174,30 @@ where
   .map_err(|(_data, err)| err)
 }
 
-/// Pretty print the status that is common to all Nitrokey devices.
-fn print_status(
-  model: &'static str,
-  smartcard_id: &str,
-  firmware_major: i32,
-  firmware_minor: i32,
-  user_retries: u8,
-  admin_retries: u8,
-) {
+/// Query and pretty print the status that is common to all Nitrokey devices.
+fn print_status(model: &'static str, device: &nitrokey::DeviceWrapper) -> Result<()> {
+  let serial_number = device
+    .get_serial_number()
+    .map_err(|err| get_error("Could not query the serial number", &err))?;
   println!(
     r#"Status:
   model:             {model}
-  smart card ID:     {id}
+  serial number:     0x{id}
   firmware version:  {fwv0}.{fwv1}
   user retry count:  {urc}
   admin retry count: {arc}"#,
     model = model,
-    id = smartcard_id,
-    fwv0 = firmware_major,
-    fwv1 = firmware_minor,
-    urc = user_retries,
-    arc = admin_retries,
+    id = serial_number,
+    fwv0 = device.get_major_firmware_version(),
+    fwv1 = device.get_minor_firmware_version(),
+    urc = device.get_user_retry_count(),
+    arc = device.get_admin_retry_count(),
   );
+  Ok(())
 }
 
-/// Pretty print the response of a status command for the Nitrokey Storage.
+/// Pretty print the status of a Nitrokey Storage.
 fn print_storage_status(status: &nitrokey::StorageStatus) {
-  print_status(
-    "Storage",
-    &format!("{:#x}", status.serial_number_smart_card),
-    status.firmware_version_major as i32,
-    status.firmware_version_minor as i32,
-    status.user_retry_count,
-    status.admin_retry_count,
-  );
   println!(
     r#"
   SD card ID:        {id:#x}
@@ -234,11 +226,18 @@ fn print_storage_status(status: &nitrokey::StorageStatus) {
 
 /// Inquire the status of the nitrokey.
 pub fn status() -> Result<()> {
-  let status = get_storage_device()?
-    .get_status()
-    .map_err(|err| get_error("Getting Storage status failed", &err))?;
-
-  print_storage_status(&status);
+  let device = get_device()?;
+  let model = match device {
+    nitrokey::DeviceWrapper::Pro(_) => "Pro",
+    nitrokey::DeviceWrapper::Storage(_) => "Storage",
+  };
+  print_status(model, &device)?;
+  if let nitrokey::DeviceWrapper::Storage(storage) = device {
+    let status = storage
+      .get_status()
+      .map_err(|err| get_error("Getting Storage status failed", &err))?;
+    print_storage_status(&status);
+  }
   Ok(())
 }
 

@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2018-12-14
+.TH NITROCLI 1 2018-12-26
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -19,9 +19,10 @@ The user PIN that is required to open the volume is queried using
 Close the encrypted volume on the Nitrokey Storage.
 .TP
 .B status
-Print the status of the connected Nitrokey Storage, including the SD card
-serial number, the firmware version, the encryption status, the PIN retry count
-and the status of the volumes.
+Print the status of the connected Nitrokey device, including the stick serial
+number, SD card serial number, the firmware version and the PIN retry count.
+For the Nitrokey Storage, it also includes the encryption status and the status
+of the volumes.
 .TP
 .B clear
 Clear the passphrase cached by the \fBopen\fR command.
