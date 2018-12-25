@@ -7,6 +7,7 @@ Unreleased
     indirect dependencies
   - Removed the `hid`, `hidapi-sys` and `pkg-config` dependencies
 - Added the `otp` command for working with one-time passwords
+- Added the `config` command for reading and writing the device configuration
 - Enabled CI pipeline comprising code style conformance checks, linting,
   and building of the project
 - Added badges indicating pipeline status, current `crates.io` published
