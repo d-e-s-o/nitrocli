@@ -91,9 +91,9 @@ enum ConfigCommand {
 }
 
 impl ConfigCommand {
-  fn execute(&self, _args: Vec<String>) -> Result<()> {
+  fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
-      ConfigCommand::Get => Err(Error::Error("Not implemented".to_string())),
+      ConfigCommand::Get => config_get(args),
     }
   }
 }
@@ -306,6 +306,15 @@ fn config(args: Vec<String>) -> Result<()> {
 
   subargs.insert(0, format!("nitrocli config {}", subcommand));
   subcommand.execute(subargs)
+}
+
+/// Read the Nitrokey configuration.
+fn config_get(args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Prints the Nitrokey configuration");
+  parse(&parser, args)?;
+
+  commands::config_get()
 }
 
 /// Execute an OTP subcommand.
