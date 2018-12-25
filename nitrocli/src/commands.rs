@@ -128,7 +128,7 @@ where
 {
   let mut data = data;
   let mut retry = 3;
-  let mut error_msg: Option<&str> = None;
+  let mut error_msg = None;
   loop {
     let passphrase = match pinentry::inquire_passphrase(pin, error_msg) {
       Ok(passphrase) => passphrase,
@@ -302,6 +302,28 @@ pub fn config_get() -> Result<()> {
     otp = config.user_password,
   );
   Ok(())
+}
+
+/// Write the Nitrokey configuration.
+pub fn config_set(
+  numlock: args::ConfigOption<u8>,
+  capslock: args::ConfigOption<u8>,
+  scrollock: args::ConfigOption<u8>,
+  user_password: Option<bool>,
+) -> Result<()> {
+  let device = authenticate_admin(get_device()?)?;
+  let config = device
+    .get_config()
+    .map_err(|err| get_error("Could not get configuration", &err))?;
+  let config = nitrokey::Config {
+    numlock: numlock.or(config.numlock),
+    capslock: capslock.or(config.capslock),
+    scrollock: scrollock.or(config.scrollock),
+    user_password: user_password.unwrap_or(config.user_password),
+  };
+  device
+    .write_config(config)
+    .map_err(|err| get_error("Could not set configuration", &err))
 }
 
 fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) -> Result<String> {
