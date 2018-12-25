@@ -17,6 +17,7 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::fmt;
 use std::result;
 
 use nitrokey::ConfigureOtp;
@@ -273,6 +274,33 @@ pub fn close() -> Result<()> {
 pub fn clear() -> Result<()> {
   pinentry::clear_passphrase(pinentry::PinType::Admin)?;
   pinentry::clear_passphrase(pinentry::PinType::User)?;
+  Ok(())
+}
+
+/// Return a String representation of the given Option.
+fn format_option<T: fmt::Display>(option: Option<T>) -> String {
+  match option {
+    Some(value) => format!("{}", value),
+    None => "not set".to_string(),
+  }
+}
+
+/// Read the Nitrokey configuration.
+pub fn config_get() -> Result<()> {
+  let config = get_device()?
+    .get_config()
+    .map_err(|err| get_error("Could not get configuration", &err))?;
+  println!(
+    r#"Config:
+  numlock binding:          {nl}
+  capslock binding:         {cl}
+  scrollock binding:        {sl}
+  require user PIN for OTP: {otp}"#,
+    nl = format_option(config.numlock),
+    cl = format_option(config.capslock),
+    sl = format_option(config.scrollock),
+    otp = config.user_password,
+  );
   Ok(())
 }
 
