@@ -211,7 +211,7 @@ fn parse(parser: &argparse::ArgumentParser<'_>, args: Vec<String>) -> Result<()>
 /// Inquire the status of the nitrokey.
 fn status(args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Print the status of the connected Nitrokey Storage");
+  parser.set_description("Print the status of the connected Nitrokey device");
   parse(&parser, args)?;
 
   commands::status()
