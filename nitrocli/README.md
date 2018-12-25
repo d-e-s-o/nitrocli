@@ -91,3 +91,10 @@ Packages are available for:
 
 [nitrokey]: https://www.nitrokey.com/news/2016/nitrokey-storage-available
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
+
+
+Acknowledgments
+---------------
+
+Robin Krahl ([**@robinkrahl**](https://github.com/robinkrahl)) has been
+a crucial help for the development of **nitrocli**.
