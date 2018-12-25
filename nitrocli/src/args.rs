@@ -88,12 +88,14 @@ impl str::FromStr for Command {
 #[derive(Debug)]
 enum ConfigCommand {
   Get,
+  Set,
 }
 
 impl ConfigCommand {
   fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
       ConfigCommand::Get => config_get(args),
+      ConfigCommand::Set => config_set(args),
     }
   }
 }
@@ -105,6 +107,7 @@ impl fmt::Display for ConfigCommand {
       "{}",
       match *self {
         ConfigCommand::Get => "get",
+        ConfigCommand::Set => "set",
       }
     )
   }
@@ -116,7 +119,43 @@ impl str::FromStr for ConfigCommand {
   fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
     match s {
       "get" => Ok(ConfigCommand::Get),
+      "set" => Ok(ConfigCommand::Set),
       _ => Err(()),
+    }
+  }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ConfigOption<T> {
+  Enable(T),
+  Disable,
+  Ignore,
+}
+
+impl<T> ConfigOption<T> {
+  fn try_from(disable: bool, value: Option<T>, name: &'static str) -> Result<Self> {
+    if disable {
+      if value.is_some() {
+        Err(Error::Error(format!(
+          "--{name} and --no-{name} are mutually exclusive",
+          name = name
+        )))
+      } else {
+        Ok(ConfigOption::Disable)
+      }
+    } else {
+      match value {
+        Some(value) => Ok(ConfigOption::Enable(value)),
+        None => Ok(ConfigOption::Ignore),
+      }
+    }
+  }
+
+  pub fn or(self, default: Option<T>) -> Option<T> {
+    match self {
+      ConfigOption::Enable(value) => Some(value),
+      ConfigOption::Disable => None,
+      ConfigOption::Ignore => default,
     }
   }
 }
@@ -315,6 +354,74 @@ fn config_get(args: Vec<String>) -> Result<()> {
   parse(&parser, args)?;
 
   commands::config_get()
+}
+
+/// Write the Nitrokey configuration.
+fn config_set(args: Vec<String>) -> Result<()> {
+  let mut numlock: Option<u8> = None;
+  let mut no_numlock = false;
+  let mut capslock: Option<u8> = None;
+  let mut no_capslock = false;
+  let mut scrollock: Option<u8> = None;
+  let mut no_scrollock = false;
+  let mut otp_pin = false;
+  let mut no_otp_pin = false;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Changes the Nitrokey configuration");
+  let _ = parser.refer(&mut numlock).add_option(
+    &["-n", "--numlock"],
+    argparse::StoreOption,
+    "Set the numlock option to the given HOTP slot",
+  );
+  let _ = parser.refer(&mut no_numlock).add_option(
+    &["-N", "--no-numlock"],
+    argparse::StoreTrue,
+    "Unset the numlock option",
+  );
+  let _ = parser.refer(&mut capslock).add_option(
+    &["-c", "--capslock"],
+    argparse::StoreOption,
+    "Set the capslock option to the given HOTP slot",
+  );
+  let _ = parser.refer(&mut no_capslock).add_option(
+    &["-C", "--no-capslock"],
+    argparse::StoreTrue,
+    "Unset the capslock option",
+  );
+  let _ = parser.refer(&mut scrollock).add_option(
+    &["-s", "--scrollock"],
+    argparse::StoreOption,
+    "Set the scrollock option to the given HOTP slot",
+  );
+  let _ = parser.refer(&mut no_scrollock).add_option(
+    &["-S", "--no-scrollock"],
+    argparse::StoreTrue,
+    "Unset the scrollock option",
+  );
+  let _ = parser.refer(&mut otp_pin).add_option(
+    &["-o", "--otp-pin"],
+    argparse::StoreTrue,
+    "Require the user PIN to generate one-time passwords",
+  );
+  let _ = parser.refer(&mut no_otp_pin).add_option(
+    &["-O", "--no-otp-pin"],
+    argparse::StoreTrue,
+    "Allow one-time password generation without PIN",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  let numlock = ConfigOption::try_from(no_numlock, numlock, "numlock")?;
+  let capslock = ConfigOption::try_from(no_capslock, capslock, "capslock")?;
+  let scrollock = ConfigOption::try_from(no_scrollock, scrollock, "scrollock")?;
+  let otp_pin = if otp_pin {
+    Some(true)
+  } else if no_otp_pin {
+    Some(false)
+  } else {
+    None
+  };
+  commands::config_set(numlock, capslock, scrollock, otp_pin)
 }
 
 /// Execute an OTP subcommand.
