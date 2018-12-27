@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Added the `pws` command for accessing the password safe
+- Added the `lock` command for locking the Nitrokey device
 
 
 0.2.0
