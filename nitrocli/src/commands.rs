@@ -520,6 +520,40 @@ pub fn pws_clear(slot: u8) -> Result<()> {
     .map_err(|err| get_error("Could not clear PWS slot", &err))
 }
 
+fn print_pws_slot(pws: &nitrokey::PasswordSafe<'_>, slot: usize, programmed: bool) -> Result<()> {
+  if slot > std::u8::MAX as usize {
+    return Err(Error::Error("Invalid PWS slot number".to_string()));
+  }
+  let slot = slot as u8;
+  let name = if programmed {
+    pws
+      .get_slot_name(slot)
+      .map_err(|err| get_error("Could not read PWS slot", &err))?
+  } else {
+    "[not programmed]".to_string()
+  };
+  println!("{}\t{}", slot, name);
+  Ok(())
+}
+
+/// Print the status of all PWS slots.
+pub fn pws_status(all: bool) -> Result<()> {
+  let device = get_device()?;
+  let pws = get_password_safe(&device)?;
+  let slots = pws
+    .get_slot_status()
+    .map_err(|err| get_error("Could not read PWS slot status", &err))?;
+  println!("slot\tname");
+  for (i, value) in slots
+    .into_iter()
+    .enumerate()
+    .filter(|(_, value)| all || **value)
+  {
+    print_pws_slot(&pws, i, *value)?;
+  }
+  Ok(())
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
