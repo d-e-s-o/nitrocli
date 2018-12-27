@@ -506,6 +506,15 @@ pub fn pws_get(
   Ok(())
 }
 
+/// Write a PWS slot.
+pub fn pws_set(slot: u8, name: &str, login: &str, password: &str) -> Result<()> {
+  let device = get_device()?;
+  let pws = get_password_safe(&device)?;
+  pws
+    .write_slot(slot, name, login, password)
+    .map_err(|err| get_error("Could not write PWS slot", &err))
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

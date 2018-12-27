@@ -282,12 +282,14 @@ impl From<OtpMode> for nitrokey::OtpMode {
 #[derive(Debug)]
 enum PwsCommand {
   Get,
+  Set,
 }
 
 impl PwsCommand {
   fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
       PwsCommand::Get => pws_get(args),
+      PwsCommand::Set => pws_set(args),
     }
   }
 }
@@ -299,6 +301,7 @@ impl fmt::Display for PwsCommand {
       "{}",
       match *self {
         PwsCommand::Get => "get",
+        PwsCommand::Set => "set",
       }
     )
   }
@@ -310,6 +313,7 @@ impl str::FromStr for PwsCommand {
   fn from_str(s: &str) -> result::Result<Self, Self::Err> {
     match s {
       "get" => Ok(PwsCommand::Get),
+      "set" => Ok(PwsCommand::Set),
       _ => Err(()),
     }
   }
@@ -696,7 +700,7 @@ fn pws(args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut subcommand).required().add_argument(
     "subcommand",
     argparse::Store,
-    "The subcommand to execute (get)",
+    "The subcommand to execute (get|set)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
@@ -749,6 +753,40 @@ fn pws_get(args: Vec<String>) -> Result<()> {
   drop(parser);
 
   commands::pws_get(slot, name, login, password, quiet)
+}
+
+/// Set a slot of the password safe on the Nitrokey.
+fn pws_set(args: Vec<String>) -> Result<()> {
+  let mut slot: u8 = 0;
+  let mut name = String::new();
+  let mut login = String::new();
+  let mut password = String::new();
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Writes a password safe slot");
+  let _ = parser.refer(&mut slot).required().add_argument(
+    "slot",
+    argparse::Store,
+    "The PWS slot to read",
+  );
+  let _ = parser.refer(&mut name).required().add_argument(
+    "name",
+    argparse::Store,
+    "The name to store on the slot",
+  );
+  let _ = parser.refer(&mut login).required().add_argument(
+    "login",
+    argparse::Store,
+    "The login to store on the slot",
+  );
+  let _ = parser.refer(&mut password).required().add_argument(
+    "password",
+    argparse::Store,
+    "The password to store on the slot",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  commands::pws_set(slot, &name, &login, &password)
 }
 
 /// Parse the command-line arguments and return the selected command and
