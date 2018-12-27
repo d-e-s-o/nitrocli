@@ -329,6 +329,7 @@ enum PwsCommand {
   Clear,
   Get,
   Set,
+  Status,
 }
 
 impl PwsCommand {
@@ -337,6 +338,7 @@ impl PwsCommand {
       PwsCommand::Clear => pws_clear(args),
       PwsCommand::Get => pws_get(args),
       PwsCommand::Set => pws_set(args),
+      PwsCommand::Status => pws_status(args),
     }
   }
 }
@@ -350,6 +352,7 @@ impl fmt::Display for PwsCommand {
         PwsCommand::Clear => "clear",
         PwsCommand::Get => "get",
         PwsCommand::Set => "set",
+        PwsCommand::Status => "status",
       }
     )
   }
@@ -363,6 +366,7 @@ impl str::FromStr for PwsCommand {
       "clear" => Ok(PwsCommand::Clear),
       "get" => Ok(PwsCommand::Get),
       "set" => Ok(PwsCommand::Set),
+      "status" => Ok(PwsCommand::Status),
       _ => Err(()),
     }
   }
@@ -804,7 +808,7 @@ fn pws(args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut subcommand).required().add_argument(
     "subcommand",
     argparse::Store,
-    "The subcommand to execute (clear|get|set)",
+    "The subcommand to execute (clear|get|set|status)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
@@ -907,6 +911,22 @@ fn pws_clear(args: Vec<String>) -> Result<()> {
   drop(parser);
 
   commands::pws_clear(slot)
+}
+
+/// Print the status of the PWS slots.
+fn pws_status(args: Vec<String>) -> Result<()> {
+  let mut all = false;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Prints the status of the PWS slots");
+  let _ = parser.refer(&mut all).add_option(
+    &["-a", "--all"],
+    argparse::StoreTrue,
+    "Show slots that are not programmed",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  commands::pws_status(all)
 }
 
 /// Parse the command-line arguments and return the selected command and
