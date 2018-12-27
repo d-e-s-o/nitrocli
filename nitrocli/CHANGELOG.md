@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Added the `pws` command for accessing the password safe
+
+
 0.2.0
 -----
 - Use the `nitrokey` crate for the `open`, `close`, and `status`
