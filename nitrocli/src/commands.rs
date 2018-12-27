@@ -515,6 +515,15 @@ pub fn pws_set(slot: u8, name: &str, login: &str, password: &str) -> Result<()> 
     .map_err(|err| get_error("Could not write PWS slot", &err))
 }
 
+/// Clear a PWS slot.
+pub fn pws_clear(slot: u8) -> Result<()> {
+  let device = get_device()?;
+  let pws = get_password_safe(&device)?;
+  pws
+    .erase_slot(slot)
+    .map_err(|err| get_error("Could not clear PWS slot", &err))
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
