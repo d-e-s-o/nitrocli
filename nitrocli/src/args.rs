@@ -285,6 +285,7 @@ impl From<OtpMode> for nitrokey::OtpMode {
 
 #[derive(Debug)]
 enum PwsCommand {
+  Clear,
   Get,
   Set,
 }
@@ -292,6 +293,7 @@ enum PwsCommand {
 impl PwsCommand {
   fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
+      PwsCommand::Clear => pws_clear(args),
       PwsCommand::Get => pws_get(args),
       PwsCommand::Set => pws_set(args),
     }
@@ -304,6 +306,7 @@ impl fmt::Display for PwsCommand {
       f,
       "{}",
       match *self {
+        PwsCommand::Clear => "clear",
         PwsCommand::Get => "get",
         PwsCommand::Set => "set",
       }
@@ -316,6 +319,7 @@ impl str::FromStr for PwsCommand {
 
   fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
     match s {
+      "clear" => Ok(PwsCommand::Clear),
       "get" => Ok(PwsCommand::Get),
       "set" => Ok(PwsCommand::Set),
       _ => Err(()),
@@ -627,7 +631,7 @@ fn pws(args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut subcommand).required().add_argument(
     "subcommand",
     argparse::Store,
-    "The subcommand to execute (get|set)",
+    "The subcommand to execute (clear|get|set)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
@@ -714,6 +718,22 @@ fn pws_set(args: Vec<String>) -> Result<()> {
   drop(parser);
 
   commands::pws_set(slot, &name, &login, &password)
+}
+
+/// Clear a PWS slot.
+fn pws_clear(args: Vec<String>) -> Result<()> {
+  let mut slot: u8 = 0;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Clears a password safe slot");
+  let _ = parser.refer(&mut slot).required().add_argument(
+    "slot",
+    argparse::Store,
+    "The PWS slot to clear",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  commands::pws_clear(slot)
 }
 
 /// Parse the command-line arguments and return the selected command and
