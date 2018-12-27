@@ -340,6 +340,13 @@ pub fn config_set(
     .map_err(|err| get_error("Could not set configuration", &err))
 }
 
+/// Lock the Nitrokey device.
+pub fn lock() -> Result<()> {
+  get_device()?
+    .lock()
+    .map_err(|err| get_error("Getting Storage status failed", &err))
+}
+
 fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) -> Result<String> {
   match algorithm {
     args::OtpAlgorithm::Hotp => device.get_hotp_code(slot),
