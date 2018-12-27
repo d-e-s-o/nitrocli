@@ -285,9 +285,9 @@ enum PwsCommand {
 }
 
 impl PwsCommand {
-  fn execute(&self, _args: Vec<String>) -> Result<()> {
+  fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
-      PwsCommand::Get => Err(Error::Error("Not implemented".to_string())),
+      PwsCommand::Get => pws_get(args),
     }
   }
 }
@@ -709,6 +709,46 @@ fn pws(args: Vec<String>) -> Result<()> {
 
   subargs.insert(0, format!("nitrocli pws {}", subcommand));
   subcommand.execute(subargs)
+}
+
+/// Access a slot of the password safe on the Nitrokey.
+fn pws_get(args: Vec<String>) -> Result<()> {
+  let mut slot: u8 = 0;
+  let mut name = false;
+  let mut login = false;
+  let mut password = false;
+  let mut quiet = false;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Reads a password safe slot");
+  let _ = parser.refer(&mut slot).required().add_argument(
+    "slot",
+    argparse::Store,
+    "The PWS slot to read",
+  );
+  let _ = parser.refer(&mut name).add_option(
+    &["-n", "--name"],
+    argparse::StoreTrue,
+    "Show the name stored on the slot",
+  );
+  let _ = parser.refer(&mut login).add_option(
+    &["-l", "--login"],
+    argparse::StoreTrue,
+    "Show the login stored on the slot",
+  );
+  let _ = parser.refer(&mut password).add_option(
+    &["-p", "--password"],
+    argparse::StoreTrue,
+    "Show the password stored on the slot",
+  );
+  let _ = parser.refer(&mut quiet).add_option(
+    &["-q", "--quiet"],
+    argparse::StoreTrue,
+    "Print the stored data without description",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  commands::pws_get(slot, name, login, password, quiet)
 }
 
 /// Parse the command-line arguments and return the selected command and
