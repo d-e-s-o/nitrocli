@@ -14,7 +14,12 @@ The following commands are currently supported:
 - open: Open the encrypted volume. The user PIN needs to be entered.
 - close: Close the encrypted volume.
 - status: Report status information about the Nitrokey.
-- clear: Remove the user PIN from gpg-agent's cache.
+- clear: Remove the user and admin PIN from gpg-agent's cache.
+- otp: Access one-time passwords (OTP).
+  - get: Generate a one-time password.
+  - set: Set an OTP slot.
+  - status: List all OTP slots.
+  - clear: Delete an OTP slot.
 
 ### *Note:*
 ----------------------------------------------------------------------
