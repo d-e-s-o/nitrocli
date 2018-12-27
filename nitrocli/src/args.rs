@@ -35,6 +35,7 @@ pub enum Command {
   Config,
   Open,
   Otp,
+  Pws,
   Status,
 }
 
@@ -47,6 +48,7 @@ impl Command {
       Command::Config => config(args),
       Command::Open => open(args),
       Command::Otp => otp(args),
+      Command::Pws => pws(args),
       Command::Status => status(args),
     }
   }
@@ -63,6 +65,7 @@ impl fmt::Display for Command {
         Command::Config => "config",
         Command::Open => "open",
         Command::Otp => "otp",
+        Command::Pws => "pws",
         Command::Status => "status",
       }
     )
@@ -79,6 +82,7 @@ impl str::FromStr for Command {
       "config" => Ok(Command::Config),
       "open" => Ok(Command::Open),
       "otp" => Ok(Command::Otp),
+      "pws" => Ok(Command::Pws),
       "status" => Ok(Command::Status),
       _ => Err(()),
     }
@@ -275,6 +279,42 @@ impl From<OtpMode> for nitrokey::OtpMode {
     match mode {
       OtpMode::SixDigits => nitrokey::OtpMode::SixDigits,
       OtpMode::EightDigits => nitrokey::OtpMode::EightDigits,
+    }
+  }
+}
+
+#[derive(Debug)]
+enum PwsCommand {
+  Get,
+}
+
+impl PwsCommand {
+  fn execute(&self, _args: Vec<String>) -> Result<()> {
+    match *self {
+      PwsCommand::Get => Err(Error::Error("Not implemented".to_string())),
+    }
+  }
+}
+
+impl fmt::Display for PwsCommand {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        PwsCommand::Get => "get",
+      }
+    )
+  }
+}
+
+impl str::FromStr for PwsCommand {
+  type Err = ();
+
+  fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    match s {
+      "get" => Ok(PwsCommand::Get),
+      _ => Err(()),
     }
   }
 }
@@ -572,6 +612,30 @@ fn otp_status(args: Vec<String>) -> Result<()> {
   drop(parser);
 
   commands::otp_status(all)
+}
+
+/// Execute a PWS subcommand.
+fn pws(args: Vec<String>) -> Result<()> {
+  let mut subcommand = PwsCommand::Get;
+  let mut subargs = vec![];
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Accesses the password safe");
+  let _ = parser.refer(&mut subcommand).required().add_argument(
+    "subcommand",
+    argparse::Store,
+    "The subcommand to execute (get)",
+  );
+  let _ = parser.refer(&mut subargs).add_argument(
+    "arguments",
+    argparse::List,
+    "The arguments for the subcommand",
+  );
+  parser.stop_on_first_argument(true);
+  parse(&parser, args)?;
+  drop(parser);
+
+  subargs.insert(0, format!("nitrocli pws {}", subcommand));
+  subcommand.execute(subargs)
 }
 
 /// Parse the command-line arguments and return the selected command and
