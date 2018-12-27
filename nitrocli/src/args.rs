@@ -32,6 +32,7 @@ type Result<T> = result::Result<T, Error>;
 pub enum Command {
   Clear,
   Config,
+  Lock,
   Otp,
   Pws,
   Status,
@@ -44,6 +45,7 @@ impl Command {
     match *self {
       Command::Clear => clear(args),
       Command::Config => config(args),
+      Command::Lock => lock(args),
       Command::Otp => otp(args),
       Command::Pws => pws(args),
       Command::Status => status(args),
@@ -60,6 +62,7 @@ impl fmt::Display for Command {
       match *self {
         Command::Clear => "clear",
         Command::Config => "config",
+        Command::Lock => "lock",
         Command::Otp => "otp",
         Command::Pws => "pws",
         Command::Status => "status",
@@ -76,6 +79,7 @@ impl str::FromStr for Command {
     match s {
       "clear" => Ok(Command::Clear),
       "config" => Ok(Command::Config),
+      "lock" => Ok(Command::Lock),
       "otp" => Ok(Command::Otp),
       "pws" => Ok(Command::Pws),
       "status" => Ok(Command::Status),
@@ -547,6 +551,15 @@ fn config_set(args: Vec<String>) -> Result<()> {
     None
   };
   commands::config_set(numlock, capslock, scrollock, otp_pin)
+}
+
+/// Lock the Nitrokey.
+fn lock(args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Locks the connected Nitrokey device");
+  parse(&parser, args)?;
+
+  commands::lock()
 }
 
 /// Execute an OTP subcommand.

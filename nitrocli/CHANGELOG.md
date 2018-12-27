@@ -9,6 +9,7 @@ Unreleased
 - Added the `otp` command for working with one-time passwords
 - Added the `config` command for reading and writing the device configuration
 - Added the `pws` command for accessing the password safe
+- Added the `lock` command for locking the Nitrokey device
 - Moved `open` and `close` commands as subcommands into newly introduced
   `storage` command
   - Moved printing of storage related information from `status` command
