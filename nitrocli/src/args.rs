@@ -33,6 +33,7 @@ pub enum Command {
   Clear,
   Close,
   Config,
+  Lock,
   Open,
   Otp,
   Pws,
@@ -46,6 +47,7 @@ impl Command {
       Command::Clear => clear(args),
       Command::Close => close(args),
       Command::Config => config(args),
+      Command::Lock => lock(args),
       Command::Open => open(args),
       Command::Otp => otp(args),
       Command::Pws => pws(args),
@@ -63,6 +65,7 @@ impl fmt::Display for Command {
         Command::Clear => "clear",
         Command::Close => "close",
         Command::Config => "config",
+        Command::Lock => "lock",
         Command::Open => "open",
         Command::Otp => "otp",
         Command::Pws => "pws",
@@ -80,6 +83,7 @@ impl str::FromStr for Command {
       "clear" => Ok(Command::Clear),
       "close" => Ok(Command::Close),
       "config" => Ok(Command::Config),
+      "lock" => Ok(Command::Lock),
       "open" => Ok(Command::Open),
       "otp" => Ok(Command::Otp),
       "pws" => Ok(Command::Pws),
@@ -346,6 +350,15 @@ fn status(args: Vec<String>) -> Result<()> {
   parse(&parser, args)?;
 
   commands::status()
+}
+
+/// Lock the Nitrokey.
+fn lock(args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Locks the connected Nitrokey device");
+  parse(&parser, args)?;
+
+  commands::lock()
 }
 
 /// Open the encrypted volume on the nitrokey.

@@ -9,6 +9,7 @@ Unreleased
 - Added the `otp` command for working with one-time passwords
 - Added the `config` command for reading and writing the device configuration
 - Added the `pws` command for accessing the password safe
+- Added the `lock` command for locking the Nitrokey device
 - Made `status` command work with Nitrokey Pro devices
 - Enabled CI pipeline comprising code style conformance checks, linting,
   and building of the project

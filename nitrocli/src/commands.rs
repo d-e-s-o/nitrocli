@@ -257,6 +257,13 @@ pub fn status() -> Result<()> {
   Ok(())
 }
 
+/// Lock the Nitrokey device.
+pub fn lock() -> Result<()> {
+  get_device()?
+    .lock()
+    .map_err(|err| get_error("Getting Storage status failed", &err))
+}
+
 /// Open the encrypted volume on the nitrokey.
 pub fn open() -> Result<()> {
   let device = get_storage_device()?;
