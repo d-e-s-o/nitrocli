@@ -49,6 +49,21 @@ fn get_storage_device() -> Result<nitrokey::Storage> {
   })
 }
 
+/// Open the password safe on the given device.
+fn get_password_safe(device: &dyn Device) -> Result<nitrokey::PasswordSafe<'_>> {
+  try_with_passphrase_and_data(
+    pinentry::PinType::User,
+    "Could not access the password safe",
+    (),
+    |_, passphrase| {
+      device
+        .get_password_safe(passphrase)
+        .map_err(|err| ((), err))
+    },
+  )
+  .map_err(|(_, err)| err)
+}
+
 /// Authenticate the given device using the given PIN type and operation.
 ///
 /// If an error occurs, the error message `msg` is used.
@@ -530,6 +545,43 @@ pub fn pin_unblock() -> Result<()> {
     "Could not unblock the user PIN",
     |admin_pin| device.unlock_user_pin(&admin_pin, &user_pin),
   )
+}
+
+fn print_pws_data(
+  description: &'static str,
+  result: result::Result<String, nitrokey::CommandError>,
+  quiet: bool,
+) -> Result<()> {
+  let value = result.map_err(|err| get_error("Could not access PWS slot", &err))?;
+  if quiet {
+    println!("{}", value);
+  } else {
+    println!("{} {}", description, value);
+  }
+  Ok(())
+}
+
+/// Read a PWS slot.
+pub fn pws_get(
+  slot: u8,
+  show_name: bool,
+  show_login: bool,
+  show_password: bool,
+  quiet: bool,
+) -> Result<()> {
+  let device = get_device()?;
+  let pws = get_password_safe(&device)?;
+  let show_all = !show_name && !show_login && !show_password;
+  if show_all || show_name {
+    print_pws_data("name:    ", pws.get_slot_name(slot), quiet)?;
+  }
+  if show_all || show_login {
+    print_pws_data("login:   ", pws.get_slot_login(slot), quiet)?;
+  }
+  if show_all || show_password {
+    print_pws_data("password:", pws.get_slot_password(slot), quiet)?;
+  }
+  Ok(())
 }
 
 #[cfg(test)]
