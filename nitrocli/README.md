@@ -16,6 +16,7 @@ The following commands are currently supported:
 - storage: Work with the Nitrokey's storage.
   - open: Open the encrypted volume. The user PIN needs to be entered.
   - close: Close the encrypted volume.
+  - status: Print information about the Nitrokey's storage.
 - otp: Access one-time passwords (OTP).
   - get: Generate a one-time password.
   - set: Set an OTP slot.
@@ -49,6 +50,8 @@ Status:
   user retry count:  3
   admin retry count: 3
 
+$ nitrocli storage status
+Status:
   SD card ID:        0x05dcad1d
   firmware:          unlocked
   storage keys:      created

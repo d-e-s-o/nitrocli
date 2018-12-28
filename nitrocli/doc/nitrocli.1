@@ -14,9 +14,7 @@ It can be used to access the encrypted volume and the one-time password generato
 .TP
 .B nitrocli status
 Print the status of the connected Nitrokey device, including the stick serial
-number, SD card serial number, the firmware version and the PIN retry count.
-For the Nitrokey Storage, it also includes the encryption status and the status
-of the volumes.
+number, the firmware version, and the PIN retry count.
 .TP
 .B nitrocli clear
 Clear the passphrases cached by the other commands.
@@ -30,6 +28,11 @@ The user PIN that is required to open the volume is queried using
 .TP
 \fBnitrocli storage close
 Close the encrypted volume on the Nitrokey Storage.
+.TP
+\fBnitrocli storage status
+Print the status of the connected Nitrokey Storage device's storage. The
+printed information includes the SD card serial number, the encryption
+status, and the status of the volumes.
 
 .SS One-time passwords
 .TP
