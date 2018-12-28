@@ -243,7 +243,7 @@ pub fn status() -> Result<()> {
 }
 
 /// Open the encrypted volume on the nitrokey.
-pub fn open() -> Result<()> {
+pub fn storage_open() -> Result<()> {
   let device = get_storage_device()?;
   try_with_passphrase(
     pinentry::PinType::User,
@@ -258,7 +258,7 @@ extern "C" {
 }
 
 /// Close the previously opened encrypted volume.
-pub fn close() -> Result<()> {
+pub fn storage_close() -> Result<()> {
   // Flush all filesystem caches to disk. We are mostly interested in
   // making sure that the encrypted volume on the nitrokey we are
   // about to close is not closed while not all data was written to

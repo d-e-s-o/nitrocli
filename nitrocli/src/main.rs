@@ -66,7 +66,7 @@
 )]
 
 //! Nitrocli is a program providing a command line interface to certain
-//! commands of the Nitrokey Storage device.
+//! commands of Nitrokey Pro and Storage devices.
 
 mod args;
 mod commands;
