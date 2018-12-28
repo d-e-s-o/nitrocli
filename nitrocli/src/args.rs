@@ -286,7 +286,7 @@ fn parse(parser: &argparse::ArgumentParser<'_>, args: Vec<String>) -> Result<()>
 /// Inquire the status of the nitrokey.
 fn status(args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Print the status of the connected Nitrokey device");
+  parser.set_description("Prints the status of the connected Nitrokey device");
   parse(&parser, args)?;
 
   commands::status()
@@ -310,10 +310,20 @@ fn storage_close(args: Vec<String>) -> Result<()> {
   commands::storage_close()
 }
 
+/// Print the status of the nitrokey's storage.
+fn storage_status(args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Prints the status of the Nitrokey's storage");
+  parse(&parser, args)?;
+
+  commands::storage_status()
+}
+
 #[derive(Debug)]
 enum StorageCommand {
   Close,
   Open,
+  Status,
 }
 
 impl StorageCommand {
@@ -321,6 +331,7 @@ impl StorageCommand {
     match *self {
       StorageCommand::Close => storage_close(args),
       StorageCommand::Open => storage_open(args),
+      StorageCommand::Status => storage_status(args),
     }
   }
 }
@@ -333,6 +344,7 @@ impl fmt::Display for StorageCommand {
       match *self {
         StorageCommand::Close => "close",
         StorageCommand::Open => "open",
+        StorageCommand::Status => "status",
       }
     )
   }
@@ -345,6 +357,7 @@ impl str::FromStr for StorageCommand {
     match s {
       "close" => Ok(StorageCommand::Close),
       "open" => Ok(StorageCommand::Open),
+      "status" => Ok(StorageCommand::Status),
       _ => Err(()),
     }
   }

@@ -49,6 +49,8 @@ Status:
   user retry count:  3
   admin retry count: 3
 
+$ nitrocli storage status
+Status:
   SD card ID:        0x05dcad1d
   firmware:          unlocked
   storage keys:      created
