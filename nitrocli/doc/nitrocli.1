@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2018-12-27
+.TH NITROCLI 1 2018-12-28
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -35,6 +35,17 @@ printed information includes the SD card serial number, the encryption
 status, and the status of the volumes.
 
 .SS One-time passwords
+The Nitrokey Pro and the Nitrokey Store support the generation of one-time
+passwords using the HOTP algorithm according to RFC 4226 or the TOTP algorithm
+according to RFC 6238.
+The required data \- a name and the secret \- is stored on slots.
+Currently, the Nitrokey devices provide three HOTP slots and 15 TOTP slots.
+The slots are numbered per algorithm starting at zero.
+.P
+The TOTP algorithm is a modified version of the HOTP algorithm that also uses
+the current time.
+Therefore, the Nitrokey clock must be synchronized with the clock of the
+application that requests the one-time password.
 .TP
 \fBnitrocli otp get \fIslot \fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR]
 Generate a one-time password.
