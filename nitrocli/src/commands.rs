@@ -197,34 +197,6 @@ fn print_status(model: &'static str, device: &nitrokey::DeviceWrapper) -> Result
   Ok(())
 }
 
-/// Pretty print the status of a Nitrokey Storage.
-fn print_storage_status(status: &nitrokey::StorageStatus) {
-  println!(
-    r#"
-  SD card ID:        {id:#x}
-  firmware:          {fw}
-  storage keys:      {sk}
-  volumes:
-    unencrypted:     {vu}
-    encrypted:       {ve}
-    hidden:          {vh}"#,
-    id = status.serial_number_sd_card,
-    fw = if status.firmware_locked {
-      "locked"
-    } else {
-      "unlocked"
-    },
-    sk = if status.stick_initialized {
-      "created"
-    } else {
-      "not created"
-    },
-    vu = get_volume_status(&status.unencrypted_volume),
-    ve = get_volume_status(&status.encrypted_volume),
-    vh = get_volume_status(&status.hidden_volume),
-  );
-}
-
 /// Inquire the status of the nitrokey.
 pub fn status() -> Result<()> {
   let device = get_device()?;
@@ -232,14 +204,7 @@ pub fn status() -> Result<()> {
     nitrokey::DeviceWrapper::Pro(_) => "Pro",
     nitrokey::DeviceWrapper::Storage(_) => "Storage",
   };
-  print_status(model, &device)?;
-  if let nitrokey::DeviceWrapper::Storage(storage) = device {
-    let status = storage
-      .get_status()
-      .map_err(|err| get_error("Getting Storage status failed", &err))?;
-    print_storage_status(&status);
-  }
-  Ok(())
+  print_status(model, &device)
 }
 
 /// Open the encrypted volume on the nitrokey.
@@ -268,6 +233,45 @@ pub fn storage_close() -> Result<()> {
   get_storage_device()?
     .disable_encrypted_volume()
     .map_err(|err| get_error("Closing encrypted volume failed", &err))
+}
+
+/// Pretty print the status of a Nitrokey Storage.
+fn print_storage_status(status: &nitrokey::StorageStatus) {
+  println!(
+    r#"Status:
+  SD card ID:        {id:#x}
+  firmware:          {fw}
+  storage keys:      {sk}
+  volumes:
+    unencrypted:     {vu}
+    encrypted:       {ve}
+    hidden:          {vh}"#,
+    id = status.serial_number_sd_card,
+    fw = if status.firmware_locked {
+      "locked"
+    } else {
+      "unlocked"
+    },
+    sk = if status.stick_initialized {
+      "created"
+    } else {
+      "not created"
+    },
+    vu = get_volume_status(&status.unencrypted_volume),
+    ve = get_volume_status(&status.encrypted_volume),
+    vh = get_volume_status(&status.hidden_volume),
+  );
+}
+
+/// Connect to and pretty print the status of a Nitrokey Storage.
+pub fn storage_status() -> Result<()> {
+  let device = get_storage_device()?;
+  let status = device
+    .get_status()
+    .map_err(|err| get_error("Getting Storage status failed", &err))?;
+
+  print_storage_status(&status);
+  Ok(())
 }
 
 /// Clear the PIN stored when opening the nitrokey's encrypted volume.

@@ -10,6 +10,8 @@ Unreleased
 - Added the `config` command for reading and writing the device configuration
 - Moved `open` and `close` commands as subcommands into newly introduced
   `storage` command
+  - Moved printing of storage related information from `status` command
+    into new `storage status` subcommand
 - Made `status` command work with Nitrokey Pro devices
 - Enabled CI pipeline comprising code style conformance checks, linting,
   and building of the project
