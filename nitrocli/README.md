@@ -34,19 +34,23 @@ Usage
 -----
 
 Usage is as simple as providing the name of the respective command as a
-parameter, e.g.:
+parameter (note that some commands are organized through subcommands,
+which are required as well), e.g.:
 ```bash
 # Open the nitrokey's encrypted volume.
 $ nitrocli open
 
 $ nitrocli status
 Status:
-  SD card ID:        0xdeadbeef
+  model:             Storage
+  serial number:     0x00053141
   firmware version:  0.47
-  firmware:          unlocked
-  storage keys:      created
   user retry count:  3
   admin retry count: 3
+
+  SD card ID:        0x05dcad1d
+  firmware:          unlocked
+  storage keys:      created
   volumes:
     unencrypted:     active
     encrypted:       active
