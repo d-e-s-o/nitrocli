@@ -8,7 +8,7 @@ nitrocli
 - [Changelog](CHANGELOG.md)
 
 **nitrocli** is a program that provides a command line interface for
-certain commands on the [Nitrokey Storage][nitrokey] device.
+certain commands on the [Nitrokey Storage][nitrokey-storage] device.
 
 The following commands are currently supported:
 - open: Open the encrypted volume. The user PIN needs to be entered.
@@ -94,12 +94,17 @@ Packages are available for:
 - Gentoo Linux: [`app-crypt/nitrocli`](https://github.com/d-e-s-o/nitrocli-ebuild)
   ebuild
 
-[nitrokey]: https://www.nitrokey.com/news/2016/nitrokey-storage-available
-[nitrocli-cratesio]: https://crates.io/crates/nitrocli
-
 
 Acknowledgments
 ---------------
 
-Robin Krahl ([**@robinkrahl**](https://github.com/robinkrahl)) has been
+Robin Krahl ([@robinkrahl](https://github.com/robinkrahl)) has been
 a crucial help for the development of **nitrocli**.
+
+The [Nitrokey UG][nitrokey-ug] has generously provided the necessary
+hardware for developing and testing the program.
+
+
+[nitrokey-ug]: https://www.nitrokey.com
+[nitrokey-storage]: https://www.nitrokey.com/news/2016/nitrokey-storage-available
+[nitrocli-cratesio]: https://crates.io/crates/nitrocli
