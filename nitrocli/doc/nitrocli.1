@@ -12,14 +12,6 @@ It can be used to access the encrypted volume and the one-time password generato
 .SH COMMANDS
 .SS General
 .TP
-.B nitrocli open
-Open the encrypted volume on the Nitrokey Storage.
-The user PIN that is required to open the volume is queried using 
-\fBpinentry\fR(1) and cached by \fBgpg-agent\fR(1).
-.TP
-.B nitrocli close
-Close the encrypted volume on the Nitrokey Storage.
-.TP
 .B nitrocli status
 Print the status of the connected Nitrokey device, including the stick serial
 number, SD card serial number, the firmware version and the PIN retry count.
@@ -28,6 +20,17 @@ of the volumes.
 .TP
 .B nitrocli clear
 Clear the passphrases cached by the other commands.
+
+.SS Storage
+.TP
+\fBnitrocli storage open
+Open the encrypted volume on the Nitrokey Storage.
+The user PIN that is required to open the volume is queried using
+\fBpinentry\fR(1) and cached by \fBgpg-agent\fR(1).
+.TP
+\fBnitrocli storage close
+Close the encrypted volume on the Nitrokey Storage.
+
 .SS One-time passwords
 .TP
 \fBnitrocli otp get \fIslot \fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR]

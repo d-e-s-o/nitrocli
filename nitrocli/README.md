@@ -11,10 +11,11 @@ nitrocli
 certain commands on the [Nitrokey Storage][nitrokey-storage] device.
 
 The following commands are currently supported:
-- open: Open the encrypted volume. The user PIN needs to be entered.
-- close: Close the encrypted volume.
 - status: Report status information about the Nitrokey.
 - clear: Remove the user and admin PIN from gpg-agent's cache.
+- storage: Work with the Nitrokey's storage.
+  - open: Open the encrypted volume. The user PIN needs to be entered.
+  - close: Close the encrypted volume.
 - otp: Access one-time passwords (OTP).
   - get: Generate a one-time password.
   - set: Set an OTP slot.
@@ -38,7 +39,7 @@ parameter (note that some commands are organized through subcommands,
 which are required as well), e.g.:
 ```bash
 # Open the nitrokey's encrypted volume.
-$ nitrocli open
+$ nitrocli storage open
 
 $ nitrocli status
 Status:
@@ -57,7 +58,7 @@ Status:
     hidden:          inactive
 
 # Close it again.
-$ nitrocli close
+$ nitrocli storage close
 ```
 
 
