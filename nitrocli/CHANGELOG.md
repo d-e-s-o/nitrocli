@@ -8,6 +8,8 @@ Unreleased
   - Removed the `hid`, `hidapi-sys` and `pkg-config` dependencies
 - Added the `otp` command for working with one-time passwords
 - Added the `config` command for reading and writing the device configuration
+- Moved `open` and `close` commands as subcommands into newly introduced
+  `storage` command
 - Made `status` command work with Nitrokey Pro devices
 - Enabled CI pipeline comprising code style conformance checks, linting,
   and building of the project

@@ -31,11 +31,10 @@ type Result<T> = result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Command {
   Clear,
-  Close,
   Config,
-  Open,
   Otp,
   Status,
+  Storage,
 }
 
 impl Command {
@@ -43,11 +42,10 @@ impl Command {
   pub fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
       Command::Clear => clear(args),
-      Command::Close => close(args),
       Command::Config => config(args),
-      Command::Open => open(args),
       Command::Otp => otp(args),
       Command::Status => status(args),
+      Command::Storage => storage(args),
     }
   }
 }
@@ -59,11 +57,10 @@ impl fmt::Display for Command {
       "{}",
       match *self {
         Command::Clear => "clear",
-        Command::Close => "close",
         Command::Config => "config",
-        Command::Open => "open",
         Command::Otp => "otp",
         Command::Status => "status",
+        Command::Storage => "storage",
       }
     )
   }
@@ -75,11 +72,10 @@ impl str::FromStr for Command {
   fn from_str(s: &str) -> result::Result<Self, Self::Err> {
     match s {
       "clear" => Ok(Command::Clear),
-      "close" => Ok(Command::Close),
       "config" => Ok(Command::Config),
-      "open" => Ok(Command::Open),
       "otp" => Ok(Command::Otp),
       "status" => Ok(Command::Status),
+      "storage" => Ok(Command::Storage),
       _ => Err(()),
     }
   }
@@ -297,24 +293,88 @@ fn status(args: Vec<String>) -> Result<()> {
 }
 
 /// Open the encrypted volume on the nitrokey.
-fn open(args: Vec<String>) -> Result<()> {
+fn storage_open(args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Opens the encrypted volume on a Nitrokey Storage");
   parse(&parser, args)?;
 
-  commands::open()
+  commands::storage_open()
 }
 
 /// Close the previously opened encrypted volume.
-fn close(args: Vec<String>) -> Result<()> {
+fn storage_close(args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Closes the encrypted volume on a Nitrokey Storage");
   parse(&parser, args)?;
 
-  commands::close()
+  commands::storage_close()
 }
 
-/// Clear the PIN stored when opening the nitrokey's encrypted volume.
+#[derive(Debug)]
+enum StorageCommand {
+  Close,
+  Open,
+}
+
+impl StorageCommand {
+  fn execute(&self, args: Vec<String>) -> Result<()> {
+    match *self {
+      StorageCommand::Close => storage_close(args),
+      StorageCommand::Open => storage_open(args),
+    }
+  }
+}
+
+impl fmt::Display for StorageCommand {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        StorageCommand::Close => "close",
+        StorageCommand::Open => "open",
+      }
+    )
+  }
+}
+
+impl str::FromStr for StorageCommand {
+  type Err = ();
+
+  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
+    match s {
+      "close" => Ok(StorageCommand::Close),
+      "open" => Ok(StorageCommand::Open),
+      _ => Err(()),
+    }
+  }
+}
+
+/// Execute a storage subcommand.
+fn storage(args: Vec<String>) -> Result<()> {
+  let mut subcommand = StorageCommand::Open;
+  let mut subargs = vec![];
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Interacts with the device's storage");
+  let _ = parser.refer(&mut subcommand).required().add_argument(
+    "subcommand",
+    argparse::Store,
+    "The subcommand to execute (open|close)",
+  );
+  let _ = parser.refer(&mut subargs).add_argument(
+    "arguments",
+    argparse::List,
+    "The arguments for the subcommand",
+  );
+  parser.stop_on_first_argument(true);
+  parse(&parser, args)?;
+  drop(parser);
+
+  subargs.insert(0, format!("nitrocli storage {}", subcommand));
+  subcommand.execute(subargs)
+}
+
+/// Clear the PIN as cached by various other commands.
 fn clear(args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Clears the cached passphrases");
@@ -584,7 +644,7 @@ fn parse_arguments(args: Vec<String>) -> Result<(Command, Vec<String>)> {
   let _ = parser.refer(&mut command).required().add_argument(
     "command",
     argparse::Store,
-    "The command to execute (clear|close|config|open|otp|status)",
+    "The command to execute (clear|config|otp|status|storage)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
