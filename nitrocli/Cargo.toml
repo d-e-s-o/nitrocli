@@ -35,6 +35,12 @@ A command line tool for interacting with the Nitrokey Storage device.
 [badges]
 gitlab = { repository = "d-e-s-o/nitrocli", branch = "master" }
 
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+incremental = false
+
 [dependencies.argparse]
 version = "0.2.2"
 path = "../argparse"
