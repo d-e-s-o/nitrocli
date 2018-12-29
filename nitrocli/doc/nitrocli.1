@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2018-12-28
+.TH NITROCLI 1 2018-12-30
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -53,6 +53,7 @@ Generate a one-time password.
 \fIalgorithm\fR is the OTP algorithm to use.
 Possible values are \fBhotp\fR for the HOTP algorithm according to RFC 4226 and
 \fBtotp\fR for the TOTP algorithm according to RFC 6238 (default).
+This command might require the user PIN (see the Configuration section).
 .TP
 \fBnitrocli otp set \fIslot name secret \
 \fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR] \
@@ -86,7 +87,35 @@ Possible values are \fBhotp\fR for the HOTP algorithm according to RFC 4226 and
 List all OTP slots.
 If \fB--all\fR is not set, empty slots are ignored.
 
-.SH EXAMPLE
+.SS Configuration
+Nitrokey devices have four configuration settings:  the numlock, capslock and
+scrollock keys can be mapped to an HOTP slot, and OTP generation can be set to
+require the user PIN.
+.TP
+\fBnitrocli config get\fR
+Print the current configuration.
+.TP
+\fBnitrocli config set \fR\
+[[\fB-n\fR|\fB--numlock \fIslot\fR] | [\fB-N\fR|\fB--no-numlock\fR]] \
+[[\fB-c\fR|\fB--capslock \fIslot\fR] | [\fB-C\fR|\fB--no-capslock\fR]] \
+[[\fB-s\fR|\fB--scrollock \fIslot\fR] | [\fB-S\fR|\fB--no-scrollock\fR]] \
+[[\fB-o\fR|\fB--otp-pin\fR] | [\fB-O\fR|\fB--no-otp-pin\fR]]
+Update the Nitrokey configuration.
+This command requires the admin PIN.
+
+With the \fB--numlock\fR, \fB--capslock\fR and \fB--scrollock\fR options, the
+respective bindings can be set.
+\fIslot\fR is the number of the HOTP slot to bind the key to.
+If \fB--no-numlock\fR, \fB--no-capslock\fR or \fB--no-scrollock\fR is set, the
+respective binding is disabled.
+The two corresponding options are mutually exclusive.
+
+If \fB--otp-pin\fR is set, the user PIN will be required to generate one-time
+passwords using the \fBotp get\fR command.
+If \fB--no-otp-pin\fR is set, OTP generation can be performed without PIN.
+These two options are mutually exclusive.
+
+.SH EXAMPLES
 .SS One-time passwords
 Configure a one-time password slot with a hexadecimal secret representation:
     $ \fBnitrocli otp set 0 test-rfc4226 3132333435363738393031323334353637383930 --algorithm hotp\fR
@@ -102,3 +131,15 @@ Generate a one-time password:
 .P
 Clear a one-time password slot:
     $ \fBnitrocli otp clear 0 --algorithm hotp\fR
+
+.SS Configuration
+Query the configuration:
+    $ \fBnitrocli config get\fR
+    Config:
+      numlock binding:          not set
+      capslock binding:         not set
+      scrollock binding:        not set
+      require user PIN for OTP: true
+.P
+Change the configuration:
+    $ \fBnitrocli config set --otp-pin\fR
