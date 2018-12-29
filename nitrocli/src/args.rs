@@ -292,24 +292,6 @@ fn status(args: Vec<String>) -> Result<()> {
   commands::status()
 }
 
-/// Open the encrypted volume on the nitrokey.
-fn storage_open(args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Opens the encrypted volume on a Nitrokey Storage");
-  parse(&parser, args)?;
-
-  commands::storage_open()
-}
-
-/// Close the previously opened encrypted volume.
-fn storage_close(args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Closes the encrypted volume on a Nitrokey Storage");
-  parse(&parser, args)?;
-
-  commands::storage_close()
-}
-
 #[derive(Debug)]
 enum StorageCommand {
   Close,
@@ -372,6 +354,24 @@ fn storage(args: Vec<String>) -> Result<()> {
 
   subargs.insert(0, format!("nitrocli storage {}", subcommand));
   subcommand.execute(subargs)
+}
+
+/// Open the encrypted volume on the nitrokey.
+fn storage_open(args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Opens the encrypted volume on a Nitrokey Storage");
+  parse(&parser, args)?;
+
+  commands::storage_open()
+}
+
+/// Close the previously opened encrypted volume.
+fn storage_close(args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Closes the encrypted volume on a Nitrokey Storage");
+  parse(&parser, args)?;
+
+  commands::storage_close()
 }
 
 /// Clear the PIN as cached by various other commands.
