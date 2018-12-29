@@ -2,6 +2,7 @@ Unreleased
 ----------
 - Added the `pws` command for accessing the password safe
 - Added the `lock` command for locking the Nitrokey device
+- Adjust release build compile options to optimize binary for size
 
 
 0.2.0
