@@ -19,6 +19,12 @@ number, the firmware version, and the PIN retry count.
 .TP
 .B nitrocli clear
 Clear the passphrases cached by the other commands.
+.TP
+.B nitrocli lock
+Lock the Nitrokey.
+This command always locks the password safe (see the Password safe section).
+On the Nitrokey Storage, it will also close the encrypted volume (see the
+Storage section).
 
 .SS Storage
 .TP
