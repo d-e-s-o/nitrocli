@@ -147,7 +147,7 @@ where
   let mut retry = 3;
   let mut error_msg = None;
   loop {
-    let passphrase = match pinentry::inquire_passphrase(pin, error_msg) {
+    let passphrase = match pinentry::inquire_passphrase(pin, pinentry::Mode::Query, error_msg) {
       Ok(passphrase) => passphrase,
       Err(err) => return Err((data, err)),
     };
