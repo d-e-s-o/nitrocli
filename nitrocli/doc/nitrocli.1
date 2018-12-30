@@ -139,6 +139,14 @@ Use the \fBstatus\fR command to check the retry counters.
 Clear the PINs cached by the other commands.
 
 .TP
+\fBnitrocli pin set \fItype\fR
+Change a PIN.
+\fItype\fR is the type of the PIN that will be changed:  \fBadmin\fR to change
+the admin PIN or \fBuser\fR to change the user PIN.
+This command only works if the retry counter for the PIN type is at least one.
+(Use the \fBstatus\fR command to check the retry counters.)
+
+.TP
 .B nitrocli pin unblock
 Unblock and reset the user PIN.
 This command requires the admin PIN.

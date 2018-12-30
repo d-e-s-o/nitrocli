@@ -507,6 +507,20 @@ fn choose_pin(pintype: pinentry::PinType) -> Result<String> {
   }
 }
 
+/// Change a PIN.
+pub fn pin_set(pintype: pinentry::PinType) -> Result<()> {
+  let device = get_device()?;
+  let new_pin = choose_pin(pintype)?;
+  try_with_passphrase(
+    pintype,
+    "Could not change the PIN",
+    |current_pin| match pintype {
+      pinentry::PinType::Admin => device.change_admin_pin(&current_pin, &new_pin),
+      pinentry::PinType::User => device.change_user_pin(&current_pin, &new_pin),
+    },
+  )
+}
+
 /// Unblock and reset the user PIN.
 pub fn pin_unblock() -> Result<()> {
   let device = get_device()?;
