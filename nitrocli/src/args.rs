@@ -852,7 +852,7 @@ fn parse_arguments(args: Vec<String>) -> Result<(Command, Vec<String>)> {
   let _ = parser.refer(&mut command).required().add_argument(
     "command",
     argparse::Store,
-    "The command to execute (clear|config|otp|status|storage)",
+    "The command to execute (clear|config|lock|otp|status|storage)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
