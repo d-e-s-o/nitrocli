@@ -48,11 +48,32 @@ impl PinType {
     }
   }
 
-  fn description(self) -> &'static str {
+  fn description(self, mode: Mode) -> &'static str {
     match self {
-      PinType::Admin => "Please enter admin PIN",
-      PinType::User => "Please enter user PIN",
+      PinType::Admin => match mode {
+        Mode::Query => "Please enter the admin PIN",
+      },
+      PinType::User => match mode {
+        Mode::Query => "Please enter the user PIN",
+      },
     }
+  }
+}
+
+/// PIN entry mode for pinentry.
+///
+/// This enum describes the context of the pinentry query, for example prompting for the current
+/// PIN or requesting a new PIN.  The mode may affect the pinentry description and whether a
+/// quality bar is shown.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Mode {
+  /// Query an existing PIN.
+  Query,
+}
+
+impl Mode {
+  fn show_quality_bar(self) -> bool {
+    false
   }
 }
 
@@ -83,17 +104,27 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
 /// Inquire a PIN of the given type from the user.
 ///
 /// This function inquires a PIN of the given type from the user or returns the cached passphrase,
-/// if available.  If an error message is set, it is displayed in the passphrase dialog.
-pub fn inquire_passphrase(pin_type: PinType, error_msg: Option<&str>) -> Result<Vec<u8>, Error> {
+/// if available.  If an error message is set, it is displayed in the passphrase dialog.  The
+/// mode describes the context of the pinentry dialog.  It is used to choose an appropriate
+/// description and to decide whether a quality bar is shown in the dialog.
+pub fn inquire_passphrase(
+  pin_type: PinType,
+  mode: Mode,
+  error_msg: Option<&str>,
+) -> Result<Vec<u8>, Error> {
   let cache_id = pin_type.cache_id();
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
     .unwrap_or_else(|| String::from("+"));
   let prompt = pin_type.prompt().replace(" ", "+");
-  let description = pin_type.description().replace(" ", "+");
+  let description = pin_type.description(mode).replace(" ", "+");
 
   let args = vec![cache_id, &error_msg, &prompt, &description].join(" ");
-  let command = "GET_PASSPHRASE --data ".to_string() + &args;
+  let mut command = "GET_PASSPHRASE --data ".to_string();
+  if mode.show_quality_bar() {
+    command += "--qualitybar ";
+  }
+  command += &args;
   // We could also use the --data parameter here to have a more direct
   // representation of the passphrase but the resulting response was
   // considered more difficult to parse overall. It appears an error
