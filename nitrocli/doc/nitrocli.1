@@ -124,10 +124,27 @@ PIN must have at least six, the admin PIN at least eight characters. The
 user PIN is required for commands such as \fBotp get\fR (depending on
 the configuration) and for all \fBpws\fR commands.
 The admin PIN is usually required to change the device configuration.
+.P
+Each PIN has a retry counter that is decreased with every wrong PIN entry and
+reset if the PIN was entered correctly.
+The initial retry counter is three.
+If the retry counter for the user PIN is zero, you can use the
+\fBpin unblock\fR command to unblock and reset the user PIN.
+If the retry counter for the admin PIN is zero, you have to perform a factory
+reset using \fBgpg\fR(1).
+Use the \fBstatus\fR command to check the retry counters.
 
 .TP
 .B nitrocli pin clear
 Clear the PINs cached by the other commands.
+
+.TP
+.B nitrocli pin unblock
+Unblock and reset the user PIN.
+This command requires the admin PIN.
+The admin PIN cannot be unblocked.
+This operation is equivalent to the unblock PIN option provided by \fBgpg\fR(1)
+(using the \fB\-\-change\-pin\fR option).
 
 .SH EXAMPLES
 .SS One-time passwords

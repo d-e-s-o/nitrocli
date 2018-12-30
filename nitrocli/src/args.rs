@@ -278,12 +278,14 @@ impl From<OtpMode> for nitrokey::OtpMode {
 #[derive(Debug)]
 enum PinCommand {
   Clear,
+  Unblock,
 }
 
 impl PinCommand {
   fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
       PinCommand::Clear => pin_clear(args),
+      PinCommand::Unblock => pin_unblock(args),
     }
   }
 }
@@ -295,6 +297,7 @@ impl fmt::Display for PinCommand {
       "{}",
       match *self {
         PinCommand::Clear => "clear",
+        PinCommand::Unblock => "unblock",
       }
     )
   }
@@ -306,6 +309,7 @@ impl str::FromStr for PinCommand {
   fn from_str(s: &str) -> result::Result<Self, Self::Err> {
     match s {
       "clear" => Ok(PinCommand::Clear),
+      "unblock" => Ok(PinCommand::Unblock),
       _ => Err(()),
     }
   }
@@ -689,7 +693,7 @@ fn pin(args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut subcommand).required().add_argument(
     "subcommand",
     argparse::Store,
-    "The subcommand to execute (clear)",
+    "The subcommand to execute (clear|unblock)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
@@ -711,6 +715,15 @@ fn pin_clear(args: Vec<String>) -> Result<()> {
   parse(&parser, args)?;
 
   commands::pin_clear()
+}
+
+/// Unblock and reset the user PIN.
+fn pin_unblock(args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Unblocks and resets the user PIN");
+  parse(&parser, args)?;
+
+  commands::pin_unblock()
 }
 
 /// Parse the command-line arguments and return the selected command and
