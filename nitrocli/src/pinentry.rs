@@ -51,9 +51,13 @@ impl PinType {
   fn description(self, mode: Mode) -> &'static str {
     match self {
       PinType::Admin => match mode {
+        Mode::Choose => "Please enter a new admin PIN",
+        Mode::Confirm => "Please confirm the new admin PIN",
         Mode::Query => "Please enter the admin PIN",
       },
       PinType::User => match mode {
+        Mode::Choose => "Please enter a new user PIN",
+        Mode::Confirm => "Please confirm the new user PIN",
         Mode::Query => "Please enter the user PIN",
       },
     }
@@ -67,13 +71,17 @@ impl PinType {
 /// quality bar is shown.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Mode {
+  /// Let the user choose a new PIN.
+  Choose,
+  /// Let the user confirm the previously chosen PIN.
+  Confirm,
   /// Query an existing PIN.
   Query,
 }
 
 impl Mode {
   fn show_quality_bar(self) -> bool {
-    false
+    self == Mode::Choose
   }
 }
 

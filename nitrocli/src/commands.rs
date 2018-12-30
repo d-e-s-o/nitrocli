@@ -497,6 +497,50 @@ pub fn pin_clear() -> Result<()> {
   Ok(())
 }
 
+fn check_pin(pintype: pinentry::PinType, pin: &str) -> Result<()> {
+  let minimum_length = match pintype {
+    pinentry::PinType::Admin => 8,
+    pinentry::PinType::User => 6,
+  };
+  if pin.len() < minimum_length {
+    Err(Error::Error(format!(
+      "The PIN must be at least {} characters long",
+      minimum_length
+    )))
+  } else {
+    Ok(())
+  }
+}
+
+fn choose_pin(pintype: pinentry::PinType) -> Result<String> {
+  pinentry::clear_passphrase(pintype)?;
+  let new_pin = pinentry::inquire_passphrase(pintype, pinentry::Mode::Choose, None)?;
+  pinentry::clear_passphrase(pintype)?;
+  let new_pin = String::from_utf8(new_pin)?;
+  check_pin(pintype, &new_pin)?;
+
+  let confirm_pin = pinentry::inquire_passphrase(pintype, pinentry::Mode::Confirm, None)?;
+  pinentry::clear_passphrase(pintype)?;
+  let confirm_pin = String::from_utf8(confirm_pin)?;
+
+  if new_pin != confirm_pin {
+    Err(Error::Error("Entered PINs do not match".to_string()))
+  } else {
+    Ok(new_pin)
+  }
+}
+
+/// Unblock and reset the user PIN.
+pub fn pin_unblock() -> Result<()> {
+  let device = get_device()?;
+  let user_pin = choose_pin(pinentry::PinType::User)?;
+  try_with_passphrase(
+    pinentry::PinType::Admin,
+    "Could not unblock the user PIN",
+    |admin_pin| device.unlock_user_pin(&admin_pin, &user_pin),
+  )
+}
+
 fn print_pws_data(
   description: &'static str,
   result: result::Result<String, nitrokey::CommandError>,
