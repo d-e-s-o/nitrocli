@@ -24,6 +24,7 @@ use std::str;
 
 use crate::commands;
 use crate::error::Error;
+use crate::pinentry;
 
 type Result<T> = result::Result<T, Error>;
 
@@ -286,6 +287,7 @@ impl From<OtpMode> for nitrokey::OtpMode {
 #[derive(Debug)]
 enum PinCommand {
   Clear,
+  Set,
   Unblock,
 }
 
@@ -293,6 +295,7 @@ impl PinCommand {
   fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
       PinCommand::Clear => pin_clear(args),
+      PinCommand::Set => pin_set(args),
       PinCommand::Unblock => pin_unblock(args),
     }
   }
@@ -305,6 +308,7 @@ impl fmt::Display for PinCommand {
       "{}",
       match *self {
         PinCommand::Clear => "clear",
+        PinCommand::Set => "set",
         PinCommand::Unblock => "unblock",
       }
     )
@@ -317,6 +321,7 @@ impl str::FromStr for PinCommand {
   fn from_str(s: &str) -> result::Result<Self, Self::Err> {
     match s {
       "clear" => Ok(PinCommand::Clear),
+      "set" => Ok(PinCommand::Set),
       "unblock" => Ok(PinCommand::Unblock),
       _ => Err(()),
     }
@@ -758,7 +763,7 @@ fn pin(args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut subcommand).required().add_argument(
     "subcommand",
     argparse::Store,
-    "The subcommand to execute (clear|unblock)",
+    "The subcommand to execute (clear|set|unblock)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
@@ -780,6 +785,22 @@ fn pin_clear(args: Vec<String>) -> Result<()> {
   parse(&parser, args)?;
 
   commands::pin_clear()
+}
+
+/// Change a PIN.
+fn pin_set(args: Vec<String>) -> Result<()> {
+  let mut pintype = pinentry::PinType::User;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Changes a PIN");
+  let _ = parser.refer(&mut pintype).required().add_argument(
+    "type",
+    argparse::Store,
+    "The PIN type to change (admin|user)",
+  );
+  parse(&parser, args)?;
+  drop(parser);
+
+  commands::pin_set(pintype)
 }
 
 /// Unblock and reset the user PIN.

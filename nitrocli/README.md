@@ -16,8 +16,6 @@ The following commands are currently supported:
 - config: Access the Nitrokey's configuration
   - get: Read the current configuration.
   - set: Change the configuration.
-- pin: Change the Nitrokey’s PINs
-  - unblock: Unblock and reset the user PIN.
 - storage: Work with the Nitrokey's storage.
   - open: Open the encrypted volume. The user PIN needs to be entered.
   - close: Close the encrypted volume.
@@ -34,6 +32,7 @@ The following commands are currently supported:
   - clear: Delete a PWS slot.
 - pin: Manage the Nitrokey’s PINs.
   - clear: Remove the user and admin PIN from gpg-agent's cache.
+  - set: Change the admin or the user PIN.
   - unblock: Unblock and reset the user PIN.
 
 ### *Note:*
