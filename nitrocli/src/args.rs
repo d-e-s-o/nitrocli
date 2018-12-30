@@ -212,7 +212,7 @@ impl str::FromStr for OtpCommand {
   }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum OtpAlgorithm {
   Hotp,
   Totp,
@@ -590,6 +590,7 @@ fn otp(args: Vec<String>) -> Result<()> {
 fn otp_get(args: Vec<String>) -> Result<()> {
   let mut slot: u8 = 0;
   let mut algorithm = OtpAlgorithm::Totp;
+  let mut time: Option<u64> = None;
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Generates a one-time password");
   let _ =
@@ -602,10 +603,15 @@ fn otp_get(args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The OTP algorithm to use (hotp|totp)",
   );
+  let _ = parser.refer(&mut time).add_option(
+    &["-t", "--time"],
+    argparse::StoreOption,
+    "The time to use for TOTP generation (Unix timestamp, default: system time)",
+  );
   parse(&parser, args)?;
   drop(parser);
 
-  commands::otp_get(slot, algorithm)
+  commands::otp_get(slot, algorithm, time)
 }
 
 /// Configure a one-time password slot on the Nitrokey device.

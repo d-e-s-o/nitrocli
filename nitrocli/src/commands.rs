@@ -19,6 +19,7 @@
 
 use std::fmt;
 use std::result;
+use std::time;
 use std::u8;
 
 use nitrokey::ConfigureOtp;
@@ -361,9 +362,28 @@ fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) 
   .map_err(|err| get_error("Could not generate OTP", &err))
 }
 
+fn get_unix_timestamp() -> Result<u64> {
+  time::SystemTime::now()
+    .duration_since(time::UNIX_EPOCH)
+    .or_else(|_| {
+      Err(Error::Error(
+        "Current system time is before the Unix epoch".to_string(),
+      ))
+    })
+    .map(|duration| duration.as_secs())
+}
+
 /// Generate a one-time password on the Nitrokey device.
-pub fn otp_get(slot: u8, algorithm: args::OtpAlgorithm) -> Result<()> {
+pub fn otp_get(slot: u8, algorithm: args::OtpAlgorithm, time: Option<u64>) -> Result<()> {
   let device = get_device()?;
+  if algorithm == args::OtpAlgorithm::Totp {
+    device
+      .set_time(match time {
+        Some(time) => time,
+        None => get_unix_timestamp()?,
+      })
+      .map_err(|err| get_error("Could not set time", &err))?;
+  }
   let config = device
     .get_config()
     .map_err(|err| get_error("Could not get device configuration", &err))?;
