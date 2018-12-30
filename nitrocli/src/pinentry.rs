@@ -17,7 +17,9 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::fmt;
 use std::process;
+use std::str;
 
 use crate::error::Error;
 
@@ -31,6 +33,31 @@ pub enum PinType {
   Admin,
   /// The user PIN.
   User,
+}
+
+impl fmt::Display for PinType {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        PinType::Admin => "admin",
+        PinType::User => "user",
+      }
+    )
+  }
+}
+
+impl str::FromStr for PinType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "admin" => Ok(PinType::Admin),
+      "user" => Ok(PinType::User),
+      _ => Err(()),
+    }
+  }
 }
 
 impl PinType {
