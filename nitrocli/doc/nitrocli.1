@@ -8,7 +8,8 @@ nitrocli \- access Nitrokey devices
 .SH DESCRIPTION
 \fBnitrocli\fR provides access to Nitrokey devices.
 It supports the Nitrokey Pro and the Nitrokey Storage.
-It can be used to access the encrypted volume and the one-time password generator.
+It can be used to access the encrypted volume, the one-time password generator
+and the password safe.
 .SH COMMANDS
 .SS General
 .TP
@@ -76,9 +77,9 @@ Allowed values are 6 and 8 (default: 6).
 \fIcounter\fR is the initial counter if the HOTP algorithm is used (default: 0).
 \fItime window\fR is the time window used with TOTP in seconds (default: 30).
 .TP
-\fBnitrocli otp get \fIslot \fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR]
+\fBnitrocli otp clear \fIslot \fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR]
 Delete the name and the secret stored on a one-time password slot.
-\fIslot\fR is the number of the slot to generate the password on.
+\fIslot\fR is the number of the slot to clear.
 \fIalgorithm\fR is the OTP algorithm to use.
 Possible values are \fBhotp\fR for the HOTP algorithm according to RFC 4226 and
 \fBtotp\fR for the TOTP algorithm according to RFC 6238 (default).
@@ -115,6 +116,44 @@ passwords using the \fBotp get\fR command.
 If \fB--no-otp-pin\fR is set, OTP generation can be performed without PIN.
 These two options are mutually exclusive.
 
+.SS Password safe
+The Nitrokey Pro and the Nitrokey Storage provide a password safe (PWS) with 20
+slots.
+On each of these slots, you can store a name, a login and a password.
+The PWS is not encrypted, but it is protected with the user PIN by the firmware.
+Once the PWS is unlocked by one of the commands listed below, it can be
+accessed without authentication.
+You can use the \fBlock\fR command to lock the password safe.
+.TP
+\fBnitrocli pws get \fIslot \fR[\fB-n\fR|\fB--name\fR] \
+[\fB-l\fR|\fB--login\fR] \
+[\fB-p\fR|\fB--password\fR] \
+[\fB-q\fR|\fB--quiet\fR]
+Print the content of one PWS slot.
+\fIslot\fR is the number of the slot.
+Per default, this command prints the name, the login and the password (in that
+order).
+If one or more of the options \fB--name\fR, \fB--login\fR and \fB--password\fR
+are set, only the selected fields are printed.
+The order of the fields never changes.
+
+The fields are printed together with a label.
+Use the \fB--quiet\fR option to supress the labels and to only output the
+values stored on the PWS slot.
+.TP
+\fBnitrocli pws set \fIslot name login password\fR
+Set the content of a PWS slot.
+\fIslot\fR is the number of the slot to write.
+\fIname\fR, \fIlogin\fR and \fIpassword\fR are the date to write to the slot.
+.TP
+\fBnitrocli pws clear \fIslot\fR
+Delete the data stored on a PWS slot.
+\fIslot\fR is the number of the slot clear.
+.TP
+\fBnitrocli pws status \fR[\fB-a\fR|\fB--all\fR]
+List all PWS slots.
+If \fB--all\fR is not set, empty slots are ignored.
+
 .SH EXAMPLES
 .SS One-time passwords
 Configure a one-time password slot with a hexadecimal secret representation:
@@ -143,3 +182,21 @@ Query the configuration:
 .P
 Change the configuration:
     $ \fBnitrocli config set --otp-pin\fR
+
+.SS Password safe
+Configure a PWS slot:
+    $ \fBnitrocli pws set 0 example.org john.doe passw0rd\fR
+
+Get the data from a slot:
+    $ \fBnitrocli pws get 0\fR
+    name:     example.org
+    login:    john.doe
+    password: passw0rd
+
+Copy the password to the clipboard (requires \fBxclip\fR(1)).
+    $ \fBnitrocli pws get 0 --password --quiet | xclip -in\fR
+
+Query the PWS slots:
+    $ \fB nitrocli pws status\fR
+    slot	name
+    0	example.org

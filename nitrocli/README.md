@@ -25,6 +25,11 @@ The following commands are currently supported:
   - set: Set an OTP slot.
   - status: List all OTP slots.
   - clear: Delete an OTP slot.
+- pws: Access the password safe (PWS).
+  - get: Query the data on a PWS slot.
+  - set: Set the data on a PWS slot.
+  - status: List all PWS slots.
+  - clear: Delete a PWS slot.
 
 ### *Note:*
 ----------------------------------------------------------------------
