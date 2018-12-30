@@ -83,12 +83,17 @@ Allowed values are 6 and 8 (default: 6).
 \fIcounter\fR is the initial counter if the HOTP algorithm is used (default: 0).
 \fItime window\fR is the time window used with TOTP in seconds (default: 30).
 .TP
-\fBnitrocli otp clear \fIslot \fR[\fB\-a\fR|\fB\-\-algorithm \fIalgorithm\fR]
+\fBnitrocli otp clear \fIslot \fR[\fB\-a\fR|\fB\-\-algorithm \fIalgorithm\fR] \
+\fB[\-t\fR|\fB\-\-time \fItime\fR]
 Delete the name and the secret stored in a one-time password slot.
 \fIslot\fR is the number of the slot to clear.
 \fIalgorithm\fR is the OTP algorithm to use.
 Possible values are \fBhotp\fR for the HOTP algorithm according to RFC 4226 and
 \fBtotp\fR for the TOTP algorithm according to RFC 6238 (default).
+Per default, this commands sets the Nitrokey’s time to the system time if the
+TOTP algorithm is selected.
+If \fB--time\fR is set, it is set to \fItime\fR instead, which must be a Unix
+timestamp.
 .TP
 \fBnitrocli otp status \fR[\fB\-a\fR|\fB\-\-all\fR]
 List all OTP slots.
@@ -165,14 +170,18 @@ If \fB\-\-all\fR is not set, empty slots are ignored.
 Configure a one-time password slot with a hexadecimal secret representation:
     $ \fBnitrocli otp set 0 test\-rfc4226 3132333435363738393031323334353637383930 \-\-algorithm hotp\fR
     $ \fBnitrocli otp set 1 test\-foobar 666F6F626172 \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 0 test\-rfc6238 3132333435363738393031323334353637383930 \-\-algorithm totp \-\-digits 8\fR
 .P
 Configure a one-time password slot with an ASCII secret representation:
     $ \fBnitrocli otp set 0 test\-rfc4226 12345678901234567890 \-\-ascii \-\-algorithm hotp\fR
     $ \fBnitrocli otp set 1 test\-foobar foobar \-\-ascii \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 0 test\-rfc6238 12345678901234567890 \\-\-ascii -\-algorithm totp \-\-digits 8\fR
 .P
 Generate a one-time password:
     $ \fBnitrocli otp get 0 \-\-algorithm hotp\fR
     755224
+    $ \fBnitrocli otp get 0 \-\-algorithm totp \-\-time 1234567890\fR
+    89005924
 .P
 Clear a one-time password slot:
     $ \fBnitrocli otp clear 0 \-\-algorithm hotp\fR
