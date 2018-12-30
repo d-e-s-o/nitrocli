@@ -24,7 +24,7 @@ Clear the passphrases cached by the other commands.
 \fBnitrocli storage open
 Open the encrypted volume on the Nitrokey Storage.
 The user PIN that is required to open the volume is queried using
-\fBpinentry\fR(1) and cached by \fBgpg-agent\fR(1).
+\fBpinentry\fR(1) and cached by \fBgpg\-agent\fR(1).
 .TP
 \fBnitrocli storage close
 Close the encrypted volume on the Nitrokey Storage.
@@ -38,7 +38,7 @@ status, and the status of the volumes.
 The Nitrokey Pro and the Nitrokey Store support the generation of one-time
 passwords using the HOTP algorithm according to RFC 4226 or the TOTP algorithm
 according to RFC 6238.
-The required data \- a name and the secret \- is stored in slots.
+The required data \(en a name and the secret \(en is stored in slots.
 Currently, the Nitrokey devices provide three HOTP slots and 15 TOTP slots.
 The slots are numbered per algorithm starting at zero.
 .P
@@ -47,23 +47,23 @@ the current time.
 Therefore, the Nitrokey clock must be synchronized with the clock of the
 application that requests the one-time password.
 .TP
-\fBnitrocli otp get \fIslot \fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR]
+\fBnitrocli otp get \fIslot \fR[\fB\-a\fR|\fB\-\-algorithm \fIalgorithm\fR]
 Generate a one-time password.
-\fIslot\fR is the number of the slot to generate the password on.
+\fIslot\fR is the number of the slot to generate the password from.
 \fIalgorithm\fR is the OTP algorithm to use.
 Possible values are \fBhotp\fR for the HOTP algorithm according to RFC 4226 and
 \fBtotp\fR for the TOTP algorithm according to RFC 6238 (default).
 This command might require the user PIN (see the Configuration section).
 .TP
 \fBnitrocli otp set \fIslot name secret \
-\fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR] \
-[\fB-d\fR|\fB--digits \fI digits\fR] [\fB-c\fR|\fB--counter \fIcounter\fR] \
-[\fB-t\fR|\fB--time-window \fItime window\fR] [\fB--ascii\fR]
+\fR[\fB\-a\fR|\fB\-\-algorithm \fIalgorithm\fR] \
+[\fB\-d\fR|\fB\-\-digits \fI digits\fR] [\fB\-c\fR|\fB\-\-counter \fIcounter\fR] \
+[\fB\-t\fR|\fB\-\-time-window \fItime window\fR] [\fB\-\-ascii\fR]
 Configure a one-time password slot.
 \fIslot\fR is the number of the slot to configure.
 \fIname\fR is the name of the slot (may not be empty).
-\fIsecret\fR is the secret value to store on that slot.
-If \fB--ascii\fR is set, each character of the given secret is interpreted as
+\fIsecret\fR is the secret value to store in that slot.
+If \fB\-\-ascii\fR is set, each character of the given secret is interpreted as
 the ASCII code of one byte.
 Otherwise, every two characters are interpreted as the hexadecimal value of one
 byte.
@@ -76,16 +76,16 @@ Allowed values are 6 and 8 (default: 6).
 \fIcounter\fR is the initial counter if the HOTP algorithm is used (default: 0).
 \fItime window\fR is the time window used with TOTP in seconds (default: 30).
 .TP
-\fBnitrocli otp clear \fIslot \fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR]
+\fBnitrocli otp clear \fIslot \fR[\fB\-a\fR|\fB\-\-algorithm \fIalgorithm\fR]
 Delete the name and the secret stored in a one-time password slot.
 \fIslot\fR is the number of the slot to clear.
 \fIalgorithm\fR is the OTP algorithm to use.
 Possible values are \fBhotp\fR for the HOTP algorithm according to RFC 4226 and
 \fBtotp\fR for the TOTP algorithm according to RFC 6238 (default).
 .TP
-\fBnitrocli otp status \fR[\fB-a\fR|\fB--all\fR]
+\fBnitrocli otp status \fR[\fB\-a\fR|\fB\-\-all\fR]
 List all OTP slots.
-If \fB--all\fR is not set, empty slots are ignored.
+If \fB\-\-all\fR is not set, empty slots are ignored.
 
 .SS Configuration
 Nitrokey devices have four configuration settings:  the numlock, capslock and
@@ -96,41 +96,41 @@ require the user PIN.
 Print the current configuration.
 .TP
 \fBnitrocli config set \fR\
-[[\fB-n\fR|\fB--numlock \fIslot\fR] | [\fB-N\fR|\fB--no-numlock\fR]] \
-[[\fB-c\fR|\fB--capslock \fIslot\fR] | [\fB-C\fR|\fB--no-capslock\fR]] \
-[[\fB-s\fR|\fB--scrollock \fIslot\fR] | [\fB-S\fR|\fB--no-scrollock\fR]] \
-[[\fB-o\fR|\fB--otp-pin\fR] | [\fB-O\fR|\fB--no-otp-pin\fR]]
+[[\fB\-n\fR|\fB\-\-numlock \fIslot\fR] | [\fB\-N\fR|\fB\-\-no\-numlock\fR]] \
+[[\fB\-c\fR|\fB\-\-capslock \fIslot\fR] | [\fB\-C\fR|\fB\-\-no\-capslock\fR]] \
+[[\fB\-s\fR|\fB\-\-scrollock \fIslot\fR] | [\fB\-S\fR|\fB\-\-no\-scrollock\fR]] \
+[[\fB\-o\fR|\fB\-\-otp\-pin\fR] | [\fB\-O\fR|\fB\-\-no\-otp\-pin\fR]]
 Update the Nitrokey configuration.
 This command requires the admin PIN.
 
-With the \fB--numlock\fR, \fB--capslock\fR and \fB--scrollock\fR options, the
-respective bindings can be set.
+With the \fB\-\-numlock\fR, \fB\-\-capslock\fR and \fB\-\-scrollock\fR options,
+the respective bindings can be set.
 \fIslot\fR is the number of the HOTP slot to bind the key to.
-If \fB--no-numlock\fR, \fB--no-capslock\fR or \fB--no-scrollock\fR is set, the
-respective binding is disabled.
+If \fB\-\-no\-numlock\fR, \fB\-\-no\-capslock\fR or \fB\-\-no\-scrollock\fR is
+set, the respective binding is disabled.
 The two corresponding options are mutually exclusive.
 
-If \fB--otp-pin\fR is set, the user PIN will be required to generate one-time
+If \fB\-\-otp\-pin\fR is set, the user PIN will be required to generate one-time
 passwords using the \fBotp get\fR command.
-If \fB--no-otp-pin\fR is set, OTP generation can be performed without PIN.
+If \fB\-\-no\-otp\-pin\fR is set, OTP generation can be performed without PIN.
 These two options are mutually exclusive.
 
 .SH EXAMPLES
 .SS One-time passwords
 Configure a one-time password slot with a hexadecimal secret representation:
-    $ \fBnitrocli otp set 0 test-rfc4226 3132333435363738393031323334353637383930 --algorithm hotp\fR
-    $ \fBnitrocli otp set 1 test-foobar 666F6F626172 --algorithm hotp\fR
+    $ \fBnitrocli otp set 0 test\-rfc4226 3132333435363738393031323334353637383930 \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 1 test\-foobar 666F6F626172 \-\-algorithm hotp\fR
 .P
 Configure a one-time password slot with an ASCII secret representation:
-    $ \fBnitrocli otp set 0 test-rfc4226 12345678901234567890 --ascii --algorithm hotp\fR
-    $ \fBnitrocli otp set 1 test-foobar foobar --ascii --algorithm hotp\fR
+    $ \fBnitrocli otp set 0 test\-rfc4226 12345678901234567890 \-\-ascii \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 1 test\-foobar foobar \-\-ascii \-\-algorithm hotp\fR
 .P
 Generate a one-time password:
-    $ \fBnitrocli otp get 0 --algorithm hotp\fR
+    $ \fBnitrocli otp get 0 \-\-algorithm hotp\fR
     755224
 .P
 Clear a one-time password slot:
-    $ \fBnitrocli otp clear 0 --algorithm hotp\fR
+    $ \fBnitrocli otp clear 0 \-\-algorithm hotp\fR
 
 .SS Configuration
 Query the configuration:
@@ -142,4 +142,4 @@ Query the configuration:
       require user PIN for OTP: true
 .P
 Change the configuration:
-    $ \fBnitrocli config set --otp-pin\fR
+    $ \fBnitrocli config set \-\-otp\-pin\fR
