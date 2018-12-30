@@ -12,6 +12,7 @@ certain commands on the [Nitrokey Storage][nitrokey-storage] device.
 
 The following commands are currently supported:
 - status: Report status information about the Nitrokey.
+- lock: Lock the Nitrokey.
 - config: Access the Nitrokey's configuration
   - get: Read the current configuration.
   - set: Change the configuration.
