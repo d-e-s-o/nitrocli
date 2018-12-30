@@ -28,6 +28,11 @@ The following commands are currently supported:
   - clear: Remove the user and admin PIN from gpg-agent's cache.
   - set: Change the admin or the user PIN.
   - unblock: Unblock and reset the user PIN.
+- pws: Access the password safe (PWS).
+  - get: Query the data on a PWS slot.
+  - set: Set the data on a PWS slot.
+  - status: List all PWS slots.
+  - clear: Delete a PWS slot.
 
 
 Usage
