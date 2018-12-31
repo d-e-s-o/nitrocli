@@ -10,6 +10,8 @@ Unreleased
 - Added the `config` command for reading and writing the device configuration
 - Added the `pws` command for accessing the password safe
 - Added the `lock` command for locking the Nitrokey device
+- Added the `pin` command for managing PINs
+  - Renamed the `clear` command to `pin clear`
 - Moved `open` and `close` commands as subcommands into newly introduced
   `storage` command
   - Moved printing of storage related information from `status` command

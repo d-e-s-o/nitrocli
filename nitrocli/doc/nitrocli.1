@@ -17,9 +17,6 @@ and the password safe.
 Print the status of the connected Nitrokey device, including the stick serial
 number, the firmware version, and the PIN retry count.
 .TP
-.B nitrocli clear
-Clear the passphrases cached by the other commands.
-.TP
 .B nitrocli lock
 Lock the Nitrokey.
 This command locks the password safe (see the Password safe section). On the
@@ -165,6 +162,17 @@ Delete the data stored in a PWS slot.
 \fBnitrocli pws status \fR[\fB\-a\fR|\fB\-\-all\fR]
 List all PWS slots.
 If \fB\-\-all\fR is not set, empty slots are ignored.
+
+.SS PINs
+Nitrokey devices have two PINs: the user PIN and the admin PIN. The user
+PIN must have at least six, the admin PIN at least eight characters. The
+user PIN is required for commands such as \fBotp get\fR (depending on
+the configuration) and for all \fBpws\fR commands.
+The admin PIN is usually required to change the device configuration.
+
+.TP
+.B nitrocli pin clear
+Clear the PINs cached by the other commands.
 
 .SH EXAMPLES
 .SS One-time passwords
