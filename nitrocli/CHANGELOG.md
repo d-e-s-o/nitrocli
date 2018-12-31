@@ -15,6 +15,7 @@ Unreleased
   - Moved printing of storage related information from `status` command
     into new `storage status` subcommand
 - Made `status` command work with Nitrokey Pro devices
+- Adjust release build compile options to optimize binary for size
 - Enabled CI pipeline comprising code style conformance checks, linting,
   and building of the project
 - Added badges indicating pipeline status, current `crates.io` published
