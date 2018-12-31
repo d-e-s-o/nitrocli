@@ -95,10 +95,16 @@ fn main() {
 
     cc::Build::new()
         .cpp(true)
+        .flag_if_supported("-std=c++14")
         .include(library_path.join("libnitrokey"))
         .files(sources.iter().map(|s| library_path.join(s)))
         .file(version_source)
         .compile("libnitrokey.a");
 
-    println!("cargo:rustc-link-lib=hidapi-libusb");
+    let target = std::env::var("TARGET").unwrap();
+    if let Some(_) = target.find("darwin") {
+        println!("cargo:rustc-link-lib=hidapi");
+    } else if let Some(_) = target.find("linux") {
+        println!("cargo:rustc-link-lib=hidapi-libusb");
+    }
 }
