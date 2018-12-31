@@ -8,6 +8,8 @@ Unreleased
   - Removed the `hid`, `hidapi-sys` and `pkg-config` dependencies
 - Added the `otp` command for working with one-time passwords
 - Added the `config` command for reading and writing the device configuration
+- Added the `pin` command for managing PINs
+  - Renamed the `clear` command to `pin clear`
 - Moved `open` and `close` commands as subcommands into newly introduced
   `storage` command
   - Moved printing of storage related information from `status` command

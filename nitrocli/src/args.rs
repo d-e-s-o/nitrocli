@@ -30,9 +30,9 @@ type Result<T> = result::Result<T, Error>;
 /// A top-level command for nitrocli.
 #[derive(Debug)]
 pub enum Command {
-  Clear,
   Config,
   Otp,
+  Pin,
   Status,
   Storage,
 }
@@ -41,9 +41,9 @@ impl Command {
   /// Execute this command with the given arguments.
   pub fn execute(&self, args: Vec<String>) -> Result<()> {
     match *self {
-      Command::Clear => clear(args),
       Command::Config => config(args),
       Command::Otp => otp(args),
+      Command::Pin => pin(args),
       Command::Status => status(args),
       Command::Storage => storage(args),
     }
@@ -56,9 +56,9 @@ impl fmt::Display for Command {
       f,
       "{}",
       match *self {
-        Command::Clear => "clear",
         Command::Config => "config",
         Command::Otp => "otp",
+        Command::Pin => "pin",
         Command::Status => "status",
         Command::Storage => "storage",
       }
@@ -71,9 +71,9 @@ impl str::FromStr for Command {
 
   fn from_str(s: &str) -> result::Result<Self, Self::Err> {
     match s {
-      "clear" => Ok(Command::Clear),
       "config" => Ok(Command::Config),
       "otp" => Ok(Command::Otp),
+      "pin" => Ok(Command::Pin),
       "status" => Ok(Command::Status),
       "storage" => Ok(Command::Storage),
       _ => Err(()),
@@ -275,6 +275,42 @@ impl From<OtpMode> for nitrokey::OtpMode {
   }
 }
 
+#[derive(Debug)]
+enum PinCommand {
+  Clear,
+}
+
+impl PinCommand {
+  fn execute(&self, args: Vec<String>) -> Result<()> {
+    match *self {
+      PinCommand::Clear => pin_clear(args),
+    }
+  }
+}
+
+impl fmt::Display for PinCommand {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        PinCommand::Clear => "clear",
+      }
+    )
+  }
+}
+
+impl str::FromStr for PinCommand {
+  type Err = ();
+
+  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
+    match s {
+      "clear" => Ok(PinCommand::Clear),
+      _ => Err(()),
+    }
+  }
+}
+
 fn parse(parser: &argparse::ArgumentParser<'_>, args: Vec<String>) -> Result<()> {
   if let Err(err) = parser.parse(args, &mut io::stdout(), &mut io::stderr()) {
     Err(Error::ArgparseError(err))
@@ -385,15 +421,6 @@ fn storage_status(args: Vec<String>) -> Result<()> {
   parse(&parser, args)?;
 
   commands::storage_status()
-}
-
-/// Clear the PIN as cached by various other commands.
-fn clear(args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Clears the cached passphrases");
-  parse(&parser, args)?;
-
-  commands::clear()
 }
 
 /// Execute a config subcommand.
@@ -653,6 +680,39 @@ fn otp_status(args: Vec<String>) -> Result<()> {
   commands::otp_status(all)
 }
 
+/// Execute a PIN subcommand.
+fn pin(args: Vec<String>) -> Result<()> {
+  let mut subcommand = PinCommand::Clear;
+  let mut subargs = vec![];
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Manages the Nitrokey PINs");
+  let _ = parser.refer(&mut subcommand).required().add_argument(
+    "subcommand",
+    argparse::Store,
+    "The subcommand to execute (clear)",
+  );
+  let _ = parser.refer(&mut subargs).add_argument(
+    "arguments",
+    argparse::List,
+    "The arguments for the subcommand",
+  );
+  parser.stop_on_first_argument(true);
+  parse(&parser, args)?;
+  drop(parser);
+
+  subargs.insert(0, format!("nitrocli pin {}", subcommand));
+  subcommand.execute(subargs)
+}
+
+/// Clear the PIN as cached by various other commands.
+fn pin_clear(args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Clears the cached PINs");
+  parse(&parser, args)?;
+
+  commands::pin_clear()
+}
+
 /// Parse the command-line arguments and return the selected command and
 /// the remaining arguments for the command.
 fn parse_arguments(args: Vec<String>) -> Result<(Command, Vec<String>)> {
@@ -663,7 +723,7 @@ fn parse_arguments(args: Vec<String>) -> Result<(Command, Vec<String>)> {
   let _ = parser.refer(&mut command).required().add_argument(
     "command",
     argparse::Store,
-    "The command to execute (clear|config|otp|status|storage)",
+    "The command to execute (config|otp|pin|status|storage)",
   );
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",

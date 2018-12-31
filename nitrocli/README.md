@@ -12,7 +12,6 @@ certain commands on the [Nitrokey Storage][nitrokey-storage] device.
 
 The following commands are currently supported:
 - status: Report status information about the Nitrokey.
-- clear: Remove the user and admin PIN from gpg-agent's cache.
 - config: Access the Nitrokey's configuration
   - get: Read the current configuration.
   - set: Change the configuration.
@@ -25,6 +24,8 @@ The following commands are currently supported:
   - set: Set an OTP slot.
   - status: List all OTP slots.
   - clear: Delete an OTP slot.
+- pin: Manage the Nitrokey's PINs.
+  - clear: Remove the user and admin PIN from gpg-agent's cache.
 
 ### *Note:*
 ----------------------------------------------------------------------
