@@ -12,7 +12,6 @@ certain commands on the [Nitrokey Storage][nitrokey-storage] device.
 
 The following commands are currently supported:
 - status: Report status information about the Nitrokey.
-- clear: Remove the user and admin PIN from gpg-agent's cache.
 - lock: Lock the Nitrokey.
 - config: Access the Nitrokey's configuration
   - get: Read the current configuration.
@@ -31,6 +30,8 @@ The following commands are currently supported:
   - set: Set the data on a PWS slot.
   - status: List all PWS slots.
   - clear: Delete a PWS slot.
+- pin: Manage the Nitrokey’s PINs.
+  - clear: Remove the user and admin PIN from gpg-agent's cache.
 
 ### *Note:*
 ----------------------------------------------------------------------

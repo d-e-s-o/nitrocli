@@ -291,13 +291,6 @@ pub fn storage_status() -> Result<()> {
   Ok(())
 }
 
-/// Clear the PIN stored when opening the nitrokey's encrypted volume.
-pub fn clear() -> Result<()> {
-  pinentry::clear_passphrase(pinentry::PinType::Admin)?;
-  pinentry::clear_passphrase(pinentry::PinType::User)?;
-  Ok(())
-}
-
 /// Return a String representation of the given Option.
 fn format_option<T: fmt::Display>(option: Option<T>) -> String {
   match option {
@@ -494,6 +487,13 @@ pub fn otp_status(all: bool) -> Result<()> {
   println!("alg\tslot\tname");
   print_otp_status(args::OtpAlgorithm::Hotp, &device, all)?;
   print_otp_status(args::OtpAlgorithm::Totp, &device, all)?;
+  Ok(())
+}
+
+/// Clear the PIN stored when opening the nitrokey's encrypted volume.
+pub fn pin_clear() -> Result<()> {
+  pinentry::clear_passphrase(pinentry::PinType::Admin)?;
+  pinentry::clear_passphrase(pinentry::PinType::User)?;
   Ok(())
 }
 
