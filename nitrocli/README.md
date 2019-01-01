@@ -29,14 +29,6 @@ The following commands are currently supported:
   - set: Change the admin or the user PIN.
   - unblock: Unblock and reset the user PIN.
 
-### *Note:*
-----------------------------------------------------------------------
-> **nitrocli** requires the Nitrokey Storage to be running **firmware
-> version 0.47** or higher. Versions before that reported incorrect
-> checksums which will cause the program to indicate data retrieval
-> errors, causing commands to fail.
-----------------------------------------------------------------------
-
 
 Usage
 -----
