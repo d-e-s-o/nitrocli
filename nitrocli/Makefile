@@ -1,7 +1,7 @@
 # Makefile
 
 #/***************************************************************************
-# *   Copyright (C) 2017 Daniel Mueller (deso@posteo.net)                   *
+# *   Copyright (C) 2017-2019 Daniel Mueller (deso@posteo.net)              *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU General Public License as published by  *
@@ -25,3 +25,18 @@
 .PHONY: test
 test:
 	@RUST_TEST_NOCAPTURE=1 RUST_TEST_THREADS=1 cargo test
+
+PS2PDF ?= ps2pdf
+
+NITROCLI_MAN := doc/nitrocli.1
+NITROCLI_PDF := $(addsuffix .pdf,$(NITROCLI_MAN))
+
+.PHONY: doc
+doc: $(NITROCLI_PDF) $(NITROCLI_HTML)
+
+# We assume and do not check existence of man, which, false, and echo
+# commands.
+$(NITROCLI_PDF): $(NITROCLI_MAN)
+	@which $(PS2PDF) &> /dev/null || \
+		(echo "$(PS2PDF) command not found, unable to generate documentation"; false)
+	@man --local-file --troff $(<) | $(PS2PDF) - $(@)
