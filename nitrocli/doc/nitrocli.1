@@ -176,7 +176,7 @@ Configure a one-time password slot with a hexadecimal secret representation:
 Configure a one-time password slot with an ASCII secret representation:
     $ \fBnitrocli otp set 0 test\-rfc4226 12345678901234567890 \-\-ascii \-\-algorithm hotp\fR
     $ \fBnitrocli otp set 1 test\-foobar foobar \-\-ascii \-\-algorithm hotp\fR
-    $ \fBnitrocli otp set 0 test\-rfc6238 12345678901234567890 \\-\-ascii -\-algorithm totp \-\-digits 8\fR
+    $ \fBnitrocli otp set 0 test\-rfc6238 12345678901234567890 \-\-ascii \-\-algorithm totp \-\-digits 8\fR
 .P
 Generate a one-time password:
     $ \fBnitrocli otp get 0 \-\-algorithm hotp\fR
