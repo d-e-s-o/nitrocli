@@ -76,6 +76,10 @@ Status:
 $ nitrocli storage close
 ```
 
+More examples, a more detailed explanation of the purpose, the potential
+subcommands, as well as the parameters of each command are provided in
+the [`man` page](doc/nitrocli.1.pdf).
+
 
 Installation
 ------------
