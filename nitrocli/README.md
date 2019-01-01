@@ -81,6 +81,21 @@ The following dependencies are required:
 - **GnuPG**: The `gpg-connect-agent` program allows the user to enter
              PINs.
 
+#### Via Packages
+Packages are available for:
+- Arch Linux: [`nitrocli`](https://aur.archlinux.org/packages/nitrocli/) in the
+  Arch User Repository
+- Gentoo Linux: [`app-crypt/nitrocli`](https://github.com/d-e-s-o/nitrocli-ebuild)
+  ebuild
+
+#### From Crates.io
+**nitrocli** is [published][nitrocli-cratesio] on crates.io. If an
+installation from the checked-out source code is not desired, a
+quick-and-dirty local installation can happen via:
+```bash
+$ cargo install nitrocli --root=$PWD/nitrocli
+```
+
 #### From Source
 In order to compile the program the `hid` crate needs to be available
 which allows to access the nitrokey as a USB HID device. This crate and
@@ -94,21 +109,6 @@ $ cargo build --release
 
 It is recommended that the resulting executable be installed in a
 directory accessible via the `PATH` environment variable.
-
-#### From Crates.io
-**nitrocli** is [published][nitrocli-cratesio] on crates.io. If an
-installation from the checked-out source code is not desired, a
-quick-and-dirty local installation can happen via:
-```bash
-$ cargo install nitrocli --root=$PWD/nitrocli
-```
-
-#### Via Packages
-Packages are available for:
-- Arch Linux: [`nitrocli`](https://aur.archlinux.org/packages/nitrocli/) in the
-  Arch User Repository
-- Gentoo Linux: [`app-crypt/nitrocli`](https://github.com/d-e-s-o/nitrocli-ebuild)
-  ebuild
 
 
 Acknowledgments
