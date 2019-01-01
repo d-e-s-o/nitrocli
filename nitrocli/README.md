@@ -76,7 +76,8 @@ the [`man` page](doc/nitrocli.1.pdf).
 Installation
 ------------
 
-The following dependencies are required:
+In addition to Rust itself and Cargo, its package management tool, the
+following dependencies are required:
 - **hidapi**: In order to provide USB access this library is used.
 - **GnuPG**: The `gpg-connect-agent` program allows the user to enter
              PINs.
@@ -89,20 +90,15 @@ Packages are available for:
   ebuild
 
 #### From Crates.io
-**nitrocli** is [published][nitrocli-cratesio] on crates.io. If an
-installation from the checked-out source code is not desired, a
-quick-and-dirty local installation can happen via:
+**nitrocli** is [published][nitrocli-cratesio] on crates.io and can
+directly be installed from there:
 ```bash
 $ cargo install nitrocli --root=$PWD/nitrocli
 ```
 
 #### From Source
-In order to compile the program the `hid` crate needs to be available
-which allows to access the nitrokey as a USB HID device. This crate and
-its dependencies are contained in the form of subrepos in compatible and
-tested versions. Cargo is required to build the program.
-
-The build is as simple as running:
+After cloning the repository and changing into the `nitrocli` subfolder,
+the build is as simple as running:
 ```bash
 $ cargo build --release
 ```
