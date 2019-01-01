@@ -115,6 +115,16 @@ The [Nitrokey UG][nitrokey-ug] has generously provided the necessary
 hardware for developing and testing the program.
 
 
+License
+-------
+**nitrocli** is made available under the terms of the
+[GPLv3][gplv3-tldr].
+
+See the [LICENSE](LICENSE) file that accompanies this distribution for
+the full text of the license.
+
+
 [nitrokey-ug]: https://www.nitrokey.com
 [nitrokey-storage]: https://www.nitrokey.com/news/2016/nitrokey-storage-available
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
+[gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
