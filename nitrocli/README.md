@@ -107,6 +107,13 @@ It is recommended that the resulting executable be installed in a
 directory accessible via the `PATH` environment variable.
 
 
+Contributing
+------------
+
+Contributions are generally welcome. Please follow the guidelines
+outlined in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+
 Acknowledgments
 ---------------
 
