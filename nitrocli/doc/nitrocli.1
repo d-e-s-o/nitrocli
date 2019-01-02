@@ -76,9 +76,9 @@ Allowed values are 6 and 8 (default: 6).
 \fIcounter\fR is the initial counter if the HOTP algorithm is used (default: 0).
 \fItime window\fR is the time window used with TOTP in seconds (default: 30).
 .TP
-\fBnitrocli otp get \fIslot \fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR]
-Delete the name and the secret stored on a one-time password slot.
-\fIslot\fR is the number of the slot to generate the password on.
+\fBnitrocli otp clear \fIslot \fR[\fB-a\fR|\fB--algorithm \fIalgorithm\fR]
+Delete the name and the secret stored in a one-time password slot.
+\fIslot\fR is the number of the slot to clear.
 \fIalgorithm\fR is the OTP algorithm to use.
 Possible values are \fBhotp\fR for the HOTP algorithm according to RFC 4226 and
 \fBtotp\fR for the TOTP algorithm according to RFC 6238 (default).
