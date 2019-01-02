@@ -23,8 +23,7 @@ lint:clippy:
   # nitrocli (everything else is still up-to-date). That procedure is
   # necessary because consumed dependencies may emit errors otherwise.
   - cd nitrocli
-  - cargo clippy --all-targets --all-features --
-    -A warnings -A clippy::float_cmp -A clippy::cast_ptr_alignment -A clippy::unused_io_amount
+  - cargo clippy --all-targets --all-features -- -A clippy::all
   - cargo clean --package=nitrocli
   - cargo clippy --all-targets --all-features -- -D warnings
 
