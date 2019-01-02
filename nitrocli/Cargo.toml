@@ -51,7 +51,7 @@ path = "../nitrokey"
 
 
 [replace]
-"cc:1.0.25" = { path = "../cc" }
+"cc:1.0.28" = { path = "../cc" }
 "libc:0.2.45" = { path = "../libc" }
 "nitrokey-sys:3.4.1" = { path = "../nitrokey-sys" }
 "rand:0.4.3" = { path = "../rand" }

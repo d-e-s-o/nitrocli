@@ -55,6 +55,7 @@
 
 #![doc(html_root_url = "https://docs.rs/cc/1.0")]
 #![cfg_attr(test, deny(warnings))]
+#![allow(deprecated)]
 #![deny(missing_docs)]
 
 #[cfg(feature = "parallel")]
@@ -112,6 +113,7 @@ pub struct Build {
     archiver: Option<PathBuf>,
     cargo_metadata: bool,
     pic: Option<bool>,
+    use_plt: Option<bool>,
     static_crt: Option<bool>,
     shared_flag: Option<bool>,
     static_flag: Option<bool>,
@@ -319,6 +321,7 @@ impl Build {
             archiver: None,
             cargo_metadata: true,
             pic: None,
+            use_plt: None,
             static_crt: None,
             warnings: None,
             extra_warnings: None,
@@ -822,6 +825,21 @@ impl Build {
         self
     }
 
+    /// Configures whether the Procedure Linkage Table is used for indirect
+    /// calls into shared libraries.
+    ///
+    /// The PLT is used to provide features like lazy binding, but introduces
+    /// a small performance loss due to extra pointer indirection. Setting
+    /// `use_plt` to `false` can provide a small performance increase.
+    ///
+    /// Note that skipping the PLT requires a recent version of GCC/Clang.
+    ///
+    /// This only applies to ELF targets. It has no effect on other platforms.
+    pub fn use_plt(&mut self, use_plt: bool) -> &mut Build {
+        self.use_plt = Some(use_plt);
+        self
+    }
+
     /// Configures whether the /MT flag or the /MD flag will be passed to msvc build tools.
     ///
     /// This option defaults to `false`, and affect only msvc targets.
@@ -1123,6 +1141,11 @@ impl Build {
                 }
                 if self.pic.unwrap_or(!target.contains("windows-gnu")) {
                     cmd.push_cc_arg("-fPIC".into());
+                    // PLT only applies if code is compiled with PIC support,
+                    // and only for ELF targets.
+                    if target.contains("linux") && !self.use_plt.unwrap_or(true) {
+                        cmd.push_cc_arg("-fno-plt".into());
+                    }
                 }
             }
         }
@@ -1158,6 +1181,19 @@ impl Build {
                     if target.contains("i586") {
                         cmd.args.push("/ARCH:IA32".into());
                     }
+                }
+
+                // There is a check in corecrt.h that will generate a
+                // compilation error if
+                // _ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE is
+                // not defined to 1. The check was added in Windows
+                // 8 days because only store apps were allowed on ARM.
+                // This changed with the release of Windows 10 IoT Core.
+                // The check will be going away in future versions of
+                // the SDK, but for all released versions of the
+                // Windows SDK it is required.
+                if target.contains("arm") || target.contains("thumb") {
+                    cmd.args.push("/D_ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE=1".into());
                 }
             }
             ToolFamily::Gnu => {
@@ -1214,6 +1250,11 @@ impl Build {
                 if target.starts_with("arm-unknown-linux-") {
                     cmd.args.push("-march=armv6".into());
                     cmd.args.push("-marm".into());
+                    if target.ends_with("hf") {
+                        cmd.args.push("-mfpu=vfp".into());
+                    } else {
+                        cmd.args.push("-mfloat-abi=soft".into());
+                    }
                 }
 
                 // We can guarantee some settings for FRC
@@ -1263,6 +1304,16 @@ impl Build {
                 }
                 if target.starts_with("thumbv7m") {
                     cmd.args.push("-march=armv7-m".into());
+                }
+                if target.starts_with("thumbv8m.base") {
+                    cmd.args.push("-march=armv8-m.base".into());
+                }
+                if target.starts_with("thumbv8m.main") {
+                    cmd.args.push("-march=armv8-m.main".into());
+
+                    if target.ends_with("eabihf") {
+                        cmd.args.push("-mfpu=fpv5-sp-d16".into())
+                    }
                 }
                 if target.starts_with("armebv7r") | target.starts_with("armv7r") {
                     if target.starts_with("armeb") {
@@ -1718,6 +1769,9 @@ impl Build {
                         "thumbv7em-none-eabi" => Some("arm-none-eabi"),
                         "thumbv7em-none-eabihf" => Some("arm-none-eabi"),
                         "thumbv7m-none-eabi" => Some("arm-none-eabi"),
+                        "thumbv8m.base-none-eabi" => Some("arm-none-eabi"),
+                        "thumbv8m.main-none-eabi" => Some("arm-none-eabi"),
+                        "thumbv8m.main-none-eabihf" => Some("arm-none-eabi"),
                         "x86_64-pc-windows-gnu" => Some("x86_64-w64-mingw32"),
                         "x86_64-rumprun-netbsd" => Some("x86_64-rumprun-netbsd"),
                         "x86_64-unknown-linux-musl" => Some("musl"),
