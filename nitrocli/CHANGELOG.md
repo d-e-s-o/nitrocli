@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.2.0
+-----
 - Use the `nitrokey` crate for the `open`, `close`, and `status`
   commands instead of directly communicating with the Nitrokey device
   - Added `nitrokey` version `0.2.1` as a direct dependency and

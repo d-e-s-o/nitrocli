@@ -1,7 +1,7 @@
 # Cargo.toml
 
 #/***************************************************************************
-# *   Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
+# *   Copyright (C) 2017-2019 Daniel Mueller (deso@posteo.net)              *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU General Public License as published by  *
@@ -19,7 +19,7 @@
 
 [package]
 name = "nitrocli"
-version = "0.1.3"
+version = "0.2.0"
 edition = "2018"
 authors = ["Daniel Mueller <deso@posteo.net>"]
 license = "GPL-3.0+"
