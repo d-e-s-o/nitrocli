@@ -1,13 +1,12 @@
-use libc::{c_void, free};
-use nitrokey_sys;
-use rand::{OsRng, Rng};
-use std;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::os::raw::{c_char, c_int};
 
+use libc::{c_void, free};
+use rand::Rng;
+
 /// Error types returned by Nitrokey device or by the library.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum CommandError {
     /// A packet with a wrong checksum has been sent or received.
     WrongCrc,
@@ -44,7 +43,7 @@ pub enum CommandError {
 ///
 /// Setting the log level to a lower level enables all output from higher levels too.  Currently,
 /// only the log levels `Warning`, `DebugL1`, `Debug` and `DebugL2` are actually used.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LogLevel {
     /// Error messages.  Currently not used.
     Error,
@@ -101,12 +100,8 @@ pub fn get_last_error() -> CommandError {
 }
 
 pub fn generate_password(length: usize) -> std::io::Result<Vec<u8>> {
-    let mut rng = match OsRng::new() {
-        Ok(rng) => rng,
-        Err(err) => return Err(err),
-    };
     let mut data = vec![0u8; length];
-    rng.fill_bytes(&mut data[..]);
+    rand::thread_rng().fill(&mut data[..]);
     return Ok(data);
 }
 
@@ -115,7 +110,7 @@ pub fn get_cstring<T: Into<Vec<u8>>>(s: T) -> Result<CString, CommandError> {
 }
 
 impl fmt::Display for CommandError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match *self {
             CommandError::WrongCrc => "A packet with a wrong checksum has been sent or received",
             CommandError::WrongSlot => "The given OTP slot does not exist",

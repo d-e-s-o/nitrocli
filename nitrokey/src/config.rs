@@ -1,4 +1,4 @@
-use util::CommandError;
+use crate::util::CommandError;
 
 /// The configuration for a Nitrokey.
 #[derive(Clone, Copy, Debug, PartialEq)]

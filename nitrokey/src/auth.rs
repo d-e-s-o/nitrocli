@@ -1,10 +1,14 @@
-use config::{Config, RawConfig};
-use device::{Device, DeviceWrapper, Pro, Storage};
-use nitrokey_sys;
-use otp::{ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData, RawOtpSlotData};
 use std::ops::Deref;
 use std::os::raw::c_int;
-use util::{generate_password, get_command_result, get_cstring, result_from_string, CommandError};
+
+use nitrokey_sys;
+
+use crate::config::{Config, RawConfig};
+use crate::device::{Device, DeviceWrapper, Pro, Storage};
+use crate::otp::{ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData, RawOtpSlotData};
+use crate::util::{
+    generate_password, get_command_result, get_cstring, result_from_string, CommandError,
+};
 
 static TEMPORARY_PASSWORD_LENGTH: usize = 25;
 

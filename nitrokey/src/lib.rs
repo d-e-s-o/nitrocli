@@ -84,25 +84,25 @@
 //! [`DeviceWrapper`]: enum.DeviceWrapper.html
 //! [`User`]: struct.User.html
 
-extern crate libc;
-extern crate nitrokey_sys;
-extern crate rand;
+#![warn(missing_docs, rust_2018_compatibility, rust_2018_idioms, unused)]
 
 mod auth;
 mod config;
 mod device;
 mod otp;
 mod pws;
-#[cfg(test)]
-mod tests;
 mod util;
 
-pub use auth::{Admin, Authenticate, User};
-pub use config::Config;
-pub use device::{connect, Device, DeviceWrapper, Pro, Storage, StorageStatus, VolumeStatus};
-pub use otp::{ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData};
-pub use pws::{GetPasswordSafe, PasswordSafe, SLOT_COUNT};
-pub use util::{CommandError, LogLevel};
+use nitrokey_sys;
+
+pub use crate::auth::{Admin, Authenticate, User};
+pub use crate::config::Config;
+pub use crate::device::{
+    connect, Device, DeviceWrapper, Model, Pro, Storage, StorageStatus, VolumeStatus,
+};
+pub use crate::otp::{ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData};
+pub use crate::pws::{GetPasswordSafe, PasswordSafe, SLOT_COUNT};
+pub use crate::util::{CommandError, LogLevel};
 
 /// Enables or disables debug output.  Calling this method with `true` is equivalent to setting the
 /// log level to `Debug`; calling it with `false` is equivalent to the log level `Error` (see
