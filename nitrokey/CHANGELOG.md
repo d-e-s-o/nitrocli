@@ -1,3 +1,16 @@
+# v0.2.3 (2018-12-31)
+
+- Dummy release to fix an issue with the crates.io tarball.
+
+# v0.2.2 (2018-12-30)
+
+- Update to Rust edition 2018.
+- Remove the `test-no-device` feature.
+- Update the rand dependency to version 0.6.
+- Add function `Device::get_model` that returns the connected model.
+- Derive the `Copy` and `Clone` traits for the enums `CommandError`, `LogLevel`
+  and `OtpMode`
+
 # v0.2.1 (2018-12-10)
 
 - Re-export `device::{StorageStatus, VolumeStatus}` in `lib.rs`.

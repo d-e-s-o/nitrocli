@@ -32,7 +32,21 @@ install:
 build: false
 
 test_script:
-  - cargo test --benches
-  - cargo test
-  - cargo test --features nightly
-  - cargo test --manifest-path rand-derive/Cargo.toml
+  - cargo test --lib --no-default-features --features alloc
+  # TODO: use --all-features once simd_support is sufficiently stable:
+  - cargo test --features=serde1,log
+  - cargo test --benches --features=nightly
+  - cargo test --examples
+  - cargo test --package rand_core
+  - cargo test --package rand_core --no-default-features --features=alloc
+  - cargo test --package rand_isaac --features=serde1
+  - cargo test --package rand_xorshift --features=serde1
+  - cargo test --package rand_chacha
+  - cargo test --package rand_hc
+  - cargo test --manifest-path rand_core/Cargo.toml
+  - cargo test --manifest-path rand_core/Cargo.toml --no-default-features --features=alloc
+  - cargo test --manifest-path rand_isaac/Cargo.toml --features=serde1
+  - cargo test --manifest-path rand_pcg/Cargo.toml --features=serde1
+  - cargo test --manifest-path rand_xorshift/Cargo.toml --features=serde1
+  - cargo test --manifest-path rand_chacha/Cargo.toml
+  - cargo test --manifest-path rand_hc/Cargo.toml

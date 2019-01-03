@@ -1,7 +1,10 @@
-use device::{Device, DeviceWrapper, Pro, Storage};
 use libc;
 use nitrokey_sys;
-use util::{get_command_result, get_cstring, get_last_error, result_from_string, CommandError};
+
+use crate::device::{Device, DeviceWrapper, Pro, Storage};
+use crate::util::{
+    get_command_result, get_cstring, get_last_error, result_from_string, CommandError,
+};
 
 /// The number of slots in a [`PasswordSafe`][].
 ///
@@ -51,7 +54,7 @@ pub const SLOT_COUNT: u8 = 16;
 /// [`lock`]: trait.Device.html#method.lock
 /// [`GetPasswordSafe`]: trait.GetPasswordSafe.html
 pub struct PasswordSafe<'a> {
-    _device: &'a Device,
+    _device: &'a dyn Device,
 }
 
 /// Provides access to a [`PasswordSafe`][].
@@ -98,11 +101,11 @@ pub trait GetPasswordSafe {
     /// [`lock`]: trait.Device.html#method.lock
     /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe, CommandError>;
+    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, CommandError>;
 }
 
 fn get_password_safe<'a>(
-    device: &'a Device,
+    device: &'a dyn Device,
     user_pin: &str,
 ) -> Result<PasswordSafe<'a>, CommandError> {
     let user_pin_string = get_cstring(user_pin)?;
@@ -333,19 +336,19 @@ impl<'a> Drop for PasswordSafe<'a> {
 }
 
 impl GetPasswordSafe for Pro {
-    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe, CommandError> {
+    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, CommandError> {
         get_password_safe(self, user_pin)
     }
 }
 
 impl GetPasswordSafe for Storage {
-    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe, CommandError> {
+    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, CommandError> {
         get_password_safe(self, user_pin)
     }
 }
 
 impl GetPasswordSafe for DeviceWrapper {
-    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe, CommandError> {
+    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, CommandError> {
         get_password_safe(self, user_pin)
     }
 }

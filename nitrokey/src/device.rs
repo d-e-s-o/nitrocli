@@ -1,18 +1,36 @@
-use auth::Authenticate;
-use config::{Config, RawConfig};
+use std::fmt;
+
 use libc;
 use nitrokey_sys;
-use otp::GenerateOtp;
-use pws::GetPasswordSafe;
-use util::{get_command_result, get_cstring, get_last_error, result_from_string, CommandError};
+
+use crate::auth::Authenticate;
+use crate::config::{Config, RawConfig};
+use crate::otp::GenerateOtp;
+use crate::pws::GetPasswordSafe;
+use crate::util::{
+    get_command_result, get_cstring, get_last_error, result_from_string, CommandError,
+};
 
 /// Available Nitrokey models.
-#[derive(Debug, PartialEq)]
-enum Model {
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Model {
     /// The Nitrokey Storage.
     Storage,
     /// The Nitrokey Pro.
     Pro,
+}
+
+impl fmt::Display for Model {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match *self {
+                Model::Pro => "Pro",
+                Model::Storage => "Storage",
+            }
+        )
+    }
 }
 
 /// A wrapper for a Nitrokey device of unknown type.
@@ -210,6 +228,21 @@ pub struct StorageStatus {
 /// This trait provides the commands that can be executed without authentication and that are
 /// present on all supported Nitrokey devices.
 pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
+    /// Returns the model of the connected Nitrokey device.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use nitrokey::Device;
+    /// # use nitrokey::CommandError;
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::connect()?;
+    /// println!("Connected to a Nitrokey {}", device.get_model());
+    /// #    Ok(())
+    /// # }
+    fn get_model(&self) -> Model;
+
     /// Returns the serial number of the Nitrokey device.  The serial number is the string
     /// representation of a hex number.
     ///
@@ -536,7 +569,7 @@ fn connect_model(model: Model) -> bool {
 }
 
 impl DeviceWrapper {
-    fn device(&self) -> &Device {
+    fn device(&self) -> &dyn Device {
         match *self {
             DeviceWrapper::Storage(ref storage) => storage,
             DeviceWrapper::Pro(ref pro) => pro,
@@ -562,9 +595,30 @@ impl GenerateOtp for DeviceWrapper {
     }
 }
 
-impl Device for DeviceWrapper {}
+impl Device for DeviceWrapper {
+    fn get_model(&self) -> Model {
+        match *self {
+            DeviceWrapper::Pro(_) => Model::Pro,
+            DeviceWrapper::Storage(_) => Model::Storage,
+        }
+    }
+}
 
 impl Pro {
+    /// Connects to a Nitrokey Pro.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nitrokey::Pro;
+    ///
+    /// fn use_pro(device: Pro) {}
+    ///
+    /// match nitrokey::Pro::connect() {
+    ///     Ok(device) => use_pro(device),
+    ///     Err(err) => println!("Could not connect to the Nitrokey Pro: {}", err),
+    /// }
+    /// ```
     pub fn connect() -> Result<Pro, CommandError> {
         // TODO: maybe Option instead of Result?
         match connect_model(Model::Pro) {
@@ -582,11 +636,29 @@ impl Drop for Pro {
     }
 }
 
-impl Device for Pro {}
+impl Device for Pro {
+    fn get_model(&self) -> Model {
+        Model::Pro
+    }
+}
 
 impl GenerateOtp for Pro {}
 
 impl Storage {
+    /// Connects to a Nitrokey Storage.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nitrokey::Storage;
+    ///
+    /// fn use_storage(device: Storage) {}
+    ///
+    /// match nitrokey::Storage::connect() {
+    ///     Ok(device) => use_storage(device),
+    ///     Err(err) => println!("Could not connect to the Nitrokey Storage: {}", err),
+    /// }
+    /// ```
     pub fn connect() -> Result<Storage, CommandError> {
         // TODO: maybe Option instead of Result?
         match connect_model(Model::Storage) {
@@ -661,7 +733,6 @@ impl Storage {
         unsafe { get_command_result(nitrokey_sys::NK_lock_encrypted_volume()) }
     }
 
-
     /// Returns the status of the connected storage device.
     ///
     /// # Example
@@ -715,7 +786,11 @@ impl Drop for Storage {
     }
 }
 
-impl Device for Storage {}
+impl Device for Storage {
+    fn get_model(&self) -> Model {
+        Model::Storage
+    }
+}
 
 impl GenerateOtp for Storage {}
 

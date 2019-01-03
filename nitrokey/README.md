@@ -4,11 +4,6 @@ A libnitrokey wrapper for Rust providing access to Nitrokey devices.
 
 [Documentation][]
 
-```toml
-[dependencies]
-nitrokey = "0.2.1"
-```
-
 ## Compatibility
 
 The required [`libnitrokey`][] version is built from source.  The host system
@@ -35,12 +30,12 @@ supported by `nitrokey-rs`:
 ## Tests
 
 This crate has three test suites that can be selected using features.  One test
-suite (feature `test-no-device`) assumes that no Nitrokey device is connected.
-The two other test suites require a Nitrokey Pro (feature `test-pro`) or a
-Nitrokey Storage (feature `test-storage`) to be connected.
+suite assumes that no Nitrokey device is connected. It is run if no other test
+suite is selected.  The two other test suites require a Nitrokey Pro (feature
+`test-pro`) or a Nitrokey Storage (feature `test-storage`) to be connected.
 
 Use the `--features` option for Cargo to select one of the test suites.  You
-cannot select more than one of the test suites at the same time.  Note that the
+should select more than one of the test suites at the same time.  Note that the
 test suites that require a Nitrokey device assume that the device’s passwords
 are the factory defaults (admin password `12345678` and user password
 `123456`).  Running the test suite with a device with different passwords might
@@ -54,7 +49,7 @@ the test executable.
 In conclusion, you can use these commands to run the test suites:
 
 ```
-$ cargo test --features test-no-device -- --test-threads 1
+$ cargo test
 $ cargo test --features test-pro -- --test-threads 1
 $ cargo test --features test-storage -- --test-threads 1
 ```

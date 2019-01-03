@@ -1,9 +1,11 @@
-use nitrokey_sys;
 use std::ffi::CString;
-use util::{get_command_result, get_cstring, result_from_string, CommandError};
+
+use nitrokey_sys;
+
+use crate::util::{get_command_result, get_cstring, result_from_string, CommandError};
 
 /// Modes for one-time password generation.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum OtpMode {
     /// Generate one-time passwords with six digits.
     SixDigits,
