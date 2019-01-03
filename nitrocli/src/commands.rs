@@ -1,7 +1,7 @@
 // commands.rs
 
 // *************************************************************************
-// * Copyright (C) 2018 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2018-2019 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -32,7 +32,7 @@ use crate::pinentry;
 use crate::Result;
 
 /// Create an `error::Error` with an error message of the format `msg: err`.
-fn get_error(msg: &str, err: &nitrokey::CommandError) -> Error {
+fn get_error(msg: &str, err: nitrokey::CommandError) -> Error {
   Error::Error(format!("{}: {:?}", msg, err))
 }
 
@@ -172,7 +172,7 @@ where
           let error = format!("{}: Wrong password", msg);
           return Err((new_data, Error::Error(error)));
         }
-        err => return Err((new_data, get_error(msg, &err))),
+        err => return Err((new_data, get_error(msg, err))),
       },
     };
   }
@@ -196,7 +196,7 @@ where
 fn print_status(model: &'static str, device: &nitrokey::DeviceWrapper) -> Result<()> {
   let serial_number = device
     .get_serial_number()
-    .map_err(|err| get_error("Could not query the serial number", &err))?;
+    .map_err(|err| get_error("Could not query the serial number", err))?;
   println!(
     r#"Status:
   model:             {model}
@@ -249,7 +249,7 @@ pub fn storage_close() -> Result<()> {
 
   get_storage_device()?
     .disable_encrypted_volume()
-    .map_err(|err| get_error("Closing encrypted volume failed", &err))
+    .map_err(|err| get_error("Closing encrypted volume failed", err))
 }
 
 /// Pretty print the status of a Nitrokey Storage.
@@ -285,7 +285,7 @@ pub fn storage_status() -> Result<()> {
   let device = get_storage_device()?;
   let status = device
     .get_status()
-    .map_err(|err| get_error("Getting Storage status failed", &err))?;
+    .map_err(|err| get_error("Getting Storage status failed", err))?;
 
   print_storage_status(&status);
   Ok(())
@@ -303,7 +303,7 @@ fn format_option<T: fmt::Display>(option: Option<T>) -> String {
 pub fn config_get() -> Result<()> {
   let config = get_device()?
     .get_config()
-    .map_err(|err| get_error("Could not get configuration", &err))?;
+    .map_err(|err| get_error("Could not get configuration", err))?;
   println!(
     r#"Config:
   numlock binding:          {nl}
@@ -328,7 +328,7 @@ pub fn config_set(
   let device = authenticate_admin(get_device()?)?;
   let config = device
     .get_config()
-    .map_err(|err| get_error("Could not get configuration", &err))?;
+    .map_err(|err| get_error("Could not get configuration", err))?;
   let config = nitrokey::Config {
     numlock: numlock.or(config.numlock),
     capslock: capslock.or(config.capslock),
@@ -337,14 +337,14 @@ pub fn config_set(
   };
   device
     .write_config(config)
-    .map_err(|err| get_error("Could not set configuration", &err))
+    .map_err(|err| get_error("Could not set configuration", err))
 }
 
 /// Lock the Nitrokey device.
 pub fn lock() -> Result<()> {
   get_device()?
     .lock()
-    .map_err(|err| get_error("Getting Storage status failed", &err))
+    .map_err(|err| get_error("Getting Storage status failed", err))
 }
 
 fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) -> Result<String> {
@@ -352,7 +352,7 @@ fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) 
     args::OtpAlgorithm::Hotp => device.get_hotp_code(slot),
     args::OtpAlgorithm::Totp => device.get_totp_code(slot),
   }
-  .map_err(|err| get_error("Could not generate OTP", &err))
+  .map_err(|err| get_error("Could not generate OTP", err))
 }
 
 fn get_unix_timestamp() -> Result<u64> {
@@ -375,11 +375,11 @@ pub fn otp_get(slot: u8, algorithm: args::OtpAlgorithm, time: Option<u64>) -> Re
         Some(time) => time,
         None => get_unix_timestamp()?,
       })
-      .map_err(|err| get_error("Could not set time", &err))?;
+      .map_err(|err| get_error("Could not set time", err))?;
   }
   let config = device
     .get_config()
-    .map_err(|err| get_error("Could not get device configuration", &err))?;
+    .map_err(|err| get_error("Could not get device configuration", err))?;
   let otp = if config.user_password {
     let user = authenticate_user(device)?;
     get_otp(slot, algorithm, &user)
@@ -431,7 +431,7 @@ pub fn otp_set(
     args::OtpAlgorithm::Hotp => device.write_hotp_slot(data, counter),
     args::OtpAlgorithm::Totp => device.write_totp_slot(data, time_window),
   }
-  .map_err(|err| get_error("Could not write OTP slot", &err))?;
+  .map_err(|err| get_error("Could not write OTP slot", err))?;
   Ok(())
 }
 
@@ -442,7 +442,7 @@ pub fn otp_clear(slot: u8, algorithm: args::OtpAlgorithm) -> Result<()> {
     args::OtpAlgorithm::Hotp => device.erase_hotp_slot(slot),
     args::OtpAlgorithm::Totp => device.erase_totp_slot(slot),
   }
-  .map_err(|err| get_error("Could not clear OTP slot", &err))?;
+  .map_err(|err| get_error("Could not clear OTP slot", err))?;
   Ok(())
 }
 
@@ -475,7 +475,7 @@ fn print_otp_status(
           continue;
         }
       }
-      Err(err) => return Err(get_error("Could not check OTP slot", &err)),
+      Err(err) => return Err(get_error("Could not check OTP slot", err)),
     };
     println!("{}\t{}\t{}", algorithm, slot - 1, name);
   }
@@ -560,7 +560,7 @@ fn print_pws_data(
   result: result::Result<String, nitrokey::CommandError>,
   quiet: bool,
 ) -> Result<()> {
-  let value = result.map_err(|err| get_error("Could not access PWS slot", &err))?;
+  let value = result.map_err(|err| get_error("Could not access PWS slot", err))?;
   if quiet {
     println!("{}", value);
   } else {
@@ -598,7 +598,7 @@ pub fn pws_set(slot: u8, name: &str, login: &str, password: &str) -> Result<()> 
   let pws = get_password_safe(&device)?;
   pws
     .write_slot(slot, name, login, password)
-    .map_err(|err| get_error("Could not write PWS slot", &err))
+    .map_err(|err| get_error("Could not write PWS slot", err))
 }
 
 /// Clear a PWS slot.
@@ -607,7 +607,7 @@ pub fn pws_clear(slot: u8) -> Result<()> {
   let pws = get_password_safe(&device)?;
   pws
     .erase_slot(slot)
-    .map_err(|err| get_error("Could not clear PWS slot", &err))
+    .map_err(|err| get_error("Could not clear PWS slot", err))
 }
 
 fn print_pws_slot(pws: &nitrokey::PasswordSafe<'_>, slot: usize, programmed: bool) -> Result<()> {
@@ -618,7 +618,7 @@ fn print_pws_slot(pws: &nitrokey::PasswordSafe<'_>, slot: usize, programmed: boo
   let name = if programmed {
     pws
       .get_slot_name(slot)
-      .map_err(|err| get_error("Could not read PWS slot", &err))?
+      .map_err(|err| get_error("Could not read PWS slot", err))?
   } else {
     "[not programmed]".to_string()
   };
@@ -632,7 +632,7 @@ pub fn pws_status(all: bool) -> Result<()> {
   let pws = get_password_safe(&device)?;
   let slots = pws
     .get_slot_status()
-    .map_err(|err| get_error("Could not read PWS slot status", &err))?;
+    .map_err(|err| get_error("Could not read PWS slot status", err))?;
   println!("slot\tname");
   for (i, &value) in slots
     .into_iter()
