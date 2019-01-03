@@ -8,7 +8,9 @@ nitrocli
 - [Changelog](CHANGELOG.md)
 
 **nitrocli** is a program that provides a command line interface for
-certain commands on the [Nitrokey Storage][nitrokey-storage] device.
+interaction with [Nitrokey Pro][nitrokey-pro] and [Nitrokey
+Storage][nitrokey-storage] devices.
+
 
 The following commands are currently supported:
 - status: Report status information about the Nitrokey.
@@ -134,6 +136,7 @@ the full text of the license.
 
 
 [nitrokey-ug]: https://www.nitrokey.com
-[nitrokey-storage]: https://www.nitrokey.com/news/2016/nitrokey-storage-available
+[nitrokey-pro]: https://shop.nitrokey.com/shop/product/nitrokey-pro-2-3
+[nitrokey-storage]: https://shop.nitrokey.com/shop/product/nitrokey-storage-2-16gb-23
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
 [gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
