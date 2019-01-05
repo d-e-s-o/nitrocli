@@ -450,7 +450,7 @@ fn prepare_secret(secret: &str) -> Result<String> {
     )
   } else {
     Err(Error::Error(
-      "The given secret is not an ASCII string despite --ascii being set".to_string(),
+      "The given secret is not an ASCII string despite --format ascii being set".to_string(),
     ))
   }
 }
@@ -462,12 +462,11 @@ pub fn otp_set(
   algorithm: args::OtpAlgorithm,
   counter: u64,
   time_window: u16,
-  ascii: bool,
+  secret_format: args::OtpSecretFormat,
 ) -> Result<()> {
-  let secret = if ascii {
-    prepare_secret(&data.secret)?
-  } else {
-    data.secret
+  let secret = match secret_format {
+    args::OtpSecretFormat::Ascii => prepare_secret(&data.secret)?,
+    args::OtpSecretFormat::Hex => data.secret,
   };
   let data = nitrokey::OtpSlotData { secret, ..data };
   let device = authenticate_admin(get_device(ctx)?)?;

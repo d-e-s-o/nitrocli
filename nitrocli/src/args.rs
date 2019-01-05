@@ -324,6 +324,37 @@ impl From<OtpMode> for nitrokey::OtpMode {
   }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum OtpSecretFormat {
+  Ascii,
+  Hex,
+}
+
+impl fmt::Display for OtpSecretFormat {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        OtpSecretFormat::Ascii => "ascii",
+        OtpSecretFormat::Hex => "hex",
+      }
+    )
+  }
+}
+
+impl str::FromStr for OtpSecretFormat {
+  type Err = ();
+
+  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
+    match s {
+      "ascii" => Ok(OtpSecretFormat::Ascii),
+      "hex" => Ok(OtpSecretFormat::Hex),
+      _ => Err(()),
+    }
+  }
+}
+
 #[derive(Debug)]
 enum PinCommand {
   Clear,
@@ -700,6 +731,7 @@ pub fn otp_set(ctx: &ExecCtx, args: Vec<String>) -> Result<()> {
   let mut counter: u64 = 0;
   let mut time_window: u16 = 30;
   let mut ascii = false;
+  let mut secret_format: Option<OtpSecretFormat> = None;
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Configures a one-time password slot");
   let _ =
@@ -740,10 +772,27 @@ pub fn otp_set(ctx: &ExecCtx, args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut ascii).add_option(
     &["--ascii"],
     argparse::StoreTrue,
-    "Interpret the given secret as an ASCII string of the secret",
+    "Interpret the given secret as an ASCII string of the secret (deprecated, use --format instead)"
+  );
+  let _ = parser.refer(&mut secret_format).add_option(
+    &["-f", "--format"],
+    argparse::StoreOption,
+    "The format of the secret (ascii|hex)",
   );
   parse(&parser, args)?;
   drop(parser);
+
+  if ascii {
+    if secret_format.is_some() {
+      return Err(Error::Error(
+        "The --format and the --ascii option cannot be used at the same time".to_string(),
+      ));
+    }
+
+    println!("Warning: The --ascii option is deprecated. Please use --format ascii instead.");
+    secret_format = Some(OtpSecretFormat::Ascii);
+  }
+  let secret_format = secret_format.unwrap_or(OtpSecretFormat::Hex);
 
   let data = nitrokey::OtpSlotData {
     number: slot,
@@ -753,7 +802,7 @@ pub fn otp_set(ctx: &ExecCtx, args: Vec<String>) -> Result<()> {
     use_enter: false,
     token_id: None,
   };
-  commands::otp_set(ctx, data, algorithm, counter, time_window, ascii)
+  commands::otp_set(ctx, data, algorithm, counter, time_window, secret_format)
 }
 
 /// Clear an OTP slot.
