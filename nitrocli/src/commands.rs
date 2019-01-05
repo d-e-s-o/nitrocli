@@ -39,12 +39,12 @@ fn get_error(msg: &str, err: nitrokey::CommandError) -> Error {
 }
 
 /// Connect to any Nitrokey device and return it.
-fn get_device() -> Result<nitrokey::DeviceWrapper> {
+fn get_device(_ctx: &args::ExecCtx) -> Result<nitrokey::DeviceWrapper> {
   nitrokey::connect().map_err(|_| Error::Error("Nitrokey device not found".to_string()))
 }
 
 /// Connect to a Nitrokey Storage device and return it.
-fn get_storage_device() -> Result<nitrokey::Storage> {
+fn get_storage_device(_ctx: &args::ExecCtx) -> Result<nitrokey::Storage> {
   nitrokey::Storage::connect().or_else(|_| {
     Err(Error::Error(
       "Nitrokey Storage device not found".to_string(),
@@ -217,8 +217,8 @@ fn print_status(model: &'static str, device: &nitrokey::DeviceWrapper) -> Result
 }
 
 /// Inquire the status of the nitrokey.
-pub fn status() -> Result<()> {
-  let device = get_device()?;
+pub fn status(ctx: &args::ExecCtx) -> Result<()> {
+  let device = get_device(ctx)?;
   let model = match device {
     nitrokey::DeviceWrapper::Pro(_) => "Pro",
     nitrokey::DeviceWrapper::Storage(_) => "Storage",
@@ -227,8 +227,8 @@ pub fn status() -> Result<()> {
 }
 
 /// Open the encrypted volume on the nitrokey.
-pub fn storage_open() -> Result<()> {
-  let device = get_storage_device()?;
+pub fn storage_open(ctx: &args::ExecCtx) -> Result<()> {
+  let device = get_storage_device(ctx)?;
   try_with_passphrase(
     pinentry::PinType::User,
     "Opening encrypted volume failed",
@@ -237,14 +237,14 @@ pub fn storage_open() -> Result<()> {
 }
 
 /// Close the previously opened encrypted volume.
-pub fn storage_close() -> Result<()> {
+pub fn storage_close(ctx: &args::ExecCtx) -> Result<()> {
   // Flush all filesystem caches to disk. We are mostly interested in
   // making sure that the encrypted volume on the nitrokey we are
   // about to close is not closed while not all data was written to
   // it.
   unsafe { sync() };
 
-  get_storage_device()?
+  get_storage_device(ctx)?
     .disable_encrypted_volume()
     .map_err(|err| get_error("Closing encrypted volume failed", err))
 }
@@ -278,8 +278,8 @@ fn print_storage_status(status: &nitrokey::StorageStatus) {
 }
 
 /// Connect to and pretty print the status of a Nitrokey Storage.
-pub fn storage_status() -> Result<()> {
-  let device = get_storage_device()?;
+pub fn storage_status(ctx: &args::ExecCtx) -> Result<()> {
+  let device = get_storage_device(ctx)?;
   let status = device
     .get_status()
     .map_err(|err| get_error("Getting Storage status failed", err))?;
@@ -297,8 +297,8 @@ fn format_option<T: fmt::Display>(option: Option<T>) -> String {
 }
 
 /// Read the Nitrokey configuration.
-pub fn config_get() -> Result<()> {
-  let config = get_device()?
+pub fn config_get(ctx: &args::ExecCtx) -> Result<()> {
+  let config = get_device(ctx)?
     .get_config()
     .map_err(|err| get_error("Could not get configuration", err))?;
   println!(
@@ -317,12 +317,13 @@ pub fn config_get() -> Result<()> {
 
 /// Write the Nitrokey configuration.
 pub fn config_set(
+  ctx: &args::ExecCtx,
   numlock: args::ConfigOption<u8>,
   capslock: args::ConfigOption<u8>,
   scrollock: args::ConfigOption<u8>,
   user_password: Option<bool>,
 ) -> Result<()> {
-  let device = authenticate_admin(get_device()?)?;
+  let device = authenticate_admin(get_device(ctx)?)?;
   let config = device
     .get_config()
     .map_err(|err| get_error("Could not get configuration", err))?;
@@ -338,8 +339,8 @@ pub fn config_set(
 }
 
 /// Lock the Nitrokey device.
-pub fn lock() -> Result<()> {
-  get_device()?
+pub fn lock(ctx: &args::ExecCtx) -> Result<()> {
+  get_device(ctx)?
     .lock()
     .map_err(|err| get_error("Getting Storage status failed", err))
 }
@@ -364,8 +365,13 @@ fn get_unix_timestamp() -> Result<u64> {
 }
 
 /// Generate a one-time password on the Nitrokey device.
-pub fn otp_get(slot: u8, algorithm: args::OtpAlgorithm, time: Option<u64>) -> Result<()> {
-  let device = get_device()?;
+pub fn otp_get(
+  ctx: &args::ExecCtx,
+  slot: u8,
+  algorithm: args::OtpAlgorithm,
+  time: Option<u64>,
+) -> Result<()> {
+  let device = get_device(ctx)?;
   if algorithm == args::OtpAlgorithm::Totp {
     device
       .set_time(match time {
@@ -411,6 +417,7 @@ fn prepare_secret(secret: &str) -> Result<String> {
 
 /// Configure a one-time password slot on the Nitrokey device.
 pub fn otp_set(
+  ctx: &args::ExecCtx,
   data: nitrokey::OtpSlotData,
   algorithm: args::OtpAlgorithm,
   counter: u64,
@@ -423,7 +430,7 @@ pub fn otp_set(
     data.secret
   };
   let data = nitrokey::OtpSlotData { secret, ..data };
-  let device = authenticate_admin(get_device()?)?;
+  let device = authenticate_admin(get_device(ctx)?)?;
   match algorithm {
     args::OtpAlgorithm::Hotp => device.write_hotp_slot(data, counter),
     args::OtpAlgorithm::Totp => device.write_totp_slot(data, time_window),
@@ -433,8 +440,8 @@ pub fn otp_set(
 }
 
 /// Clear an OTP slot.
-pub fn otp_clear(slot: u8, algorithm: args::OtpAlgorithm) -> Result<()> {
-  let device = authenticate_admin(get_device()?)?;
+pub fn otp_clear(ctx: &args::ExecCtx, slot: u8, algorithm: args::OtpAlgorithm) -> Result<()> {
+  let device = authenticate_admin(get_device(ctx)?)?;
   match algorithm {
     args::OtpAlgorithm::Hotp => device.erase_hotp_slot(slot),
     args::OtpAlgorithm::Totp => device.erase_totp_slot(slot),
@@ -479,8 +486,8 @@ fn print_otp_status(
 }
 
 /// Print the status of the OTP slots.
-pub fn otp_status(all: bool) -> Result<()> {
-  let device = get_device()?;
+pub fn otp_status(ctx: &args::ExecCtx, all: bool) -> Result<()> {
+  let device = get_device(ctx)?;
   println!("alg\tslot\tname");
   print_otp_status(args::OtpAlgorithm::Hotp, &device, all)?;
   print_otp_status(args::OtpAlgorithm::Totp, &device, all)?;
@@ -528,8 +535,8 @@ fn choose_pin(pintype: pinentry::PinType) -> Result<String> {
 }
 
 /// Change a PIN.
-pub fn pin_set(pintype: pinentry::PinType) -> Result<()> {
-  let device = get_device()?;
+pub fn pin_set(ctx: &args::ExecCtx, pintype: pinentry::PinType) -> Result<()> {
+  let device = get_device(ctx)?;
   let new_pin = choose_pin(pintype)?;
   try_with_passphrase(
     pintype,
@@ -542,8 +549,8 @@ pub fn pin_set(pintype: pinentry::PinType) -> Result<()> {
 }
 
 /// Unblock and reset the user PIN.
-pub fn pin_unblock() -> Result<()> {
-  let device = get_device()?;
+pub fn pin_unblock(ctx: &args::ExecCtx) -> Result<()> {
+  let device = get_device(ctx)?;
   let user_pin = choose_pin(pinentry::PinType::User)?;
   try_with_passphrase(
     pinentry::PinType::Admin,
@@ -568,13 +575,14 @@ fn print_pws_data(
 
 /// Read a PWS slot.
 pub fn pws_get(
+  ctx: &args::ExecCtx,
   slot: u8,
   show_name: bool,
   show_login: bool,
   show_password: bool,
   quiet: bool,
 ) -> Result<()> {
-  let device = get_device()?;
+  let device = get_device(ctx)?;
   let pws = get_password_safe(&device)?;
   let show_all = !show_name && !show_login && !show_password;
   if show_all || show_name {
@@ -590,8 +598,14 @@ pub fn pws_get(
 }
 
 /// Write a PWS slot.
-pub fn pws_set(slot: u8, name: &str, login: &str, password: &str) -> Result<()> {
-  let device = get_device()?;
+pub fn pws_set(
+  ctx: &args::ExecCtx,
+  slot: u8,
+  name: &str,
+  login: &str,
+  password: &str,
+) -> Result<()> {
+  let device = get_device(ctx)?;
   let pws = get_password_safe(&device)?;
   pws
     .write_slot(slot, name, login, password)
@@ -599,8 +613,8 @@ pub fn pws_set(slot: u8, name: &str, login: &str, password: &str) -> Result<()> 
 }
 
 /// Clear a PWS slot.
-pub fn pws_clear(slot: u8) -> Result<()> {
-  let device = get_device()?;
+pub fn pws_clear(ctx: &args::ExecCtx, slot: u8) -> Result<()> {
+  let device = get_device(ctx)?;
   let pws = get_password_safe(&device)?;
   pws
     .erase_slot(slot)
@@ -624,8 +638,8 @@ fn print_pws_slot(pws: &nitrokey::PasswordSafe<'_>, slot: usize, programmed: boo
 }
 
 /// Print the status of all PWS slots.
-pub fn pws_status(all: bool) -> Result<()> {
-  let device = get_device()?;
+pub fn pws_status(ctx: &args::ExecCtx, all: bool) -> Result<()> {
+  let device = get_device(ctx)?;
   let pws = get_password_safe(&device)?;
   let slots = pws
     .get_slot_status()
