@@ -82,15 +82,19 @@ This command might require the user PIN (see the Configuration section).
 \fBnitrocli otp set \fIslot name secret \
 \fR[\fB\-a\fR|\fB\-\-algorithm \fIalgorithm\fR] \
 [\fB\-d\fR|\fB\-\-digits \fIdigits\fR] [\fB\-c\fR|\fB\-\-counter \fIcounter\fR] \
-[\fB\-t\fR|\fB\-\-time-window \fItime window\fR] [\fB\-\-ascii\fR]
+[\fB\-t\fR|\fB\-\-time-window \fItime window\fR] \
+[\fB-f\fR|\fB\-\-format ascii\fR|\fBbase32\fR]
 Configure a one-time password slot.
 \fIslot\fR is the number of the slot to configure.
 \fIname\fR is the name of the slot (may not be empty).
 \fIsecret\fR is the secret value to store in that slot.
-If \fB\-\-ascii\fR is set, each character of the given secret is interpreted as
-the ASCII code of one byte.
-Otherwise, every two characters are interpreted as the hexadecimal value of one
-byte.
+
+The \fB\-\-format\fR option specifies the format of the secret.
+If it is set to \fBascii\fR, each character of the given secret is interpreted
+as the ASCII code of one byte.
+If it is set to \fBhex\fR, every two characters are interpreted as the
+hexadecimal value of one byte.
+The default value is \fBhex\fR.
 
 \fIalgorithm\fR is the OTP algorithm to use.
 Possible values are \fBhotp\fR for the HOTP algorithm according to RFC 4226 and
@@ -222,9 +226,9 @@ Configure a one-time password slot with a hexadecimal secret representation:
     $ \fBnitrocli otp set 0 test\-rfc6238 3132333435363738393031323334353637383930 \-\-algorithm totp \-\-digits 8\fR
 .P
 Configure a one-time password slot with an ASCII secret representation:
-    $ \fBnitrocli otp set 0 test\-rfc4226 12345678901234567890 \-\-ascii \-\-algorithm hotp\fR
-    $ \fBnitrocli otp set 1 test\-foobar foobar \-\-ascii \-\-algorithm hotp\fR
-    $ \fBnitrocli otp set 0 test\-rfc6238 12345678901234567890 \-\-ascii \-\-algorithm totp \-\-digits 8\fR
+    $ \fBnitrocli otp set 0 test\-rfc4226 12345678901234567890 \-\-format ascii \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 1 test\-foobar foobar \-\-format ascii \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 0 test\-rfc6238 12345678901234567890 \-\-format ascii \-\-algorithm totp \-\-digits 8\fR
 .P
 Generate a one-time password:
     $ \fBnitrocli otp get 0 \-\-algorithm hotp\fR

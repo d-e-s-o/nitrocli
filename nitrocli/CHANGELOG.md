@@ -6,6 +6,8 @@ Unreleased
   level
 - Added the `-m` and `--model` options to restrict connections to
   a device model
+- Added the `-f` and `--format` options for the `otp set` subcommand to choose
+  the secret format, deprecating the `--ascii` option
 - Adjust release build compile options to optimize binary for size
 - Bumped `nitrokey` dependency to `0.2.3`
   - Bumped `rand` dependency to `0.6.1`
