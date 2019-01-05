@@ -4,6 +4,8 @@ Unreleased
 - Added the `lock` command for locking the Nitrokey device
 - Added the `-v` and `--verbose` options to control libnitrokey log
   level
+- Added the `-m` and `--model` options to restrict connections to
+  a device model
 - Adjust release build compile options to optimize binary for size
 - Bumped `nitrokey` dependency to `0.2.3`
   - Bumped `rand` dependency to `0.6.1`

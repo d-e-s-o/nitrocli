@@ -3,7 +3,7 @@
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
 .B nitrocli
-\fR[\fB\-v\fR|\fB\-\-verbose\fR]
+[\fB\-m\fR|\fB\-\-model \fImodel\fR] \fR[\fB\-v\fR|\fB\-\-verbose\fR]
 \fIcommand\fR
 [\fIarguments\fR]
 .SH DESCRIPTION
@@ -13,7 +13,12 @@ It can be used to access the encrypted volume, the one-time password generator,
 and the password safe.
 .SH OPTIONS
 .TP
-.B \-v, \-\-verbose
+\fB\-m\fR, \fB\-\-model pro\fR|\fBstorage\fR
+Restrict connections to the given device model.
+If this option is not set, nitrocli will connect to any connected Nitrokey Pro
+or Nitrokey Storage device.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
 Enable additional logging and control its verbosity. Logging enabled through
 this option will appear on the standard error stream. This option can be
 supplied multiple times. A single occurrence will show additional warnings.
@@ -76,7 +81,7 @@ This command might require the user PIN (see the Configuration section).
 .TP
 \fBnitrocli otp set \fIslot name secret \
 \fR[\fB\-a\fR|\fB\-\-algorithm \fIalgorithm\fR] \
-[\fB\-d\fR|\fB\-\-digits \fI digits\fR] [\fB\-c\fR|\fB\-\-counter \fIcounter\fR] \
+[\fB\-d\fR|\fB\-\-digits \fIdigits\fR] [\fB\-c\fR|\fB\-\-counter \fIcounter\fR] \
 [\fB\-t\fR|\fB\-\-time-window \fItime window\fR] [\fB\-\-ascii\fR]
 Configure a one-time password slot.
 \fIslot\fR is the number of the slot to configure.

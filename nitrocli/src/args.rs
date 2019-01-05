@@ -28,10 +28,43 @@ use crate::pinentry;
 
 type Result<T> = result::Result<T, Error>;
 
+/// The available Nitrokey models.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DeviceModel {
+  Pro,
+  Storage,
+}
+
+impl fmt::Display for DeviceModel {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}",
+      match *self {
+        DeviceModel::Pro => "pro",
+        DeviceModel::Storage => "storage",
+      }
+    )
+  }
+}
+
+impl str::FromStr for DeviceModel {
+  type Err = ();
+
+  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
+    match s {
+      "pro" => Ok(DeviceModel::Pro),
+      "storage" => Ok(DeviceModel::Storage),
+      _ => Err(()),
+    }
+  }
+}
+
 /// A command execution context that captures additional data pertaining
 /// the command execution.
 #[derive(Debug)]
 pub struct ExecCtx {
+  pub model: Option<DeviceModel>,
   pub verbosity: u64,
 }
 
@@ -952,6 +985,7 @@ fn pws_status(ctx: &ExecCtx, args: Vec<String>) -> Result<()> {
 /// Parse the command-line arguments and return the selected command and
 /// the remaining arguments for the command.
 fn parse_arguments(args: Vec<String>) -> Result<(Command, ExecCtx, Vec<String>)> {
+  let mut model: Option<DeviceModel> = None;
   let mut verbosity = 0;
   let mut command = Command::Status;
   let mut subargs = vec![];
@@ -960,6 +994,11 @@ fn parse_arguments(args: Vec<String>) -> Result<(Command, ExecCtx, Vec<String>)>
     &["-v", "--verbose"],
     argparse::IncrBy::<u64>(1),
     "Increase the log level (can be supplied multiple times)",
+  );
+  let _ = parser.refer(&mut model).add_option(
+    &["-m", "--model"],
+    argparse::StoreOption,
+    "Select the device model to connect to (pro|storage)",
   );
   parser.set_description("Provides access to a Nitrokey device");
   let _ = parser.refer(&mut command).required().add_argument(
@@ -978,7 +1017,7 @@ fn parse_arguments(args: Vec<String>) -> Result<(Command, ExecCtx, Vec<String>)>
 
   subargs.insert(0, format!("nitrocli {}", command));
 
-  let ctx = ExecCtx { verbosity };
+  let ctx = ExecCtx { model, verbosity };
   Ok((command, ctx, subargs))
 }
 
