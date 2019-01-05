@@ -27,7 +27,7 @@ homepage = "https://github.com/d-e-s-o/nitrocli"
 repository = "https://github.com/d-e-s-o/nitrocli.git"
 readme = "README.md"
 categories = ["command-line-utilities", "authentication", "cryptography", "hardware-support"]
-keywords = ["hid", "nitrokey", "nitrokey-storage", "usb", "cli"]
+keywords = ["nitrokey", "nitrokey-storage", "nitrokey-pro", "cli", "hid", "usb"]
 description = """
 A command line tool for interacting with the Nitrokey Storage device.
 """
