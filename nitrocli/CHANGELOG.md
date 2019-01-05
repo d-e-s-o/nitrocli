@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Added the `-v`/`--verbose` option to control libnitrokey log level
+
+
 0.2.1
 -----
 - Added the `pws` command for accessing the password safe
