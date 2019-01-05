@@ -3,6 +3,9 @@ Unreleased
 - Added the `-v`/`--verbose` option to control libnitrokey log level
 - Added the `-m`/`--model` option to restrict connections to a device
   model
+- Added the `-f`/`--format` option for the `otp set` subcommand to
+  choose the secret format
+  - Deprecated the `--ascii` option
 - Bumped `nitrokey` dependency to `0.3.0`
 
 
