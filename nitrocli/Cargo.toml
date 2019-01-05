@@ -45,6 +45,10 @@ incremental = false
 version = "0.2.2"
 path = "../argparse"
 
+[dependencies.base32]
+version = "0.4.0"
+path = "../base32"
+
 [dependencies.libc]
 version = "0.2"
 path = "../libc"
@@ -55,6 +59,7 @@ path = "../nitrokey"
 
 
 [replace]
+"base32:0.4.0" = { path = "../base32" }
 "cc:1.0.28" = { path = "../cc" }
 "libc:0.2.45" = { path = "../libc" }
 "nitrokey-sys:3.4.1" = { path = "../nitrokey-sys" }
