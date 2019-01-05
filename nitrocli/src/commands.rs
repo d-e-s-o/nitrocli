@@ -58,12 +58,29 @@ fn set_log_level(ctx: &args::ExecCtx) {
 fn get_device(ctx: &args::ExecCtx) -> Result<nitrokey::DeviceWrapper> {
   set_log_level(ctx);
 
-  nitrokey::connect().map_err(|_| Error::Error("Nitrokey device not found".to_string()))
+  match ctx.model {
+    Some(model) => match model {
+      args::DeviceModel::Pro => nitrokey::Pro::connect().map(nitrokey::DeviceWrapper::Pro),
+      args::DeviceModel::Storage => {
+        nitrokey::Storage::connect().map(nitrokey::DeviceWrapper::Storage)
+      }
+    },
+    None => nitrokey::connect(),
+  }
+  .map_err(|_| Error::Error("Nitrokey device not found".to_string()))
 }
 
 /// Connect to a Nitrokey Storage device and return it.
 fn get_storage_device(ctx: &args::ExecCtx) -> Result<nitrokey::Storage> {
   set_log_level(ctx);
+
+  if let Some(model) = ctx.model {
+    if model != args::DeviceModel::Storage {
+      return Err(Error::Error(
+        "This command is only available on the Nitrokey Storage".to_string(),
+      ));
+    }
+  }
 
   nitrokey::Storage::connect().or_else(|_| {
     Err(Error::Error(
