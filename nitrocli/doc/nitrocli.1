@@ -3,6 +3,7 @@
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
 .B nitrocli
+\fR[\fB\-v\fR|\fB\-\-verbose\fR]
 \fIcommand\fR
 [\fIarguments\fR]
 .SH DESCRIPTION
@@ -10,6 +11,11 @@ nitrocli \- access Nitrokey devices
 It supports the Nitrokey Pro and the Nitrokey Storage.
 It can be used to access the encrypted volume, the one-time password generator,
 and the password safe.
+.SH OPTIONS
+.TP
+.B \-v, \-\-verbose
+Enable additional logging and control its verbosity. This option can be
+supplied multiple times, increasing verbosity up to a certain level.
 .SH COMMANDS
 .SS General
 .TP
