@@ -83,7 +83,7 @@ This command might require the user PIN (see the Configuration section).
 \fR[\fB\-a\fR|\fB\-\-algorithm \fIalgorithm\fR] \
 [\fB\-d\fR|\fB\-\-digits \fIdigits\fR] [\fB\-c\fR|\fB\-\-counter \fIcounter\fR] \
 [\fB\-t\fR|\fB\-\-time-window \fItime-window\fR] \
-[\fB-f\fR|\fB\-\-format ascii\fR|\fBhex\fR]
+[\fB-f\fR|\fB\-\-format ascii\fR|\fBbase32\fR|\fBhex\fR]
 Configure a one-time password slot.
 \fIslot\fR is the number of the slot to configure.
 \fIname\fR is the name of the slot (may not be empty).
@@ -92,6 +92,8 @@ Configure a one-time password slot.
 The \fB\-\-format\fR option specifies the format of the secret.
 If it is set to \fBascii\fR, each character of the given secret is interpreted
 as the ASCII code of one byte.
+If it is set to \fBbase32\fR, the secret is interpreted as a base32 string
+according to RFC 4648.
 If it is set to \fBhex\fR, every two characters are interpreted as the
 hexadecimal value of one byte.
 The default value is \fBhex\fR.
@@ -229,6 +231,11 @@ Configure a one-time password slot with an ASCII secret representation:
     $ \fBnitrocli otp set 0 test\-rfc4226 12345678901234567890 \-\-format ascii \-\-algorithm hotp\fR
     $ \fBnitrocli otp set 1 test\-foobar foobar \-\-format ascii \-\-algorithm hotp\fR
     $ \fBnitrocli otp set 0 test\-rfc6238 12345678901234567890 \-\-format ascii \-\-algorithm totp \-\-digits 8\fR
+.P
+Configure a one-time password slot with a base32 secret representation:
+    $ \fBnitrocli otp set 0 test\-rfc4226 gezdgnbvgy3tqojqgezdgnbvgy3tqojq \-\-format base32 \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 1 test\-foobar mzxw6ytboi====== \-\-format base32 \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 0 test\-rfc6238 gezdgnbvgy3tqojqgezdgnbvgy3tqojq \-\-format base32 \-\-algorithm totp \-\-digits 8\fR
 .P
 Generate a one-time password:
     $ \fBnitrocli otp get 0 \-\-algorithm hotp\fR
