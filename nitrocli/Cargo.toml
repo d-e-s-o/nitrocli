@@ -45,6 +45,9 @@ incremental = false
 version = "0.2.2"
 path = "../argparse"
 
+[dependencies.base32]
+version = "0.4.0"
+
 [dependencies.libc]
 version = "0.2"
 path = "../libc"
