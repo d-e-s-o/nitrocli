@@ -327,6 +327,7 @@ impl From<OtpMode> for nitrokey::OtpMode {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum OtpSecretFormat {
   Ascii,
+  Base32,
   Hex,
 }
 
@@ -337,6 +338,7 @@ impl fmt::Display for OtpSecretFormat {
       "{}",
       match *self {
         OtpSecretFormat::Ascii => "ascii",
+        OtpSecretFormat::Base32 => "base32",
         OtpSecretFormat::Hex => "hex",
       }
     )
@@ -349,6 +351,7 @@ impl str::FromStr for OtpSecretFormat {
   fn from_str(s: &str) -> result::Result<Self, Self::Err> {
     match s {
       "ascii" => Ok(OtpSecretFormat::Ascii),
+      "base32" => Ok(OtpSecretFormat::Base32),
       "hex" => Ok(OtpSecretFormat::Hex),
       _ => Err(()),
     }
@@ -777,7 +780,7 @@ pub fn otp_set(ctx: &ExecCtx, args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut secret_format).add_option(
     &["-f", "--format"],
     argparse::StoreOption,
-    "The format of the secret (ascii|hex)",
+    "The format of the secret (ascii|base32|hex)",
   );
   parse(&parser, args)?;
   drop(parser);

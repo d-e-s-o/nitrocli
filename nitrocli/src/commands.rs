@@ -454,6 +454,13 @@ fn prepare_ascii_secret(secret: &str) -> Result<String> {
   }
 }
 
+/// Prepare a base32 secret string for libnitrokey.
+fn prepare_base32_secret(secret: &str) -> Result<String> {
+  base32::decode(base32::Alphabet::RFC4648 { padding: false }, secret)
+    .map(|vec| format_bytes(&vec))
+    .ok_or_else(|| Error::Error("Could not parse base32 secret".to_string()))
+}
+
 /// Configure a one-time password slot on the Nitrokey device.
 pub fn otp_set(
   ctx: &args::ExecCtx,
@@ -465,6 +472,7 @@ pub fn otp_set(
 ) -> Result<()> {
   let secret = match secret_format {
     args::OtpSecretFormat::Ascii => prepare_ascii_secret(&data.secret)?,
+    args::OtpSecretFormat::Base32 => prepare_base32_secret(&data.secret)?,
     args::OtpSecretFormat::Hex => data.secret,
   };
   let data = nitrokey::OtpSlotData { secret, ..data };
