@@ -45,6 +45,10 @@ incremental = false
 version = "0.2.2"
 path = "../argparse"
 
+[dependencies.libc]
+version = "0.2"
+path = "../libc"
+
 [dependencies.nitrokey]
 version = "0.2.1"
 path = "../nitrokey"

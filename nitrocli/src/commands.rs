@@ -22,6 +22,8 @@ use std::result;
 use std::time;
 use std::u8;
 
+use libc::sync;
+
 use nitrokey::ConfigureOtp;
 use nitrokey::Device;
 use nitrokey::GenerateOtp;
@@ -232,11 +234,6 @@ pub fn storage_open() -> Result<()> {
     "Opening encrypted volume failed",
     |passphrase| device.enable_encrypted_volume(&passphrase),
   )
-}
-
-#[link(name = "c")]
-extern "C" {
-  fn sync();
 }
 
 /// Close the previously opened encrypted volume.
