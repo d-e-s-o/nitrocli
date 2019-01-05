@@ -430,21 +430,23 @@ pub fn otp_get(
   Ok(())
 }
 
+/// Format a bytes vector as a hex string.
+fn format_bytes(bytes: &[u8]) -> String {
+  bytes
+    .iter()
+    .map(|c| format!("{:x}", c))
+    .collect::<Vec<String>>()
+    .join("")
+}
+
 /// Prepare an ASCII secret string for libnitrokey.
 ///
 /// libnitrokey expects secrets as hexadecimal strings.  This function transforms an ASCII string
 /// into a hexadecimal string or returns an error if the given string contains non-ASCII
 /// characters.
-fn prepare_secret(secret: &str) -> Result<String> {
+fn prepare_ascii_secret(secret: &str) -> Result<String> {
   if secret.is_ascii() {
-    Ok(
-      secret
-        .as_bytes()
-        .iter()
-        .map(|c| format!("{:x}", c))
-        .collect::<Vec<String>>()
-        .join(""),
-    )
+    Ok(format_bytes(&secret.as_bytes()))
   } else {
     Err(Error::Error(
       "The given secret is not an ASCII string despite --format ascii being set".to_string(),
@@ -462,7 +464,7 @@ pub fn otp_set(
   secret_format: args::OtpSecretFormat,
 ) -> Result<()> {
   let secret = match secret_format {
-    args::OtpSecretFormat::Ascii => prepare_secret(&data.secret)?,
+    args::OtpSecretFormat::Ascii => prepare_ascii_secret(&data.secret)?,
     args::OtpSecretFormat::Hex => data.secret,
   };
   let data = nitrokey::OtpSlotData { secret, ..data };
@@ -697,7 +699,7 @@ mod tests {
 
   #[test]
   fn prepare_secret_ascii() {
-    let result = prepare_secret("12345678901234567890");
+    let result = prepare_ascii_secret("12345678901234567890");
     assert_eq!(
       "3132333435363738393031323334353637383930".to_string(),
       result.unwrap()
@@ -706,7 +708,7 @@ mod tests {
 
   #[test]
   fn prepare_secret_non_ascii() {
-    let result = prepare_secret("Österreich");
+    let result = prepare_ascii_secret("Österreich");
     assert!(result.is_err());
   }
 }
