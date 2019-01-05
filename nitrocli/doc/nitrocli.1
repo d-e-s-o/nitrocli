@@ -1,8 +1,9 @@
-.TH NITROCLI 1 2018-12-30
+.TH NITROCLI 1 2019-01-05
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
 .B nitrocli
+\fR[\fB\-v\fR|\fB\-\-verbose\fR]
 \fIcommand\fR
 [\fIarguments\fR]
 .SH DESCRIPTION
@@ -10,6 +11,15 @@ nitrocli \- access Nitrokey devices
 It supports the Nitrokey Pro and the Nitrokey Storage.
 It can be used to access the encrypted volume, the one-time password generator,
 and the password safe.
+.SH OPTIONS
+.TP
+.B \-v, \-\-verbose
+Enable additional logging and control its verbosity. Logging enabled through
+this option will appear on the standard error stream. This option can be
+supplied multiple times. A single occurrence will show additional warnings.
+Commands sent to the device will be shown when supplied three times and full
+device communication is available with four occurrences. Supplying this option
+five times enables the highest verbosity.
 .SH COMMANDS
 .SS General
 .TP
