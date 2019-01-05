@@ -17,15 +17,6 @@
 # *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 # ***************************************************************************/
 
-
-# We do not want to run the tests concurrently as the Nitrokey seems to
-# have problems with that. We also do not want to introduce additional
-# locking because in the normal program work flow we will not have
-# multiple requests issued in parallel.
-.PHONY: test
-test:
-	@RUST_TEST_NOCAPTURE=1 RUST_TEST_THREADS=1 cargo test
-
 PS2PDF ?= ps2pdf
 
 NITROCLI_MAN := doc/nitrocli.1
