@@ -13,7 +13,12 @@ It can be used to access the encrypted volume, the one-time password generator,
 and the password safe.
 .SH OPTIONS
 .TP
-.B \-v, \-\-verbose
+\fB\-m\fR, \fB\-\-model pro\fR|\fBstorage\fR
+Restrict connections to the given device model.
+If this option is not set, nitrocli will connect to any connected Nitrokey Pro
+or Nitrokey Storage device.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
 Enable additional logging and control its verbosity. Logging enabled through
 this option will appear on the standard error stream. This option can be
 supplied multiple times. A single occurrence will show additional warnings.
