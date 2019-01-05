@@ -38,13 +38,33 @@ fn get_error(msg: &str, err: nitrokey::CommandError) -> Error {
   Error::Error(format!("{}: {:?}", msg, err))
 }
 
+/// Set `libnitrokey`'s log level based on the execution context's verbosity.
+fn set_log_level(ctx: &args::ExecCtx) {
+  let log_lvl = match ctx.verbosity {
+    // The error log level is what libnitrokey uses by default. As such,
+    // there is no harm in us setting that as well when the user did not
+    // ask for higher verbosity.
+    0 => nitrokey::LogLevel::Error,
+    1 => nitrokey::LogLevel::Warning,
+    2 => nitrokey::LogLevel::Info,
+    3 => nitrokey::LogLevel::DebugL1,
+    4 => nitrokey::LogLevel::Debug,
+    _ => nitrokey::LogLevel::DebugL2,
+  };
+  nitrokey::set_log_level(log_lvl);
+}
+
 /// Connect to any Nitrokey device and return it.
-fn get_device(_ctx: &args::ExecCtx) -> Result<nitrokey::DeviceWrapper> {
+fn get_device(ctx: &args::ExecCtx) -> Result<nitrokey::DeviceWrapper> {
+  set_log_level(ctx);
+
   nitrokey::connect().map_err(|_| Error::Error("Nitrokey device not found".to_string()))
 }
 
 /// Connect to a Nitrokey Storage device and return it.
-fn get_storage_device(_ctx: &args::ExecCtx) -> Result<nitrokey::Storage> {
+fn get_storage_device(ctx: &args::ExecCtx) -> Result<nitrokey::Storage> {
+  set_log_level(ctx);
+
   nitrokey::Storage::connect().or_else(|_| {
     Err(Error::Error(
       "Nitrokey Storage device not found".to_string(),
