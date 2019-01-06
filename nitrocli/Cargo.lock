@@ -11,6 +11,12 @@ name = "argparse"
 version = "0.2.2"
 
 [[package]]
+name = "argparse"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+replace = "argparse 0.2.2"
+
+[[package]]
 name = "base32"
 version = "0.4.0"
 
@@ -85,10 +91,10 @@ dependencies = [
 name = "nitrocli"
 version = "0.2.2"
 dependencies = [
- "argparse 0.2.2",
+ "argparse 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "base32 0.4.0",
- "libc 0.2.45",
- "nitrokey 0.3.1",
+ "libc 0.2.45 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nitrokey 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nitrokey-test 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -101,6 +107,12 @@ dependencies = [
  "nitrokey-sys 3.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "nitrokey"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+replace = "nitrokey 0.3.1"
 
 [[package]]
 name = "nitrokey-sys"
@@ -320,6 +332,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [metadata]
 "checksum aho-corasick 0.6.9 (registry+https://github.com/rust-lang/crates.io-index)" = "1e9a933f4e58658d7b12defcf96dc5c720f20832deebe3e0a19efd3b6aaeeb9e"
+"checksum argparse 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "3f8ebf5827e4ac4fd5946560e6a99776ea73b596d80898f357007317a7141e47"
 "checksum bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "228047a76f468627ca71776ecdebd732a3423081fcf5125585bcd7c49886ce12"
 "checksum cc 1.0.28 (registry+https://github.com/rust-lang/crates.io-index)" = "bb4a8b715cb4597106ea87c7c84b2f1d452c7492033765df7f32651e66fcf749"
 "checksum cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "082bb9b28e00d3c9d39cc03e64ce4cea0f1bb9b3fde493f0cbc008472d22bdf4"
@@ -329,6 +342,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a374c89b9db55895453a74c1e38861d9deec0b01b405a82516e9d5de4820dea1"
 "checksum libc 0.2.45 (registry+https://github.com/rust-lang/crates.io-index)" = "2d2857ec59fadc0773853c664d2d18e7198e83883e7060b63c924cb077bd5c74"
 "checksum memchr 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "db4c41318937f6e76648f42826b1d9ade5c09cafb5aef7e351240a70f39206e9"
+"checksum nitrokey 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "6449b0b10f39d98d8c6071088d2df076701a2d2d7835c23cace4e02517d16158"
 "checksum nitrokey-sys 3.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "34794d630d40a093a3f0e31b821b38ee1c16e6909dc42064feff28f4798484f4"
 "checksum nitrokey-test 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "6226eaa31d1bbb031314d9288eb0e1bf6a70e7053da7960fea13ee84cab330ea"
 "checksum proc-macro2 0.4.24 (registry+https://github.com/rust-lang/crates.io-index)" = "77619697826f31a02ae974457af0b29b723e5619e113e9397b8b82c6bd253f09"
