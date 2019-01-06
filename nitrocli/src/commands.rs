@@ -411,10 +411,13 @@ pub fn otp_get(
   let device = get_device(ctx)?;
   if algorithm == args::OtpAlgorithm::Totp {
     device
-      .set_time(match time {
-        Some(time) => time,
-        None => get_unix_timestamp()?,
-      })
+      .set_time(
+        match time {
+          Some(time) => time,
+          None => get_unix_timestamp()?,
+        },
+        true,
+      )
       .map_err(|err| get_error("Could not set time", err))?;
   }
   let config = device

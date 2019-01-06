@@ -11,7 +11,7 @@ use crate::util::{Target, ADMIN_PASSWORD, USER_PASSWORD};
 fn get_slot_name_direct(slot: u8) -> Result<String, CommandError> {
     let ptr = unsafe { nitrokey_sys::NK_get_password_safe_slot_name(slot) };
     if ptr.is_null() {
-        return Err(CommandError::Unknown);
+        return Err(CommandError::Undefined);
     }
     let s = unsafe { CStr::from_ptr(ptr).to_string_lossy().into_owned() };
     unsafe { free(ptr as *mut c_void) };
@@ -19,7 +19,7 @@ fn get_slot_name_direct(slot: u8) -> Result<String, CommandError> {
         true => {
             let error = unsafe { nitrokey_sys::NK_get_last_command_status() } as c_int;
             match error {
-                0 => Err(CommandError::Unknown),
+                0 => Err(CommandError::Undefined),
                 other => Err(CommandError::from(other)),
             }
         }
@@ -97,9 +97,9 @@ fn get_data() {
 
     assert!(pws.erase_slot(1).is_ok());
     // TODO: check error codes
-    assert_eq!(Err(CommandError::Unknown), pws.get_slot_name(1));
-    assert_eq!(Err(CommandError::Unknown), pws.get_slot_login(1));
-    assert_eq!(Err(CommandError::Unknown), pws.get_slot_password(1));
+    assert_eq!(Err(CommandError::Undefined), pws.get_slot_name(1));
+    assert_eq!(Err(CommandError::Undefined), pws.get_slot_login(1));
+    assert_eq!(Err(CommandError::Undefined), pws.get_slot_password(1));
 
     let name = "with å";
     let login = "pär@test.com";
@@ -135,19 +135,19 @@ fn write() {
     );
 
     assert!(pws.write_slot(0, "", "login", "password").is_ok());
-    assert_eq!(Err(CommandError::Unknown), pws.get_slot_name(0));
+    assert_eq!(Err(CommandError::Undefined), pws.get_slot_name(0));
     assert_eq!(Ok(String::from("login")), pws.get_slot_login(0));
     assert_eq!(Ok(String::from("password")), pws.get_slot_password(0));
 
     assert!(pws.write_slot(0, "name", "", "password").is_ok());
     assert_eq!(Ok(String::from("name")), pws.get_slot_name(0));
-    assert_eq!(Err(CommandError::Unknown), pws.get_slot_login(0));
+    assert_eq!(Err(CommandError::Undefined), pws.get_slot_login(0));
     assert_eq!(Ok(String::from("password")), pws.get_slot_password(0));
 
     assert!(pws.write_slot(0, "name", "login", "").is_ok());
     assert_eq!(Ok(String::from("name")), pws.get_slot_name(0));
     assert_eq!(Ok(String::from("login")), pws.get_slot_login(0));
-    assert_eq!(Err(CommandError::Unknown), pws.get_slot_password(0));
+    assert_eq!(Err(CommandError::Undefined), pws.get_slot_password(0));
 }
 
 #[test]
@@ -160,5 +160,5 @@ fn erase() {
     assert!(pws.write_slot(0, "name", "login", "password").is_ok());
     assert!(pws.erase_slot(0).is_ok());
     assert!(pws.erase_slot(0).is_ok());
-    assert_eq!(Err(CommandError::Unknown), pws.get_slot_name(0));
+    assert_eq!(Err(CommandError::Undefined), pws.get_slot_name(0));
 }

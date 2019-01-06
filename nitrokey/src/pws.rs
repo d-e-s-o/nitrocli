@@ -71,9 +71,18 @@ pub trait GetPasswordSafe {
     /// has been used.  Otherwise, other applications can access the password store without
     /// authentication.
     ///
+    /// If this method returns an `AesDecryptionFailed` (Nitrokey Pro) or `Unknown` (Nitrokey
+    /// Storage) error, the AES data object on the smart card could not be accessed.  This problem
+    /// occurs after a factory reset using `gpg --card-edit` and can be fixed using the
+    /// [`Device::build_aes_key`][] command.
+    ///
     /// # Errors
     ///
+    /// - [`AesDecryptionFailed`][] if the secret for the password safe could not be decrypted
+    ///   (Nitrokey Pro only)
     /// - [`InvalidString`][] if one of the provided passwords contains a null byte
+    /// - [`Unknown`][] if the secret for the password safe could not be decrypted (Nitrokey
+    ///   Storage only)
     /// - [`WrongPassword`][] if the current user password is wrong
     ///
     /// # Example
@@ -99,7 +108,10 @@ pub trait GetPasswordSafe {
     ///
     /// [`device`]: struct.PasswordSafe.html#method.device
     /// [`lock`]: trait.Device.html#method.lock
+    /// [`AesDecryptionFailed`]: enum.CommandError.html#variant.AesDecryptionFailed
+    /// [`Device::build_aes_key`]: trait.Device.html#method.build_aes_key
     /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`Unknown`]: enum.CommandError.html#variant.Unknown
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
     fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, CommandError>;
 }
@@ -163,7 +175,7 @@ impl<'a> PasswordSafe<'a> {
     /// # Errors
     ///
     /// - [`InvalidSlot`][] if the given slot is out of range
-    /// - [`Unknown`][] if the slot is not programmed
+    /// - [`Undefined`][] if the slot is not programmed
     ///
     /// # Example
     ///
@@ -187,7 +199,7 @@ impl<'a> PasswordSafe<'a> {
     /// ```
     ///
     /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    /// [`Unknown`]: enum.CommandError.html#variant.Unknown
+    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
     pub fn get_slot_name(&self, slot: u8) -> Result<String, CommandError> {
         unsafe { result_from_string(nitrokey_sys::NK_get_password_safe_slot_name(slot)) }
     }
@@ -197,7 +209,7 @@ impl<'a> PasswordSafe<'a> {
     /// # Errors
     ///
     /// - [`InvalidSlot`][] if the given slot is out of range
-    /// - [`Unknown`][] if the slot is not programmed
+    /// - [`Undefined`][] if the slot is not programmed
     ///
     /// # Example
     ///
@@ -217,7 +229,7 @@ impl<'a> PasswordSafe<'a> {
     /// ```
     ///
     /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    /// [`Unknown`]: enum.CommandError.html#variant.Unknown
+    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
     pub fn get_slot_login(&self, slot: u8) -> Result<String, CommandError> {
         unsafe { result_from_string(nitrokey_sys::NK_get_password_safe_slot_login(slot)) }
     }
@@ -227,7 +239,7 @@ impl<'a> PasswordSafe<'a> {
     /// # Errors
     ///
     /// - [`InvalidSlot`][] if the given slot is out of range
-    /// - [`Unknown`][] if the slot is not programmed
+    /// - [`Undefined`][] if the slot is not programmed
     ///
     /// # Example
     ///
@@ -247,7 +259,7 @@ impl<'a> PasswordSafe<'a> {
     /// ```
     ///
     /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    /// [`Unknown`]: enum.CommandError.html#variant.Unknown
+    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
     pub fn get_slot_password(&self, slot: u8) -> Result<String, CommandError> {
         unsafe { result_from_string(nitrokey_sys::NK_get_password_safe_slot_password(slot)) }
     }

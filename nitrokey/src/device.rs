@@ -510,6 +510,74 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     fn lock(&self) -> Result<(), CommandError> {
         unsafe { get_command_result(nitrokey_sys::NK_lock_device()) }
     }
+
+    /// Performs a factory reset on the Nitrokey device.
+    ///
+    /// This commands performs a factory reset on the smart card (like the factory reset via `gpg
+    /// --card-edit`) and then clears the flash memory (password safe, one-time passwords etc.).
+    /// After a factory reset, [`build_aes_key`][] has to be called before the password safe or the
+    /// encrypted volume can be used.
+    ///
+    /// # Errors
+    ///
+    /// - [`InvalidString`][] if the provided password contains a null byte
+    /// - [`WrongPassword`][] if the admin password is wrong
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use nitrokey::Device;
+    /// # use nitrokey::CommandError;
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::connect()?;
+    /// match device.factory_reset("12345678") {
+    ///     Ok(()) => println!("Performed a factory reset."),
+    ///     Err(err) => println!("Could not perform a factory reset: {}", err),
+    /// };
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`build_aes_key`]: #method.build_aes_key
+    fn factory_reset(&self, admin_pin: &str) -> Result<(), CommandError> {
+        let admin_pin_string = get_cstring(admin_pin)?;
+        unsafe { get_command_result(nitrokey_sys::NK_factory_reset(admin_pin_string.as_ptr())) }
+    }
+
+    /// Builds a new AES key on the Nitrokey.
+    ///
+    /// The AES key is used to encrypt the password safe and the encrypted volume.  You may need
+    /// to call this method after a factory reset, either using [`factory_reset`][] or using `gpg
+    /// --card-edit`.  You can also use it to destory the data stored in the password safe or on
+    /// the encrypted volume.
+    ///
+    /// # Errors
+    ///
+    /// - [`InvalidString`][] if the provided password contains a null byte
+    /// - [`WrongPassword`][] if the admin password is wrong
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use nitrokey::Device;
+    /// # use nitrokey::CommandError;
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::connect()?;
+    /// match device.build_aes_key("12345678") {
+    ///     Ok(()) => println!("New AES keys have been built."),
+    ///     Err(err) => println!("Could not build new AES keys: {}", err),
+    /// };
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`factory_reset`]: #method.factory_reset
+    fn build_aes_key(&self, admin_pin: &str) -> Result<(), CommandError> {
+        let admin_pin_string = get_cstring(admin_pin)?;
+        unsafe { get_command_result(nitrokey_sys::NK_build_aes_key(admin_pin_string.as_ptr())) }
+    }
 }
 
 /// Connects to a Nitrokey device.  This method can be used to connect to any connected device,
@@ -532,9 +600,9 @@ pub fn connect() -> Result<DeviceWrapper, CommandError> {
         match nitrokey_sys::NK_login_auto() {
             1 => match get_connected_device() {
                 Some(wrapper) => Ok(wrapper),
-                None => Err(CommandError::Unknown),
+                None => Err(CommandError::Undefined),
             },
-            _ => Err(CommandError::Unknown),
+            _ => Err(CommandError::Undefined),
         }
     }
 }
@@ -623,7 +691,7 @@ impl Pro {
         // TODO: maybe Option instead of Result?
         match connect_model(Model::Pro) {
             true => Ok(Pro {}),
-            false => Err(CommandError::Unknown),
+            false => Err(CommandError::Undefined),
         }
     }
 }
@@ -663,7 +731,84 @@ impl Storage {
         // TODO: maybe Option instead of Result?
         match connect_model(Model::Storage) {
             true => Ok(Storage {}),
-            false => Err(CommandError::Unknown),
+            false => Err(CommandError::Undefined),
+        }
+    }
+
+    /// Changes the update PIN.
+    ///
+    /// The update PIN is used to enable firmware updates.  Unlike the user and the admin PIN, the
+    /// update PIN is not managed by the OpenPGP smart card but by the Nitrokey firmware.  There is
+    /// no retry counter as with the other PIN types.
+    ///
+    /// # Errors
+    ///
+    /// - [`InvalidString`][] if one of the provided passwords contains a null byte
+    /// - [`WrongPassword`][] if the current update password is wrong
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use nitrokey::CommandError;
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::Storage::connect()?;
+    /// match device.change_update_pin("12345678", "87654321") {
+    ///     Ok(()) => println!("Updated update PIN."),
+    ///     Err(err) => println!("Failed to update update PIN: {}", err),
+    /// };
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
+    pub fn change_update_pin(&self, current: &str, new: &str) -> Result<(), CommandError> {
+        let current_string = get_cstring(current)?;
+        let new_string = get_cstring(new)?;
+        unsafe {
+            get_command_result(nitrokey_sys::NK_change_update_password(
+                current_string.as_ptr(),
+                new_string.as_ptr(),
+            ))
+        }
+    }
+
+    /// Enables the firmware update mode.
+    ///
+    /// During firmware update mode, the Nitrokey can no longer be accessed using HID commands.
+    /// To resume normal operation, run `dfu-programmer at32uc3a3256s launch`.  In order to enter
+    /// the firmware update mode, you need the update password that can be changed using the
+    /// [`change_update_pin`][] method.
+    ///
+    /// # Errors
+    ///
+    /// - [`InvalidString`][] if one of the provided passwords contains a null byte
+    /// - [`WrongPassword`][] if the current update password is wrong
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use nitrokey::CommandError;
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::Storage::connect()?;
+    /// match device.enable_firmware_update("12345678") {
+    ///     Ok(()) => println!("Nitrokey entered update mode."),
+    ///     Err(err) => println!("Could not enter update mode: {}", err),
+    /// };
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
+    pub fn enable_firmware_update(&self, update_pin: &str) -> Result<(), CommandError> {
+        let update_pin_string = get_cstring(update_pin)?;
+        unsafe {
+            get_command_result(nitrokey_sys::NK_enable_firmware_update(
+                update_pin_string.as_ptr(),
+            ))
         }
     }
 

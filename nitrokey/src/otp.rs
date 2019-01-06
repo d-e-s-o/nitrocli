@@ -151,27 +151,27 @@ pub trait ConfigureOtp {
 /// Provides methods to generate OTP codes and to query OTP slots on a Nitrokey
 /// device.
 pub trait GenerateOtp {
-    /// Sets the time on the Nitrokey.  This command may set the time to arbitrary values.  `time`
-    /// is the number of seconds since January 1st, 1970 (Unix timestamp).
+    /// Sets the time on the Nitrokey.
+    ///
+    /// `time` is the number of seconds since January 1st, 1970 (Unix timestamp).  Unless `force`
+    /// is set to `true`, this command fails if the timestamp on the device is larger than the
+    /// given timestamp or if it is zero. 
     ///
     /// The time is used for TOTP generation (see [`get_totp_code`][]).
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// extern crate chrono;
-    ///
-    /// use chrono::Utc;
-    /// use nitrokey::Device;
+    /// ```no_run
+    /// use std::time;
+    /// use nitrokey::GenerateOtp;
     /// # use nitrokey::CommandError;
     ///
     /// # fn try_main() -> Result<(), CommandError> {
     /// let device = nitrokey::connect()?;
-    /// let time = Utc::now().timestamp();
-    /// if time < 0 {
-    ///     println!("Timestamps before 1970-01-01 are not supported!");
-    /// } else {
-    ///     device.set_time(time as u64);
+    /// let time = time::SystemTime::now().duration_since(time::UNIX_EPOCH);
+    /// match time {
+    ///     Ok(time) => device.set_time(time.as_secs(), false)?,
+    ///     Err(_) => println!("The system time is before the Unix epoch!"),
     /// }
     /// #     Ok(())
     /// # }
@@ -183,8 +183,13 @@ pub trait GenerateOtp {
     ///
     /// [`get_totp_code`]: #method.get_totp_code
     /// [`Timestamp`]: enum.CommandError.html#variant.Timestamp
-    fn set_time(&self, time: u64) -> Result<(), CommandError> {
-        unsafe { get_command_result(nitrokey_sys::NK_totp_set_time(time)) }
+    fn set_time(&self, time: u64, force: bool) -> Result<(), CommandError> {
+        let result = if force {
+            unsafe { nitrokey_sys::NK_totp_set_time(time) }
+        } else {
+            unsafe { nitrokey_sys::NK_totp_set_time_soft(time) }
+        };
+        get_command_result(result)
     }
 
     /// Returns the name of the given HOTP slot.

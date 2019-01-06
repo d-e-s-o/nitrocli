@@ -55,6 +55,16 @@ fn check_hotp_codes(device: &GenerateOtp, offset: u8) {
 
 #[test]
 #[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
+fn set_time() {
+    let device = Target::connect().expect("Could not connect to the Nitrokey.");
+    assert_eq!(Ok(()), device.set_time(1546385382, true));
+    assert_eq!(Ok(()), device.set_time(1546385392, false));
+    assert_eq!(Err(CommandError::Timestamp), device.set_time(1546385292, false));
+    assert_eq!(Ok(()), device.set_time(1546385382, true));
+}
+
+#[test]
+#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
 fn hotp_no_pin() {
     let admin = get_admin_test_device();
     let config = Config::new(None, None, None, false);
@@ -152,7 +162,7 @@ fn check_totp_codes(device: &GenerateOtp, factor: u64, timestamp_size: TotpTimes
             continue;
         }
 
-        assert!(device.set_time(time).is_ok());
+        assert!(device.set_time(time, true).is_ok());
         let result = device.get_totp_code(1);
         assert!(result.is_ok());
         let result_code = result.unwrap();
