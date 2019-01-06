@@ -1,7 +1,7 @@
 // main.rs
 
 // *************************************************************************
-// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
+// * Copyright (C) 2017-2019 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -73,6 +73,8 @@ mod commands;
 mod error;
 mod pinentry;
 
+use std::env;
+use std::io;
 use std::process;
 use std::result;
 
@@ -80,9 +82,16 @@ use crate::error::Error;
 
 type Result<T> = result::Result<T, Error>;
 
-fn run() -> i32 {
-  let args = std::env::args().collect();
-  match args::handle_arguments(args) {
+/// The context used when running the program.
+pub(crate) struct RunCtx<'io> {
+  /// The `Write` object used as standard output throughout the program.
+  pub stdout: &'io mut dyn io::Write,
+  /// The `Write` object used as standard error throughout the program.
+  pub stderr: &'io mut dyn io::Write,
+}
+
+fn run<'io, 'ctx: 'io>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
+  match args::handle_arguments(ctx, args) {
     Ok(()) => 0,
     Err(err) => match err {
       Error::ArgparseError(err) => match err {
@@ -100,5 +109,11 @@ fn run() -> i32 {
 }
 
 fn main() {
-  process::exit(run());
+  let args = env::args().collect::<Vec<_>>();
+  let ctx = &mut RunCtx {
+    stdout: &mut io::stdout(),
+    stderr: &mut io::stderr(),
+  };
+
+  process::exit(run(ctx, args));
 }

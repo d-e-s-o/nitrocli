@@ -25,6 +25,7 @@ use std::str;
 use crate::commands;
 use crate::error::Error;
 use crate::pinentry;
+use crate::RunCtx;
 
 type Result<T> = result::Result<T, Error>;
 
@@ -60,13 +61,29 @@ impl str::FromStr for DeviceModel {
   }
 }
 
+trait Stdio {
+  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write);
+}
+
+impl<'io> Stdio for RunCtx<'io> {
+  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
+    (self.stdout, self.stderr)
+  }
+}
+
 /// A command execution context that captures additional data pertaining
 /// the command execution.
-#[derive(Debug)]
 pub struct ExecCtx<'io> {
   pub model: Option<DeviceModel>,
+  pub stdout: &'io mut dyn io::Write,
+  pub stderr: &'io mut dyn io::Write,
   pub verbosity: u64,
-  data: std::marker::PhantomData<&'io u64>,
+}
+
+impl<'io> Stdio for ExecCtx<'io> {
+  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
+    (self.stdout, self.stderr)
+  }
 }
 
 /// A top-level command for nitrocli.
@@ -369,7 +386,7 @@ enum PinCommand {
 impl PinCommand {
   fn execute(&self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     match *self {
-      PinCommand::Clear => pin_clear(args),
+      PinCommand::Clear => pin_clear(ctx, args),
       PinCommand::Set => pin_set(ctx, args),
       PinCommand::Unblock => pin_unblock(ctx, args),
     }
@@ -451,8 +468,13 @@ impl str::FromStr for PwsCommand {
   }
 }
 
-fn parse(parser: &argparse::ArgumentParser<'_>, args: Vec<String>) -> Result<()> {
-  if let Err(err) = parser.parse(args, &mut io::stdout(), &mut io::stderr()) {
+fn parse(
+  ctx: &mut impl Stdio,
+  parser: &argparse::ArgumentParser<'_>,
+  args: Vec<String>,
+) -> Result<()> {
+  let (stdout, stderr) = ctx.stdio();
+  if let Err(err) = parser.parse(args, stdout, stderr) {
     Err(Error::ArgparseError(err))
   } else {
     Ok(())
@@ -463,7 +485,7 @@ fn parse(parser: &argparse::ArgumentParser<'_>, args: Vec<String>) -> Result<()>
 fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Prints the status of the connected Nitrokey device");
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
 
   commands::status(ctx)
 }
@@ -529,7 +551,7 @@ fn storage(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   subargs.insert(0, format!("nitrocli storage {}", subcommand));
@@ -540,7 +562,7 @@ fn storage(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn storage_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Opens the encrypted volume on a Nitrokey Storage");
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
 
   commands::storage_open(ctx)
 }
@@ -549,7 +571,7 @@ fn storage_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn storage_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Closes the encrypted volume on a Nitrokey Storage");
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
 
   commands::storage_close(ctx)
 }
@@ -558,7 +580,7 @@ fn storage_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn storage_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Prints the status of the Nitrokey's storage");
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
 
   commands::storage_status(ctx)
 }
@@ -580,7 +602,7 @@ fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   subargs.insert(0, format!("nitrocli config {}", subcommand));
@@ -591,7 +613,7 @@ fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn config_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Prints the Nitrokey configuration");
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
 
   commands::config_get(ctx)
 }
@@ -648,7 +670,7 @@ fn config_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreTrue,
     "Allow one-time password generation without PIN",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   let numlock = ConfigOption::try_from(no_numlock, numlock, "numlock")?;
@@ -668,7 +690,7 @@ fn config_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn lock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Locks the connected Nitrokey device");
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
 
   commands::lock(ctx)
 }
@@ -690,7 +712,7 @@ fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   subargs.insert(0, format!("nitrocli otp {}", subcommand));
@@ -719,7 +741,7 @@ fn otp_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreOption,
     "The time to use for TOTP generation (Unix timestamp, default: system time)",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   commands::otp_get(ctx, slot, algorithm, time)
@@ -783,7 +805,7 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreOption,
     "The format of the secret (ascii|base32|hex)",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   if ascii {
@@ -825,7 +847,7 @@ fn otp_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The OTP algorithm to use (hotp|totp)",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   commands::otp_clear(ctx, slot, algorithm)
@@ -841,7 +863,7 @@ fn otp_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreTrue,
     "Show slots that are not programmed",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   commands::otp_status(ctx, all)
@@ -864,7 +886,7 @@ fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   subargs.insert(0, format!("nitrocli pin {}", subcommand));
@@ -872,10 +894,10 @@ fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 }
 
 /// Clear the PIN as cached by various other commands.
-fn pin_clear(args: Vec<String>) -> Result<()> {
+fn pin_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Clears the cached PINs");
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
 
   commands::pin_clear()
 }
@@ -890,7 +912,7 @@ fn pin_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The PIN type to change (admin|user)",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   commands::pin_set(ctx, pintype)
@@ -900,7 +922,7 @@ fn pin_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn pin_unblock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Unblocks and resets the user PIN");
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
 
   commands::pin_unblock(ctx)
 }
@@ -922,7 +944,7 @@ fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   subargs.insert(0, format!("nitrocli pws {}", subcommand));
@@ -963,7 +985,7 @@ fn pws_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreTrue,
     "Print the stored data without description",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   commands::pws_get(ctx, slot, name, login, password, quiet)
@@ -997,7 +1019,7 @@ fn pws_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The password to store on the slot",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   commands::pws_set(ctx, slot, &name, &login, &password)
@@ -1013,7 +1035,7 @@ fn pws_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The PWS slot to clear",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   commands::pws_clear(ctx, slot)
@@ -1029,7 +1051,7 @@ fn pws_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreTrue,
     "Show slots that are not programmed",
   );
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   commands::pws_status(ctx, all)
@@ -1037,7 +1059,10 @@ fn pws_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
 /// Parse the command-line arguments and return the selected command and
 /// the remaining arguments for the command.
-fn parse_arguments<'io>(args: Vec<String>) -> Result<(Command, ExecCtx<'io>, Vec<String>)> {
+fn parse_arguments<'io, 'ctx: 'io>(
+  ctx: &'ctx mut RunCtx<'_>,
+  args: Vec<String>,
+) -> Result<(Command, ExecCtx<'io>, Vec<String>)> {
   let mut model: Option<DeviceModel> = None;
   let mut verbosity = 0;
   let mut command = Command::Status;
@@ -1065,17 +1090,22 @@ fn parse_arguments<'io>(args: Vec<String>) -> Result<(Command, ExecCtx<'io>, Vec
     "The arguments for the command",
   );
   parser.stop_on_first_argument(true);
-  parse(&parser, args)?;
+  parse(ctx, &parser, args)?;
   drop(parser);
 
   subargs.insert(0, format!("nitrocli {}", command));
 
-  let ctx = ExecCtx { model, verbosity, data: Default::default() };
+  let ctx = ExecCtx {
+    model,
+    stdout: ctx.stdout,
+    stderr: ctx.stderr,
+    verbosity,
+  };
   Ok((command, ctx, subargs))
 }
 
 /// Parse the command-line arguments and execute the selected command.
-pub fn handle_arguments(args: Vec<String>) -> Result<()> {
-  let (command, mut ctx, args) = parse_arguments(args)?;
+pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
+  let (command, mut ctx, args) = parse_arguments(ctx, args)?;
   command.execute(&mut ctx, args)
 }
