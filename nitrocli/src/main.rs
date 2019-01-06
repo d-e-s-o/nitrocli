@@ -75,6 +75,8 @@ mod args;
 mod commands;
 mod error;
 mod pinentry;
+#[cfg(test)]
+mod tests;
 
 use std::env;
 use std::io;
@@ -93,7 +95,7 @@ pub(crate) struct RunCtx<'io> {
   pub stderr: &'io mut dyn io::Write,
 }
 
-fn run<'io, 'ctx: 'io>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
+fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
   match args::handle_arguments(ctx, args) {
     Ok(()) => 0,
     Err(err) => match err {
