@@ -1,3 +1,16 @@
+# v0.3.0 (2019-01-04)
+- Add a `force` argument to `ConfigureOtp::set_time`.
+- Remove the obsolete `CommandError::RngError`.
+- Add `CommandError::Undefined` to represent errors without further
+  information (e. g. a method returned `NULL` unexpectedly).
+- Add error code to `CommandError::Unknown`.
+- Add the `Storage::change_update_pin` method that changes the firmware update
+  PIN.
+- Add the `Device::factory_reset` method that performs a factory reset.
+- Add the `Device::build_aes_key` method that builds a new AES key on the Nitrokey.
+- Add the `Storage::enable_firmware_update` method that puts the Nitrokey
+  Storage in update mode so that the firmware can be updated.
+
 # v0.2.3 (2018-12-31)
 
 - Dummy release to fix an issue with the crates.io tarball.

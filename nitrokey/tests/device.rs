@@ -4,11 +4,15 @@ use std::ffi::CStr;
 use std::process::Command;
 use std::{thread, time};
 
-use nitrokey::{Authenticate, CommandError, Config, Device, Storage};
+use nitrokey::{
+    Authenticate, CommandError, Config, ConfigureOtp, Device, GenerateOtp, GetPasswordSafe,
+    OtpMode, OtpSlotData, Storage,
+};
 
-use crate::util::{Target, ADMIN_PASSWORD, USER_PASSWORD};
+use crate::util::{Target, ADMIN_PASSWORD, UPDATE_PIN, USER_PASSWORD};
 
 static ADMIN_NEW_PASSWORD: &str = "1234567890";
+static UPDATE_NEW_PIN: &str = "87654321";
 static USER_NEW_PASSWORD: &str = "abcdefghij";
 
 fn count_nitrokey_block_devices() -> usize {
@@ -256,12 +260,14 @@ fn unlock_user_pin() {
         device.unlock_user_pin(USER_PASSWORD, USER_PASSWORD)
     );
 
+    // block user PIN
     let wrong_password = USER_PASSWORD.to_owned() + "foo";
     let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
     let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
     let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
     let device = require_failed_user_login(device, USER_PASSWORD, CommandError::WrongPassword);
 
+    // unblock with current PIN
     assert_eq!(
         Err(CommandError::WrongPassword),
         device.unlock_user_pin(USER_PASSWORD, USER_PASSWORD)
@@ -269,7 +275,113 @@ fn unlock_user_pin() {
     assert!(device
         .unlock_user_pin(ADMIN_PASSWORD, USER_PASSWORD)
         .is_ok());
-    device.authenticate_user(USER_PASSWORD).unwrap();
+    let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
+
+    // block user PIN
+    let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
+    let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
+    let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
+    let device = require_failed_user_login(device, USER_PASSWORD, CommandError::WrongPassword);
+
+    // unblock with new PIN
+    assert_eq!(
+        Err(CommandError::WrongPassword),
+        device.unlock_user_pin(USER_PASSWORD, USER_PASSWORD)
+    );
+    assert!(device
+        .unlock_user_pin(ADMIN_PASSWORD, USER_NEW_PASSWORD)
+        .is_ok());
+
+    // reset user PIN
+    assert!(device
+        .change_user_pin(USER_NEW_PASSWORD, USER_PASSWORD)
+        .is_ok());
+}
+
+#[test]
+#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
+fn factory_reset() {
+    let device = Target::connect().unwrap();
+
+    assert_eq!(
+        Ok(()),
+        device.change_user_pin(USER_PASSWORD, USER_NEW_PASSWORD)
+    );
+    assert_eq!(
+        Ok(()),
+        device.change_admin_pin(ADMIN_PASSWORD, ADMIN_NEW_PASSWORD)
+    );
+
+    let admin = device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap();
+    let otp_data = OtpSlotData::new(1, "test", "0123468790", OtpMode::SixDigits);
+    assert_eq!(Ok(()), admin.write_totp_slot(otp_data, 30));
+
+    let device = admin.device();
+    let pws = device.get_password_safe(USER_NEW_PASSWORD).unwrap();
+    assert_eq!(Ok(()), pws.write_slot(0, "test", "testlogin", "testpw"));
+    drop(pws);
+
+    assert_eq!(
+        Err(CommandError::WrongPassword),
+        device.factory_reset(USER_NEW_PASSWORD)
+    );
+    assert_eq!(
+        Err(CommandError::WrongPassword),
+        device.factory_reset(ADMIN_PASSWORD)
+    );
+    assert_eq!(Ok(()), device.factory_reset(ADMIN_NEW_PASSWORD));
+
+    let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
+
+    let user = device.authenticate_user(USER_PASSWORD).unwrap();
+    assert_eq!(
+        Err(CommandError::SlotNotProgrammed),
+        user.get_totp_slot_name(1)
+    );
+
+    let device = user.device();
+    let pws = device.get_password_safe(USER_PASSWORD).unwrap();
+    assert_ne!("test".to_string(), pws.get_slot_name(0).unwrap());
+    assert_ne!("testlogin".to_string(), pws.get_slot_login(0).unwrap());
+    assert_ne!("testpw".to_string(), pws.get_slot_password(0).unwrap());
+
+    assert_eq!(Ok(()), device.build_aes_key(ADMIN_PASSWORD));
+}
+
+#[test]
+#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
+fn build_aes_key() {
+    let device = Target::connect().unwrap();
+
+    let pws = device.get_password_safe(USER_PASSWORD).unwrap();
+    assert_eq!(Ok(()), pws.write_slot(0, "test", "testlogin", "testpw"));
+    drop(pws);
+
+    assert_eq!(
+        Err(CommandError::WrongPassword),
+        device.build_aes_key(USER_PASSWORD)
+    );
+    assert_eq!(Ok(()), device.build_aes_key(ADMIN_PASSWORD));
+
+    let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
+
+    let pws = device.get_password_safe(USER_PASSWORD).unwrap();
+    assert_ne!("test".to_string(), pws.get_slot_name(0).unwrap());
+    assert_ne!("testlogin".to_string(), pws.get_slot_login(0).unwrap());
+    assert_ne!("testpw".to_string(), pws.get_slot_password(0).unwrap());
+}
+
+#[test]
+#[cfg_attr(not(feature = "test-storage"), ignore)]
+fn change_update_pin() {
+    let device = Storage::connect().unwrap();
+
+    assert_eq!(
+        Err(CommandError::WrongPassword),
+        device.change_update_pin(UPDATE_NEW_PIN, UPDATE_PIN)
+    );
+    assert_eq!(Ok(()), device.change_update_pin(UPDATE_PIN, UPDATE_NEW_PIN));
+    assert_eq!(Ok(()), device.change_update_pin(UPDATE_NEW_PIN, UPDATE_PIN));
 }
 
 #[test]

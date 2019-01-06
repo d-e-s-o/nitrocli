@@ -7,7 +7,7 @@ Unreleased
 - Added the `-m` and `--model` options to restrict connections to
   a device model
 - Adjust release build compile options to optimize binary for size
-- Bumped `nitrokey` dependency to `0.2.3`
+- Bumped `nitrokey` dependency to `0.3.0`
   - Bumped `rand` dependency to `0.6.1`
   - Added `rustc_version` version `0.2.3`, `semver` version `0.9.0`, and
     `semver-parser` version `0.7.0` as indirect dependencies

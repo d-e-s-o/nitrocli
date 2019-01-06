@@ -149,10 +149,7 @@ where
     A: AuthenticatedDevice<D>,
     T: Fn(*const i8, *const i8) -> c_int,
 {
-    let temp_password = match generate_password(TEMPORARY_PASSWORD_LENGTH) {
-        Ok(pw) => pw,
-        Err(_) => return Err((device, CommandError::RngError)),
-    };
+    let temp_password = generate_password(TEMPORARY_PASSWORD_LENGTH);
     let password = match get_cstring(password) {
         Ok(password) => password,
         Err(err) => return Err((device, err)),
