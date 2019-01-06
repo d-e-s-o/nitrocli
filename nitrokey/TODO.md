@@ -1,7 +1,5 @@
 - Add support for the currently unsupported commands:
     - `NK_set_unencrypted_volume_rorw_pin_type_user`
-    - `NK_factory_reset`
-    - `NK_build_aes_key`
     - `NK_is_AES_supported`
     - `NK_send_startup`
     - `NK_unlock_hidden_volume`
@@ -13,11 +11,9 @@
     - `NK_set_unencrypted_read_write_admin`
     - `NK_set_encrypted_read_only`
     - `NK_set_encrypted_read_write`
-    - `NK_enable_firmware_update`
     - `NK_export_firmware`
     - `NK_clear_new_sd_card_warning`
     - `NK_fill_SD_card_with_random_data`
-    - `NK_change_update_password`
     - `NK_get_SD_usage_data_as_string`
     - `NK_get_progress_bar_value`
     - `NK_list_devices_by_cpuID`
@@ -27,7 +23,6 @@
     - `NK_get_major_library_version`
     - `NK_get_minor_libray_version`
     - `NK_get_storage_production_info`
-    - `NK_totp_set_time_soft`
     - `NK_wink`
 - Fix timing issues with the `totp_no_pin` and `totp_pin` test cases.
 - Clear passwords from memory.

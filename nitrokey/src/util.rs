@@ -1,3 +1,4 @@
+use std::borrow;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::os::raw::{c_char, c_int};
@@ -19,7 +20,7 @@ pub enum CommandError {
     /// You are not authorized for this command or provided a wrong temporary
     /// password.
     NotAuthorized,
-    /// An error occured when getting or setting the time.
+    /// An error occurred when getting or setting the time.
     Timestamp,
     /// You did not provide a name for the OTP slot.
     NoName,
@@ -29,14 +30,14 @@ pub enum CommandError {
     UnknownCommand,
     /// AES decryption failed.
     AesDecryptionFailed,
-    /// An unknown error occured.
-    Unknown,
+    /// An unknown error occurred.
+    Unknown(i64),
+    /// An unspecified error occurred.
+    Undefined,
     /// You passed a string containing a null byte.
     InvalidString,
     /// You passed an invalid slot.
     InvalidSlot,
-    /// An error occured during random number generation.
-    RngError,
 }
 
 /// Log level for libnitrokey.
@@ -68,7 +69,7 @@ pub fn owned_str_from_ptr(ptr: *const c_char) -> String {
 
 pub fn result_from_string(ptr: *const c_char) -> Result<String, CommandError> {
     if ptr.is_null() {
-        return Err(CommandError::Unknown);
+        return Err(CommandError::Undefined);
     }
     unsafe {
         let s = owned_str_from_ptr(ptr);
@@ -94,42 +95,53 @@ pub fn get_last_result() -> Result<(), CommandError> {
 
 pub fn get_last_error() -> CommandError {
     return match get_last_result() {
-        Ok(()) => CommandError::Unknown,
+        Ok(()) => CommandError::Undefined,
         Err(err) => err,
     };
 }
 
-pub fn generate_password(length: usize) -> std::io::Result<Vec<u8>> {
+pub fn generate_password(length: usize) -> Vec<u8> {
     let mut data = vec![0u8; length];
     rand::thread_rng().fill(&mut data[..]);
-    return Ok(data);
+    return data;
 }
 
 pub fn get_cstring<T: Into<Vec<u8>>>(s: T) -> Result<CString, CommandError> {
     CString::new(s).or(Err(CommandError::InvalidString))
 }
 
+impl CommandError {
+    fn as_str(&self) -> borrow::Cow<'static, str> {
+        match *self {
+            CommandError::WrongCrc => {
+                "A packet with a wrong checksum has been sent or received".into()
+            }
+            CommandError::WrongSlot => "The given OTP slot does not exist".into(),
+            CommandError::SlotNotProgrammed => "The given OTP slot is not programmed".into(),
+            CommandError::WrongPassword => "The given password is wrong".into(),
+            CommandError::NotAuthorized => {
+                "You are not authorized for this command or provided a wrong temporary \
+                 password"
+                    .into()
+            }
+            CommandError::Timestamp => "An error occurred when getting or setting the time".into(),
+            CommandError::NoName => "You did not provide a name for the OTP slot".into(),
+            CommandError::NotSupported => "This command is not supported by this device".into(),
+            CommandError::UnknownCommand => "This command is unknown".into(),
+            CommandError::AesDecryptionFailed => "AES decryption failed".into(),
+            CommandError::Unknown(x) => {
+                borrow::Cow::from(format!("An unknown error occurred ({})", x))
+            }
+            CommandError::Undefined => "An unspecified error occurred".into(),
+            CommandError::InvalidString => "You passed a string containing a null byte".into(),
+            CommandError::InvalidSlot => "The given slot is invalid".into(),
+        }
+    }
+}
+
 impl fmt::Display for CommandError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let msg = match *self {
-            CommandError::WrongCrc => "A packet with a wrong checksum has been sent or received",
-            CommandError::WrongSlot => "The given OTP slot does not exist",
-            CommandError::SlotNotProgrammed => "The given OTP slot is not programmed",
-            CommandError::WrongPassword => "The given password is wrong",
-            CommandError::NotAuthorized => {
-                "You are not authorized for this command or provided a wrong temporary password"
-            }
-            CommandError::Timestamp => "An error occured when getting or setting the time",
-            CommandError::NoName => "You did not provide a name for the OTP slot",
-            CommandError::NotSupported => "This command is not supported by this device",
-            CommandError::UnknownCommand => "This command is unknown",
-            CommandError::AesDecryptionFailed => "AES decryption failed",
-            CommandError::Unknown => "An unknown error occured",
-            CommandError::InvalidString => "You passed a string containing a null byte",
-            CommandError::InvalidSlot => "The given slot is invalid",
-            CommandError::RngError => "An error occured during random number generation",
-        };
-        write!(f, "{}", msg)
+        write!(f, "{}", self.as_str())
     }
 }
 
@@ -147,7 +159,7 @@ impl From<c_int> for CommandError {
             9 => CommandError::UnknownCommand,
             10 => CommandError::AesDecryptionFailed,
             201 => CommandError::InvalidSlot,
-            _ => CommandError::Unknown,
+            x => CommandError::Unknown(x.into()),
         }
     }
 }
