@@ -68,6 +68,9 @@
 //! Nitrocli is a program providing a command line interface to certain
 //! commands of Nitrokey Pro and Storage devices.
 
+#[macro_use]
+mod redefine;
+
 mod args;
 mod commands;
 mod error;
@@ -101,7 +104,7 @@ fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
         _ => 1,
       },
       _ => {
-        println!("{}", err);
+        let _ = eprintln!(ctx, "{}", err);
         1
       }
     },

@@ -815,7 +815,10 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
       ));
     }
 
-    println!("Warning: The --ascii option is deprecated. Please use --format ascii instead.");
+    println!(
+      ctx,
+      "Warning: The --ascii option is deprecated. Please use --format ascii instead."
+    )?;
     secret_format = Some(OtpSecretFormat::Ascii);
   }
   let secret_format = secret_format.unwrap_or(OtpSecretFormat::Hex);
