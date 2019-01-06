@@ -232,11 +232,16 @@ where
 }
 
 /// Query and pretty print the status that is common to all Nitrokey devices.
-fn print_status(model: &'static str, device: &nitrokey::DeviceWrapper) -> Result<()> {
+fn print_status(
+  ctx: &mut args::ExecCtx<'_>,
+  model: &'static str,
+  device: &nitrokey::DeviceWrapper,
+) -> Result<()> {
   let serial_number = device
     .get_serial_number()
     .map_err(|err| get_error("Could not query the serial number", err))?;
-  println!(
+  writeln!(
+    ctx.stdout,
     r#"Status:
   model:             {model}
   serial number:     0x{id}
@@ -249,7 +254,7 @@ fn print_status(model: &'static str, device: &nitrokey::DeviceWrapper) -> Result
     fwv1 = device.get_minor_firmware_version(),
     urc = device.get_user_retry_count(),
     arc = device.get_admin_retry_count(),
-  );
+  )?;
   Ok(())
 }
 
@@ -260,7 +265,7 @@ pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
     nitrokey::DeviceWrapper::Pro(_) => "Pro",
     nitrokey::DeviceWrapper::Storage(_) => "Storage",
   };
-  print_status(model, &device)
+  print_status(ctx, model, &device)
 }
 
 /// Open the encrypted volume on the nitrokey.
@@ -287,8 +292,12 @@ pub fn storage_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Pretty print the status of a Nitrokey Storage.
-fn print_storage_status(status: &nitrokey::StorageStatus) {
-  println!(
+fn print_storage_status(
+  ctx: &mut args::ExecCtx<'_>,
+  status: &nitrokey::StorageStatus,
+) -> Result<()> {
+  writeln!(
+    ctx.stdout,
     r#"Status:
   SD card ID:        {id:#x}
   firmware:          {fw}
@@ -311,7 +320,8 @@ fn print_storage_status(status: &nitrokey::StorageStatus) {
     vu = get_volume_status(&status.unencrypted_volume),
     ve = get_volume_status(&status.encrypted_volume),
     vh = get_volume_status(&status.hidden_volume),
-  );
+  )?;
+  Ok(())
 }
 
 /// Connect to and pretty print the status of a Nitrokey Storage.
@@ -321,8 +331,7 @@ pub fn storage_status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
     .get_status()
     .map_err(|err| get_error("Getting Storage status failed", err))?;
 
-  print_storage_status(&status);
-  Ok(())
+  print_storage_status(ctx, &status)
 }
 
 /// Return a String representation of the given Option.
@@ -338,7 +347,8 @@ pub fn config_get(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let config = get_device(ctx)?
     .get_config()
     .map_err(|err| get_error("Could not get configuration", err))?;
-  println!(
+  writeln!(
+    ctx.stdout,
     r#"Config:
   numlock binding:          {nl}
   capslock binding:         {cl}
@@ -348,7 +358,7 @@ pub fn config_get(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
     cl = format_option(config.capslock),
     sl = format_option(config.scrollock),
     otp = config.user_password,
-  );
+  )?;
   Ok(())
 }
 
@@ -429,7 +439,7 @@ pub fn otp_get(
   } else {
     get_otp(slot, algorithm, &device)
   }?;
-  println!("{}", otp);
+  writeln!(ctx.stdout, "{}", otp)?;
   Ok(())
 }
 
@@ -495,6 +505,7 @@ pub fn otp_clear(
 }
 
 fn print_otp_status(
+  ctx: &mut args::ExecCtx<'_>,
   algorithm: args::OtpAlgorithm,
   device: &nitrokey::DeviceWrapper,
   all: bool,
@@ -525,16 +536,16 @@ fn print_otp_status(
       }
       Err(err) => return Err(get_error("Could not check OTP slot", err)),
     };
-    println!("{}\t{}\t{}", algorithm, slot - 1, name);
+    writeln!(ctx.stdout, "{}\t{}\t{}", algorithm, slot - 1, name)?;
   }
 }
 
 /// Print the status of the OTP slots.
 pub fn otp_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
   let device = get_device(ctx)?;
-  println!("alg\tslot\tname");
-  print_otp_status(args::OtpAlgorithm::Hotp, &device, all)?;
-  print_otp_status(args::OtpAlgorithm::Totp, &device, all)?;
+  writeln!(ctx.stdout, "alg\tslot\tname")?;
+  print_otp_status(ctx, args::OtpAlgorithm::Hotp, &device, all)?;
+  print_otp_status(ctx, args::OtpAlgorithm::Totp, &device, all)?;
   Ok(())
 }
 
@@ -604,15 +615,16 @@ pub fn pin_unblock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 fn print_pws_data(
+  ctx: &mut args::ExecCtx<'_>,
   description: &'static str,
   result: result::Result<String, nitrokey::CommandError>,
   quiet: bool,
 ) -> Result<()> {
   let value = result.map_err(|err| get_error("Could not access PWS slot", err))?;
   if quiet {
-    println!("{}", value);
+    writeln!(ctx.stdout, "{}", value)?;
   } else {
-    println!("{} {}", description, value);
+    writeln!(ctx.stdout, "{} {}", description, value)?;
   }
   Ok(())
 }
@@ -630,13 +642,13 @@ pub fn pws_get(
   let pws = get_password_safe(&device)?;
   let show_all = !show_name && !show_login && !show_password;
   if show_all || show_name {
-    print_pws_data("name:    ", pws.get_slot_name(slot), quiet)?;
+    print_pws_data(ctx, "name:    ", pws.get_slot_name(slot), quiet)?;
   }
   if show_all || show_login {
-    print_pws_data("login:   ", pws.get_slot_login(slot), quiet)?;
+    print_pws_data(ctx, "login:   ", pws.get_slot_login(slot), quiet)?;
   }
   if show_all || show_password {
-    print_pws_data("password:", pws.get_slot_password(slot), quiet)?;
+    print_pws_data(ctx, "password:", pws.get_slot_password(slot), quiet)?;
   }
   Ok(())
 }
@@ -665,7 +677,12 @@ pub fn pws_clear(ctx: &mut args::ExecCtx<'_>, slot: u8) -> Result<()> {
     .map_err(|err| get_error("Could not clear PWS slot", err))
 }
 
-fn print_pws_slot(pws: &nitrokey::PasswordSafe<'_>, slot: usize, programmed: bool) -> Result<()> {
+fn print_pws_slot(
+  ctx: &mut args::ExecCtx<'_>,
+  pws: &nitrokey::PasswordSafe<'_>,
+  slot: usize,
+  programmed: bool,
+) -> Result<()> {
   if slot > u8::MAX as usize {
     return Err(Error::Error("Invalid PWS slot number".to_string()));
   }
@@ -677,7 +694,7 @@ fn print_pws_slot(pws: &nitrokey::PasswordSafe<'_>, slot: usize, programmed: boo
   } else {
     "[not programmed]".to_string()
   };
-  println!("{}\t{}", slot, name);
+  writeln!(ctx.stdout, "{}\t{}", slot, name)?;
   Ok(())
 }
 
@@ -688,13 +705,13 @@ pub fn pws_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
   let slots = pws
     .get_slot_status()
     .map_err(|err| get_error("Could not read PWS slot status", err))?;
-  println!("slot\tname");
+  writeln!(ctx.stdout, "slot\tname")?;
   for (i, &value) in slots
     .into_iter()
     .enumerate()
     .filter(|(_, &value)| all || value)
   {
-    print_pws_slot(&pws, i, value)?;
+    print_pws_slot(ctx, &pws, i, value)?;
   }
   Ok(())
 }
