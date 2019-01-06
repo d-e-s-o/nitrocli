@@ -60,14 +60,14 @@ version = "0.1.1"
 [dev-dependencies.regex]
 version = "1"
 
-[replace]
-"argparse:0.2.2" = { path = "../argparse" }
-"base32:0.4.0" = { path = "../base32" }
-"cc:1.0.28" = { path = "../cc" }
-"libc:0.2.45" = { path = "../libc" }
-"nitrokey:0.3.1" = { path = "../nitrokey" }
-"nitrokey-sys:3.4.1" = { path = "../nitrokey-sys" }
-"rand:0.6.1" = { path = "../rand" }
-"rustc_version:0.2.3" = { path = "../rustc_version" }
-"semver:0.9.0" = { path = "../semver" }
-"semver-parser:0.7.0" = { path = "../semver-parser" }
+[patch.crates-io]
+argparse = { path = "../argparse" }
+base32 = { path = "../base32" }
+cc = { path = "../cc" }
+libc = { path = "../libc" }
+nitrokey = { path = "../nitrokey" }
+nitrokey-sys = { path = "../nitrokey-sys" }
+rand = { path = "../rand" }
+rustc_version = { path = "../rustc_version" }
+semver = { path = "../semver" }
+semver-parser = { path = "../semver-parser" }
