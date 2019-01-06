@@ -73,6 +73,8 @@ mod commands;
 mod error;
 mod pinentry;
 
+use std::env;
+use std::io;
 use std::process;
 use std::result;
 
@@ -81,8 +83,8 @@ use crate::error::Error;
 type Result<T> = result::Result<T, Error>;
 
 fn run() -> i32 {
-  let args = std::env::args().collect();
-  match args::handle_arguments(args) {
+  let args = env::args().collect();
+  match args::handle_arguments(args, &mut io::stdout(), &mut io::stderr()) {
     Ok(()) => 0,
     Err(err) => match err {
       Error::ArgparseError(err) => match err {
