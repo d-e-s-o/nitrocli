@@ -7,12 +7,14 @@
 # https://github.com/rust-lang/docker-rust/blob/e7703b2cf525f2525bdf8d131cd66b5b38b1513c/1.31.0/stretch/Dockerfile
 image: "rust:1.31.0"
 
-build:cargo:
+build-test:cargo:
   script:
   - apt-get update
   - apt-get install --assume-yes libudev-dev libhidapi-dev
   - rustc --version && cargo --version
-  - cd nitrocli && cargo build --all --verbose
+  - cd nitrocli
+  - cargo build --all --verbose
+  - cargo test --all --verbose
 
 lint:clippy:
   script:
