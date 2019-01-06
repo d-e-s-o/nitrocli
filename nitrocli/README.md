@@ -86,10 +86,8 @@ following dependencies are required:
 
 #### Via Packages
 Packages are available for:
-- Arch Linux: [`nitrocli`](https://aur.archlinux.org/packages/nitrocli/) in the
-  Arch User Repository
-- Gentoo Linux: [`app-crypt/nitrocli`](https://github.com/d-e-s-o/nitrocli-ebuild)
-  ebuild
+- Arch Linux: [`nitrocli`][nitrocli-arch] in the Arch User Repository
+- Gentoo Linux: [`app-crypt/nitrocli`][nitrocli-gentoo] ebuild
 
 #### From Crates.io
 **nitrocli** is [published][nitrocli-cratesio] on crates.io and can
@@ -138,5 +136,7 @@ the full text of the license.
 [nitrokey-ug]: https://www.nitrokey.com
 [nitrokey-pro]: https://shop.nitrokey.com/shop/product/nitrokey-pro-2-3
 [nitrokey-storage]: https://shop.nitrokey.com/shop/product/nitrokey-storage-2-16gb-23
+[nitrocli-arch]: https://aur.archlinux.org/packages/nitrocli
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
+[nitrocli-gentoo]: https://packages.gentoo.org/packages/app-crypt/nitrocli
 [gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
