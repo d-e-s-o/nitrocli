@@ -72,6 +72,8 @@ mod args;
 mod commands;
 mod error;
 mod pinentry;
+#[cfg(test)]
+mod tests;
 
 use std::env;
 use std::io;

@@ -24,9 +24,16 @@ use std::string;
 #[derive(Debug)]
 pub enum Error {
   ArgparseError(i32),
+  CommandError(nitrokey::CommandError),
   IoError(io::Error),
   Utf8Error(string::FromUtf8Error),
   Error(String),
+}
+
+impl From<nitrokey::CommandError> for Error {
+  fn from(e: nitrokey::CommandError) -> Error {
+    Error::CommandError(e)
+  }
 }
 
 impl From<io::Error> for Error {
@@ -45,6 +52,7 @@ impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
       Error::ArgparseError(_) => write!(f, "Could not parse arguments"),
+      Error::CommandError(ref e) => write!(f, "Command error: {}", e),
       Error::Utf8Error(_) => write!(f, "Encountered UTF-8 conversion error"),
       Error::IoError(ref e) => write!(f, "IO error: {}", e.get_ref().unwrap()),
       Error::Error(ref e) => write!(f, "{}", e),

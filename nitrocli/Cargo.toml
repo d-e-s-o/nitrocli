@@ -53,6 +53,8 @@ path = "../libc"
 version = "0.3"
 path = "../nitrokey"
 
+[dev-dependencies.nitrokey-test]
+version = "0.1.0"
 
 [replace]
 "cc:1.0.28" = { path = "../cc" }
