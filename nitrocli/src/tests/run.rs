@@ -1,7 +1,7 @@
-// error.rs
+// run.rs
 
 // *************************************************************************
-// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
+// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -17,45 +17,48 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use std::fmt;
-use std::io;
-use std::string;
+use super::*;
+use crate::tests::nitrocli;
+use crate::Error;
 
-#[derive(Debug)]
-pub enum Error {
-  ArgparseError(i32),
-  CommandError(nitrokey::CommandError),
-  IoError(io::Error),
-  Utf8Error(string::FromUtf8Error),
-  Error(String),
+#[test]
+fn no_command_or_option() {
+  let (rc, out, err) = nitrocli::run(NO_DEV, &[]);
+
+  assert_ne!(rc, 0);
+  assert_eq!(out, b"");
+
+  let s = String::from_utf8_lossy(&err).into_owned();
+  assert!(s.starts_with("Usage:\n"), s);
 }
 
-impl From<nitrokey::CommandError> for Error {
-  fn from(e: nitrokey::CommandError) -> Error {
-    Error::CommandError(e)
+#[test]
+fn help_option() {
+  fn test(opt: &'static str) {
+    let (rc, out, err) = nitrocli::run(NO_DEV, &[opt]);
+
+    assert_eq!(rc, 0);
+    assert_eq!(err, b"");
+
+    let s = String::from_utf8_lossy(&out).into_owned();
+    assert!(s.starts_with("Usage:\n"), s);
   }
+
+  test("--help");
+  test("-h")
 }
 
-impl From<io::Error> for Error {
-  fn from(e: io::Error) -> Error {
-    Error::IoError(e)
-  }
-}
-
-impl From<string::FromUtf8Error> for Error {
-  fn from(e: string::FromUtf8Error) -> Error {
-    Error::Utf8Error(e)
-  }
-}
-
-impl fmt::Display for Error {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match *self {
-      Error::ArgparseError(_) => write!(f, "Could not parse arguments"),
-      Error::CommandError(ref e) => write!(f, "Command error: {}", e),
-      Error::Utf8Error(_) => write!(f, "Encountered UTF-8 conversion error"),
-      Error::IoError(ref e) => write!(f, "IO error: {}", e.get_ref().unwrap()),
-      Error::Error(ref e) => write!(f, "{}", e),
+#[test_device]
+fn error_conversion() {
+  match nitrocli::handle(NO_DEV, &["status"]) {
+    Ok(_) => assert!(false),
+    Err(err) => {
+      // Unfortunately we can't directly compare against the error
+      // because not all of the variants implement PartialEq.
+      match err {
+        Error::Error(x) => assert_eq!(x, "Nitrokey device not found".to_string()),
+        _ => assert!(false, err),
+      }
     }
   }
 }

@@ -1,7 +1,7 @@
-// error.rs
+// status.rs
 
 // *************************************************************************
-// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
+// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -17,45 +17,36 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use std::fmt;
-use std::io;
-use std::string;
+use super::*;
+use crate::tests::nitrocli;
+use crate::Result;
 
-#[derive(Debug)]
-pub enum Error {
-  ArgparseError(i32),
-  CommandError(nitrokey::CommandError),
-  IoError(io::Error),
-  Utf8Error(string::FromUtf8Error),
-  Error(String),
+// This test acts as verification that conversion of Error::Error
+// variants into the proper exit code works properly.
+#[test_device]
+fn status_not_found() -> Result<()> {
+  let (rc, out, err) = nitrocli::run(NO_DEV, &["status"]);
+
+  assert_ne!(rc, 0);
+  assert_eq!(out, b"");
+  assert_eq!(err, b"Nitrokey device not found\n");
+  Ok(())
 }
 
-impl From<nitrokey::CommandError> for Error {
-  fn from(e: nitrokey::CommandError) -> Error {
-    Error::CommandError(e)
-  }
-}
+#[test_device]
+fn status(device: nitrokey::DeviceWrapper) -> Result<()> {
+  let re = regex::Regex::new(
+    r#"^Status:
+  model:             (Pro|Storage)
+  serial number:     0x[[:xdigit:]]{8}
+  firmware version:  \d+.\d+
+  user retry count:  [0-3]
+  admin retry count: [0-3]
+$"#,
+  )
+  .unwrap();
 
-impl From<io::Error> for Error {
-  fn from(e: io::Error) -> Error {
-    Error::IoError(e)
-  }
-}
-
-impl From<string::FromUtf8Error> for Error {
-  fn from(e: string::FromUtf8Error) -> Error {
-    Error::Utf8Error(e)
-  }
-}
-
-impl fmt::Display for Error {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match *self {
-      Error::ArgparseError(_) => write!(f, "Could not parse arguments"),
-      Error::CommandError(ref e) => write!(f, "Command error: {}", e),
-      Error::Utf8Error(_) => write!(f, "Encountered UTF-8 conversion error"),
-      Error::IoError(ref e) => write!(f, "IO error: {}", e.get_ref().unwrap()),
-      Error::Error(ref e) => write!(f, "{}", e),
-    }
-  }
+  let out = nitrocli::handle(Some(device), &["status"])?;
+  assert!(re.is_match(&out), out);
+  Ok(())
 }

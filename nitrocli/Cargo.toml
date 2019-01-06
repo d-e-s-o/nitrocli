@@ -57,6 +57,11 @@ path = "../libc"
 version = "0.3"
 path = "../nitrokey"
 
+[dev-dependencies.nitrokey-test]
+version = "0.1.1"
+
+[dev-dependencies.regex]
+version = "1"
 
 [replace]
 "base32:0.4.0" = { path = "../base32" }
