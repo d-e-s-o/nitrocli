@@ -43,7 +43,6 @@ incremental = false
 
 [dependencies.argparse]
 version = "0.2.2"
-path = "../argparse"
 
 [dependencies.base32]
 version = "0.4.0"
@@ -51,11 +50,9 @@ path = "../base32"
 
 [dependencies.libc]
 version = "0.2"
-path = "../libc"
 
 [dependencies.nitrokey]
 version = "0.3.1"
-path = "../nitrokey"
 
 [dev-dependencies.nitrokey-test]
 version = "0.1.1"
@@ -64,9 +61,11 @@ version = "0.1.1"
 version = "1"
 
 [replace]
+"argparse:0.2.2" = { path = "../argparse" }
 "base32:0.4.0" = { path = "../base32" }
 "cc:1.0.28" = { path = "../cc" }
 "libc:0.2.45" = { path = "../libc" }
+"nitrokey:0.3.1" = { path = "../nitrokey" }
 "nitrokey-sys:3.4.1" = { path = "../nitrokey-sys" }
 "rand:0.6.1" = { path = "../rand" }
 "rustc_version:0.2.3" = { path = "../rustc_version" }
