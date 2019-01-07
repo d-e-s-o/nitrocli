@@ -101,6 +101,8 @@ pub(crate) struct RunCtx<'io> {
   pub stdout: &'io mut dyn io::Write,
   /// The `Write` object used as standard error throughout the program.
   pub stderr: &'io mut dyn io::Write,
+  /// The content of the `PATH` environment variable.
+  pub path: Option<ffi::OsString>,
   /// The admin PIN, if provided through an environment variable.
   pub admin_pin: Option<ffi::OsString>,
   /// The user PIN, if provided through an environment variable.
@@ -129,6 +131,11 @@ fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
         // argparse printed an error message
         _ => 1,
       },
+      Error::ExtensionFailed(_, rc) => {
+        // We let the extension itself deal with error reporting, we
+        // just mirror its exit code (if any).
+        rc.unwrap_or(1)
+      }
       _ => {
         let _ = eprintln!(ctx, "{}", err);
         1
@@ -146,6 +153,7 @@ fn main() {
   let ctx = &mut RunCtx {
     stdout: &mut stdout,
     stderr: &mut stderr,
+    path: env::var_os("PATH"),
     admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
     user_pin: env::var_os(NITROCLI_USER_PIN),
     new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),

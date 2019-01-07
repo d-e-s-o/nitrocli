@@ -17,8 +17,14 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::collections;
+use std::env;
 use std::ffi;
+use std::fmt;
+use std::fs;
 use std::io;
+use std::path;
+use std::process;
 use std::result;
 use std::str;
 
@@ -28,6 +34,7 @@ use crate::pinentry;
 use crate::RunCtx;
 
 type Result<T> = result::Result<T, Error>;
+type Extensions = collections::BTreeMap<String, path::PathBuf>;
 
 /// Wraps a writer and buffers its output.
 ///
@@ -140,6 +147,87 @@ Enum! {Builtin, [
   Status => ("status", status),
   Unencrypted => ("unencrypted", unencrypted),
 ]}
+
+#[derive(Debug)]
+enum Command {
+  Builtin(Builtin),
+  Extension(String),
+}
+
+impl Command {
+  pub fn execute(
+    &self,
+    ctx: &mut ExecCtx<'_>,
+    args: Vec<String>,
+    extensions: Extensions,
+  ) -> Result<()> {
+    match self {
+      Command::Builtin(command) => command.execute(ctx, args),
+      Command::Extension(extension) => {
+        match extensions.get(extension) {
+          Some(path) => {
+            // Note that theoretically we could just exec the extension
+            // and be done. However, the problem with that approach is
+            // that it makes testing extension support much more nasty,
+            // because the test process would be overwritten in the
+            // process, requiring us to essentially fork & exec nitrocli
+            // beforehand -- which is much more involved from a cargo
+            // test context.
+            let mut cmd = process::Command::new(path);
+
+            if let Some(model) = ctx.model {
+              let _ = cmd.args(&["--model", model.as_ref()]);
+            };
+
+            let out = cmd
+              // TODO: We may want to take this path from the command
+              //       execution context.
+              .args(&["--nitrocli", &env::current_exe()?.to_string_lossy()])
+              .args(&["--verbosity", &ctx.verbosity.to_string()])
+              .args(&args[1..])
+              .output()
+              .map_err(Into::<Error>::into)?;
+            ctx.stdout.write_all(&out.stdout)?;
+            ctx.stderr.write_all(&out.stderr)?;
+            if out.status.success() {
+              Ok(())
+            } else {
+              Err(Error::ExtensionFailed(
+                extension.to_string(),
+                out.status.code(),
+              ))
+            }
+          }
+          None => Err(Error::Error(format!("Unknown command: {}", extension))),
+        }
+      }
+    }
+  }
+}
+
+impl fmt::Display for Command {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      Command::Builtin(cmd) => write!(f, "{}", cmd),
+      Command::Extension(ext) => write!(f, "{}", ext),
+    }
+  }
+}
+
+impl str::FromStr for Command {
+  type Err = ();
+
+  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
+    Ok(match Builtin::from_str(s) {
+      Ok(cmd) => Command::Builtin(cmd),
+      // Note that at this point we cannot know whether the extension
+      // exists or not and so we always return success. However, if we
+      // fail looking up the corresponding command an error will be
+      // emitted later on.
+      Err(()) => Command::Extension(s.to_string()),
+    })
+  }
+}
 
 Enum! {ConfigCommand, [
   Get => ("get", config_get),
@@ -913,6 +1001,60 @@ fn pws_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   commands::pws_status(ctx, all)
 }
 
+/// Find all the available extensions. Extensions are (executable) files
+/// that have the "nitrocli-" prefix and are discoverable via the `PATH`
+/// environment variable.
+// Note that we use a BTreeMap here to have a stable ordering among
+// extensions. That makes for a nicer user experience over a HashMap as
+// they appear in the help text and random changes in position are
+// confusing.
+fn find_extensions(path: &ffi::OsStr) -> Result<Extensions> {
+  // The std::env module has several references to the PATH environment
+  // variable, indicating that this name is considered platform
+  // independent from their perspective. We do the same.
+  let dirs = env::split_paths(path);
+  let mut commands = Extensions::new();
+  let prefix = format!("{}-", crate::NITROCLI);
+
+  for dir in dirs {
+    match fs::read_dir(&path::Path::new(&dir)) {
+      Ok(entries) => {
+        for entry in entries {
+          let entry = entry?;
+          let path = entry.path();
+          if path.is_file() {
+            let file = String::from(entry.file_name().to_str().unwrap());
+            // Note that we deliberately do not check whether the file
+            // we found is executable. If it is not we will just fail
+            // later on with a permission denied error. The reasons for
+            // this behavior are two fold:
+            // 1) Checking whether a file is executable in Rust is
+            //    painful (as of 1.37 there exists the PermissionsExt
+            //    trait but it is available only for Unix based
+            //    systems).
+            // 2) It is considered a better user experience to show an
+            //    extension that we found (we list them in the help
+            //    text) even if it later turned out to be not usable
+            //    over not showing it and silently doing nothing --
+            //    mostly because anything residing in PATH should be
+            //    executable anyway and given that its name also starts
+            //    with nitrocli- we are pretty sure that's a bug on the
+            //    user's side.
+            if file.starts_with(&prefix) {
+              let mut file = file;
+              file.replace_range(..prefix.len(), "");
+              assert!(commands.insert(file, path).is_none());
+            }
+          }
+        }
+      }
+      Err(ref err) if err.kind() == io::ErrorKind::NotFound => (),
+      x => x.map(|_| ())?,
+    }
+  }
+  Ok(commands)
+}
+
 /// Parse the command-line arguments and execute the selected command.
 pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
   use std::io::Write;
@@ -924,8 +1066,20 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
     fmt_enum!(DeviceModel::all_variants())
   );
   let mut verbosity = 0;
-  let mut command = Builtin::Status;
-  let cmd_help = cmd_help!(command);
+  let path = ctx.path.take().unwrap_or_else(ffi::OsString::new);
+  let extensions = find_extensions(&path)?;
+  let mut command = Command::Builtin(Builtin::Status);
+  let commands = Builtin::all_variants()
+    .iter()
+    .map(AsRef::as_ref)
+    .map(ToOwned::to_owned)
+    .chain(extensions.keys().cloned())
+    .collect::<Vec<_>>()
+    .join("|");
+  // argparse's help text formatting is pretty bad for our intents and
+  // purposes. In particular, line breaks are just ignored by its custom
+  // line wrapping algorithm.
+  let cmd_help = format!("The command to execute ({})", commands);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   let _ = parser.refer(&mut version).add_option(
@@ -981,6 +1135,50 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
       no_cache: ctx.no_cache,
       verbosity,
     };
-    command.execute(&mut ctx, subargs)
+    command.execute(&mut ctx, subargs, extensions)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn no_extensions_available() -> Result<()> {
+    let exts = find_extensions(&ffi::OsString::new())?;
+    assert!(exts.is_empty(), "{:?}", exts);
+    Ok(())
+  }
+
+  #[test]
+  fn discover_extensions() -> Result<()> {
+    let dir1 = tempfile::tempdir()?;
+    let dir2 = tempfile::tempdir()?;
+
+    {
+      let ext1_path = dir1.path().join("nitrocli-ext1");
+      let ext2_path = dir1.path().join("nitrocli-ext2");
+      let ext3_path = dir2.path().join("nitrocli-super-1337-extensions111one");
+      let _ext1 = fs::File::create(&ext1_path)?;
+      let _ext2 = fs::File::create(&ext2_path)?;
+      let _ext3 = fs::File::create(&ext3_path)?;
+
+      let path = env::join_paths(&[dir1.path(), dir2.path()])
+        .map_err(|err| Error::Error(err.to_string()))?;
+      let exts = find_extensions(&path)?;
+
+      let mut it = exts.iter();
+      // Because we control the file names and the order of directories
+      // in `PATH` we can safely assume a fixed order in which
+      // extensions should be discovered.
+      assert_eq!(it.next(), Some((&"ext1".to_string(), &ext1_path)));
+      assert_eq!(it.next(), Some((&"ext2".to_string(), &ext2_path)));
+      assert_eq!(
+        it.next(),
+        Some((&"super-1337-extensions111one".to_string(), &ext3_path))
+      );
+      assert_eq!(it.next(), None);
+    }
+    Ok(())
   }
 }

@@ -64,6 +64,9 @@ version = "0.1"
 [dev-dependencies.regex]
 version = "1"
 
+[dev-dependencies.tempfile]
+version = "3"
+
 [patch.crates-io]
 argparse = { path = "../argparse" }
 base32 = { path = "../base32" }

@@ -1,5 +1,7 @@
 Unreleased
 ----------
+- Added support for user provided extensions through lookup via the
+  `PATH` environment variable
 - Bumped required Rust version to `1.32`
 
 

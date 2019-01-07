@@ -16,8 +16,8 @@ and the password safe.
 .TP
 \fB\-m\fR, \fB\-\-model pro\fR|\fBstorage\fR
 Restrict connections to the given device model.
-If this option is not set, nitrocli will connect to any connected Nitrokey Pro
-or Nitrokey Storage device.
+If this option is not set, \fBnitrocli\fR will connect to any connected Nitrokey
+Pro or Nitrokey Storage device.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Enable additional logging and control its verbosity. Logging enabled through
@@ -263,6 +263,32 @@ This command requires the admin PIN.
 The admin PIN cannot be unblocked.
 This operation is equivalent to the unblock PIN option provided by \fBgpg\fR(1)
 (using the \fB\-\-change\-pin\fR option).
+
+.SS Extensions
+In addition to the above built-in commands, \fBnitrocli\fR supports
+user-provided functionality in the form of extensions. An extension can be any
+executable file whose filename starts with "nitrocli-" and that is discoverable
+through lookup via the \fBPATH\fR environment variable.
+
+An extension should honor the following set of options, which are supplied to
+the extension by \fBnitrocli\fR itself:
+.TP
+\fB\-\-nitrocli\fR \fIpath\fR
+The path to the \fBnitrocli\fR binary. This path can be used to recursively
+invoke \fBnitrocli\fR to implement certain functionality. This option is
+guaranteed to be supplied.
+.TP
+\fB\-\-model pro\fR|\fBstorage\fR
+Restrict connections to the given device model (see the Options section for more
+details). This option is supplied only if it was provided by the user to the
+invocation of \fBnitrocli\fR itself.
+.TP
+\fB\-\-verbosity\fR \fIlevel\fR
+Control the logging verbosity by setting the log level to \fIlevel\fR. The
+default level is 0, which corresponds to an invocation of \fBnitrocli\fR
+without additional logging related options. Each additional occurrence of
+\fB\-v\fR/\fB\-\-verbose\fR increments the log level accordingly. This option is
+guaranteed to be supplied.
 
 .SH ENVIRONMENT
 The program honors a set of environment variables that can be used to
