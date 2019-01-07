@@ -128,7 +128,7 @@ impl From<DeviceModel> for nitrokey::Model {
 
 /// A top-level command for nitrocli.
 #[allow(unused_doc_comments)]
-Enum! {Command, [
+Enum! {Builtin, [
   Config => ("config", config),
   Encrypted => ("encrypted", encrypted),
   Hidden => ("hidden", hidden),
@@ -291,7 +291,7 @@ fn unencrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     format!(
       "{} {} {}",
       crate::NITROCLI,
-      Command::Unencrypted,
+      Builtin::Unencrypted,
       subcommand,
     ),
   );
@@ -341,7 +341,7 @@ fn encrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("{} {} {}", crate::NITROCLI, Command::Encrypted, subcommand),
+    format!("{} {} {}", crate::NITROCLI, Builtin::Encrypted, subcommand),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -392,7 +392,7 @@ fn hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("{} {} {}", crate::NITROCLI, Command::Hidden, subcommand),
+    format!("{} {} {}", crate::NITROCLI, Builtin::Hidden, subcommand),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -463,7 +463,7 @@ fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("{} {} {}", crate::NITROCLI, Command::Config, subcommand),
+    format!("{} {} {}", crate::NITROCLI, Builtin::Config, subcommand),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -575,7 +575,7 @@ fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("{} {} {}", crate::NITROCLI, Command::Otp, subcommand),
+    format!("{} {} {}", crate::NITROCLI, Builtin::Otp, subcommand),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -746,7 +746,7 @@ fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("{} {} {}", crate::NITROCLI, Command::Pin, subcommand),
+    format!("{} {} {}", crate::NITROCLI, Builtin::Pin, subcommand),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -806,7 +806,7 @@ fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("{} {} {}", crate::NITROCLI, Command::Pws, subcommand),
+    format!("{} {} {}", crate::NITROCLI, Builtin::Pws, subcommand),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -924,7 +924,7 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
     fmt_enum!(DeviceModel::all_variants())
   );
   let mut verbosity = 0;
-  let mut command = Command::Status;
+  let mut command = Builtin::Status;
   let cmd_help = cmd_help!(command);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
