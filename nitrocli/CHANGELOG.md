@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Further decreased binary size by using system allocator
+
+
 0.2.2
 -----
 - Added the `-v`/`--verbose` option to control libnitrokey log level
