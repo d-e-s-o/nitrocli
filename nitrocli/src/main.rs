@@ -70,6 +70,8 @@
 
 #[macro_use]
 mod redefine;
+#[macro_use]
+mod arg_util;
 
 mod args;
 mod commands;

@@ -17,7 +17,6 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use std::fmt;
 use std::io;
 use std::result;
 use std::str;
@@ -28,38 +27,6 @@ use crate::pinentry;
 use crate::RunCtx;
 
 type Result<T> = result::Result<T, Error>;
-
-/// The available Nitrokey models.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum DeviceModel {
-  Pro,
-  Storage,
-}
-
-impl fmt::Display for DeviceModel {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        DeviceModel::Pro => "pro",
-        DeviceModel::Storage => "storage",
-      }
-    )
-  }
-}
-
-impl str::FromStr for DeviceModel {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "pro" => Ok(DeviceModel::Pro),
-      "storage" => Ok(DeviceModel::Storage),
-      _ => Err(()),
-    }
-  }
-}
 
 trait Stdio {
   fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write);
@@ -86,22 +53,27 @@ impl<'io> Stdio for ExecCtx<'io> {
   }
 }
 
+/// The available Nitrokey models.
+Enum! {DeviceModel, [
+  Pro => "pro",
+  Storage => "storage"
+]}
+
 /// A top-level command for nitrocli.
-#[derive(Debug)]
-pub enum Command {
-  Config,
-  Lock,
-  Otp,
-  Pin,
-  Pws,
-  Status,
-  Storage,
-}
+Enum! {Command, [
+  Config => "config",
+  Lock => "lock",
+  Otp => "otp",
+  Pin => "pin",
+  Pws => "pws",
+  Status => "status",
+  Storage => "storage"
+]}
 
 impl Command {
   /// Execute this command with the given arguments.
-  pub fn execute(&self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match *self {
+  pub fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+    match self {
       Command::Config => config(ctx, args),
       Command::Lock => lock(ctx, args),
       Command::Otp => otp(ctx, args),
@@ -113,77 +85,16 @@ impl Command {
   }
 }
 
-impl fmt::Display for Command {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        Command::Config => "config",
-        Command::Lock => "lock",
-        Command::Otp => "otp",
-        Command::Pin => "pin",
-        Command::Pws => "pws",
-        Command::Status => "status",
-        Command::Storage => "storage",
-      }
-    )
-  }
-}
-
-impl str::FromStr for Command {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "config" => Ok(Command::Config),
-      "lock" => Ok(Command::Lock),
-      "otp" => Ok(Command::Otp),
-      "pin" => Ok(Command::Pin),
-      "pws" => Ok(Command::Pws),
-      "status" => Ok(Command::Status),
-      "storage" => Ok(Command::Storage),
-      _ => Err(()),
-    }
-  }
-}
-
-#[derive(Debug)]
-enum ConfigCommand {
-  Get,
-  Set,
-}
+Enum! {ConfigCommand, [
+  Get => "get",
+  Set => "set"
+]}
 
 impl ConfigCommand {
-  fn execute(&self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match *self {
+  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+    match self {
       ConfigCommand::Get => config_get(ctx, args),
       ConfigCommand::Set => config_set(ctx, args),
-    }
-  }
-}
-
-impl fmt::Display for ConfigCommand {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        ConfigCommand::Get => "get",
-        ConfigCommand::Set => "set",
-      }
-    )
-  }
-}
-
-impl str::FromStr for ConfigCommand {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "get" => Ok(ConfigCommand::Get),
-      "set" => Ok(ConfigCommand::Set),
-      _ => Err(()),
     }
   }
 }
@@ -223,17 +134,16 @@ impl<T> ConfigOption<T> {
   }
 }
 
-#[derive(Debug)]
-enum OtpCommand {
-  Clear,
-  Get,
-  Set,
-  Status,
-}
+Enum! {OtpCommand, [
+  Clear => "clear",
+  Get => "get",
+  Set => "set",
+  Status => "status"
+]}
 
 impl OtpCommand {
-  fn execute(&self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match *self {
+  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+    match self {
       OtpCommand::Clear => otp_clear(ctx, args),
       OtpCommand::Get => otp_get(ctx, args),
       OtpCommand::Set => otp_set(ctx, args),
@@ -242,96 +152,15 @@ impl OtpCommand {
   }
 }
 
-impl fmt::Display for OtpCommand {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        OtpCommand::Clear => "clear",
-        OtpCommand::Get => "get",
-        OtpCommand::Set => "set",
-        OtpCommand::Status => "status",
-      }
-    )
-  }
-}
+Enum! {OtpAlgorithm, [
+  Hotp => "hotp",
+  Totp => "totp"
+]}
 
-impl str::FromStr for OtpCommand {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "clear" => Ok(OtpCommand::Clear),
-      "get" => Ok(OtpCommand::Get),
-      "set" => Ok(OtpCommand::Set),
-      "status" => Ok(OtpCommand::Status),
-      _ => Err(()),
-    }
-  }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum OtpAlgorithm {
-  Hotp,
-  Totp,
-}
-
-impl fmt::Display for OtpAlgorithm {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        OtpAlgorithm::Hotp => "hotp",
-        OtpAlgorithm::Totp => "totp",
-      }
-    )
-  }
-}
-
-impl str::FromStr for OtpAlgorithm {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "hotp" => Ok(OtpAlgorithm::Hotp),
-      "totp" => Ok(OtpAlgorithm::Totp),
-      _ => Err(()),
-    }
-  }
-}
-
-#[derive(Clone, Copy, Debug)]
-enum OtpMode {
-  SixDigits,
-  EightDigits,
-}
-
-impl fmt::Display for OtpMode {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        OtpMode::SixDigits => "6",
-        OtpMode::EightDigits => "8",
-      }
-    )
-  }
-}
-
-impl str::FromStr for OtpMode {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "6" => Ok(OtpMode::SixDigits),
-      "8" => Ok(OtpMode::EightDigits),
-      _ => Err(()),
-    }
-  }
-}
+Enum! {OtpMode, [
+  SixDigits => "6",
+  EightDigits => "8"
+]}
 
 impl From<OtpMode> for nitrokey::OtpMode {
   fn from(mode: OtpMode) -> Self {
@@ -342,50 +171,21 @@ impl From<OtpMode> for nitrokey::OtpMode {
   }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum OtpSecretFormat {
-  Ascii,
-  Base32,
-  Hex,
-}
+Enum! {OtpSecretFormat, [
+  Ascii => "ascii",
+  Base32 => "base32",
+  Hex => "hex"
+]}
 
-impl fmt::Display for OtpSecretFormat {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        OtpSecretFormat::Ascii => "ascii",
-        OtpSecretFormat::Base32 => "base32",
-        OtpSecretFormat::Hex => "hex",
-      }
-    )
-  }
-}
-
-impl str::FromStr for OtpSecretFormat {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "ascii" => Ok(OtpSecretFormat::Ascii),
-      "base32" => Ok(OtpSecretFormat::Base32),
-      "hex" => Ok(OtpSecretFormat::Hex),
-      _ => Err(()),
-    }
-  }
-}
-
-#[derive(Debug)]
-enum PinCommand {
-  Clear,
-  Set,
-  Unblock,
-}
+Enum! {PinCommand, [
+  Clear => "clear",
+  Set => "set",
+  Unblock => "unblock"
+]}
 
 impl PinCommand {
-  fn execute(&self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match *self {
+  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+    match self {
       PinCommand::Clear => pin_clear(ctx, args),
       PinCommand::Set => pin_set(ctx, args),
       PinCommand::Unblock => pin_unblock(ctx, args),
@@ -393,77 +193,20 @@ impl PinCommand {
   }
 }
 
-impl fmt::Display for PinCommand {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        PinCommand::Clear => "clear",
-        PinCommand::Set => "set",
-        PinCommand::Unblock => "unblock",
-      }
-    )
-  }
-}
-
-impl str::FromStr for PinCommand {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "clear" => Ok(PinCommand::Clear),
-      "set" => Ok(PinCommand::Set),
-      "unblock" => Ok(PinCommand::Unblock),
-      _ => Err(()),
-    }
-  }
-}
-
-#[derive(Debug)]
-enum PwsCommand {
-  Clear,
-  Get,
-  Set,
-  Status,
-}
+Enum! {PwsCommand, [
+  Clear => "clear",
+  Get => "get",
+  Set => "set",
+  Status => "status"
+]}
 
 impl PwsCommand {
-  fn execute(&self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match *self {
+  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+    match self {
       PwsCommand::Clear => pws_clear(ctx, args),
       PwsCommand::Get => pws_get(ctx, args),
       PwsCommand::Set => pws_set(ctx, args),
       PwsCommand::Status => pws_status(ctx, args),
-    }
-  }
-}
-
-impl fmt::Display for PwsCommand {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        PwsCommand::Clear => "clear",
-        PwsCommand::Get => "get",
-        PwsCommand::Set => "set",
-        PwsCommand::Status => "status",
-      }
-    )
-  }
-}
-
-impl str::FromStr for PwsCommand {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "clear" => Ok(PwsCommand::Clear),
-      "get" => Ok(PwsCommand::Get),
-      "set" => Ok(PwsCommand::Set),
-      "status" => Ok(PwsCommand::Status),
-      _ => Err(()),
     }
   }
 }
@@ -490,46 +233,18 @@ fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   commands::status(ctx)
 }
 
-#[derive(Debug)]
-enum StorageCommand {
-  Close,
-  Open,
-  Status,
-}
+Enum! {StorageCommand, [
+  Close => "close",
+  Open => "open",
+  Status => "status"
+]}
 
 impl StorageCommand {
-  fn execute(&self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match *self {
+  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+    match self {
       StorageCommand::Close => storage_close(ctx, args),
       StorageCommand::Open => storage_open(ctx, args),
       StorageCommand::Status => storage_status(ctx, args),
-    }
-  }
-}
-
-impl fmt::Display for StorageCommand {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        StorageCommand::Close => "close",
-        StorageCommand::Open => "open",
-        StorageCommand::Status => "status",
-      }
-    )
-  }
-}
-
-impl str::FromStr for StorageCommand {
-  type Err = ();
-
-  fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-    match s {
-      "close" => Ok(StorageCommand::Close),
-      "open" => Ok(StorageCommand::Open),
-      "status" => Ok(StorageCommand::Status),
-      _ => Err(()),
     }
   }
 }
@@ -554,7 +269,7 @@ fn storage(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parse(ctx, &parser, args)?;
   drop(parser);
 
-  subargs.insert(0, format!("nitrocli storage {}", subcommand));
+  subargs.insert(0, format!("nitrocli {} {}", Command::Storage, subcommand));
   subcommand.execute(ctx, subargs)
 }
 
@@ -605,7 +320,7 @@ fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parse(ctx, &parser, args)?;
   drop(parser);
 
-  subargs.insert(0, format!("nitrocli config {}", subcommand));
+  subargs.insert(0, format!("nitrocli {} {}", Command::Config, subcommand));
   subcommand.execute(ctx, subargs)
 }
 
@@ -715,7 +430,7 @@ fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parse(ctx, &parser, args)?;
   drop(parser);
 
-  subargs.insert(0, format!("nitrocli otp {}", subcommand));
+  subargs.insert(0, format!("nitrocli {} {}", Command::Otp, subcommand));
   subcommand.execute(ctx, subargs)
 }
 
@@ -892,7 +607,7 @@ fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parse(ctx, &parser, args)?;
   drop(parser);
 
-  subargs.insert(0, format!("nitrocli pin {}", subcommand));
+  subargs.insert(0, format!("nitrocli {} {}", Command::Pin, subcommand));
   subcommand.execute(ctx, subargs)
 }
 
@@ -950,7 +665,7 @@ fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parse(ctx, &parser, args)?;
   drop(parser);
 
-  subargs.insert(0, format!("nitrocli pws {}", subcommand));
+  subargs.insert(0, format!("nitrocli {} {}", Command::Pws, subcommand));
   subcommand.execute(ctx, subargs)
 }
 
