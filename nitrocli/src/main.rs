@@ -78,12 +78,20 @@ mod pinentry;
 #[cfg(test)]
 mod tests;
 
+use std::alloc;
 use std::env;
 use std::io;
 use std::process;
 use std::result;
 
 use crate::error::Error;
+
+// Switch from the default allocator (typically jemalloc) to the system
+// allocator (malloc based on Unix systems). Our application is by no
+// means allocation intensive and the default allocator is typically
+// much larger in size, causing binary bloat.
+#[global_allocator]
+static A: alloc::System = alloc::System;
 
 type Result<T> = result::Result<T, Error>;
 
