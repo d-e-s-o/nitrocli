@@ -1,7 +1,7 @@
 // error.rs
 
 // *************************************************************************
-// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
+// * Copyright (C) 2017-2019 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -46,7 +46,7 @@ impl fmt::Display for Error {
     match *self {
       Error::ArgparseError(_) => write!(f, "Could not parse arguments"),
       Error::Utf8Error(_) => write!(f, "Encountered UTF-8 conversion error"),
-      Error::IoError(ref e) => write!(f, "IO error: {}", e.get_ref().unwrap()),
+      Error::IoError(ref e) => write!(f, "IO error: {}", e),
       Error::Error(ref e) => write!(f, "{}", e),
     }
   }
