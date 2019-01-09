@@ -17,9 +17,15 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::ffi;
 use std::fmt;
 
 use nitrokey_test::test as test_device;
+
+// TODO: Those defines should potentially be taken from the `nitrokey`
+//       crate, once exported.
+const NITROKEY_DEFAULT_ADMIN_PIN: &str = "12345678";
+const NITROKEY_DEFAULT_USER_PIN: &str = "123456";
 
 // TODO: This is a hack to make the nitrokey-test crate work across
 //       module boundaries. Upon first use of the nitrokey_test::test
@@ -63,11 +69,21 @@ where
 
 struct Nitrocli {
   model: Option<nitrokey::Model>,
+  admin_pin: Option<ffi::OsString>,
+  user_pin: Option<ffi::OsString>,
+  new_admin_pin: Option<ffi::OsString>,
+  new_user_pin: Option<ffi::OsString>,
 }
 
 impl Nitrocli {
   pub fn new() -> Self {
-    Self { model: None }
+    Self {
+      model: None,
+      admin_pin: Some(NITROKEY_DEFAULT_ADMIN_PIN.into()),
+      user_pin: Some(NITROKEY_DEFAULT_USER_PIN.into()),
+      new_admin_pin: None,
+      new_user_pin: None,
+    }
   }
 
   pub fn with_dev<D>(device: D) -> Self
@@ -76,6 +92,10 @@ impl Nitrocli {
   {
     let result = Self {
       model: Some(device.get_model()),
+      admin_pin: Some(NITROKEY_DEFAULT_ADMIN_PIN.into()),
+      user_pin: Some(NITROKEY_DEFAULT_USER_PIN.into()),
+      new_admin_pin: None,
+      new_user_pin: None,
     };
 
     drop(device);
@@ -107,6 +127,10 @@ impl Nitrocli {
     let ctx = &mut crate::RunCtx {
       stdout: &mut stdout,
       stderr: &mut stderr,
+      admin_pin: self.admin_pin.clone(),
+      user_pin: self.user_pin.clone(),
+      new_admin_pin: self.new_admin_pin.clone(),
+      new_user_pin: self.new_user_pin.clone(),
     };
 
     (f(ctx, args), stdout, stderr)
