@@ -97,7 +97,6 @@ fn get_password_safe(device: &dyn Device) -> Result<nitrokey::PasswordSafe<'_>> 
     (),
     |_, pin| device.get_password_safe(pin).map_err(|err| ((), err)),
   )
-  .map_err(|(_, err)| err)
 }
 
 /// Authenticate the given device using the given PIN type and operation.
@@ -113,7 +112,7 @@ where
   D: Device,
   F: Fn(D, &str) -> result::Result<A, (D, nitrokey::CommandError)>,
 {
-  try_with_pin_and_data(pin_type, msg, device, op).map_err(|(_device, err)| err)
+  try_with_pin_and_data(pin_type, msg, device, op)
 }
 
 /// Authenticate the given device with the user PIN.
@@ -174,7 +173,7 @@ fn try_with_pin_and_data<D, F, R>(
   msg: &'static str,
   data: D,
   op: F,
-) -> result::Result<R, (D, Error)>
+) -> Result<R>
 where
   F: Fn(D, &str) -> result::Result<R, (D, nitrokey::CommandError)>,
 {
@@ -182,17 +181,12 @@ where
   let mut retry = 3;
   let mut error_msg = None;
   loop {
-    let pin = match pinentry::inquire_pin(pin_type, pinentry::Mode::Query, error_msg) {
-      Ok(pin) => pin,
-      Err(err) => return Err((data, err)),
-    };
+    let pin = pinentry::inquire_pin(pin_type, pinentry::Mode::Query, error_msg)?;
     match op(data, &pin) {
       Ok(result) => return Ok(result),
       Err((new_data, err)) => match err {
         nitrokey::CommandError::WrongPassword => {
-          if let Err(err) = pinentry::clear_pin(pin_type) {
-            return Err((new_data, err));
-          }
+          pinentry::clear_pin(pin_type)?;
           retry -= 1;
 
           if retry > 0 {
@@ -200,9 +194,9 @@ where
             data = new_data;
             continue;
           }
-          return Err((new_data, get_error(msg, err)));
+          return Err(get_error(msg, err));
         }
-        err => return Err((new_data, get_error(msg, err))),
+        err => return Err(get_error(msg, err)),
       },
     };
   }
@@ -219,7 +213,6 @@ where
   try_with_pin_and_data(pin_type, msg, (), |data, pin| {
     op(pin).map_err(|err| (data, err))
   })
-  .map_err(|(_data, err)| err)
 }
 
 /// Query and pretty print the status that is common to all Nitrokey devices.
