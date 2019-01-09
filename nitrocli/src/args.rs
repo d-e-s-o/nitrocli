@@ -153,7 +153,7 @@ impl OtpCommand {
 }
 
 Enum! {OtpAlgorithm, [
-  Hotp => "hopt",
+  Hotp => "hotp",
   Totp => "totp"
 ]}
 
