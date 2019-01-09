@@ -91,15 +91,11 @@ fn get_storage_device(ctx: &mut args::ExecCtx<'_>) -> Result<nitrokey::Storage> 
 
 /// Open the password safe on the given device.
 fn get_password_safe(device: &dyn Device) -> Result<nitrokey::PasswordSafe<'_>> {
-  try_with_passphrase_and_data(
+  try_with_pin_and_data(
     pinentry::PinType::User,
     "Could not access the password safe",
     (),
-    |_, passphrase| {
-      device
-        .get_password_safe(passphrase)
-        .map_err(|err| ((), err))
-    },
+    |_, pin| device.get_password_safe(pin).map_err(|err| ((), err)),
   )
   .map_err(|(_, err)| err)
 }
@@ -117,7 +113,7 @@ where
   D: Device,
   F: Fn(D, &str) -> result::Result<A, (D, nitrokey::CommandError)>,
 {
-  try_with_passphrase_and_data(pin_type, msg, device, op).map_err(|(_device, err)| err)
+  try_with_pin_and_data(pin_type, msg, device, op).map_err(|(_device, err)| err)
 }
 
 /// Authenticate the given device with the user PIN.
@@ -129,7 +125,7 @@ where
     device,
     pinentry::PinType::User,
     "Could not authenticate as user",
-    |device, passphrase| device.authenticate_user(passphrase),
+    |device, pin| device.authenticate_user(pin),
   )
 }
 
@@ -142,7 +138,7 @@ where
     device,
     pinentry::PinType::Admin,
     "Could not authenticate as admin",
-    |device, passphrase| device.authenticate_admin(passphrase),
+    |device, pin| device.authenticate_admin(pin),
   )
 }
 
@@ -159,22 +155,22 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
   }
 }
 
-/// Try to execute the given function with a passphrase queried using pinentry.
+/// Try to execute the given function with a pin queried using pinentry.
 ///
-/// This function will query the passphrase of the given type from the
-/// user using pinentry.  It will then execute the given function.  If
-/// this function returns a result, the result will be passed it on.  If
-/// it returns a `CommandError::WrongPassword`, the user will be asked
-/// again to enter the passphrase.  Otherwise, this function returns an
-/// error containing the given error message.  The user will have at
-/// most three tries to get the passphrase right.
+/// This function will query the pin of the given type from the user
+/// using pinentry.  It will then execute the given function.  If this
+/// function returns a result, the result will be passed it on.  If it
+/// returns a `CommandError::WrongPassword`, the user will be asked
+/// again to enter the pin.  Otherwise, this function returns an error
+/// containing the given error message.  The user will have at most
+/// three tries to get the pin right.
 ///
 /// The data argument can be used to pass on data between the tries.  At
 /// the first try, this function will call `op` with `data`.  At the
 /// second or third try, it will call `op` with the data returned by the
 /// previous call to `op`.
-fn try_with_passphrase_and_data<D, F, R>(
-  pin: pinentry::PinType,
+fn try_with_pin_and_data<D, F, R>(
+  pin_type: pinentry::PinType,
   msg: &'static str,
   data: D,
   op: F,
@@ -186,19 +182,19 @@ where
   let mut retry = 3;
   let mut error_msg = None;
   loop {
-    let passphrase = match pinentry::inquire_passphrase(pin, pinentry::Mode::Query, error_msg) {
-      Ok(passphrase) => passphrase,
+    let pin = match pinentry::inquire_pin(pin_type, pinentry::Mode::Query, error_msg) {
+      Ok(pin) => pin,
       Err(err) => return Err((data, err)),
     };
-    let passphrase = match String::from_utf8(passphrase) {
-      Ok(passphrase) => passphrase,
+    let pin = match String::from_utf8(pin) {
+      Ok(pin) => pin,
       Err(err) => return Err((data, Error::from(err))),
     };
-    match op(data, &passphrase) {
+    match op(data, &pin) {
       Ok(result) => return Ok(result),
       Err((new_data, err)) => match err {
         nitrokey::CommandError::WrongPassword => {
-          if let Err(err) = pinentry::clear_passphrase(pin) {
+          if let Err(err) = pinentry::clear_pin(pin_type) {
             return Err((new_data, err));
           }
           retry -= 1;
@@ -217,16 +213,16 @@ where
   }
 }
 
-/// Try to execute the given function with a passphrase queried using pinentry.
+/// Try to execute the given function with a pin queried using pinentry.
 ///
-/// This function behaves exactly as `try_with_passphrase_and_data`, but
+/// This function behaves exactly as `try_with_pin_and_data`, but
 /// it refrains from passing any data to it.
-fn try_with_passphrase<F>(pin: pinentry::PinType, msg: &'static str, op: F) -> Result<()>
+fn try_with_pin<F>(pin_type: pinentry::PinType, msg: &'static str, op: F) -> Result<()>
 where
   F: Fn(&str) -> result::Result<(), nitrokey::CommandError>,
 {
-  try_with_passphrase_and_data(pin, msg, (), |data, passphrase| {
-    op(passphrase).map_err(|err| (data, err))
+  try_with_pin_and_data(pin_type, msg, (), |data, pin| {
+    op(pin).map_err(|err| (data, err))
   })
   .map_err(|(_data, err)| err)
 }
@@ -271,10 +267,10 @@ pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 /// Open the encrypted volume on the nitrokey.
 pub fn storage_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_storage_device(ctx)?;
-  try_with_passphrase(
+  try_with_pin(
     pinentry::PinType::User,
     "Opening encrypted volume failed",
-    |passphrase| device.enable_encrypted_volume(&passphrase),
+    |pin| device.enable_encrypted_volume(&pin),
   )
 }
 
@@ -560,13 +556,13 @@ pub fn otp_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
 
 /// Clear the PIN stored by various operations.
 pub fn pin_clear() -> Result<()> {
-  pinentry::clear_passphrase(pinentry::PinType::Admin)?;
-  pinentry::clear_passphrase(pinentry::PinType::User)?;
+  pinentry::clear_pin(pinentry::PinType::Admin)?;
+  pinentry::clear_pin(pinentry::PinType::User)?;
   Ok(())
 }
 
-fn check_pin(pintype: pinentry::PinType, pin: &str) -> Result<()> {
-  let minimum_length = match pintype {
+fn check_pin(pin_type: pinentry::PinType, pin: &str) -> Result<()> {
+  let minimum_length = match pin_type {
     pinentry::PinType::Admin => 8,
     pinentry::PinType::User => 6,
   };
@@ -580,15 +576,15 @@ fn check_pin(pintype: pinentry::PinType, pin: &str) -> Result<()> {
   }
 }
 
-fn choose_pin(pintype: pinentry::PinType) -> Result<String> {
-  pinentry::clear_passphrase(pintype)?;
-  let new_pin = pinentry::inquire_passphrase(pintype, pinentry::Mode::Choose, None)?;
-  pinentry::clear_passphrase(pintype)?;
+fn choose_pin(pin_type: pinentry::PinType) -> Result<String> {
+  pinentry::clear_pin(pin_type)?;
+  let new_pin = pinentry::inquire_pin(pin_type, pinentry::Mode::Choose, None)?;
+  pinentry::clear_pin(pin_type)?;
   let new_pin = String::from_utf8(new_pin)?;
-  check_pin(pintype, &new_pin)?;
+  check_pin(pin_type, &new_pin)?;
 
-  let confirm_pin = pinentry::inquire_passphrase(pintype, pinentry::Mode::Confirm, None)?;
-  pinentry::clear_passphrase(pintype)?;
+  let confirm_pin = pinentry::inquire_pin(pin_type, pinentry::Mode::Confirm, None)?;
+  pinentry::clear_pin(pin_type)?;
   let confirm_pin = String::from_utf8(confirm_pin)?;
 
   if new_pin != confirm_pin {
@@ -599,13 +595,13 @@ fn choose_pin(pintype: pinentry::PinType) -> Result<String> {
 }
 
 /// Change a PIN.
-pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pintype: pinentry::PinType) -> Result<()> {
+pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Result<()> {
   let device = get_device(ctx)?;
-  let new_pin = choose_pin(pintype)?;
-  try_with_passphrase(
-    pintype,
+  let new_pin = choose_pin(pin_type)?;
+  try_with_pin(
+    pin_type,
     "Could not change the PIN",
-    |current_pin| match pintype {
+    |current_pin| match pin_type {
       pinentry::PinType::Admin => device.change_admin_pin(&current_pin, &new_pin),
       pinentry::PinType::User => device.change_user_pin(&current_pin, &new_pin),
     },
@@ -616,7 +612,7 @@ pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pintype: pinentry::PinType) -> Resul
 pub fn pin_unblock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_device(ctx)?;
   let user_pin = choose_pin(pinentry::PinType::User)?;
-  try_with_passphrase(
+  try_with_pin(
     pinentry::PinType::Admin,
     "Could not unblock the user PIN",
     |admin_pin| device.unlock_user_pin(&admin_pin, &user_pin),

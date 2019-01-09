@@ -93,9 +93,9 @@ impl PinType {
 
 /// PIN entry mode for pinentry.
 ///
-/// This enum describes the context of the pinentry query, for example prompting for the current
-/// PIN or requesting a new PIN.  The mode may affect the pinentry description and whether a
-/// quality bar is shown.
+/// This enum describes the context of the pinentry query, for example
+/// prompting for the current PIN or requesting a new PIN.  The mode may
+/// affect the pinentry description and whether a quality bar is shown.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Mode {
   /// Let the user choose a new PIN.
@@ -112,7 +112,7 @@ impl Mode {
   }
 }
 
-fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
+fn parse_pinentry_pin(response: Vec<u8>) -> Result<Vec<u8>, Error> {
   let string = String::from_utf8(response)?;
   let lines: Vec<&str> = string.lines().collect();
 
@@ -138,11 +138,13 @@ fn parse_pinentry_passphrase(response: Vec<u8>) -> Result<Vec<u8>, Error> {
 
 /// Inquire a PIN of the given type from the user.
 ///
-/// This function inquires a PIN of the given type from the user or returns the cached passphrase,
-/// if available.  If an error message is set, it is displayed in the passphrase dialog.  The
-/// mode describes the context of the pinentry dialog.  It is used to choose an appropriate
-/// description and to decide whether a quality bar is shown in the dialog.
-pub fn inquire_passphrase(
+/// This function inquires a PIN of the given type from the user or
+/// returns the cached pin, if available.  If an error message is set,
+/// it is displayed in the pin dialog.  The mode describes the context
+/// of the pinentry dialog.  It is used to choose an appropriate
+/// description and to decide whether a quality bar is shown in the
+/// dialog.
+pub fn inquire_pin(
   pin_type: PinType,
   mode: Mode,
   error_msg: Option<&str>,
@@ -161,7 +163,7 @@ pub fn inquire_passphrase(
   }
   command += &args;
   // We could also use the --data parameter here to have a more direct
-  // representation of the passphrase but the resulting response was
+  // representation of the pin but the resulting response was
   // considered more difficult to parse overall. It appears an error
   // reported for the GET_PASSPHRASE command does not actually cause
   // gpg-connect-agent to exit with a non-zero error code, we have to
@@ -170,7 +172,7 @@ pub fn inquire_passphrase(
     .arg(command)
     .arg("/bye")
     .output()?;
-  parse_pinentry_passphrase(output.stdout)
+  parse_pinentry_pin(output.stdout)
 }
 
 fn parse_pinentry_response(response: Vec<u8>) -> Result<(), Error> {
@@ -184,8 +186,8 @@ fn parse_pinentry_response(response: Vec<u8>) -> Result<(), Error> {
   Err(Error::Error("Unexpected response: ".to_string() + &string))
 }
 
-/// Clear the cached passphrase of the given type.
-pub fn clear_passphrase(pin_type: PinType) -> Result<(), Error> {
+/// Clear the cached pin of the given type.
+pub fn clear_pin(pin_type: PinType) -> Result<(), Error> {
   let command = "CLEAR_PASSPHRASE ".to_string() + pin_type.cache_id();
   let output = process::Command::new("gpg-connect-agent")
     .arg(command)
@@ -200,20 +202,20 @@ mod tests {
   use super::*;
 
   #[test]
-  fn parse_pinentry_passphrase_good() {
+  fn parse_pinentry_pin_good() {
     let response = "D passphrase\nOK\n".to_string().into_bytes();
     let expected = "passphrase".to_string().into_bytes();
 
-    assert_eq!(parse_pinentry_passphrase(response).unwrap(), expected)
+    assert_eq!(parse_pinentry_pin(response).unwrap(), expected)
   }
 
   #[test]
-  fn parse_pinentry_passphrase_error() {
+  fn parse_pinentry_pin_error() {
     let error = "83886179 Operation cancelled";
     let response = "ERR ".to_string() + error + "\n";
     let expected = error;
 
-    let error = parse_pinentry_passphrase(response.to_string().into_bytes());
+    let error = parse_pinentry_pin(response.to_string().into_bytes());
 
     if let Error::Error(ref e) = error.err().unwrap() {
       assert_eq!(e, &expected);
@@ -223,11 +225,11 @@ mod tests {
   }
 
   #[test]
-  fn parse_pinentry_passphrase_unexpected() {
+  fn parse_pinentry_pin_unexpected() {
     let response = "foobar\n";
     let expected = "Unexpected response: ".to_string() + response;
 
-    let error = parse_pinentry_passphrase(response.to_string().into_bytes());
+    let error = parse_pinentry_pin(response.to_string().into_bytes());
 
     if let Error::Error(ref e) = error.err().unwrap() {
       assert_eq!(e, &expected);
