@@ -1,6 +1,6 @@
 [package]
 name = "nitrokey"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Robin Krahl <robin.krahl@ireas.org>"]
 edition = "2018"
 homepage = "https://code.ireas.org/nitrokey-rs/"
@@ -20,3 +20,6 @@ test-storage = []
 libc = "0.2"
 nitrokey-sys = "3.4"
 rand = "0.6"
+
+[dev-dependencies]
+nitrokey-test = {version = "0.1"}
