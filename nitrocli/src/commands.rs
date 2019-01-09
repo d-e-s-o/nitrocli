@@ -34,8 +34,8 @@ use crate::pinentry;
 use crate::Result;
 
 /// Create an `error::Error` with an error message of the format `msg: err`.
-fn get_error(msg: &str, err: nitrokey::CommandError) -> Error {
-  Error::Error(format!("{}: {}", msg, err))
+fn get_error(msg: &'static str, err: nitrokey::CommandError) -> Error {
+  Error::CommandError(Some(msg), err)
 }
 
 /// Set `libnitrokey`'s log level based on the execution context's verbosity.
@@ -208,8 +208,7 @@ where
             data = new_data;
             continue;
           }
-          let error = format!("{}: Wrong password", msg);
-          return Err((new_data, Error::Error(error)));
+          return Err((new_data, get_error(msg, err)));
         }
         err => return Err((new_data, get_error(msg, err))),
       },

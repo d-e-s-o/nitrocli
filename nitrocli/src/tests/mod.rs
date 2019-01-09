@@ -30,6 +30,7 @@ use nitrokey_test::test as test_device;
 #[test_device]
 fn dummy() {}
 
+mod otp;
 mod run;
 mod status;
 
@@ -69,6 +70,8 @@ impl IntoArg for nitrokey::DeviceWrapper {
 pub trait UnwrapError {
   /// Unwrap an Error::Error variant.
   fn unwrap_str_err(self) -> String;
+  /// Unwrap a Error::CommandError variant.
+  fn unwrap_cmd_err(self) -> (Option<&'static str>, nitrokey::CommandError);
 }
 
 impl<T> UnwrapError for crate::Result<T>
@@ -78,6 +81,13 @@ where
   fn unwrap_str_err(self) -> String {
     match self.unwrap_err() {
       crate::error::Error::Error(err) => err,
+      err => panic!("Unexpected error variant found: {:?}", err),
+    }
+  }
+
+  fn unwrap_cmd_err(self) -> (Option<&'static str>, nitrokey::CommandError) {
+    match self.unwrap_err() {
+      crate::Error::CommandError(ctx, err) => (ctx, err),
       err => panic!("Unexpected error variant found: {:?}", err),
     }
   }
