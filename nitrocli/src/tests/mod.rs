@@ -1,4 +1,4 @@
-// tests.rs
+// mod.rs
 
 // *************************************************************************
 // * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *

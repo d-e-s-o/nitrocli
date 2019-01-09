@@ -19,7 +19,6 @@
 
 use super::*;
 use crate::tests::nitrocli;
-use crate::Error;
 
 #[test]
 fn no_command_or_option() {
@@ -46,19 +45,4 @@ fn help_option() {
 
   test("--help");
   test("-h")
-}
-
-#[test_device]
-fn error_conversion() {
-  match nitrocli::handle(NO_DEV, &["status"]) {
-    Ok(_) => assert!(false),
-    Err(err) => {
-      // Unfortunately we can't directly compare against the error
-      // because not all of the variants implement PartialEq.
-      match err {
-        Error::Error(x) => assert_eq!(x, "Nitrokey device not found".to_string()),
-        _ => assert!(false, err),
-      }
-    }
-  }
 }
