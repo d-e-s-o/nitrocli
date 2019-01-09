@@ -17,6 +17,8 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::fmt;
+
 use nitrokey_test::test as test_device;
 
 // TODO: This is a hack to make the nitrokey-test crate work across
@@ -59,6 +61,24 @@ impl IntoArg for nitrokey::DeviceWrapper {
     match self {
       nitrokey::DeviceWrapper::Pro(x) => x.into_arg(),
       nitrokey::DeviceWrapper::Storage(x) => x.into_arg(),
+    }
+  }
+}
+
+/// A trait simplifying checking for expected errors.
+pub trait UnwrapError {
+  /// Unwrap an Error::Error variant.
+  fn unwrap_str_err(self) -> String;
+}
+
+impl<T> UnwrapError for crate::Result<T>
+where
+  T: fmt::Debug,
+{
+  fn unwrap_str_err(self) -> String {
+    match self.unwrap_err() {
+      crate::Error::Error(err) => err,
+      err => panic!("Unexpected error variant found: {:?}", err),
     }
   }
 }
