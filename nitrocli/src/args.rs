@@ -17,6 +17,7 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::ffi;
 use std::io;
 use std::result;
 use std::str;
@@ -44,6 +45,10 @@ pub struct ExecCtx<'io> {
   pub model: Option<DeviceModel>,
   pub stdout: &'io mut dyn io::Write,
   pub stderr: &'io mut dyn io::Write,
+  pub admin_pin: Option<ffi::OsString>,
+  pub user_pin: Option<ffi::OsString>,
+  pub new_admin_pin: Option<ffi::OsString>,
+  pub new_user_pin: Option<ffi::OsString>,
   pub verbosity: u64,
 }
 
@@ -817,6 +822,10 @@ fn parse_arguments<'io, 'ctx: 'io>(
     model,
     stdout: ctx.stdout,
     stderr: ctx.stderr,
+    admin_pin: ctx.admin_pin.take(),
+    user_pin: ctx.user_pin.take(),
+    new_admin_pin: ctx.new_admin_pin.take(),
+    new_user_pin: ctx.new_user_pin.take(),
     verbosity,
   };
   Ok((command, ctx, subargs))

@@ -81,6 +81,7 @@ mod pinentry;
 mod tests;
 
 use std::env;
+use std::ffi;
 use std::io;
 use std::process;
 use std::result;
@@ -89,12 +90,29 @@ use crate::error::Error;
 
 type Result<T> = result::Result<T, Error>;
 
+const NITROCLI_ADMIN_PIN: &str = "NITROCLI_ADMIN_PIN";
+const NITROCLI_USER_PIN: &str = "NITROCLI_USER_PIN";
+const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";
+const NITROCLI_NEW_USER_PIN: &str = "NITROCLI_NEW_USER_PIN";
+
 /// The context used when running the program.
 pub(crate) struct RunCtx<'io> {
   /// The `Write` object used as standard output throughout the program.
   pub stdout: &'io mut dyn io::Write,
   /// The `Write` object used as standard error throughout the program.
   pub stderr: &'io mut dyn io::Write,
+  /// The admin PIN, if provided through an environment variable.
+  pub admin_pin: Option<ffi::OsString>,
+  /// The user PIN, if provided through an environment variable.
+  pub user_pin: Option<ffi::OsString>,
+  /// The new admin PIN to set, if provided through an environment variable.
+  ///
+  /// This variable is only used by commands that change the admin PIN.
+  pub new_admin_pin: Option<ffi::OsString>,
+  /// The new user PIN, if provided through an environment variable.
+  ///
+  /// This variable is only used by commands that change the user PIN.
+  pub new_user_pin: Option<ffi::OsString>,
 }
 
 fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
@@ -120,6 +138,10 @@ fn main() {
   let ctx = &mut RunCtx {
     stdout: &mut io::stdout(),
     stderr: &mut io::stderr(),
+    admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
+    user_pin: env::var_os(NITROCLI_USER_PIN),
+    new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
+    new_user_pin: env::var_os(NITROCLI_NEW_USER_PIN),
   };
 
   process::exit(run(ctx, args));
