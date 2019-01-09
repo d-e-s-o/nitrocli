@@ -33,17 +33,8 @@ fn not_found_raw() {
 
 #[test_device]
 fn not_found() {
-  match nitrocli::handle(NO_DEV, &["status"]) {
-    Ok(_) => assert!(false),
-    Err(err) => {
-      // Unfortunately we can't directly compare against the error
-      // because not all of the variants implement PartialEq.
-      match err {
-        crate::Error::Error(x) => assert_eq!(x, "Nitrokey device not found".to_string()),
-        _ => assert!(false, err),
-      }
-    }
-  }
+  let res = nitrocli::handle(NO_DEV, &["status"]);
+  assert_eq!(res.unwrap_str_err(), "Nitrokey device not found");
 }
 
 #[test_device]
