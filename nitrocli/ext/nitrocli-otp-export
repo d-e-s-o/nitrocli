@@ -1,0 +1,143 @@
+#!/usr/bin/python3
+
+#/***************************************************************************
+# *   Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+# *                                                                         *
+# *   This program is free software: you can redistribute it and/or modify  *
+# *   it under the terms of the GNU General Public License as published by  *
+# *   the Free Software Foundation, either version 3 of the License, or     *
+# *   (at your option) any later version.                                   *
+# *                                                                         *
+# *   This program is distributed in the hope that it will be useful,       *
+# *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+# *   GNU General Public License for more details.                          *
+# *                                                                         *
+# *   You should have received a copy of the GNU General Public License     *
+# *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
+# ***************************************************************************/
+
+from argparse import (
+  ArgumentParser,
+)
+from csv import (
+  writer as CsvWriter,
+  QUOTE_MINIMAL,
+)
+from subprocess import (
+  CalledProcessError,
+  check_call,
+)
+from sys import (
+  argv,
+  stderr,
+  stdout,
+  exit,
+)
+
+FORMAT_CSV = "csv"
+FORMAT_PSKC = "pskc"
+
+def setupArgumentParser():
+  """Create and initialize an argument parser, ready for use."""
+  parser = ArgumentParser(prog="otp-export")
+  parser.add_argument(
+    "--nitrocli", default=None, dest="nitrocli",
+    help="The path of the nitrocli executable.",
+  )
+  parser.add_argument(
+    "--model", default=None, dest="model",
+    help="The Nitrokey model to use.",
+  )
+  parser.add_argument(
+    "slot", type=int, help="The OTP slot to use",
+  )
+  parser.add_argument(
+    "name", help="The name of the slot",
+  )
+  parser.add_argument(
+    "secret",
+    help="The secret to store on the slot as a hexadecimal string (unless --ascii is set)",
+  )
+  parser.add_argument(
+    "-a", "--algorithm", action="store", choices=("hotp", "totp"), dest="algorithm",
+    help="The OTP algorithm to use (hotp or totp, default: totp)",
+  )
+  parser.add_argument(
+    "-c", "--counter", action="store", dest="counter", type=int,
+    help="The counter value for HOTP (default: 0)",
+  )
+  parser.add_argument(
+    "-d", "--digits", action="store", choices=(6, 8), dest="digits", type=int,
+    help="The number of digits to use for the one-time password (6 or 8, default: 6)",
+  )
+  parser.add_argument(
+    "--export-format", action="store", choices=(FORMAT_CSV, FORMAT_PSKC),
+    dest="export", default=FORMAT_CSV,
+    help="The format to export the OTP as (default: %s)." % FORMAT_CSV,
+  )
+  parser.add_argument(
+    "-f", "--format", choices=("ascii", "base32", "hex"), dest="format",
+    help="The format of the secret (ascii|base32|hex)",
+  )
+  parser.add_argument(
+    "-t", "--time-window", action="store", dest="window", type=int,
+    help="The time window for TOTP (default: 30)",
+  )
+  return parser
+
+
+def main(args):
+  """The main function interprets the arguments and acts upon them."""
+  parser = setupArgumentParser()
+  namespace = parser.parse_args(args)
+
+  nitrocli = namespace.nitrocli
+  if nitrocli is None:
+    raise RuntimeError("--nitrocli option not supplied as expected.")
+
+  args = [
+    "otp", "set",
+    str(namespace.slot),
+    namespace.name,
+    namespace.secret
+  ]
+  if namespace.model is not None:
+    args += ["--model", namespace.model]
+
+  if namespace.algorithm is not None:
+    args += ["--algorithm", namespace.algorithm]
+
+  if namespace.counter is not None:
+    args += ["--counter", str(namespace.counter)]
+
+  if namespace.digits is not None:
+    args += ["--digits", str(namespace.digits)]
+
+  if namespace.format is not None:
+    args += ["--format", namespace.format]
+
+  if namespace.window is not None:
+    args += ["--time-window", str(namespace.window)]
+
+  try:
+    check_call([nitrocli] + args)
+  except CalledProcessError as e:
+    # nitrocli will have reported the error already, so don't print it again;
+    # just mirror the exit code.
+    return e.returncode
+  else:
+    if namespace.export == FORMAT_CSV:
+      # TODO: Use actually defined CSV format for OTP secret.
+      csv = CsvWriter(stdout, delimiter=",", quotechar="|", quoting=QUOTE_MINIMAL)
+      csv.writerow([namespace.name, namespace.secret])
+    else:
+      # TODO: Implement PSKC export.
+      print("Only csv format is currently supported.", file=stderr)
+      return 1
+
+  return 0
+
+
+if __name__ == "__main__":
+  exit(main(argv[1:]))
