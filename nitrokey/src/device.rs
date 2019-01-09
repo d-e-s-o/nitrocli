@@ -583,6 +583,10 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
 /// Connects to a Nitrokey device.  This method can be used to connect to any connected device,
 /// both a Nitrokey Pro and a Nitrokey Storage.
 ///
+/// # Errors
+///
+/// - [`Undefined`][] if no Nitrokey device is connected
+///
 /// # Example
 ///
 /// ```
@@ -595,6 +599,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
 ///     Err(err) => println!("Could not connect to a Nitrokey: {}", err),
 /// }
 /// ```
+///
+/// [`Undefined`]: enum.CommandError.html#variant.Undefined
 pub fn connect() -> Result<DeviceWrapper, CommandError> {
     unsafe {
         match nitrokey_sys::NK_login_auto() {
@@ -604,6 +610,35 @@ pub fn connect() -> Result<DeviceWrapper, CommandError> {
             },
             _ => Err(CommandError::Undefined),
         }
+    }
+}
+
+/// Connects to a Nitrokey device of the given model.
+///
+/// # Errors
+///
+/// - [`Undefined`][] if no Nitrokey device of the given model is connected
+///
+/// # Example
+///
+/// ```
+/// use nitrokey::DeviceWrapper;
+/// use nitrokey::Model;
+///
+/// fn do_something(device: DeviceWrapper) {}
+///
+/// match nitrokey::connect_model(Model::Pro) {
+///     Ok(device) => do_something(device),
+///     Err(err) => println!("Could not connect to a Nitrokey Pro: {}", err),
+/// }
+/// ```
+///
+/// [`Undefined`]: enum.CommandError.html#variant.Undefined
+pub fn connect_model(model: Model) -> Result<DeviceWrapper, CommandError> {
+    if connect_enum(model) {
+        Ok(create_device_wrapper(model))
+    } else {
+        Err(CommandError::Undefined)
     }
 }
 
@@ -628,7 +663,7 @@ fn get_connected_device() -> Option<DeviceWrapper> {
     get_connected_model().map(create_device_wrapper)
 }
 
-fn connect_model(model: Model) -> bool {
+fn connect_enum(model: Model) -> bool {
     let model = match model {
         Model::Storage => nitrokey_sys::NK_device_model_NK_STORAGE,
         Model::Pro => nitrokey_sys::NK_device_model_NK_PRO,
@@ -675,6 +710,10 @@ impl Device for DeviceWrapper {
 impl Pro {
     /// Connects to a Nitrokey Pro.
     ///
+    /// # Errors
+    ///
+    /// - [`Undefined`][] if no Nitrokey device of the given model is connected
+    ///
     /// # Example
     ///
     /// ```
@@ -687,9 +726,11 @@ impl Pro {
     ///     Err(err) => println!("Could not connect to the Nitrokey Pro: {}", err),
     /// }
     /// ```
+    ///
+    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
     pub fn connect() -> Result<Pro, CommandError> {
         // TODO: maybe Option instead of Result?
-        match connect_model(Model::Pro) {
+        match connect_enum(Model::Pro) {
             true => Ok(Pro {}),
             false => Err(CommandError::Undefined),
         }
@@ -715,6 +756,10 @@ impl GenerateOtp for Pro {}
 impl Storage {
     /// Connects to a Nitrokey Storage.
     ///
+    /// # Errors
+    ///
+    /// - [`Undefined`][] if no Nitrokey device of the given model is connected
+    ///
     /// # Example
     ///
     /// ```
@@ -727,9 +772,11 @@ impl Storage {
     ///     Err(err) => println!("Could not connect to the Nitrokey Storage: {}", err),
     /// }
     /// ```
+    ///
+    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
     pub fn connect() -> Result<Storage, CommandError> {
         // TODO: maybe Option instead of Result?
-        match connect_model(Model::Storage) {
+        match connect_enum(Model::Storage) {
             true => Ok(Storage {}),
             false => Err(CommandError::Undefined),
         }
@@ -876,6 +923,140 @@ impl Storage {
     /// ```
     pub fn disable_encrypted_volume(&self) -> Result<(), CommandError> {
         unsafe { get_command_result(nitrokey_sys::NK_lock_encrypted_volume()) }
+    }
+
+    /// Enables a hidden storage volume.
+    ///
+    /// This function will only succeed if the encrypted storage ([`enable_encrypted_volume`][]) or
+    /// another hidden volume has been enabled previously.  Once the hidden volume is enabled, it
+    /// is presented to the operating system as a block device and any previously opened encrypted
+    /// or hidden volumes are closed.  The API does not provide any information on the name or path
+    /// of this block device.
+    ///
+    /// Note that the encrypted and the hidden volumes operate on the same storage area, so using
+    /// both at the same time might lead to data loss.
+    ///
+    /// The hidden volume to unlock is selected based on the provided password.
+    ///
+    /// # Errors
+    ///
+    /// - [`AesDecryptionFailed`][] if the encrypted storage has not been opened before calling
+    ///   this method or the AES key has not been built
+    /// - [`InvalidString`][] if the provided password contains a null byte
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use nitrokey::CommandError;
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::Storage::connect()?;
+    /// device.enable_encrypted_volume("123445")?;
+    /// match device.enable_hidden_volume("hidden-pw") {
+    ///     Ok(()) => println!("Enabled a hidden volume."),
+    ///     Err(err) => println!("Could not enable the hidden volume: {}", err),
+    /// };
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`enable_encrypted_volume`]: #method.enable_encrypted_volume
+    /// [`AesDecryptionFailed`]: enum.CommandError.html#variant.AesDecryptionFailed
+    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    pub fn enable_hidden_volume(&self, volume_password: &str) -> Result<(), CommandError> {
+        let volume_password = get_cstring(volume_password)?;
+        unsafe {
+            get_command_result(nitrokey_sys::NK_unlock_hidden_volume(
+                volume_password.as_ptr(),
+            ))
+        }
+    }
+
+    /// Disables a hidden storage volume.
+    ///
+    /// Once the volume is disabled, it can be no longer accessed as a block device.  If no hidden
+    /// volume has been enabled, this method still returns a success.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use nitrokey::CommandError;
+    ///
+    /// fn use_volume() {}
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::Storage::connect()?;
+    /// device.enable_encrypted_volume("123445")?;
+    /// match device.enable_hidden_volume("hidden-pw") {
+    ///     Ok(()) => {
+    ///         println!("Enabled the hidden volume.");
+    ///         use_volume();
+    ///         match device.disable_hidden_volume() {
+    ///             Ok(()) => println!("Disabled the hidden volume."),
+    ///             Err(err) => {
+    ///                 println!("Could not disable the hidden volume: {}", err);
+    ///             },
+    ///         };
+    ///     },
+    ///     Err(err) => println!("Could not enable the hidden volume: {}", err),
+    /// };
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub fn disable_hidden_volume(&self) -> Result<(), CommandError> {
+        unsafe { get_command_result(nitrokey_sys::NK_lock_hidden_volume()) }
+    }
+
+    /// Creates a hidden volume.
+    ///
+    /// The volume is crated in the given slot and in the given range of the available memory,
+    /// where `start` is the start position as a percentage of the available memory, and `end` is
+    /// the end position as a percentage of the available memory.  The volume will be protected by
+    /// the given password.
+    ///
+    /// Note that the encrypted and the hidden volumes operate on the same storage area, so using
+    /// both at the same time might lead to data loss.
+    ///
+    /// According to the libnitrokey documentation, this function only works if the encrypted
+    /// storage has been opened.
+    ///
+    /// # Errors
+    ///
+    /// - [`AesDecryptionFailed`][] if the encrypted storage has not been opened before calling
+    ///   this method or the AES key has not been built
+    /// - [`InvalidString`][] if the provided password contains a null byte
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use nitrokey::CommandError;
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::Storage::connect()?;
+    /// device.enable_encrypted_volume("123445")?;
+    /// device.create_hidden_volume(0, 0, 100, "hidden-pw")?;
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`AesDecryptionFailed`]: enum.CommandError.html#variant.AesDecryptionFailed
+    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    pub fn create_hidden_volume(
+        &self,
+        slot: u8,
+        start: u8,
+        end: u8,
+        password: &str,
+    ) -> Result<(), CommandError> {
+        let password = get_cstring(password)?;
+        unsafe {
+            get_command_result(nitrokey_sys::NK_create_hidden_volume(
+                slot,
+                start,
+                end,
+                password.as_ptr(),
+            ))
+        }
     }
 
     /// Returns the status of the connected storage device.

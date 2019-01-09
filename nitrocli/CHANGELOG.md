@@ -7,7 +7,7 @@ Unreleased
   choose the secret format
   - Deprecated the `--ascii` option
 - Further decrease binary size by using system allocator
-- Bumped `nitrokey` dependency to `0.3.0`
+- Bumped `nitrokey` dependency to `0.3.1`
 
 
 0.2.1

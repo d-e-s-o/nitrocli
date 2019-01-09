@@ -6,10 +6,11 @@ use std::{thread, time};
 
 use nitrokey::{
     Authenticate, CommandError, Config, ConfigureOtp, Device, GenerateOtp, GetPasswordSafe,
-    OtpMode, OtpSlotData, Storage,
+    OtpMode, OtpSlotData,
 };
+use nitrokey_test::test as test_device;
 
-use crate::util::{Target, ADMIN_PASSWORD, UPDATE_PIN, USER_PASSWORD};
+use crate::util::{ADMIN_PASSWORD, UPDATE_PIN, USER_PASSWORD};
 
 static ADMIN_NEW_PASSWORD: &str = "1234567890";
 static UPDATE_NEW_PIN: &str = "87654321";
@@ -27,36 +28,39 @@ fn count_nitrokey_block_devices() -> usize {
         .count()
 }
 
-#[test]
-#[cfg_attr(any(feature = "test-pro", feature = "test-storage"), ignore)]
+#[test_device]
 fn connect_no_device() {
     assert!(nitrokey::connect().is_err());
+    assert!(nitrokey::connect_model(nitrokey::Model::Pro).is_err());
+    assert!(nitrokey::connect_model(nitrokey::Model::Storage).is_err());
     assert!(nitrokey::Pro::connect().is_err());
     assert!(nitrokey::Storage::connect().is_err());
 }
 
-#[test]
-#[cfg_attr(not(feature = "test-pro"), ignore)]
-fn connect_pro() {
+#[test_device]
+fn connect_pro(device: Pro) {
+    assert_eq!(device.get_model(), nitrokey::Model::Pro);
+    drop(device);
+
     assert!(nitrokey::connect().is_ok());
+    assert!(nitrokey::connect_model(nitrokey::Model::Pro).is_ok());
     assert!(nitrokey::Pro::connect().is_ok());
+
+    assert!(nitrokey::connect_model(nitrokey::Model::Storage).is_err());
     assert!(nitrokey::Storage::connect().is_err());
-    match nitrokey::connect().unwrap() {
-        nitrokey::DeviceWrapper::Pro(_) => assert!(true),
-        nitrokey::DeviceWrapper::Storage(_) => assert!(false),
-    };
 }
 
-#[test]
-#[cfg_attr(not(feature = "test-storage"), ignore)]
-fn connect_storage() {
+#[test_device]
+fn connect_storage(device: Storage) {
+    assert_eq!(device.get_model(), nitrokey::Model::Storage);
+    drop(device);
+
     assert!(nitrokey::connect().is_ok());
-    assert!(nitrokey::Pro::connect().is_err());
+    assert!(nitrokey::connect_model(nitrokey::Model::Storage).is_ok());
     assert!(nitrokey::Storage::connect().is_ok());
-    match nitrokey::connect().unwrap() {
-        nitrokey::DeviceWrapper::Pro(_) => assert!(false),
-        nitrokey::DeviceWrapper::Storage(_) => assert!(true),
-    };
+
+    assert!(nitrokey::connect_model(nitrokey::Model::Pro).is_err());
+    assert!(nitrokey::Pro::connect().is_err());
 }
 
 fn assert_empty_serial_number() {
@@ -68,54 +72,22 @@ fn assert_empty_serial_number() {
     }
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn disconnect() {
-    Target::connect().unwrap();
-    assert_empty_serial_number();
-    Target::connect()
-        .unwrap()
-        .authenticate_admin(ADMIN_PASSWORD)
-        .unwrap();
-    assert_empty_serial_number();
-    Target::connect()
-        .unwrap()
-        .authenticate_user(USER_PASSWORD)
-        .unwrap();
+#[test_device]
+fn disconnect(device: DeviceWrapper) {
+    drop(device);
     assert_empty_serial_number();
 }
 
-fn require_model(model: nitrokey::Model) {
-    assert_eq!(model, nitrokey::connect().unwrap().get_model());
-    assert_eq!(model, Target::connect().unwrap().get_model());
-}
-
-#[test]
-#[cfg_attr(not(feature = "test-pro"), ignore)]
-fn get_model_pro() {
-    require_model(nitrokey::Model::Pro);
-}
-
-#[test]
-#[cfg_attr(not(feature = "test-storage"), ignore)]
-fn get_model_storage() {
-    require_model(nitrokey::Model::Storage);
-}
-
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn get_serial_number() {
-    let device = Target::connect().unwrap();
+#[test_device]
+fn get_serial_number(device: DeviceWrapper) {
     let result = device.get_serial_number();
     assert!(result.is_ok());
     let serial_number = result.unwrap();
     assert!(serial_number.is_ascii());
     assert!(serial_number.chars().all(|c| c.is_ascii_hexdigit()));
 }
-#[test]
-#[cfg_attr(not(feature = "test-pro"), ignore)]
-fn get_firmware_version() {
-    let device = Target::connect().unwrap();
+#[test_device]
+fn get_firmware_version(device: Pro) {
     assert_eq!(0, device.get_major_firmware_version());
     let minor = device.get_minor_firmware_version();
     assert!(minor > 0);
@@ -141,11 +113,8 @@ fn user_retry<T: Authenticate + Device>(device: T, suffix: &str, count: u8) -> T
     return device;
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn get_retry_count() {
-    let device = Target::connect().unwrap();
-
+#[test_device]
+fn get_retry_count(device: DeviceWrapper) {
     let device = admin_retry(device, "", 3);
     let device = admin_retry(device, "123", 2);
     let device = admin_retry(device, "456", 1);
@@ -157,13 +126,11 @@ fn get_retry_count() {
     user_retry(device, "", 3);
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn config() {
-    let device = Target::connect().unwrap();
+#[test_device]
+fn config(device: DeviceWrapper) {
     let admin = device.authenticate_admin(ADMIN_PASSWORD).unwrap();
     let config = Config::new(None, None, None, true);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
     let get_config = admin.get_config().unwrap();
     assert_eq!(config, get_config);
 
@@ -171,20 +138,18 @@ fn config() {
     assert_eq!(Err(CommandError::InvalidSlot), admin.write_config(config));
 
     let config = Config::new(Some(1), None, Some(0), false);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
     let get_config = admin.get_config().unwrap();
     assert_eq!(config, get_config);
 
     let config = Config::new(None, None, None, false);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
     let get_config = admin.get_config().unwrap();
     assert_eq!(config, get_config);
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn change_user_pin() {
-    let device = Target::connect().unwrap();
+#[test_device]
+fn change_user_pin(device: DeviceWrapper) {
     let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
     let device = device.authenticate_user(USER_NEW_PASSWORD).unwrap_err().0;
 
@@ -209,10 +174,8 @@ fn change_user_pin() {
     assert!(device.authenticate_user(USER_NEW_PASSWORD).is_err());
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn change_admin_pin() {
-    let device = Target::connect().unwrap();
+#[test_device]
+fn change_admin_pin(device: DeviceWrapper) {
     let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
     let device = device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap_err().0;
 
@@ -239,7 +202,11 @@ fn change_admin_pin() {
     device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap_err();
 }
 
-fn require_failed_user_login(device: Target, password: &str, error: CommandError) -> Target {
+fn require_failed_user_login<D>(device: D, password: &str, error: CommandError) -> D
+where
+    D: Device + Authenticate,
+    nitrokey::User<D>: std::fmt::Debug,
+{
     let result = device.authenticate_user(password);
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -247,10 +214,8 @@ fn require_failed_user_login(device: Target, password: &str, error: CommandError
     err.0
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn unlock_user_pin() {
-    let device = Target::connect().unwrap();
+#[test_device]
+fn unlock_user_pin(device: DeviceWrapper) {
     let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
     assert!(device
         .unlock_user_pin(ADMIN_PASSWORD, USER_PASSWORD)
@@ -298,11 +263,8 @@ fn unlock_user_pin() {
         .is_ok());
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn factory_reset() {
-    let device = Target::connect().unwrap();
-
+#[test_device]
+fn factory_reset(device: DeviceWrapper) {
     assert_eq!(
         Ok(()),
         device.change_user_pin(USER_PASSWORD, USER_NEW_PASSWORD)
@@ -348,11 +310,8 @@ fn factory_reset() {
     assert_eq!(Ok(()), device.build_aes_key(ADMIN_PASSWORD));
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn build_aes_key() {
-    let device = Target::connect().unwrap();
-
+#[test_device]
+fn build_aes_key(device: DeviceWrapper) {
     let pws = device.get_password_safe(USER_PASSWORD).unwrap();
     assert_eq!(Ok(()), pws.write_slot(0, "test", "testlogin", "testpw"));
     drop(pws);
@@ -371,11 +330,8 @@ fn build_aes_key() {
     assert_ne!("testpw".to_string(), pws.get_slot_password(0).unwrap());
 }
 
-#[test]
-#[cfg_attr(not(feature = "test-storage"), ignore)]
-fn change_update_pin() {
-    let device = Storage::connect().unwrap();
-
+#[test_device]
+fn change_update_pin(device: Storage) {
     assert_eq!(
         Err(CommandError::WrongPassword),
         device.change_update_pin(UPDATE_NEW_PIN, UPDATE_PIN)
@@ -384,40 +340,71 @@ fn change_update_pin() {
     assert_eq!(Ok(()), device.change_update_pin(UPDATE_NEW_PIN, UPDATE_PIN));
 }
 
-#[test]
-#[cfg_attr(not(feature = "test-storage"), ignore)]
-fn encrypted_volume() {
-    let device = Storage::connect().unwrap();
-    assert!(device.lock().is_ok());
+#[test_device]
+fn encrypted_volume(device: Storage) {
+    assert_eq!(Ok(()), device.lock());
 
     assert_eq!(1, count_nitrokey_block_devices());
-    assert!(device.disable_encrypted_volume().is_ok());
+    assert_eq!(Ok(()), device.disable_encrypted_volume());
     assert_eq!(1, count_nitrokey_block_devices());
     assert_eq!(
         Err(CommandError::WrongPassword),
         device.enable_encrypted_volume("123")
     );
     assert_eq!(1, count_nitrokey_block_devices());
-    assert!(device.enable_encrypted_volume(USER_PASSWORD).is_ok());
+    assert_eq!(Ok(()), device.enable_encrypted_volume(USER_PASSWORD));
     assert_eq!(2, count_nitrokey_block_devices());
-    assert!(device.disable_encrypted_volume().is_ok());
+    assert_eq!(Ok(()), device.disable_encrypted_volume());
     assert_eq!(1, count_nitrokey_block_devices());
 }
 
-#[test]
-#[cfg_attr(not(feature = "test-storage"), ignore)]
-fn lock() {
-    let device = Storage::connect().unwrap();
+#[test_device]
+fn hidden_volume(device: Storage) {
+    assert_eq!(Ok(()), device.lock());
 
-    assert!(device.enable_encrypted_volume(USER_PASSWORD).is_ok());
-    assert!(device.lock().is_ok());
+    assert_eq!(1, count_nitrokey_block_devices());
+    assert_eq!(Ok(()), device.disable_hidden_volume());
+    assert_eq!(1, count_nitrokey_block_devices());
+
+    assert_eq!(Ok(()), device.enable_encrypted_volume(USER_PASSWORD));
+    assert_eq!(2, count_nitrokey_block_devices());
+
+    // TODO: why this error code?
+    assert_eq!(
+        Err(CommandError::WrongPassword),
+        device.create_hidden_volume(5, 0, 100, "hiddenpw")
+    );
+    assert_eq!(Ok(()), device.create_hidden_volume(0, 20, 21, "hidden-pw"));
+    assert_eq!(
+        Ok(()),
+        device.create_hidden_volume(0, 20, 21, "hiddenpassword")
+    );
+    assert_eq!(Ok(()), device.create_hidden_volume(1, 0, 1, "otherpw"));
+    // TODO: test invalid range (not handled by libnitrokey)
+    assert_eq!(2, count_nitrokey_block_devices());
+
+    assert_eq!(
+        Err(CommandError::WrongPassword),
+        device.enable_hidden_volume("blubb")
+    );
+    assert_eq!(Ok(()), device.enable_hidden_volume("hiddenpassword"));
+    assert_eq!(2, count_nitrokey_block_devices());
+    assert_eq!(Ok(()), device.enable_hidden_volume("otherpw"));
+    assert_eq!(2, count_nitrokey_block_devices());
+
+    assert_eq!(Ok(()), device.disable_hidden_volume());
     assert_eq!(1, count_nitrokey_block_devices());
 }
 
-#[test]
-#[cfg_attr(not(feature = "test-storage"), ignore)]
-fn get_storage_status() {
-    let device = Storage::connect().unwrap();
+#[test_device]
+fn lock(device: Storage) {
+    assert_eq!(Ok(()), device.enable_encrypted_volume(USER_PASSWORD));
+    assert_eq!(Ok(()), device.lock());
+    assert_eq!(1, count_nitrokey_block_devices());
+}
+
+#[test_device]
+fn get_storage_status(device: Storage) {
     let status = device.get_status().unwrap();
 
     assert!(status.serial_number_sd_card > 0);

@@ -1,12 +1,15 @@
 mod util;
 
+use std::fmt::Debug;
 use std::ops::Deref;
 
 use nitrokey::{
-    Admin, Authenticate, CommandError, Config, ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData,
+    Admin, Authenticate, CommandError, Config, ConfigureOtp, Device, GenerateOtp, OtpMode,
+    OtpSlotData,
 };
+use nitrokey_test::test as test_device;
 
-use crate::util::{Target, ADMIN_PASSWORD, USER_PASSWORD};
+use crate::util::{ADMIN_PASSWORD, USER_PASSWORD};
 
 // test suite according to RFC 4226, Appendix D
 static HOTP_SECRET: &str = "3132333435363738393031323334353637383930";
@@ -32,16 +35,19 @@ enum TotpTimestampSize {
     U64,
 }
 
-fn get_admin_test_device() -> Admin<Target> {
-    Target::connect()
-        .expect("Could not connect to the Nitrokey.")
+fn make_admin_test_device<T>(device: T) -> Admin<T>
+where
+    T: Device,
+    (T, nitrokey::CommandError): Debug,
+{
+    device
         .authenticate_admin(ADMIN_PASSWORD)
         .expect("Could not login as admin.")
 }
 
 fn configure_hotp(admin: &ConfigureOtp, counter: u8) {
     let slot_data = OtpSlotData::new(1, "test-hotp", HOTP_SECRET, OtpMode::SixDigits);
-    assert!(admin.write_hotp_slot(slot_data, counter.into()).is_ok());
+    assert_eq!(Ok(()), admin.write_hotp_slot(slot_data, counter.into()));
 }
 
 fn check_hotp_codes(device: &GenerateOtp, offset: u8) {
@@ -53,22 +59,22 @@ fn check_hotp_codes(device: &GenerateOtp, offset: u8) {
     });
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn set_time() {
-    let device = Target::connect().expect("Could not connect to the Nitrokey.");
+#[test_device]
+fn set_time(device: DeviceWrapper) {
     assert_eq!(Ok(()), device.set_time(1546385382, true));
     assert_eq!(Ok(()), device.set_time(1546385392, false));
-    assert_eq!(Err(CommandError::Timestamp), device.set_time(1546385292, false));
+    assert_eq!(
+        Err(CommandError::Timestamp),
+        device.set_time(1546385292, false)
+    );
     assert_eq!(Ok(()), device.set_time(1546385382, true));
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn hotp_no_pin() {
-    let admin = get_admin_test_device();
+#[test_device]
+fn hotp_no_pin(device: DeviceWrapper) {
+    let admin = make_admin_test_device(device);
     let config = Config::new(None, None, None, false);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
 
     configure_hotp(&admin, 0);
     check_hotp_codes(admin.deref(), 0);
@@ -80,12 +86,11 @@ fn hotp_no_pin() {
     check_hotp_codes(&admin.device(), 0);
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn hotp_pin() {
-    let admin = get_admin_test_device();
+#[test_device]
+fn hotp_pin(device: DeviceWrapper) {
+    let admin = make_admin_test_device(device);
     let config = Config::new(None, None, None, true);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
 
     configure_hotp(&admin, 0);
     let user = admin.device().authenticate_user(USER_PASSWORD).unwrap();
@@ -94,12 +99,11 @@ fn hotp_pin() {
     assert!(user.device().get_hotp_code(1).is_err());
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn hotp_slot_name() {
-    let admin = get_admin_test_device();
+#[test_device]
+fn hotp_slot_name(device: DeviceWrapper) {
+    let admin = make_admin_test_device(device);
     let slot_data = OtpSlotData::new(1, "test-hotp", HOTP_SECRET, OtpMode::SixDigits);
-    assert!(admin.write_hotp_slot(slot_data, 0).is_ok());
+    assert_eq!(Ok(()), admin.write_hotp_slot(slot_data, 0));
 
     let device = admin.device();
     let result = device.get_hotp_slot_name(1);
@@ -108,10 +112,9 @@ fn hotp_slot_name() {
     assert_eq!(CommandError::InvalidSlot, result.unwrap_err());
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn hotp_error() {
-    let admin = get_admin_test_device();
+#[test_device]
+fn hotp_error(device: DeviceWrapper) {
+    let admin = make_admin_test_device(device);
     let slot_data = OtpSlotData::new(1, "", HOTP_SECRET, OtpMode::SixDigits);
     assert_eq!(
         Err(CommandError::NoName),
@@ -126,18 +129,17 @@ fn hotp_error() {
     assert_eq!(CommandError::InvalidSlot, code.unwrap_err());
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn hotp_erase() {
-    let admin = get_admin_test_device();
+#[test_device]
+fn hotp_erase(device: DeviceWrapper) {
+    let admin = make_admin_test_device(device);
     let config = Config::new(None, None, None, false);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
     let slot_data = OtpSlotData::new(1, "test1", HOTP_SECRET, OtpMode::SixDigits);
-    assert!(admin.write_hotp_slot(slot_data, 0).is_ok());
+    assert_eq!(Ok(()), admin.write_hotp_slot(slot_data, 0));
     let slot_data = OtpSlotData::new(2, "test2", HOTP_SECRET, OtpMode::SixDigits);
-    assert!(admin.write_hotp_slot(slot_data, 0).is_ok());
+    assert_eq!(Ok(()), admin.write_hotp_slot(slot_data, 0));
 
-    assert!(admin.erase_hotp_slot(1).is_ok());
+    assert_eq!(Ok(()), admin.erase_hotp_slot(1));
 
     let device = admin.device();
     let result = device.get_hotp_slot_name(1);
@@ -151,7 +153,7 @@ fn hotp_erase() {
 fn configure_totp(admin: &ConfigureOtp, factor: u64) {
     let slot_data = OtpSlotData::new(1, "test-totp", TOTP_SECRET, OtpMode::EightDigits);
     let time_window = 30u64.checked_mul(factor).unwrap();
-    assert!(admin.write_totp_slot(slot_data, time_window as u16).is_ok());
+    assert_eq!(Ok(()), admin.write_totp_slot(slot_data, time_window as u16));
 }
 
 fn check_totp_codes(device: &GenerateOtp, factor: u64, timestamp_size: TotpTimestampSize) {
@@ -162,7 +164,7 @@ fn check_totp_codes(device: &GenerateOtp, factor: u64, timestamp_size: TotpTimes
             continue;
         }
 
-        assert!(device.set_time(time, true).is_ok());
+        assert_eq!(Ok(()), device.set_time(time, true));
         let result = device.get_totp_code(1);
         assert!(result.is_ok());
         let result_code = result.unwrap();
@@ -174,13 +176,12 @@ fn check_totp_codes(device: &GenerateOtp, factor: u64, timestamp_size: TotpTimes
     }
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn totp_no_pin() {
+#[test_device]
+fn totp_no_pin(device: DeviceWrapper) {
     // TODO: this test may fail due to bad timing --> find solution
-    let admin = get_admin_test_device();
+    let admin = make_admin_test_device(device);
     let config = Config::new(None, None, None, false);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
 
     configure_totp(&admin, 1);
     check_totp_codes(admin.deref(), 1, TotpTimestampSize::U32);
@@ -192,15 +193,13 @@ fn totp_no_pin() {
     check_totp_codes(&admin.device(), 1, TotpTimestampSize::U32);
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-#[cfg_attr(feature = "test-storage", should_panic(expected = "assertion failed"))]
-// Nitrokey Storage does only support timestamps that fit in a 32-bit unsigned integer.  Therefore
-// the last RFC test case is expected to fail.
-fn totp_no_pin_64() {
-    let admin = get_admin_test_device();
+#[test_device]
+// Nitrokey Storage does only support timestamps that fit in a 32-bit
+// unsigned integer, so don't test with it.
+fn totp_no_pin_64(device: Pro) {
+    let admin = make_admin_test_device(device);
     let config = Config::new(None, None, None, false);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
 
     configure_totp(&admin, 1);
     check_totp_codes(admin.deref(), 1, TotpTimestampSize::U64);
@@ -212,13 +211,12 @@ fn totp_no_pin_64() {
     check_totp_codes(&admin.device(), 1, TotpTimestampSize::U64);
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn totp_pin() {
+#[test_device]
+fn totp_pin(device: DeviceWrapper) {
     // TODO: this test may fail due to bad timing --> find solution
-    let admin = get_admin_test_device();
+    let admin = make_admin_test_device(device);
     let config = Config::new(None, None, None, true);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
 
     configure_totp(&admin, 1);
     let user = admin.device().authenticate_user(USER_PASSWORD).unwrap();
@@ -227,14 +225,12 @@ fn totp_pin() {
     assert!(user.device().get_totp_code(1).is_err());
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-#[cfg_attr(feature = "test-storage", should_panic(expected = "assertion failed"))]
+#[test_device]
 // See comment for totp_no_pin_64.
-fn totp_pin_64() {
-    let admin = get_admin_test_device();
+fn totp_pin_64(device: Pro) {
+    let admin = make_admin_test_device(device);
     let config = Config::new(None, None, None, true);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
 
     configure_totp(&admin, 1);
     let user = admin.device().authenticate_user(USER_PASSWORD).unwrap();
@@ -243,12 +239,11 @@ fn totp_pin_64() {
     assert!(user.device().get_totp_code(1).is_err());
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn totp_slot_name() {
-    let admin = get_admin_test_device();
+#[test_device]
+fn totp_slot_name(device: DeviceWrapper) {
+    let admin = make_admin_test_device(device);
     let slot_data = OtpSlotData::new(1, "test-totp", TOTP_SECRET, OtpMode::EightDigits);
-    assert!(admin.write_totp_slot(slot_data, 0).is_ok());
+    assert_eq!(Ok(()), admin.write_totp_slot(slot_data, 0));
 
     let device = admin.device();
     let result = device.get_totp_slot_name(1);
@@ -258,10 +253,9 @@ fn totp_slot_name() {
     assert_eq!(CommandError::InvalidSlot, result.unwrap_err());
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn totp_error() {
-    let admin = get_admin_test_device();
+#[test_device]
+fn totp_error(device: DeviceWrapper) {
+    let admin = make_admin_test_device(device);
     let slot_data = OtpSlotData::new(1, "", HOTP_SECRET, OtpMode::SixDigits);
     assert_eq!(
         Err(CommandError::NoName),
@@ -276,18 +270,17 @@ fn totp_error() {
     assert_eq!(CommandError::InvalidSlot, code.unwrap_err());
 }
 
-#[test]
-#[cfg_attr(not(any(feature = "test-pro", feature = "test-storage")), ignore)]
-fn totp_erase() {
-    let admin = get_admin_test_device();
+#[test_device]
+fn totp_erase(device: DeviceWrapper) {
+    let admin = make_admin_test_device(device);
     let config = Config::new(None, None, None, false);
-    assert!(admin.write_config(config).is_ok());
+    assert_eq!(Ok(()), admin.write_config(config));
     let slot_data = OtpSlotData::new(1, "test1", TOTP_SECRET, OtpMode::SixDigits);
-    assert!(admin.write_totp_slot(slot_data, 0).is_ok());
+    assert_eq!(Ok(()), admin.write_totp_slot(slot_data, 0));
     let slot_data = OtpSlotData::new(2, "test2", TOTP_SECRET, OtpMode::SixDigits);
-    assert!(admin.write_totp_slot(slot_data, 0).is_ok());
+    assert_eq!(Ok(()), admin.write_totp_slot(slot_data, 0));
 
-    assert!(admin.erase_totp_slot(1).is_ok());
+    assert_eq!(Ok(()), admin.erase_totp_slot(1));
 
     let device = admin.device();
     let result = device.get_totp_slot_name(1);

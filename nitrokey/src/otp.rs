@@ -155,7 +155,7 @@ pub trait GenerateOtp {
     ///
     /// `time` is the number of seconds since January 1st, 1970 (Unix timestamp).  Unless `force`
     /// is set to `true`, this command fails if the timestamp on the device is larger than the
-    /// given timestamp or if it is zero. 
+    /// given timestamp or if it is zero.
     ///
     /// The time is used for TOTP generation (see [`get_totp_code`][]).
     ///
@@ -297,21 +297,21 @@ pub trait GenerateOtp {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// extern crate chrono;
-    ///
+    /// ```no_run
+    /// use std::time;
     /// use nitrokey::GenerateOtp;
     /// # use nitrokey::CommandError;
     ///
     /// # fn try_main() -> Result<(), CommandError> {
     /// let device = nitrokey::connect()?;
-    /// let time = Utc::now().timestamp();
-    /// if time < 0 {
-    ///     println!("Timestamps before 1970-01-01 are not supported!");
-    /// } else {
-    ///     device.set_time(time as u64);
-    ///     let code = device.get_totp_code(1)?;
-    ///     println!("Generated TOTP code on slot 1: {}", code);
+    /// let time = time::SystemTime::now().duration_since(time::UNIX_EPOCH);
+    /// match time {
+    ///     Ok(time) => {
+    ///         device.set_time(time.as_secs(), false)?;
+    ///         let code = device.get_totp_code(1)?;
+    ///         println!("Generated TOTP code on slot 1: {}", code);
+    ///     },
+    ///     Err(_) => println!("Timestamps before 1970-01-01 are not supported!"),
     /// }
     /// #     Ok(())
     /// # }

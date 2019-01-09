@@ -2,9 +2,6 @@
     - `NK_set_unencrypted_volume_rorw_pin_type_user`
     - `NK_is_AES_supported`
     - `NK_send_startup`
-    - `NK_unlock_hidden_volume`
-    - `NK_lock_hidden_volume`
-    - `NK_create_hidden_volume`
     - `NK_set_unencrypted_read_only`
     - `NK_set_unencrypted_read_only_admin`
     - `NK_set_unencrypted_read_write`

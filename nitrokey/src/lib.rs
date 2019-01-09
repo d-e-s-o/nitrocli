@@ -98,7 +98,7 @@ use nitrokey_sys;
 pub use crate::auth::{Admin, Authenticate, User};
 pub use crate::config::Config;
 pub use crate::device::{
-    connect, Device, DeviceWrapper, Model, Pro, Storage, StorageStatus, VolumeStatus,
+    connect, connect_model, Device, DeviceWrapper, Model, Pro, Storage, StorageStatus, VolumeStatus,
 };
 pub use crate::otp::{ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData};
 pub use crate::pws::{GetPasswordSafe, PasswordSafe, SLOT_COUNT};

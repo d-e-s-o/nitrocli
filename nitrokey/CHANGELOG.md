@@ -1,3 +1,11 @@
+# v0.3.1 (2019-01-07)
+- Use `nitrokey-test` to select and execute the unit tests.
+- Add support for the hidden volumes on a Nitrokey Storage
+  (`enable_hidden_volume`, `disable_hidden_volume` and `create_hidden_volume`
+  methods for the `Storage` struct).
+- Add the `connect_model` function to connect to a specific model using an enum
+  variant.
+
 # v0.3.0 (2019-01-04)
 - Add a `force` argument to `ConfigureOtp::set_time`.
 - Remove the obsolete `CommandError::RngError`.

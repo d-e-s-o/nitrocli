@@ -7,7 +7,9 @@ A libnitrokey wrapper for Rust providing access to Nitrokey devices.
 ## Compatibility
 
 The required [`libnitrokey`][] version is built from source.  The host system
-must provide `libhidapi-libusb0` in the default library search path.
+must provide `libhidapi-libusb0` (Linux) or `libhidapi` (non-Linux) in the
+default library search path.  Depending on your system, you might also have to
+install the [Nitrokey udev rules][].
 
 Currently, this crate provides access to the common features of the Nitrokey
 Pro and the Nitrokey Storage:  general configuration, OTP generation and the
@@ -29,37 +31,27 @@ supported by `nitrokey-rs`:
 
 ## Tests
 
-This crate has three test suites that can be selected using features.  One test
-suite assumes that no Nitrokey device is connected. It is run if no other test
-suite is selected.  The two other test suites require a Nitrokey Pro (feature
-`test-pro`) or a Nitrokey Storage (feature `test-storage`) to be connected.
+This crate has tests for different scenarios:  Some tests require that no
+Nitrokey device is connected, others require a Nitrokey Storage or a Nitrokey
+Pro.  We use the [`nitrokey-test`][] crate to select the test cases.  You can
+just run `cargo test` to auto-detect connected Nitrokey devices and to run the
+appropriate tests.  If you want to manually select the tests, set the
+`NITROKEY_TEST_GROUP` environment variable to `nodev` (no device connected),
+`pro` (Nitrokey Pro connected) or `storage` (Nitrokey Storage connected).
 
-Use the `--features` option for Cargo to select one of the test suites.  You
-should select more than one of the test suites at the same time.  Note that the
-test suites that require a Nitrokey device assume that the device’s passwords
-are the factory defaults (admin password `12345678` and user password
-`123456`).  Running the test suite with a device with different passwords might
-lock your device!  Also note that the test suite might delete or overwrite data
-on all connected devices.
-
-As the tests currently are not synchronized, you have to make sure that they
-are not executed in parallel.  To do so, pass the option `--test-threads 1` to
-the test executable.
-
-In conclusion, you can use these commands to run the test suites:
-
-```
-$ cargo test
-$ cargo test --features test-pro -- --test-threads 1
-$ cargo test --features test-storage -- --test-threads 1
-```
+Note that the tests assume that the device’s passwords are the factory defaults
+(admin PIN `12345678`, user PIN `123456`, update password `12345678`) and that
+an AES key has been built.  Some tests will overwrite the data stored on the
+Nitrokey device or perform a factory reset.  Never execute the tests if you
+unless yout want to destroy all data on all connected Nitrokey devices!
 
 The `totp_no_pin` and `totp_pin` tests can occasionally fail due to bad timing.
 
 ## Acknowledgments
 
 Thanks to Nitrokey UG for providing a Nitrokey Storage to support the
-development of this crate.
+development of this crate.  Thanks to Daniel Mueller for contributions to
+`nitrokey-rs` and for the `nitrokey-test` crate.
 
 ## Contact
 
@@ -72,7 +64,9 @@ This project is licensed under the [MIT License][].  `libnitrokey` is licensed
 under the [LGPL-3.0][].
 
 [Documentation]: https://docs.rs/nitrokey
+[Nitrokey udev rules]: https://www.nitrokey.com/documentation/frequently-asked-questions-faq#openpgp-card-not-available
 [`libnitrokey`]: https://github.com/nitrokey/libnitrokey
+[`nitrokey-test`]: https://github.com/d-e-s-o/nitrokey-test
 [nitrokey-rs-dev@ireas.org]: mailto:nitrokey-rs-dev@ireas.org
 [pull request #114]: https://github.com/Nitrokey/libnitrokey/pull/114
 [MIT license]: https://opensource.org/licenses/MIT
