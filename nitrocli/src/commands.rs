@@ -35,7 +35,7 @@ use crate::Result;
 
 /// Create an `error::Error` with an error message of the format `msg: err`.
 fn get_error(msg: &str, err: nitrokey::CommandError) -> Error {
-  Error::Error(format!("{}: {:?}", msg, err))
+  Error::Error(format!("{}: {}", msg, err))
 }
 
 /// Set `libnitrokey`'s log level based on the execution context's verbosity.
