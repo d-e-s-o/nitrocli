@@ -6,6 +6,7 @@ Unreleased
 - Added the `-f`/`--format` option for the `otp set` subcommand to
   choose the secret format
   - Deprecated the `--ascii` option
+- Format `nitrokey` reported errors in more user-friendly format
 - Further decrease binary size by using system allocator
 - Bumped `nitrokey` dependency to `0.3.1`
 
