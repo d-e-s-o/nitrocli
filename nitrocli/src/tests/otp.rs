@@ -18,11 +18,10 @@
 // *************************************************************************
 
 use super::*;
-use crate::tests::nitrocli;
 
 #[test_device]
 fn set_invalid_slot_raw(device: nitrokey::DeviceWrapper) {
-  let (rc, out, err) = nitrocli::run(Some(device), &["otp", "set", "100", "name", "1234"]);
+  let (rc, out, err) = Nitrocli::with_dev(device).run(&["otp", "set", "100", "name", "1234"]);
 
   assert_ne!(rc, 0);
   assert_eq!(out, b"");
@@ -31,7 +30,8 @@ fn set_invalid_slot_raw(device: nitrokey::DeviceWrapper) {
 
 #[test_device]
 fn set_invalid_slot(device: nitrokey::DeviceWrapper) {
-  let res = nitrocli::handle(Some(device), &["otp", "set", "100", "name", "1234"]);
+  let res = Nitrocli::with_dev(device).handle(&["otp", "set", "100", "name", "1234"]);
+
   assert_eq!(
     res.unwrap_cmd_err(),
     (

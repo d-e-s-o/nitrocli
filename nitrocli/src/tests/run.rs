@@ -18,11 +18,10 @@
 // *************************************************************************
 
 use super::*;
-use crate::tests::nitrocli;
 
 #[test]
 fn no_command_or_option() {
-  let (rc, out, err) = nitrocli::run(NO_DEV, &[]);
+  let (rc, out, err) = Nitrocli::new().run(&[]);
 
   assert_ne!(rc, 0);
   assert_eq!(out, b"");
@@ -34,7 +33,7 @@ fn no_command_or_option() {
 #[test]
 fn help_option() {
   fn test(opt: &'static str) {
-    let (rc, out, err) = nitrocli::run(NO_DEV, &[opt]);
+    let (rc, out, err) = Nitrocli::new().run(&[opt]);
 
     assert_eq!(rc, 0);
     assert_eq!(err, b"");
