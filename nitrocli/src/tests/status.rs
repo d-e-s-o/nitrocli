@@ -18,13 +18,12 @@
 // *************************************************************************
 
 use super::*;
-use crate::tests::nitrocli;
 
 // This test acts as verification that conversion of Error::Error
 // variants into the proper exit code works properly.
 #[test_device]
 fn not_found_raw() {
-  let (rc, out, err) = nitrocli::run(NO_DEV, &["status"]);
+  let (rc, out, err) = Nitrocli::new().run(&["status"]);
 
   assert_ne!(rc, 0);
   assert_eq!(out, b"");
@@ -33,7 +32,7 @@ fn not_found_raw() {
 
 #[test_device]
 fn not_found() {
-  let res = nitrocli::handle(NO_DEV, &["status"]);
+  let res = Nitrocli::new().handle(&["status"]);
   assert_eq!(res.unwrap_str_err(), "Nitrokey device not found");
 }
 
@@ -50,7 +49,7 @@ $"#,
   )
   .unwrap();
 
-  let out = nitrocli::handle(Some(device), &["status"])?;
+  let out = Nitrocli::with_dev(device).handle(&["status"])?;
   assert!(re.is_match(&out), out);
   Ok(())
 }

@@ -33,38 +33,6 @@ fn dummy() {}
 mod run;
 mod status;
 
-/// An `Option<IntoArg>` that represents a non-present device. Rust can
-/// be notoriously bad at inferring type parameters and this constant
-/// alleviates the pain.
-const NO_DEV: Option<nitrokey::Pro> = None;
-
-/// A trait for conversion of a nitrokey::Device into an argument
-/// representing the device model that the program recognizes.
-pub trait IntoArg {
-  fn into_arg(self) -> &'static str;
-}
-
-impl IntoArg for nitrokey::Pro {
-  fn into_arg(self) -> &'static str {
-    "--model=pro"
-  }
-}
-
-impl IntoArg for nitrokey::Storage {
-  fn into_arg(self) -> &'static str {
-    "--model=storage"
-  }
-}
-
-impl IntoArg for nitrokey::DeviceWrapper {
-  fn into_arg(self) -> &'static str {
-    match self {
-      nitrokey::DeviceWrapper::Pro(x) => x.into_arg(),
-      nitrokey::DeviceWrapper::Storage(x) => x.into_arg(),
-    }
-  }
-}
-
 /// A trait simplifying checking for expected errors.
 pub trait UnwrapError {
   /// Unwrap an Error::Error variant.
@@ -83,22 +51,42 @@ where
   }
 }
 
-mod nitrocli {
-  use super::*;
+struct Nitrocli {
+  model: Option<nitrokey::Model>,
+}
 
-  use crate::args;
-  use crate::Result;
-  use crate::RunCtx;
+impl Nitrocli {
+  pub fn new() -> Self {
+    Self { model: None }
+  }
 
-  fn do_run<F, R, I>(device: Option<I>, args: &[&'static str], f: F) -> (R, Vec<u8>, Vec<u8>)
+  pub fn with_dev<D>(device: D) -> Self
   where
-    F: FnOnce(&mut RunCtx<'_>, Vec<String>) -> R,
-    I: IntoArg,
+    D: nitrokey::Device,
+  {
+    let result = Self {
+      model: Some(device.get_model()),
+    };
+
+    drop(device);
+    result
+  }
+
+  fn model_to_arg(model: nitrokey::Model) -> &'static str {
+    match model {
+      nitrokey::Model::Pro => "--model=pro",
+      nitrokey::Model::Storage => "--model=storage",
+    }
+  }
+
+  fn do_run<F, R>(&mut self, args: &[&'static str], f: F) -> (R, Vec<u8>, Vec<u8>)
+  where
+    F: FnOnce(&mut crate::RunCtx<'_>, Vec<String>) -> R,
   {
     let args = ["nitrocli"]
       .into_iter()
       .cloned()
-      .chain(device.into_iter().map(IntoArg::into_arg))
+      .chain(self.model.map(Self::model_to_arg))
       .chain(args.into_iter().cloned())
       .map(ToOwned::to_owned)
       .collect();
@@ -106,7 +94,7 @@ mod nitrocli {
     let mut stdout = Vec::new();
     let mut stderr = Vec::new();
 
-    let ctx = &mut RunCtx {
+    let ctx = &mut crate::RunCtx {
       stdout: &mut stdout,
       stderr: &mut stderr,
     };
@@ -115,19 +103,13 @@ mod nitrocli {
   }
 
   /// Run `nitrocli`'s `run` function.
-  pub fn run<I>(device: Option<I>, args: &[&'static str]) -> (i32, Vec<u8>, Vec<u8>)
-  where
-    I: IntoArg,
-  {
-    do_run(device, args, |c, a| crate::run(c, a))
+  pub fn run(&mut self, args: &[&'static str]) -> (i32, Vec<u8>, Vec<u8>) {
+    self.do_run(args, |c, a| crate::run(c, a))
   }
 
   /// Run `nitrocli`'s `handle_arguments` function.
-  pub fn handle<I>(device: Option<I>, args: &[&'static str]) -> Result<String>
-  where
-    I: IntoArg,
-  {
-    let (res, out, _) = do_run(device, args, |c, a| args::handle_arguments(c, a));
+  pub fn handle(&mut self, args: &[&'static str]) -> crate::Result<String> {
+    let (res, out, _) = self.do_run(args, |c, a| crate::args::handle_arguments(c, a));
     res.map(|_| String::from_utf8_lossy(&out).into_owned())
   }
 }
