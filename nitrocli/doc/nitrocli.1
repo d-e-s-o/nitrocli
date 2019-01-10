@@ -220,6 +220,25 @@ The admin PIN cannot be unblocked.
 This operation is equivalent to the unblock PIN option provided by \fBgpg\fR(1)
 (using the \fB\-\-change\-pin\fR option).
 
+.SH ENVIRONMENT
+The program honors a set of environment variables that can be used to
+suppress interactive PIN entry through \fBpinentry\fR(1). The following
+variables are recognized:
+.TP
+NITROCLI_ADMIN_PIN
+The admin PIN to use.
+.TP
+NITROCLI_USER_PIN
+The user PIN to use.
+.TP
+NITROCLI_NEW_ADMIN_PIN
+The new admin PIN to set. This variable is only used by the \fBnitrocli
+pin set\fR command for the \fBadmin\fR type.
+.TP
+NITROCLI_NEW_USER_PIN
+The new user PIN to set. This variable is only used by the \fBnitrocli
+pin set\fR command for the \fBuser\fR type.
+
 .SH EXAMPLES
 .SS One-time passwords
 Configure a one-time password slot with a hexadecimal secret representation:
