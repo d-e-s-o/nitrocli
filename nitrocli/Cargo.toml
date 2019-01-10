@@ -54,7 +54,7 @@ version = "0.2"
 path = "../libc"
 
 [dependencies.nitrokey]
-version = "0.3"
+version = "0.3.1"
 path = "../nitrokey"
 
 [dev-dependencies.nitrokey-test]
