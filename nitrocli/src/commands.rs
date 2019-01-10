@@ -59,12 +59,7 @@ fn get_device(ctx: &mut args::ExecCtx<'_>) -> Result<nitrokey::DeviceWrapper> {
   set_log_level(ctx);
 
   match ctx.model {
-    Some(model) => match model {
-      args::DeviceModel::Pro => nitrokey::Pro::connect().map(nitrokey::DeviceWrapper::Pro),
-      args::DeviceModel::Storage => {
-        nitrokey::Storage::connect().map(nitrokey::DeviceWrapper::Storage)
-      }
-    },
+    Some(model) => nitrokey::connect_model(model.into()),
     None => nitrokey::connect(),
   }
   .map_err(|_| Error::Error("Nitrokey device not found".to_string()))

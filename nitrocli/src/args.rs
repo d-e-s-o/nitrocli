@@ -59,6 +59,15 @@ Enum! {DeviceModel, [
   Storage => "storage"
 ]}
 
+impl From<DeviceModel> for nitrokey::Model {
+  fn from(model: DeviceModel) -> nitrokey::Model {
+    match model {
+      DeviceModel::Pro => nitrokey::Model::Pro,
+      DeviceModel::Storage => nitrokey::Model::Storage,
+    }
+  }
+}
+
 /// A top-level command for nitrocli.
 Enum! {Command, [
   Config => "config",
