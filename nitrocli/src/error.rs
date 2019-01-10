@@ -19,6 +19,7 @@
 
 use std::fmt;
 use std::io;
+use std::str;
 use std::string;
 
 #[derive(Debug)]
@@ -26,7 +27,7 @@ pub enum Error {
   ArgparseError(i32),
   CommandError(nitrokey::CommandError),
   IoError(io::Error),
-  Utf8Error(string::FromUtf8Error),
+  Utf8Error(str::Utf8Error),
   Error(String),
 }
 
@@ -42,9 +43,15 @@ impl From<io::Error> for Error {
   }
 }
 
+impl From<str::Utf8Error> for Error {
+  fn from(e: str::Utf8Error) -> Error {
+    Error::Utf8Error(e)
+  }
+}
+
 impl From<string::FromUtf8Error> for Error {
   fn from(e: string::FromUtf8Error) -> Error {
-    Error::Utf8Error(e)
+    Error::Utf8Error(e.utf8_error())
   }
 }
 

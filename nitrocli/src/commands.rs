@@ -186,10 +186,6 @@ where
       Ok(pin) => pin,
       Err(err) => return Err((data, err)),
     };
-    let pin = match String::from_utf8(pin) {
-      Ok(pin) => pin,
-      Err(err) => return Err((data, Error::from(err))),
-    };
     match op(data, &pin) {
       Ok(result) => return Ok(result),
       Err((new_data, err)) => match err {
@@ -580,12 +576,10 @@ fn choose_pin(pin_type: pinentry::PinType) -> Result<String> {
   pinentry::clear_pin(pin_type)?;
   let new_pin = pinentry::inquire_pin(pin_type, pinentry::Mode::Choose, None)?;
   pinentry::clear_pin(pin_type)?;
-  let new_pin = String::from_utf8(new_pin)?;
   check_pin(pin_type, &new_pin)?;
 
   let confirm_pin = pinentry::inquire_pin(pin_type, pinentry::Mode::Confirm, None)?;
   pinentry::clear_pin(pin_type)?;
-  let confirm_pin = String::from_utf8(confirm_pin)?;
 
   if new_pin != confirm_pin {
     Err(Error::Error("Entered PINs do not match".to_string()))
