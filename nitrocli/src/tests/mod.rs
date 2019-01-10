@@ -37,6 +37,7 @@ const NITROKEY_DEFAULT_USER_PIN: &str = "123456";
 fn dummy() {}
 
 mod otp;
+mod pin;
 mod run;
 mod status;
 
@@ -102,6 +103,14 @@ impl Nitrocli {
     result
   }
 
+  pub fn user_pin(&mut self, pin: impl Into<ffi::OsString>) {
+    self.user_pin = Some(pin.into())
+  }
+
+  pub fn new_user_pin(&mut self, pin: impl Into<ffi::OsString>) {
+    self.new_user_pin = Some(pin.into())
+  }
+
   fn model_to_arg(model: nitrokey::Model) -> &'static str {
     match model {
       nitrokey::Model::Pro => "--model=pro",
@@ -145,5 +154,9 @@ impl Nitrocli {
   pub fn handle(&mut self, args: &[&'static str]) -> crate::Result<String> {
     let (res, out, _) = self.do_run(args, |c, a| crate::args::handle_arguments(c, a));
     res.map(|_| String::from_utf8_lossy(&out).into_owned())
+  }
+
+  pub fn model(&self) -> Option<nitrokey::Model> {
+    self.model
   }
 }
