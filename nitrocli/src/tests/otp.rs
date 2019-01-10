@@ -22,7 +22,7 @@ use crate::tests::nitrocli;
 
 #[test_device]
 fn set_invalid_slot_raw(device: nitrokey::DeviceWrapper) {
-  let (rc, out, err) = nitrocli::run(NO_DEV, &["otp", "set", "100", "name", "1234"]);
+  let (rc, out, err) = nitrocli::run(Some(device), &["otp", "set", "100", "name", "1234"]);
 
   assert_ne!(rc, 0);
   assert_eq!(out, b"");
