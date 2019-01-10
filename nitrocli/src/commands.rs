@@ -610,7 +610,7 @@ fn check_pin(pin_type: pinentry::PinType, pin: &str) -> Result<()> {
   }
 }
 
-fn choose_pin(pin_type: pinentry::PinType) -> Result<String> {
+fn choose_pin_with_pinentry(pin_type: pinentry::PinType) -> Result<String> {
   pinentry::clear_pin(pin_type)?;
   let new_pin = pinentry::inquire_pin(pin_type, pinentry::Mode::Choose, None)?;
   pinentry::clear_pin(pin_type)?;
@@ -626,10 +626,46 @@ fn choose_pin(pin_type: pinentry::PinType) -> Result<String> {
   }
 }
 
+/// Choose a PIN of the given type.
+///
+/// If the user has set the respective environment variable for the
+/// given PIN type, it will be used.
+fn choose_pin(
+  ctx: &mut args::ExecCtx<'_>,
+  pin_type: pinentry::PinType,
+  new: bool,
+) -> Result<String> {
+  let new_pin = match pin_type {
+    pinentry::PinType::Admin => {
+      if new {
+        &ctx.new_admin_pin
+      } else {
+        &ctx.admin_pin
+      }
+    }
+    pinentry::PinType::User => {
+      if new {
+        &ctx.new_user_pin
+      } else {
+        &ctx.user_pin
+      }
+    }
+  };
+
+  if let Some(new_pin) = new_pin {
+    new_pin
+      .to_str()
+      .ok_or_else(|| Error::Error("Failed to read PIN: invalid Unicode data found".into()))
+      .map(ToOwned::to_owned)
+  } else {
+    choose_pin_with_pinentry(pin_type)
+  }
+}
+
 /// Change a PIN.
 pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Result<()> {
   let device = get_device(ctx)?;
-  let new_pin = choose_pin(pin_type)?;
+  let new_pin = choose_pin(ctx, pin_type, true)?;
   try_with_pin(
     ctx,
     pin_type,
@@ -644,7 +680,7 @@ pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Resu
 /// Unblock and reset the user PIN.
 pub fn pin_unblock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_device(ctx)?;
-  let user_pin = choose_pin(pinentry::PinType::User)?;
+  let user_pin = choose_pin(ctx, pinentry::PinType::User, false)?;
   try_with_pin(
     ctx,
     pinentry::PinType::Admin,
