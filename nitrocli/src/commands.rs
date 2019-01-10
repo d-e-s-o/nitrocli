@@ -90,8 +90,12 @@ fn get_storage_device(ctx: &mut args::ExecCtx<'_>) -> Result<nitrokey::Storage> 
 }
 
 /// Open the password safe on the given device.
-fn get_password_safe(device: &dyn Device) -> Result<nitrokey::PasswordSafe<'_>> {
+fn get_password_safe<'dev>(
+  ctx: &mut args::ExecCtx<'_>,
+  device: &'dev dyn Device,
+) -> Result<nitrokey::PasswordSafe<'dev>> {
   try_with_pin_and_data(
+    ctx,
     pinentry::PinType::User,
     "Could not access the password safe",
     (),
@@ -103,6 +107,7 @@ fn get_password_safe(device: &dyn Device) -> Result<nitrokey::PasswordSafe<'_>> 
 ///
 /// If an error occurs, the error message `msg` is used.
 fn authenticate<D, A, F>(
+  ctx: &mut args::ExecCtx<'_>,
   device: D,
   pin_type: pinentry::PinType,
   msg: &'static str,
@@ -112,15 +117,16 @@ where
   D: Device,
   F: Fn(D, &str) -> result::Result<A, (D, nitrokey::CommandError)>,
 {
-  try_with_pin_and_data(pin_type, msg, device, op)
+  try_with_pin_and_data(ctx, pin_type, msg, device, op)
 }
 
 /// Authenticate the given device with the user PIN.
-fn authenticate_user<T>(device: T) -> Result<nitrokey::User<T>>
+fn authenticate_user<T>(ctx: &mut args::ExecCtx<'_>, device: T) -> Result<nitrokey::User<T>>
 where
   T: Device,
 {
   authenticate(
+    ctx,
     device,
     pinentry::PinType::User,
     "Could not authenticate as user",
@@ -129,11 +135,12 @@ where
 }
 
 /// Authenticate the given device with the admin PIN.
-fn authenticate_admin<T>(device: T) -> Result<nitrokey::Admin<T>>
+fn authenticate_admin<T>(ctx: &mut args::ExecCtx<'_>, device: T) -> Result<nitrokey::Admin<T>>
 where
   T: Device,
 {
   authenticate(
+    ctx,
     device,
     pinentry::PinType::Admin,
     "Could not authenticate as admin",
@@ -168,7 +175,7 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
 /// the first try, this function will call `op` with `data`.  At the
 /// second or third try, it will call `op` with the data returned by the
 /// previous call to `op`.
-fn try_with_pin_and_data<D, F, R>(
+fn try_with_pin_and_data_with_pinentry<D, F, R>(
   pin_type: pinentry::PinType,
   msg: &'static str,
   data: D,
@@ -203,15 +210,49 @@ where
   }
 }
 
+/// Try to execute the given function with a PIN.
+fn try_with_pin_and_data<D, F, R>(
+  ctx: &mut args::ExecCtx<'_>,
+  pin_type: pinentry::PinType,
+  msg: &'static str,
+  data: D,
+  op: F,
+) -> Result<R>
+where
+  F: Fn(D, &str) -> result::Result<R, (D, nitrokey::CommandError)>,
+{
+  let pin = match pin_type {
+    pinentry::PinType::Admin => &ctx.admin_pin,
+    pinentry::PinType::User => &ctx.user_pin,
+  };
+
+  if let Some(pin) = pin {
+    let pin = pin.to_str().ok_or_else(|| {
+      Error::Error(format!(
+        "{}: Failed to read PIN due to invalid Unicode data",
+        msg
+      ))
+    })?;
+    op(data, &pin).map_err(|(_, err)| get_error(msg, err))
+  } else {
+    try_with_pin_and_data_with_pinentry(pin_type, msg, data, op)
+  }
+}
+
 /// Try to execute the given function with a pin queried using pinentry.
 ///
 /// This function behaves exactly as `try_with_pin_and_data`, but
 /// it refrains from passing any data to it.
-fn try_with_pin<F>(pin_type: pinentry::PinType, msg: &'static str, op: F) -> Result<()>
+fn try_with_pin<F>(
+  ctx: &mut args::ExecCtx<'_>,
+  pin_type: pinentry::PinType,
+  msg: &'static str,
+  op: F,
+) -> Result<()>
 where
   F: Fn(&str) -> result::Result<(), nitrokey::CommandError>,
 {
-  try_with_pin_and_data(pin_type, msg, (), |data, pin| {
+  try_with_pin_and_data(ctx, pin_type, msg, (), |data, pin| {
     op(pin).map_err(|err| (data, err))
   })
 }
@@ -257,6 +298,7 @@ pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 pub fn storage_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_storage_device(ctx)?;
   try_with_pin(
+    ctx,
     pinentry::PinType::User,
     "Opening encrypted volume failed",
     |pin| device.enable_encrypted_volume(&pin),
@@ -355,7 +397,8 @@ pub fn config_set(
   scrollock: args::ConfigOption<u8>,
   user_password: Option<bool>,
 ) -> Result<()> {
-  let device = authenticate_admin(get_device(ctx)?)?;
+  let device = get_device(ctx)?;
+  let device = authenticate_admin(ctx, device)?;
   let config = device
     .get_config()
     .map_err(|err| get_error("Could not get configuration", err))?;
@@ -419,7 +462,7 @@ pub fn otp_get(
     .get_config()
     .map_err(|err| get_error("Could not get device configuration", err))?;
   let otp = if config.user_password {
-    let user = authenticate_user(device)?;
+    let user = authenticate_user(ctx, device)?;
     get_otp(slot, algorithm, &user)
   } else {
     get_otp(slot, algorithm, &device)
@@ -474,7 +517,8 @@ pub fn otp_set(
     args::OtpSecretFormat::Hex => data.secret,
   };
   let data = nitrokey::OtpSlotData { secret, ..data };
-  let device = authenticate_admin(get_device(ctx)?)?;
+  let device = get_device(ctx)?;
+  let device = authenticate_admin(ctx, device)?;
   match algorithm {
     args::OtpAlgorithm::Hotp => device.write_hotp_slot(data, counter),
     args::OtpAlgorithm::Totp => device.write_totp_slot(data, time_window),
@@ -489,7 +533,8 @@ pub fn otp_clear(
   slot: u8,
   algorithm: args::OtpAlgorithm,
 ) -> Result<()> {
-  let device = authenticate_admin(get_device(ctx)?)?;
+  let device = get_device(ctx)?;
+  let device = authenticate_admin(ctx, device)?;
   match algorithm {
     args::OtpAlgorithm::Hotp => device.erase_hotp_slot(slot),
     args::OtpAlgorithm::Totp => device.erase_totp_slot(slot),
@@ -586,6 +631,7 @@ pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Resu
   let device = get_device(ctx)?;
   let new_pin = choose_pin(pin_type)?;
   try_with_pin(
+    ctx,
     pin_type,
     "Could not change the PIN",
     |current_pin| match pin_type {
@@ -600,6 +646,7 @@ pub fn pin_unblock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_device(ctx)?;
   let user_pin = choose_pin(pinentry::PinType::User)?;
   try_with_pin(
+    ctx,
     pinentry::PinType::Admin,
     "Could not unblock the user PIN",
     |admin_pin| device.unlock_user_pin(&admin_pin, &user_pin),
@@ -631,7 +678,7 @@ pub fn pws_get(
   quiet: bool,
 ) -> Result<()> {
   let device = get_device(ctx)?;
-  let pws = get_password_safe(&device)?;
+  let pws = get_password_safe(ctx, &device)?;
   let show_all = !show_name && !show_login && !show_password;
   if show_all || show_name {
     print_pws_data(ctx, "name:    ", pws.get_slot_name(slot), quiet)?;
@@ -654,7 +701,7 @@ pub fn pws_set(
   password: &str,
 ) -> Result<()> {
   let device = get_device(ctx)?;
-  let pws = get_password_safe(&device)?;
+  let pws = get_password_safe(ctx, &device)?;
   pws
     .write_slot(slot, name, login, password)
     .map_err(|err| get_error("Could not write PWS slot", err))
@@ -663,7 +710,7 @@ pub fn pws_set(
 /// Clear a PWS slot.
 pub fn pws_clear(ctx: &mut args::ExecCtx<'_>, slot: u8) -> Result<()> {
   let device = get_device(ctx)?;
-  let pws = get_password_safe(&device)?;
+  let pws = get_password_safe(ctx, &device)?;
   pws
     .erase_slot(slot)
     .map_err(|err| get_error("Could not clear PWS slot", err))
@@ -693,7 +740,7 @@ fn print_pws_slot(
 /// Print the status of all PWS slots.
 pub fn pws_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
   let device = get_device(ctx)?;
-  let pws = get_password_safe(&device)?;
+  let pws = get_password_safe(ctx, &device)?;
   let slots = pws
     .get_slot_status()
     .map_err(|err| get_error("Could not read PWS slot status", err))?;
