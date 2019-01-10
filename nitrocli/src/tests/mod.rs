@@ -80,7 +80,7 @@ where
 {
   fn unwrap_str_err(self) -> String {
     match self.unwrap_err() {
-      crate::error::Error::Error(err) => err,
+      crate::Error::Error(err) => err,
       err => panic!("Unexpected error variant found: {:?}", err),
     }
   }
