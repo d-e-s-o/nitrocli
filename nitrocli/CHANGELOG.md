@@ -6,6 +6,9 @@ Unreleased
 - Added the `-f`/`--format` option for the `otp set` subcommand to
   choose the secret format
   - Deprecated the `--ascii` option
+- Honor `NITROCLI_ADMIN_PIN` and `NITROCLI_USER_PIN` as well as
+  `NITROCLI_NEW_ADMIN_PIN` and `NITROCLI_NEW_USER_PIN` environment
+  variables for non-interactive PIN supply
 - Format `nitrokey` reported errors in more user-friendly format
 - Further decrease binary size by using system allocator
 - Bumped `nitrokey` dependency to `0.3.1`
