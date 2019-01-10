@@ -1,7 +1,7 @@
 // pinentry.rs
 
 // *************************************************************************
-// * Copyright (C) 2017-2018 Daniel Mueller (deso@posteo.net)              *
+// * Copyright (C) 2017-2019 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -112,8 +112,11 @@ impl Mode {
   }
 }
 
-fn parse_pinentry_pin(response: Vec<u8>) -> Result<Vec<u8>, Error> {
-  let string = String::from_utf8(response)?;
+fn parse_pinentry_pin<R>(response: R) -> Result<String, Error>
+where
+  R: AsRef<str>,
+{
+  let string = response.as_ref();
   let lines: Vec<&str> = string.lines().collect();
 
   // We expect the response to be of the form:
@@ -124,7 +127,7 @@ fn parse_pinentry_pin(response: Vec<u8>) -> Result<Vec<u8>, Error> {
   if lines.len() == 2 && lines[1] == "OK" && lines[0].starts_with("D ") {
     // We got the only valid answer we accept.
     let (_, pass) = lines[0].split_at(2);
-    return Ok(pass.to_string().into_bytes());
+    return Ok(pass.to_string());
   }
 
   // Check if we are dealing with a special "ERR " line and report that
@@ -133,7 +136,7 @@ fn parse_pinentry_pin(response: Vec<u8>) -> Result<Vec<u8>, Error> {
     let (_, error) = lines[0].split_at(4);
     return Err(Error::Error(error.to_string()));
   }
-  Err(Error::Error("Unexpected response: ".to_string() + &string))
+  Err(Error::Error(format!("Unexpected response: {}", string)))
 }
 
 /// Inquire a PIN of the given type from the user.
@@ -148,7 +151,7 @@ pub fn inquire_pin(
   pin_type: PinType,
   mode: Mode,
   error_msg: Option<&str>,
-) -> Result<Vec<u8>, Error> {
+) -> Result<String, Error> {
   let cache_id = pin_type.cache_id();
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
@@ -172,18 +175,21 @@ pub fn inquire_pin(
     .arg(command)
     .arg("/bye")
     .output()?;
-  parse_pinentry_pin(output.stdout)
+  parse_pinentry_pin(str::from_utf8(&output.stdout)?)
 }
 
-fn parse_pinentry_response(response: Vec<u8>) -> Result<(), Error> {
-  let string = String::from_utf8(response)?;
-  let lines: Vec<&str> = string.lines().collect();
+fn parse_pinentry_response<R>(response: R) -> Result<(), Error>
+where
+  R: AsRef<str>,
+{
+  let string = response.as_ref();
+  let lines = string.lines().collect::<Vec<_>>();
 
   if lines.len() == 1 && lines[0] == "OK" {
     // We got the only valid answer we accept.
     return Ok(());
   }
-  Err(Error::Error("Unexpected response: ".to_string() + &string))
+  Err(Error::Error(format!("Unexpected response: {}", string)))
 }
 
 /// Clear the cached pin of the given type.
@@ -194,7 +200,7 @@ pub fn clear_pin(pin_type: PinType) -> Result<(), Error> {
     .arg("/bye")
     .output()?;
 
-  parse_pinentry_response(output.stdout)
+  parse_pinentry_response(str::from_utf8(&output.stdout)?)
 }
 
 #[cfg(test)]
@@ -203,8 +209,8 @@ mod tests {
 
   #[test]
   fn parse_pinentry_pin_good() {
-    let response = "D passphrase\nOK\n".to_string().into_bytes();
-    let expected = "passphrase".to_string().into_bytes();
+    let response = "D passphrase\nOK\n";
+    let expected = "passphrase";
 
     assert_eq!(parse_pinentry_pin(response).unwrap(), expected)
   }
@@ -215,7 +221,7 @@ mod tests {
     let response = "ERR ".to_string() + error + "\n";
     let expected = error;
 
-    let error = parse_pinentry_pin(response.to_string().into_bytes());
+    let error = parse_pinentry_pin(response.to_string());
 
     if let Error::Error(ref e) = error.err().unwrap() {
       assert_eq!(e, &expected);
@@ -227,9 +233,8 @@ mod tests {
   #[test]
   fn parse_pinentry_pin_unexpected() {
     let response = "foobar\n";
-    let expected = "Unexpected response: ".to_string() + response;
-
-    let error = parse_pinentry_pin(response.to_string().into_bytes());
+    let expected = format!("Unexpected response: {}", response);
+    let error = parse_pinentry_pin(response);
 
     if let Error::Error(ref e) = error.err().unwrap() {
       assert_eq!(e, &expected);
@@ -240,22 +245,19 @@ mod tests {
 
   #[test]
   fn parse_pinentry_response_ok() {
-    let response = "OK\n".to_string().into_bytes();
-    assert!(parse_pinentry_response(response).is_ok())
+    assert!(parse_pinentry_response("OK\n").is_ok())
   }
 
   #[test]
   fn parse_pinentry_response_ok_no_newline() {
-    let response = "OK".to_string().into_bytes();
-    assert!(parse_pinentry_response(response).is_ok())
+    assert!(parse_pinentry_response("OK").is_ok())
   }
 
   #[test]
   fn parse_pinentry_response_unexpected() {
     let response = "ERR 42";
-    let expected = "Unexpected response: ".to_string() + response;
-
-    let error = parse_pinentry_response(response.to_string().into_bytes());
+    let expected = format!("Unexpected response: {}", response);
+    let error = parse_pinentry_response(response);
 
     if let Error::Error(ref e) = error.err().unwrap() {
       assert_eq!(e, &expected);
