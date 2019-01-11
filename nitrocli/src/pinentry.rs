@@ -17,7 +17,6 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use std::fmt;
 use std::process;
 use std::str;
 
@@ -33,19 +32,6 @@ pub enum PinType {
   Admin,
   /// The user PIN.
   User,
-}
-
-impl fmt::Display for PinType {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match *self {
-        PinType::Admin => "admin",
-        PinType::User => "user",
-      }
-    )
-  }
 }
 
 impl str::FromStr for PinType {
