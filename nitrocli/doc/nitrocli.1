@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2019-01-05
+.TH NITROCLI 1 2019-01-10
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -199,11 +199,9 @@ If the retry counter for the user PIN is zero, you can use the
 If the retry counter for the admin PIN is zero, you have to perform a factory
 reset using \fBgpg\fR(1).
 Use the \fBstatus\fR command to check the retry counters.
-
 .TP
 .B nitrocli pin clear
 Clear the PINs cached by the other commands.
-
 .TP
 \fBnitrocli pin set \fItype\fR
 Change a PIN.
@@ -211,7 +209,6 @@ Change a PIN.
 the admin PIN or \fBuser\fR to change the user PIN.
 This command only works if the retry counter for the PIN type is at least one.
 (Use the \fBstatus\fR command to check the retry counters.)
-
 .TP
 .B nitrocli pin unblock
 Unblock and reset the user PIN.
