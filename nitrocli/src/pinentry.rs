@@ -134,7 +134,7 @@ where
   // specially.
   if !lines.is_empty() && lines[0].starts_with("ERR ") {
     let (_, error) = lines[0].split_at(4);
-    return Err(Error::Error(error.to_string()));
+    return Err(Error::from(error));
   }
   Err(Error::Error(format!("Unexpected response: {}", string)))
 }

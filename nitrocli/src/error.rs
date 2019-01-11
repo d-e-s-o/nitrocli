@@ -31,6 +31,12 @@ pub enum Error {
   Error(String),
 }
 
+impl From<&str> for Error {
+  fn from(s: &str) -> Error {
+    Error::Error(s.to_string())
+  }
+}
+
 impl From<nitrokey::CommandError> for Error {
   fn from(e: nitrokey::CommandError) -> Error {
     Error::CommandError(None, e)
