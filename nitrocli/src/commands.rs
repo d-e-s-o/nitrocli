@@ -62,7 +62,7 @@ fn get_device(ctx: &mut args::ExecCtx<'_>) -> Result<nitrokey::DeviceWrapper> {
     Some(model) => nitrokey::connect_model(model.into()),
     None => nitrokey::connect(),
   }
-  .map_err(|_| Error::Error("Nitrokey device not found".to_string()))
+  .map_err(|_| Error::from("Nitrokey device not found"))
 }
 
 /// Connect to a Nitrokey Storage device and return it.
@@ -71,17 +71,13 @@ fn get_storage_device(ctx: &mut args::ExecCtx<'_>) -> Result<nitrokey::Storage> 
 
   if let Some(model) = ctx.model {
     if model != args::DeviceModel::Storage {
-      return Err(Error::Error(
-        "This command is only available on the Nitrokey Storage".to_string(),
+      return Err(Error::from(
+        "This command is only available on the Nitrokey Storage",
       ));
     }
   }
 
-  nitrokey::Storage::connect().or_else(|_| {
-    Err(Error::Error(
-      "Nitrokey Storage device not found".to_string(),
-    ))
-  })
+  nitrokey::Storage::connect().or_else(|_| Err(Error::from("Nitrokey Storage device not found")))
 }
 
 /// Open the password safe on the given device.
@@ -425,11 +421,7 @@ fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) 
 fn get_unix_timestamp() -> Result<u64> {
   time::SystemTime::now()
     .duration_since(time::UNIX_EPOCH)
-    .or_else(|_| {
-      Err(Error::Error(
-        "Current system time is before the Unix epoch".to_string(),
-      ))
-    })
+    .or_else(|_| Err(Error::from("Current system time is before the Unix epoch")))
     .map(|duration| duration.as_secs())
 }
 
@@ -483,8 +475,8 @@ fn prepare_ascii_secret(secret: &str) -> Result<String> {
   if secret.is_ascii() {
     Ok(format_bytes(&secret.as_bytes()))
   } else {
-    Err(Error::Error(
-      "The given secret is not an ASCII string despite --format ascii being set".to_string(),
+    Err(Error::from(
+      "The given secret is not an ASCII string despite --format ascii being set",
     ))
   }
 }
@@ -493,7 +485,7 @@ fn prepare_ascii_secret(secret: &str) -> Result<String> {
 fn prepare_base32_secret(secret: &str) -> Result<String> {
   base32::decode(base32::Alphabet::RFC4648 { padding: false }, secret)
     .map(|vec| format_bytes(&vec))
-    .ok_or_else(|| Error::Error("Could not parse base32 secret".to_string()))
+    .ok_or_else(|| Error::from("Could not parse base32 secret"))
 }
 
 /// Configure a one-time password slot on the Nitrokey device.
@@ -552,9 +544,7 @@ fn print_otp_status(
     slot = match slot.checked_add(1) {
       Some(slot) => slot,
       None => {
-        return Err(Error::Error(
-          "Integer overflow when iterating OTP slots".to_string(),
-        ))
+        return Err(Error::from("Integer overflow when iterating OTP slots"));
       }
     };
     let name = match result {
@@ -614,7 +604,7 @@ fn choose_pin_with_pinentry(pin_type: pinentry::PinType) -> Result<String> {
   pinentry::clear_pin(pin_type)?;
 
   if new_pin != confirm_pin {
-    Err(Error::Error("Entered PINs do not match".to_string()))
+    Err(Error::from("Entered PINs do not match"))
   } else {
     Ok(new_pin)
   }
@@ -649,7 +639,7 @@ fn choose_pin(
   if let Some(new_pin) = new_pin {
     new_pin
       .to_str()
-      .ok_or_else(|| Error::Error("Failed to read PIN: invalid Unicode data found".into()))
+      .ok_or_else(|| Error::from("Failed to read PIN: invalid Unicode data found"))
       .map(ToOwned::to_owned)
   } else {
     choose_pin_with_pinentry(pin_type)
@@ -753,7 +743,7 @@ fn print_pws_slot(
   programmed: bool,
 ) -> Result<()> {
   if slot > u8::MAX as usize {
-    return Err(Error::Error("Invalid PWS slot number".to_string()));
+    return Err(Error::from("Invalid PWS slot number"));
   }
   let slot = slot as u8;
   let name = if programmed {
