@@ -539,8 +539,8 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   if ascii {
     if secret_format.is_some() {
-      return Err(Error::Error(
-        "The --format and the --ascii option cannot be used at the same time".to_string(),
+      return Err(Error::from(
+        "The --format and the --ascii option cannot be used at the same time",
       ));
     }
 
