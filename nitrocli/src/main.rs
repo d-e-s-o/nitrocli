@@ -142,15 +142,29 @@ fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
 }
 
 fn main() {
+  use std::io::Write;
+
+  let mut stdout = io::stdout();
+  let mut stderr = io::stderr();
   let args = env::args().collect::<Vec<_>>();
   let ctx = &mut RunCtx {
-    stdout: &mut io::stdout(),
-    stderr: &mut io::stderr(),
+    stdout: &mut stdout,
+    stderr: &mut stderr,
     admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
     user_pin: env::var_os(NITROCLI_USER_PIN),
     new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
     new_user_pin: env::var_os(NITROCLI_NEW_USER_PIN),
   };
 
-  process::exit(run(ctx, args));
+  let rc = run(ctx, args);
+  // We exit the process the hard way below. The problem is that because
+  // of this, buffered IO may not be flushed. So make sure to explicitly
+  // flush before exiting. Note that stderr is unbuffered, alleviating
+  // the need for any flushing there.
+  // Ideally we would just make `main` return an i32 and let Rust deal
+  // with all of this, but the `process::Termination` functionality is
+  // still unstable and we have no way to convince the caller to "just
+  // exit" without printing additional information.
+  let _ = stdout.flush();
+  process::exit(rc);
 }
