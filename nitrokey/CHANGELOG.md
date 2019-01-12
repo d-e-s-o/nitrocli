@@ -1,3 +1,12 @@
+# v0.3.2 (2019-01-12)
+- Make three additional error codes known: `CommandError::StringTooLong`,
+  `CommandError::InvalidHexString` and `CommandError::TargetBufferTooSmall`.
+- Add the `get_library_version` function to query the libnitrokey version.
+- Add the `wink` method to the `Storage` struct.
+- Add the `set_unencrypted_volume_mode` to set the access mode of the
+  unencrypted volume.
+- Add the `export_firmware` method to the `Storage` struct.
+
 # v0.3.1 (2019-01-07)
 - Use `nitrokey-test` to select and execute the unit tests.
 - Add support for the hidden volumes on a Nitrokey Storage

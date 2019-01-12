@@ -6,13 +6,14 @@ use std::{thread, time};
 
 use nitrokey::{
     Authenticate, CommandError, Config, ConfigureOtp, Device, GenerateOtp, GetPasswordSafe,
-    OtpMode, OtpSlotData,
+    OtpMode, OtpSlotData, Storage, VolumeMode,
 };
 use nitrokey_test::test as test_device;
 
-use crate::util::{ADMIN_PASSWORD, UPDATE_PIN, USER_PASSWORD};
+use crate::util::{ADMIN_PASSWORD, USER_PASSWORD};
 
 static ADMIN_NEW_PASSWORD: &str = "1234567890";
+static UPDATE_PIN: &str = "12345678";
 static UPDATE_NEW_PIN: &str = "87654321";
 static USER_NEW_PASSWORD: &str = "abcdefghij";
 
@@ -45,9 +46,6 @@ fn connect_pro(device: Pro) {
     assert!(nitrokey::connect().is_ok());
     assert!(nitrokey::connect_model(nitrokey::Model::Pro).is_ok());
     assert!(nitrokey::Pro::connect().is_ok());
-
-    assert!(nitrokey::connect_model(nitrokey::Model::Storage).is_err());
-    assert!(nitrokey::Storage::connect().is_err());
 }
 
 #[test_device]
@@ -58,9 +56,6 @@ fn connect_storage(device: Storage) {
     assert!(nitrokey::connect().is_ok());
     assert!(nitrokey::connect_model(nitrokey::Model::Storage).is_ok());
     assert!(nitrokey::Storage::connect().is_ok());
-
-    assert!(nitrokey::connect_model(nitrokey::Model::Pro).is_err());
-    assert!(nitrokey::Pro::connect().is_err());
 }
 
 fn assert_empty_serial_number() {
@@ -404,9 +399,59 @@ fn lock(device: Storage) {
 }
 
 #[test_device]
+fn set_unencrypted_volume_mode(device: Storage) {
+    fn assert_mode(device: &Storage, mode: VolumeMode) {
+        let status = device.get_status();
+        assert!(status.is_ok());
+        assert_eq!(
+            status.unwrap().unencrypted_volume.read_only,
+            mode == VolumeMode::ReadOnly
+        );
+    }
+
+    fn assert_success(device: &Storage, mode: VolumeMode) {
+        assert_eq!(
+            Ok(()),
+            device.set_unencrypted_volume_mode(ADMIN_PASSWORD, mode)
+        );
+        assert_mode(&device, mode);
+    }
+
+    assert_success(&device, VolumeMode::ReadOnly);
+
+    assert_eq!(
+        Err(CommandError::WrongPassword),
+        device.set_unencrypted_volume_mode(USER_PASSWORD, VolumeMode::ReadOnly)
+    );
+    assert_mode(&device, VolumeMode::ReadOnly);
+
+    assert_success(&device, VolumeMode::ReadWrite);
+    assert_success(&device, VolumeMode::ReadWrite);
+    assert_success(&device, VolumeMode::ReadOnly);
+}
+
+#[test_device]
 fn get_storage_status(device: Storage) {
     let status = device.get_status().unwrap();
 
     assert!(status.serial_number_sd_card > 0);
     assert!(status.serial_number_smart_card > 0);
+}
+
+#[test_device]
+fn export_firmware(device: Storage) {
+    assert_eq!(
+        Err(CommandError::WrongPassword),
+        device.export_firmware("someadminpn")
+    );
+    assert_eq!(Ok(()), device.export_firmware(ADMIN_PASSWORD));
+    assert_eq!(
+        Ok(()),
+        device.set_unencrypted_volume_mode(ADMIN_PASSWORD, VolumeMode::ReadWrite)
+    );
+    assert_eq!(Ok(()), device.export_firmware(ADMIN_PASSWORD));
+    assert_eq!(
+        Ok(()),
+        device.set_unencrypted_volume_mode(ADMIN_PASSWORD, VolumeMode::ReadOnly)
+    );
 }

@@ -125,6 +125,11 @@ fn hotp_error(device: DeviceWrapper) {
         Err(CommandError::InvalidSlot),
         admin.write_hotp_slot(slot_data, 0)
     );
+    let slot_data = OtpSlotData::new(1, "test", "foobar", OtpMode::SixDigits);
+    assert_eq!(
+        Err(CommandError::InvalidHexString),
+        admin.write_hotp_slot(slot_data, 0)
+    );
     let code = admin.get_hotp_code(4);
     assert_eq!(CommandError::InvalidSlot, code.unwrap_err());
 }
@@ -256,17 +261,22 @@ fn totp_slot_name(device: DeviceWrapper) {
 #[test_device]
 fn totp_error(device: DeviceWrapper) {
     let admin = make_admin_test_device(device);
-    let slot_data = OtpSlotData::new(1, "", HOTP_SECRET, OtpMode::SixDigits);
+    let slot_data = OtpSlotData::new(1, "", TOTP_SECRET, OtpMode::SixDigits);
     assert_eq!(
         Err(CommandError::NoName),
-        admin.write_hotp_slot(slot_data, 0)
+        admin.write_totp_slot(slot_data, 0)
     );
-    let slot_data = OtpSlotData::new(4, "test", HOTP_SECRET, OtpMode::SixDigits);
+    let slot_data = OtpSlotData::new(20, "test", TOTP_SECRET, OtpMode::SixDigits);
     assert_eq!(
         Err(CommandError::InvalidSlot),
-        admin.write_hotp_slot(slot_data, 0)
+        admin.write_totp_slot(slot_data, 0)
     );
-    let code = admin.get_hotp_code(4);
+    let slot_data = OtpSlotData::new(4, "test", "foobar", OtpMode::SixDigits);
+    assert_eq!(
+        Err(CommandError::InvalidHexString),
+        admin.write_totp_slot(slot_data, 0)
+    );
+    let code = admin.get_totp_code(20);
     assert_eq!(CommandError::InvalidSlot, code.unwrap_err());
 }
 
