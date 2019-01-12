@@ -3,6 +3,7 @@ Unreleased
 - Store cached PINs on a per-device basis to better support multi-device
   scenarios
 - Further decrease binary size by using system allocator
+- Bumped `nitrokey-sys` dependency to `3.4.3`
 
 
 0.2.2
