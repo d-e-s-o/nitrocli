@@ -330,11 +330,12 @@ fn print_storage_status(
 }
 
 /// Query and pretty print the status that is common to all Nitrokey devices.
-fn print_status(
-  ctx: &mut args::ExecCtx<'_>,
-  model: &'static str,
-  device: &nitrokey::DeviceWrapper<'_>,
-) -> Result<()> {
+fn print_status(ctx: &mut args::ExecCtx<'_>, device: &nitrokey::DeviceWrapper<'_>) -> Result<()> {
+  let model = match device {
+    nitrokey::DeviceWrapper::Pro(_) => "Pro",
+    nitrokey::DeviceWrapper::Storage(_) => "Storage",
+  };
+
   let serial_number = device
     .get_serial_number()
     .map_err(|err| get_error("Could not query the serial number", err))?;
@@ -365,14 +366,32 @@ fn print_status(
   }
 }
 
+fn emit_json_status(
+  ctx: &mut args::ExecCtx<'_>,
+  device: &nitrokey::DeviceWrapper<'_>,
+) -> Result<()> {
+  let model = match device {
+    nitrokey::DeviceWrapper::Pro(_) => "pro",
+    nitrokey::DeviceWrapper::Storage(_) => "storage",
+  };
+  let serial = device.get_serial_number()?;
+
+  let data = json::object! {
+    "model" => model,
+    "serial" => serial,
+  };
+  ctx.stdout.write_all(data.dump().as_bytes())?;
+  Ok(())
+}
+
 /// Inquire the status of the nitrokey.
-pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn status(ctx: &mut args::ExecCtx<'_>, json: bool) -> Result<()> {
   with_device(ctx, |ctx, device| {
-    let model = match device {
-      nitrokey::DeviceWrapper::Pro(_) => "Pro",
-      nitrokey::DeviceWrapper::Storage(_) => "Storage",
-    };
-    print_status(ctx, model, &device)
+    if json {
+      emit_json_status(ctx, &device)
+    } else {
+      print_status(ctx, &device)
+    }
   })
 }
 

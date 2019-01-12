@@ -329,11 +329,17 @@ fn parse(
 
 /// Inquire the status of the Nitrokey.
 fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+  let mut json = false;
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Prints the status of the connected Nitrokey device");
+  let _ = parser.refer(&mut json).add_option(
+    &["--json"],
+    argparse::StoreTrue,
+    "Emit status output in JSON format",
+  );
   parse(ctx, parser, args)?;
 
-  commands::status(ctx)
+  commands::status(ctx, json)
 }
 
 /// Perform a factory reset.
