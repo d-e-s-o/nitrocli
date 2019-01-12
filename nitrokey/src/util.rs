@@ -36,8 +36,14 @@ pub enum CommandError {
     Undefined,
     /// You passed a string containing a null byte.
     InvalidString,
+    /// A supplied string exceeded a length limit.
+    StringTooLong,
     /// You passed an invalid slot.
     InvalidSlot,
+    /// The supplied string was not in hexadecimal format.
+    InvalidHexString,
+    /// The target buffer was smaller than the source.
+    TargetBufferTooSmall,
 }
 
 /// Log level for libnitrokey.
@@ -134,7 +140,12 @@ impl CommandError {
             }
             CommandError::Undefined => "An unspecified error occurred".into(),
             CommandError::InvalidString => "You passed a string containing a null byte".into(),
+            CommandError::StringTooLong => "The supplied string is too long".into(),
             CommandError::InvalidSlot => "The given slot is invalid".into(),
+            CommandError::InvalidHexString => {
+                "The supplied string is not in hexadecimal format".into()
+            }
+            CommandError::TargetBufferTooSmall => "The target buffer is too small".into(),
         }
     }
 }
@@ -158,7 +169,10 @@ impl From<c_int> for CommandError {
             8 => CommandError::NotSupported,
             9 => CommandError::UnknownCommand,
             10 => CommandError::AesDecryptionFailed,
+            200 => CommandError::StringTooLong,
             201 => CommandError::InvalidSlot,
+            202 => CommandError::InvalidHexString,
+            203 => CommandError::TargetBufferTooSmall,
             x => CommandError::Unknown(x.into()),
         }
     }

@@ -21,13 +21,21 @@ available but still under development.
 The following functions provided by `libnitrokey` are deliberately not
 supported by `nitrokey-rs`:
 
-- `NK_get_time()`.  This method is useless as it will always cause a timestamp
+- `NK_get_device_model`.  We know which model we connected to, so we can
+  provide this information without calling `libnitrokey`.
+- `NK_get_time`.  This method is useless as it will always cause a timestamp
   error on the device (see [pull request #114][] for `libnitrokey` for details).
-- `NK_get_status()`.  This method only provides a string representation of
+- `NK_get_status`.  This method only provides a string representation of
   data that can be accessed by other methods (firmware version, serial number,
   configuration).
-- `NK_get_status_storage_as_string()`.  This method only provides an incomplete
+- `NK_get_status_storage_as_string`.  This method only provides an incomplete
   string representation of the data returned by `NK_get_status_storage`.
+- `NK_set_unencrypted_volume_rorw_pin_type_user`,
+  `NK_set_unencrypted_read_only`, `NK_set_unencrypted_read_write`,
+  `NK_set_encrypted_read_only` and `NK_set_encrypted_read_write`.  These
+  methods are only relevant for older firmware versions (pre-v0.51).  As the
+  Nitrokey Storage firmware can be updated easily, we do not support these
+  outdated versions.
 
 ## Tests
 
