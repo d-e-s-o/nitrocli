@@ -33,6 +33,24 @@ impl fmt::Display for Model {
     }
 }
 
+/// The access mode of a volume on the Nitrokey Storage.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum VolumeMode {
+    /// A read-only volume.
+    ReadOnly,
+    /// A read-write volume.
+    ReadWrite,
+}
+
+impl fmt::Display for VolumeMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            VolumeMode::ReadOnly => f.write_str("read-only"),
+            VolumeMode::ReadWrite => f.write_str("read-write"),
+        }
+    }
+}
+
 /// A wrapper for a Nitrokey device of unknown type.
 ///
 /// Use the function [`connect`][] to obtain a wrapped instance.  The wrapper implements all traits
@@ -89,7 +107,6 @@ impl fmt::Display for Model {
 /// ```
 ///
 /// [`connect`]: fn.connect.html
-// TODO: add example for Storage-specific code
 #[derive(Debug)]
 pub enum DeviceWrapper {
     /// A Nitrokey Storage device.
@@ -1059,6 +1076,52 @@ impl Storage {
         }
     }
 
+    /// Sets the access mode of the unencrypted volume.
+    ///
+    /// This command will reconnect the unencrypted volume so buffers should be flushed before
+    /// calling it.  Since firmware version v0.51, this command requires the admin PIN.  Older
+    /// firmware versions are not supported.
+    ///
+    /// # Errors
+    ///
+    /// - [`InvalidString`][] if the provided password contains a null byte
+    /// - [`WrongPassword`][] if the provided admin password is wrong
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use nitrokey::CommandError;
+    /// use nitrokey::VolumeMode;
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::Storage::connect()?;
+    /// match device.set_unencrypted_volume_mode("123456", VolumeMode::ReadWrite) {
+    ///     Ok(()) => println!("Set the unencrypted volume to read-write mode."),
+    ///     Err(err) => println!("Could not set the unencrypted volume to read-write mode: {}", err),
+    /// };
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
+    pub fn set_unencrypted_volume_mode(
+        &self,
+        admin_pin: &str,
+        mode: VolumeMode,
+    ) -> Result<(), CommandError> {
+        let admin_pin = get_cstring(admin_pin)?;
+        let result = match mode {
+            VolumeMode::ReadOnly => unsafe {
+                nitrokey_sys::NK_set_unencrypted_read_only_admin(admin_pin.as_ptr())
+            },
+            VolumeMode::ReadWrite => unsafe {
+                nitrokey_sys::NK_set_unencrypted_read_write_admin(admin_pin.as_ptr())
+            },
+        };
+        get_command_result(result)
+    }
+
     /// Returns the status of the connected storage device.
     ///
     /// # Example
@@ -1101,6 +1164,32 @@ impl Storage {
         let raw_result = unsafe { nitrokey_sys::NK_get_status_storage(&mut raw_status) };
         let result = get_command_result(raw_result);
         result.and(Ok(StorageStatus::from(raw_status)))
+    }
+
+    /// Blinks the red and green LED alternatively and infinitely until the device is reconnected.
+    pub fn wink(&self) -> Result<(), CommandError> {
+        get_command_result(unsafe { nitrokey_sys::NK_wink() })
+    }
+
+    /// Exports the firmware to the unencrypted volume.
+    ///
+    /// This command requires the admin PIN.  The unencrypted volume must be in read-write mode
+    /// when this command is executed.  Otherwise, it will still return `Ok` but not write the
+    /// firmware.
+    ///
+    /// This command unmounts the unencrypted volume if it has been mounted, so all buffers should
+    /// be flushed.  The firmware is written to the `firmware.bin` file on the unencrypted volume.
+    ///
+    /// # Errors
+    ///
+    /// - [`InvalidString`][] if one of the provided passwords contains a null byte
+    /// - [`WrongPassword`][] if the admin password is wrong
+    ///
+    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
+    pub fn export_firmware(&self, admin_pin: &str) -> Result<(), CommandError> {
+        let admin_pin_string = get_cstring(admin_pin)?;
+        get_command_result(unsafe { nitrokey_sys::NK_export_firmware(admin_pin_string.as_ptr()) })
     }
 }
 

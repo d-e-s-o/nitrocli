@@ -98,11 +98,31 @@ use nitrokey_sys;
 pub use crate::auth::{Admin, Authenticate, User};
 pub use crate::config::Config;
 pub use crate::device::{
-    connect, connect_model, Device, DeviceWrapper, Model, Pro, Storage, StorageStatus, VolumeStatus,
+    connect, connect_model, Device, DeviceWrapper, Model, Pro, Storage, StorageStatus, VolumeMode,
+    VolumeStatus,
 };
 pub use crate::otp::{ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData};
 pub use crate::pws::{GetPasswordSafe, PasswordSafe, SLOT_COUNT};
 pub use crate::util::{CommandError, LogLevel};
+
+/// A version of the libnitrokey library.
+///
+/// Use the [`get_library_version`](fn.get_library_version.html) function to query the library
+/// version.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Version {
+    /// The library version as a string.
+    ///
+    /// The library version is the output of `git describe --always` at compile time, for example
+    /// `v3.3` or `v3.4.1`.  If the library has not been built from a release, the version string
+    /// contains the number of commits since the last release and the hash of the current commit, for
+    /// example `v3.3-19-gaee920b`.
+    pub git: String,
+    /// The major library version.
+    pub major: u32,
+    /// The minor library version.
+    pub minor: u32,
+}
 
 /// Enables or disables debug output.  Calling this method with `true` is equivalent to setting the
 /// log level to `Debug`; calling it with `false` is equivalent to the log level `Error` (see
@@ -124,4 +144,25 @@ pub fn set_log_level(level: LogLevel) {
     unsafe {
         nitrokey_sys::NK_set_debug_level(level.into());
     }
+}
+
+/// Returns the libnitrokey library version.
+///
+/// # Example
+///
+/// ```
+/// let version = nitrokey::get_library_version();
+/// println!("Using libnitrokey {}", version.git);
+/// ```
+pub fn get_library_version() -> Version {
+    // NK_get_library_version returns a static string, so we don’t have to free the pointer.
+    let git = unsafe { nitrokey_sys::NK_get_library_version() };
+    let git = if git.is_null() {
+        String::new()
+    } else {
+        util::owned_str_from_ptr(git)
+    };
+    let major = unsafe { nitrokey_sys::NK_get_major_library_version() };
+    let minor = unsafe { nitrokey_sys::NK_get_minor_library_version() };
+    Version { git, major, minor }
 }
