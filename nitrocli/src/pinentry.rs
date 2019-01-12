@@ -46,34 +46,66 @@ impl str::FromStr for PinType {
   }
 }
 
-impl PinType {
-  fn cache_id(self) -> &'static str {
-    match self {
-      PinType::Admin => "nitrocli:admin",
-      PinType::User => "nitrocli:user",
+#[derive(Debug)]
+pub struct PinEntry {
+  pin_type: PinType,
+  model: nitrokey::Model,
+  serial: String,
+}
+
+impl PinEntry {
+  pub fn from<D>(pin_type: PinType, device: &D) -> crate::Result<Self>
+  where
+    D: nitrokey::Device,
+  {
+    let model = device.get_model();
+    let serial = device.get_serial_number()?;
+    Ok(Self {
+      pin_type,
+      model,
+      serial,
+    })
+  }
+
+  fn cache_id(&self) -> String {
+    let model = self.model.to_string().to_lowercase();
+    let suffix = format!("{}:{}", model, self.serial);
+
+    match self.pin_type {
+      PinType::Admin => format!("nitrocli:admin:{}", suffix),
+      PinType::User => format!("nitrocli:user:{}", suffix),
     }
   }
 
-  fn prompt(self) -> &'static str {
-    match self {
+  fn prompt(&self) -> &'static str {
+    match self.pin_type {
       PinType::Admin => "Admin PIN",
       PinType::User => "User PIN",
     }
   }
 
-  fn description(self, mode: Mode) -> &'static str {
-    match self {
-      PinType::Admin => match mode {
-        Mode::Choose => "Please enter a new admin PIN",
-        Mode::Confirm => "Please confirm the new admin PIN",
-        Mode::Query => "Please enter the admin PIN",
+  fn description(&self, mode: Mode) -> String {
+    format!(
+      "{} for\rNitrokey {} {}",
+      match self.pin_type {
+        PinType::Admin => match mode {
+          Mode::Choose => "Please enter a new admin PIN",
+          Mode::Confirm => "Please confirm the new admin PIN",
+          Mode::Query => "Please enter the admin PIN",
+        },
+        PinType::User => match mode {
+          Mode::Choose => "Please enter a new user PIN",
+          Mode::Confirm => "Please confirm the new user PIN",
+          Mode::Query => "Please enter the user PIN",
+        },
       },
-      PinType::User => match mode {
-        Mode::Choose => "Please enter a new user PIN",
-        Mode::Confirm => "Please confirm the new user PIN",
-        Mode::Query => "Please enter the user PIN",
-      },
-    }
+      self.model,
+      self.serial,
+    )
+  }
+
+  pub fn pin_type(&self) -> PinType {
+    self.pin_type
   }
 }
 
@@ -134,18 +166,18 @@ where
 /// description and to decide whether a quality bar is shown in the
 /// dialog.
 pub fn inquire_pin(
-  pin_type: PinType,
+  pin_entry: &PinEntry,
   mode: Mode,
   error_msg: Option<&str>,
 ) -> Result<String, Error> {
-  let cache_id = pin_type.cache_id();
+  let cache_id = pin_entry.cache_id();
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
     .unwrap_or_else(|| String::from("+"));
-  let prompt = pin_type.prompt().replace(" ", "+");
-  let description = pin_type.description(mode).replace(" ", "+");
+  let prompt = pin_entry.prompt().replace(" ", "+");
+  let description = pin_entry.description(mode).replace(" ", "+");
 
-  let args = vec![cache_id, &error_msg, &prompt, &description].join(" ");
+  let args = vec![cache_id, error_msg, prompt, description].join(" ");
   let mut command = "GET_PASSPHRASE --data ".to_string();
   if mode.show_quality_bar() {
     command += "--qualitybar ";
@@ -178,9 +210,9 @@ where
   Err(Error::Error(format!("Unexpected response: {}", string)))
 }
 
-/// Clear the cached pin of the given type.
-pub fn clear_pin(pin_type: PinType) -> Result<(), Error> {
-  let command = "CLEAR_PASSPHRASE ".to_string() + pin_type.cache_id();
+/// Clear the cached pin represented by the given entry.
+pub fn clear_pin(pin_entry: &PinEntry) -> Result<(), Error> {
+  let command = format!("CLEAR_PASSPHRASE {}", pin_entry.cache_id());
   let output = process::Command::new("gpg-connect-agent")
     .arg(command)
     .arg("/bye")
