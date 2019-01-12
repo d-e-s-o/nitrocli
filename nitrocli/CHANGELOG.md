@@ -1,5 +1,7 @@
 Unreleased
 ----------
+- Store cached PINs on a per-device basis to better support multi-device
+  scenarios
 - Further decreased binary size by using system allocator
 
 

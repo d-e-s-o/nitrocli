@@ -631,7 +631,7 @@ fn pin_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.set_description("Clears the cached PINs");
   parse(ctx, &parser, args)?;
 
-  commands::pin_clear()
+  commands::pin_clear(ctx)
 }
 
 /// Change a PIN.

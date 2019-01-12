@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2019-01-10
+.TH NITROCLI 1 2019-01-11
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -201,7 +201,9 @@ reset using \fBgpg\fR(1).
 Use the \fBstatus\fR command to check the retry counters.
 .TP
 .B nitrocli pin clear
-Clear the PINs cached by the other commands.
+Clear the PINs cached by the other commands. Note that cached PINs are
+associated with the device they belong to and the \fBclear\fR command will only
+clear the PIN for the currently used device, not all others.
 .TP
 \fBnitrocli pin set \fItype\fR
 Change a PIN.
