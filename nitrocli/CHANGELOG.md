@@ -14,6 +14,7 @@ Unreleased
 - Format `nitrokey` reported errors in more user-friendly format
 - Further decrease binary size by using system allocator
 - Bumped `nitrokey` dependency to `0.3.1`
+- Bumped `nitrokey-sys` dependency to `3.4.3`
 
 
 0.2.1

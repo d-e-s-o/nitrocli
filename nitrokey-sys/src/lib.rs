@@ -4,7 +4,7 @@
 
 mod ffi;
 
-pub use ffi::*;
+pub use crate::ffi::*;
 
 #[cfg(test)]
 mod tests {
@@ -14,8 +14,6 @@ mod tests {
     #[test]
     fn login_auto() {
         unsafe {
-            // logout required due to https://github.com/Nitrokey/libnitrokey/pull/115
-            NK_logout();
             assert_eq!(0, NK_login_auto());
         }
     }

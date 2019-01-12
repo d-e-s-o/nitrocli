@@ -1,7 +1,8 @@
 [package]
 name = "nitrokey-sys"
-version = "3.4.1"
+version = "3.4.3"
 authors = ["Robin Krahl <robin.krahl@ireas.org>"]
+edition = "2018"
 homepage = "https://code.ireas.org/nitrokey-rs/"
 repository = "https://git.ireas.org/nitrokey-sys-rs/"
 description = "Low-level bindings to libnitrokey for communication with Nitrokey devices"

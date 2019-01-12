@@ -1,57 +1,38 @@
-extern crate cc;
-
 use std::env;
+use std::fs;
 use std::io;
 use std::io::{Read, Write};
-use std::fs;
 use std::path;
+use std::string;
 
+use cc;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Version {
-    major: String,
-    minor: String,
-    git: String,
+    major: u32,
+    minor: u32,
+    patch: Option<u32>,
 }
 
-fn stringify(err: env::VarError) -> String {
-    format!("{}", err)
-}
-
-fn extract_git_version(pre: &str) -> Result<String, String> {
-    // If a pre-release version is set, it is expected to have the format
-    // pre.v<maj>.<min>.<n>.g<hash>, where <maj> and <min> are the last major and minor version,
-    // <n> is the number of commits since this version and <hash> is the hash of the last commit.
-    let parts: Vec<&str> = pre.split('.').collect();
-    if parts.len() != 5 {
-        return Err(format!("'{}' is not a valid pre-release version", pre));
+impl string::ToString for Version {
+    fn to_string(&self) -> String {
+        match self.patch {
+            Some(patch) => format!("v{}.{}.{}", self.major, self.minor, patch),
+            None => format!("v{}.{}", self.major, self.minor),
+        }
     }
-    Ok(format!("{}.{}-{}-{}", parts[1], parts[2], parts[3], parts[4]))
 }
 
-fn get_version() -> Result<Version, String> {
-    let major = env::var("CARGO_PKG_VERSION_MAJOR").map_err(stringify)?;
-    let minor = env::var("CARGO_PKG_VERSION_MINOR").map_err(stringify)?;
-    let patch = env::var("CARGO_PKG_VERSION_PATCH").map_err(stringify)?;
-    let pre = env::var("CARGO_PKG_VERSION_PRE").map_err(stringify)?;
-
-    let git = match pre.is_empty() {
-        true => match patch.is_empty() {
-            true => format!("v{}.{}", major, minor),
-            false => format!("v{}.{}.{}", major, minor, patch),
-        },
-        false => extract_git_version(&pre)?,
-    };
-
-    Ok(Version {
-        major,
-        minor,
-        git,
-    })
-}
+const LIBNITROKEY_VERSION: Version = Version {
+    major: 3,
+    minor: 4,
+    patch: Some(1),
+};
 
 fn prepare_version_source(
-    version: &Version,
+    version: Version,
     out_path: &path::Path,
-    library_path: &path::Path
+    library_path: &path::Path,
 ) -> io::Result<path::PathBuf> {
     let out = out_path.join("version.cc");
     let template = library_path.join("version.cc.in");
@@ -62,9 +43,9 @@ fn prepare_version_source(
     drop(file);
 
     let data = data
-        .replace("@PROJECT_VERSION_MAJOR@", &version.major)
-        .replace("@PROJECT_VERSION_MINOR@", &version.minor)
-        .replace("@PROJECT_VERSION_GIT@", &version.git);
+        .replace("@PROJECT_VERSION_MAJOR@", &version.major.to_string())
+        .replace("@PROJECT_VERSION_MINOR@", &version.minor.to_string())
+        .replace("@PROJECT_VERSION_GIT@", &version.to_string());
 
     let mut file = fs::File::create(&out)?;
     file.write_all(data.as_bytes())?;
@@ -73,10 +54,13 @@ fn prepare_version_source(
 }
 
 fn main() {
+    if env::var("USE_SYSTEM_LIBNITROKEY").is_ok() {
+        println!("cargo:rustc-link-lib=nitrokey");
+        return;
+    }
+
     let out_dir = env::var("OUT_DIR").expect("Environment variable OUT_DIR is not set");
     let out_path = path::PathBuf::from(out_dir);
-
-    let version = get_version().expect("Could not extract library version");
 
     let sources = [
         "DeviceCommunicationExceptions.cpp",
@@ -87,18 +71,24 @@ fn main() {
         "log.cc",
         "misc.cc",
     ];
-    let library_dir = format!("libnitrokey-{}", version.git);
+    let library_dir = format!("libnitrokey-{}", LIBNITROKEY_VERSION.to_string());
     let library_path = path::Path::new(&library_dir);
 
-    let version_source = prepare_version_source(&version, &out_path, &library_path)
+    let version_source = prepare_version_source(LIBNITROKEY_VERSION, &out_path, &library_path)
         .expect("Could not prepare the version source file");
 
     cc::Build::new()
         .cpp(true)
+        .flag("-std=c++14")
         .include(library_path.join("libnitrokey"))
         .files(sources.iter().map(|s| library_path.join(s)))
         .file(version_source)
         .compile("libnitrokey.a");
 
-    println!("cargo:rustc-link-lib=hidapi-libusb");
+    let hidapi_library_name = if cfg!(target_os = "linux") {
+        "hidapi-libusb"
+    } else {
+        "hidapi"
+    };
+    println!("cargo:rustc-link-lib={}", hidapi_library_name);
 }
