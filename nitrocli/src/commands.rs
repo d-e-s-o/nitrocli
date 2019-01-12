@@ -81,13 +81,18 @@ fn get_storage_device(ctx: &mut args::ExecCtx<'_>) -> Result<nitrokey::Storage> 
 }
 
 /// Open the password safe on the given device.
-fn get_password_safe<'dev>(
+fn get_password_safe<'dev, D>(
   ctx: &mut args::ExecCtx<'_>,
-  device: &'dev dyn Device,
-) -> Result<nitrokey::PasswordSafe<'dev>> {
+  device: &'dev D,
+) -> Result<nitrokey::PasswordSafe<'dev>>
+where
+  D: Device,
+{
+  let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, device)?;
+
   try_with_pin_and_data(
     ctx,
-    pinentry::PinType::User,
+    &pin_entry,
     "Could not access the password safe",
     (),
     |_, pin| device.get_password_safe(pin).map_err(|err| ((), err)),
@@ -108,7 +113,9 @@ where
   D: Device,
   F: Fn(D, &str) -> result::Result<A, (D, nitrokey::CommandError)>,
 {
-  try_with_pin_and_data(ctx, pin_type, msg, device, op)
+  let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
+
+  try_with_pin_and_data(ctx, &pin_entry, msg, device, op)
 }
 
 /// Authenticate the given device with the user PIN.
@@ -167,7 +174,7 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
 /// second or third try, it will call `op` with the data returned by the
 /// previous call to `op`.
 fn try_with_pin_and_data_with_pinentry<D, F, R>(
-  pin_type: pinentry::PinType,
+  pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   data: D,
   op: F,
@@ -179,12 +186,12 @@ where
   let mut retry = 3;
   let mut error_msg = None;
   loop {
-    let pin = pinentry::inquire_pin(pin_type, pinentry::Mode::Query, error_msg)?;
+    let pin = pinentry::inquire_pin(pin_entry, pinentry::Mode::Query, error_msg)?;
     match op(data, &pin) {
       Ok(result) => return Ok(result),
       Err((new_data, err)) => match err {
         nitrokey::CommandError::WrongPassword => {
-          pinentry::clear_pin(pin_type)?;
+          pinentry::clear_pin(pin_entry)?;
           retry -= 1;
 
           if retry > 0 {
@@ -203,7 +210,7 @@ where
 /// Try to execute the given function with a PIN.
 fn try_with_pin_and_data<D, F, R>(
   ctx: &mut args::ExecCtx<'_>,
-  pin_type: pinentry::PinType,
+  pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   data: D,
   op: F,
@@ -211,7 +218,7 @@ fn try_with_pin_and_data<D, F, R>(
 where
   F: Fn(D, &str) -> result::Result<R, (D, nitrokey::CommandError)>,
 {
-  let pin = match pin_type {
+  let pin = match pin_entry.pin_type() {
     pinentry::PinType::Admin => &ctx.admin_pin,
     pinentry::PinType::User => &ctx.user_pin,
   };
@@ -225,7 +232,7 @@ where
     })?;
     op(data, &pin).map_err(|(_, err)| get_error(msg, err))
   } else {
-    try_with_pin_and_data_with_pinentry(pin_type, msg, data, op)
+    try_with_pin_and_data_with_pinentry(pin_entry, msg, data, op)
   }
 }
 
@@ -235,14 +242,14 @@ where
 /// it refrains from passing any data to it.
 fn try_with_pin<F>(
   ctx: &mut args::ExecCtx<'_>,
-  pin_type: pinentry::PinType,
+  pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   op: F,
 ) -> Result<()>
 where
   F: Fn(&str) -> result::Result<(), nitrokey::CommandError>,
 {
-  try_with_pin_and_data(ctx, pin_type, msg, (), |data, pin| {
+  try_with_pin_and_data(ctx, pin_entry, msg, (), |data, pin| {
     op(pin).map_err(|err| (data, err))
   })
 }
@@ -287,12 +294,11 @@ pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 /// Open the encrypted volume on the nitrokey.
 pub fn storage_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_storage_device(ctx)?;
-  try_with_pin(
-    ctx,
-    pinentry::PinType::User,
-    "Opening encrypted volume failed",
-    |pin| device.enable_encrypted_volume(&pin),
-  )
+  let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
+
+  try_with_pin(ctx, &pin_entry, "Opening encrypted volume failed", |pin| {
+    device.enable_encrypted_volume(&pin)
+  })
 }
 
 /// Close the previously opened encrypted volume.
@@ -573,9 +579,14 @@ pub fn otp_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
 }
 
 /// Clear the PIN stored by various operations.
-pub fn pin_clear() -> Result<()> {
-  pinentry::clear_pin(pinentry::PinType::Admin)?;
-  pinentry::clear_pin(pinentry::PinType::User)?;
+pub fn pin_clear(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+  let device = get_device(ctx)?;
+
+  pinentry::clear_pin(&pinentry::PinEntry::from(
+    pinentry::PinType::Admin,
+    &device,
+  )?)?;
+  pinentry::clear_pin(&pinentry::PinEntry::from(pinentry::PinType::User, &device)?)?;
   Ok(())
 }
 
@@ -594,14 +605,14 @@ fn check_pin(pin_type: pinentry::PinType, pin: &str) -> Result<()> {
   }
 }
 
-fn choose_pin_with_pinentry(pin_type: pinentry::PinType) -> Result<String> {
-  pinentry::clear_pin(pin_type)?;
-  let new_pin = pinentry::inquire_pin(pin_type, pinentry::Mode::Choose, None)?;
-  pinentry::clear_pin(pin_type)?;
-  check_pin(pin_type, &new_pin)?;
+fn choose_pin_with_pinentry(pin_entry: &pinentry::PinEntry) -> Result<String> {
+  pinentry::clear_pin(pin_entry)?;
+  let new_pin = pinentry::inquire_pin(pin_entry, pinentry::Mode::Choose, None)?;
+  pinentry::clear_pin(pin_entry)?;
+  check_pin(pin_entry.pin_type(), &new_pin)?;
 
-  let confirm_pin = pinentry::inquire_pin(pin_type, pinentry::Mode::Confirm, None)?;
-  pinentry::clear_pin(pin_type)?;
+  let confirm_pin = pinentry::inquire_pin(pin_entry, pinentry::Mode::Confirm, None)?;
+  pinentry::clear_pin(pin_entry)?;
 
   if new_pin != confirm_pin {
     Err(Error::from("Entered PINs do not match"))
@@ -616,10 +627,10 @@ fn choose_pin_with_pinentry(pin_type: pinentry::PinType) -> Result<String> {
 /// given PIN type, it will be used.
 fn choose_pin(
   ctx: &mut args::ExecCtx<'_>,
-  pin_type: pinentry::PinType,
+  pin_entry: &pinentry::PinEntry,
   new: bool,
 ) -> Result<String> {
-  let new_pin = match pin_type {
+  let new_pin = match pin_entry.pin_type() {
     pinentry::PinType::Admin => {
       if new {
         &ctx.new_admin_pin
@@ -642,17 +653,19 @@ fn choose_pin(
       .ok_or_else(|| Error::from("Failed to read PIN: invalid Unicode data found"))
       .map(ToOwned::to_owned)
   } else {
-    choose_pin_with_pinentry(pin_type)
+    choose_pin_with_pinentry(pin_entry)
   }
 }
 
 /// Change a PIN.
 pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Result<()> {
   let device = get_device(ctx)?;
-  let new_pin = choose_pin(ctx, pin_type, true)?;
+  let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
+  let new_pin = choose_pin(ctx, &pin_entry, true)?;
+
   try_with_pin(
     ctx,
-    pin_type,
+    &pin_entry,
     "Could not change the PIN",
     |current_pin| match pin_type {
       pinentry::PinType::Admin => device.change_admin_pin(&current_pin, &new_pin),
@@ -664,10 +677,13 @@ pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Resu
 /// Unblock and reset the user PIN.
 pub fn pin_unblock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_device(ctx)?;
-  let user_pin = choose_pin(ctx, pinentry::PinType::User, false)?;
+  let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
+  let user_pin = choose_pin(ctx, &pin_entry, false)?;
+  let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
+
   try_with_pin(
     ctx,
-    pinentry::PinType::Admin,
+    &pin_entry,
     "Could not unblock the user PIN",
     |admin_pin| device.unlock_user_pin(&admin_pin, &user_pin),
   )
