@@ -106,6 +106,12 @@ $ cargo build --release
 It is recommended that the resulting executable be installed in a
 directory accessible via the `PATH` environment variable.
 
+#### Known Problems
+
+Due to a problem with the default `hidapi` version on macOS, users are advised
+to build and install [`libnitrokey`][] from source and then set the
+`USE_SYSTEM_LIBNITROKEY` environment variable when building `nitrocli` using
+one of the methods described above.
 
 Contributing
 ------------
@@ -133,6 +139,7 @@ See the [LICENSE](LICENSE) file that accompanies this distribution for
 the full text of the license.
 
 
+[`libnitrokey`]: https://github.com/nitrokey/libnitrokey
 [nitrokey-ug]: https://www.nitrokey.com
 [nitrokey-pro]: https://shop.nitrokey.com/shop/product/nitrokey-pro-2-3
 [nitrokey-storage]: https://shop.nitrokey.com/shop/product/nitrokey-storage-2-16gb-23
