@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.2.2
+-----
 - Added the `-v`/`--verbose` option to control libnitrokey log level
 - Added the `-m`/`--model` option to restrict connections to a device
   model
