@@ -1320,6 +1320,7 @@ pub const CMSPAR: ::tcflag_t = 0o10000000000;
 
 pub const MFD_CLOEXEC: ::c_uint = 0x0001;
 pub const MFD_ALLOW_SEALING: ::c_uint = 0x0002;
+pub const MFD_HUGETLB: ::c_uint = 0x0004;
 
 // these are used in the p_type field of Elf32_Phdr and Elf64_Phdr, which has
 // the type Elf32Word and Elf64Word respectively. Luckily, both of those are u32
@@ -1610,6 +1611,8 @@ pub const SIOCSIFMAP: ::c_ulong = 0x00008971;
 
 pub const IPTOS_TOS_MASK: u8 = 0x1E;
 pub const IPTOS_PREC_MASK: u8 = 0xE0;
+
+pub const IPTOS_ECN_NOT_ECT: u8 = 0x00;
 
 pub const RTF_UP: ::c_ushort = 0x0001;
 pub const RTF_GATEWAY: ::c_ushort = 0x0002;
