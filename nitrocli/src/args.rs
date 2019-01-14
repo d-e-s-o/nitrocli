@@ -463,7 +463,7 @@ fn otp_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut algorithm).add_option(
     &["-a", "--algorithm"],
     argparse::Store,
-    "The OTP algorithm to use (hotp|totp)",
+    "The OTP algorithm to use (hotp|totp, default: totp)",
   );
   let _ = parser.refer(&mut time).add_option(
     &["-t", "--time"],
@@ -497,7 +497,7 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut algorithm).add_option(
     &["-a", "--algorithm"],
     argparse::Store,
-    "The OTP algorithm to use (hotp or totp, default: totp)",
+    "The OTP algorithm to use (hotp|totp, default: totp)",
   );
   let _ = parser.refer(&mut name).required().add_argument(
     "name",
@@ -577,7 +577,7 @@ fn otp_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut algorithm).add_option(
     &["-a", "--algorithm"],
     argparse::Store,
-    "The OTP algorithm to use (hotp|totp)",
+    "The OTP algorithm to use (hotp|totp, default: totp)",
   );
   parse(ctx, &parser, args)?;
   drop(parser);
