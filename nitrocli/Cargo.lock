@@ -57,7 +57,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libc"
-version = "0.2.45"
+version = "0.2.46"
 
 [[package]]
 name = "memchr"
@@ -65,7 +65,7 @@ version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.45",
+ "libc 0.2.46",
  "version_check 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -75,7 +75,7 @@ version = "0.2.2"
 dependencies = [
  "argparse 0.2.2",
  "base32 0.4.0",
- "libc 0.2.45",
+ "libc 0.2.46",
  "nitrokey 0.3.2",
  "nitrokey-test 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -85,7 +85,7 @@ dependencies = [
 name = "nitrokey"
 version = "0.3.2"
 dependencies = [
- "libc 0.2.45",
+ "libc 0.2.46",
  "nitrokey-sys 3.4.3",
  "rand 0.6.1",
 ]
@@ -129,7 +129,7 @@ version = "0.6.1"
 dependencies = [
  "cloudabi 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "fuchsia-zircon 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.45",
+ "libc 0.2.46",
  "rand_chacha 0.1.0",
  "rand_core 0.3.0",
  "rand_hc 0.1.0",
