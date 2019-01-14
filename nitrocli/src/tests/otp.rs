@@ -40,3 +40,75 @@ fn set_invalid_slot(device: nitrokey::DeviceWrapper) {
     )
   );
 }
+
+#[test_device]
+fn status(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+  let re = regex::Regex::new(
+    r#"^alg\tslot\tname
+((totp|hotp)\t\d+\t.+\n)+$"#,
+  )
+  .unwrap();
+
+  let mut ncli = Nitrocli::with_dev(device);
+  // Make sure that we have at least something to display by ensuring
+  // that there are there is one slot programmed.
+  let _ = ncli.handle(&["otp", "set", "0", "the-name", "123456"])?;
+
+  let out = ncli.handle(&["otp", "status"])?;
+  assert!(re.is_match(&out), out);
+  Ok(())
+}
+
+#[test_device]
+fn set_get_hotp(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+  // Secret and expected HOTP values as per RFC 4226: Appendix D -- HOTP
+  // Algorithm: Test Values.
+  const SECRET: &str = "12345678901234567890";
+  const OTP1: &str = concat!(755224, "\n");
+  const OTP2: &str = concat!(287082, "\n");
+
+  let mut ncli = Nitrocli::with_dev(device);
+  let _ = ncli.handle(&[
+    "otp", "set", "-a", "hotp", "-f", "ascii", "1", "name", &SECRET,
+  ])?;
+
+  let out = ncli.handle(&["otp", "get", "-a", "hotp", "1"])?;
+  assert_eq!(out, OTP1);
+
+  let out = ncli.handle(&["otp", "get", "-a", "hotp", "1"])?;
+  assert_eq!(out, OTP2);
+  Ok(())
+}
+
+#[test_device]
+fn set_get_totp(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+  // Secret and expected TOTP values as per RFC 6238: Appendix B --
+  // Test Vectors.
+  const SECRET: &str = "12345678901234567890";
+  const TIME: &str = stringify!(1111111111);
+  const OTP: &str = concat!(14050471, "\n");
+
+  let mut ncli = Nitrocli::with_dev(device);
+  let _ = ncli.handle(&["otp", "set", "-d", "8", "-f", "ascii", "2", "name", &SECRET])?;
+
+  let out = ncli.handle(&["otp", "get", "-t", TIME, "2"])?;
+  assert_eq!(out, OTP);
+  Ok(())
+}
+
+#[test_device]
+fn clear(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+  let mut ncli = Nitrocli::with_dev(device);
+  let _ = ncli.handle(&["otp", "set", "3", "hotp-test", "abcdef"])?;
+  let _ = ncli.handle(&["otp", "clear", "3"])?;
+  let res = ncli.handle(&["otp", "get", "3"]);
+
+  assert_eq!(
+    res.unwrap_cmd_err(),
+    (
+      Some("Could not generate OTP"),
+      nitrokey::CommandError::SlotNotProgrammed
+    )
+  );
+  Ok(())
+}
