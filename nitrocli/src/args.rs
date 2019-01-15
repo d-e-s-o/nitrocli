@@ -389,6 +389,11 @@ fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn otp_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut slot: u8 = 0;
   let mut algorithm = OtpAlgorithm::Totp;
+  let help = format!(
+    "The OTP algorithm to use ({}, default: {})",
+    fmt_enum!(algorithm),
+    algorithm
+  );
   let mut time: Option<u64> = None;
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Generates a one-time password");
@@ -397,11 +402,9 @@ fn otp_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
       .refer(&mut slot)
       .required()
       .add_argument("slot", argparse::Store, "The OTP slot to use");
-  let _ = parser.refer(&mut algorithm).add_option(
-    &["-a", "--algorithm"],
-    argparse::Store,
-    "The OTP algorithm to use (hotp|totp, default: totp)",
-  );
+  let _ = parser
+    .refer(&mut algorithm)
+    .add_option(&["-a", "--algorithm"], argparse::Store, &help);
   let _ = parser.refer(&mut time).add_option(
     &["-t", "--time"],
     argparse::StoreOption,
@@ -417,6 +420,11 @@ fn otp_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut slot: u8 = 0;
   let mut algorithm = OtpAlgorithm::Totp;
+  let help = format!(
+    "The OTP algorithm to use ({}, default: {})",
+    fmt_enum!(algorithm),
+    algorithm
+  );
   let mut name = "".to_owned();
   let mut secret = "".to_owned();
   let mut digits = OtpMode::SixDigits;
@@ -431,11 +439,9 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
       .refer(&mut slot)
       .required()
       .add_argument("slot", argparse::Store, "The OTP slot to use");
-  let _ = parser.refer(&mut algorithm).add_option(
-    &["-a", "--algorithm"],
-    argparse::Store,
-    "The OTP algorithm to use (hotp|totp, default: totp)",
-  );
+  let _ = parser
+    .refer(&mut algorithm)
+    .add_option(&["-a", "--algorithm"], argparse::Store, &help);
   let _ = parser.refer(&mut name).required().add_argument(
     "name",
     argparse::Store,
@@ -504,6 +510,11 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn otp_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut slot: u8 = 0;
   let mut algorithm = OtpAlgorithm::Totp;
+  let help = format!(
+    "The OTP algorithm to use ({}, default: {})",
+    fmt_enum!(algorithm),
+    algorithm
+  );
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Clears a one-time password slot");
   let _ = parser.refer(&mut slot).required().add_argument(
@@ -511,11 +522,9 @@ fn otp_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The OTP slot to clear",
   );
-  let _ = parser.refer(&mut algorithm).add_option(
-    &["-a", "--algorithm"],
-    argparse::Store,
-    "The OTP algorithm to use (hotp|totp, default: totp)",
-  );
+  let _ = parser
+    .refer(&mut algorithm)
+    .add_option(&["-a", "--algorithm"], argparse::Store, &help);
   parse(ctx, &parser, args)?;
   drop(parser);
 
@@ -575,13 +584,13 @@ fn pin_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 /// Change a PIN.
 fn pin_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut pintype = pinentry::PinType::User;
+  let help = format!("The PIN type to change ({})", fmt_enum!(pintype));
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Changes a PIN");
-  let _ = parser.refer(&mut pintype).required().add_argument(
-    "type",
-    argparse::Store,
-    "The PIN type to change (admin|user)",
-  );
+  let _ = parser
+    .refer(&mut pintype)
+    .required()
+    .add_argument("type", argparse::Store, &help);
   parse(ctx, &parser, args)?;
   drop(parser);
 

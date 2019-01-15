@@ -26,25 +26,10 @@ use crate::error::Error;
 ///
 /// The available PIN types correspond to the PIN types used by the Nitrokey devices:  user and
 /// admin.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PinType {
-  /// The admin PIN.
-  Admin,
-  /// The user PIN.
-  User,
-}
-
-impl str::FromStr for PinType {
-  type Err = ();
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    match s {
-      "admin" => Ok(PinType::Admin),
-      "user" => Ok(PinType::User),
-      _ => Err(()),
-    }
-  }
-}
+Enum! {PinType, [
+  Admin => "admin",
+  User => "user"
+]}
 
 #[derive(Debug)]
 pub struct PinEntry {
