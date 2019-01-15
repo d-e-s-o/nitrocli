@@ -75,43 +75,19 @@ impl From<DeviceModel> for nitrokey::Model {
 
 /// A top-level command for nitrocli.
 Enum! {Command, [
-  Config => "config",
-  Lock => "lock",
-  Otp => "otp",
-  Pin => "pin",
-  Pws => "pws",
-  Status => "status",
-  Storage => "storage"
+  Config => ("config", config),
+  Lock => ("lock", lock),
+  Otp => ("otp", otp),
+  Pin => ("pin", pin),
+  Pws => ("pws", pws),
+  Status => ("status", status),
+  Storage => ("storage", storage)
 ]}
-
-impl Command {
-  /// Execute this command with the given arguments.
-  pub fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match self {
-      Command::Config => config(ctx, args),
-      Command::Lock => lock(ctx, args),
-      Command::Otp => otp(ctx, args),
-      Command::Pin => pin(ctx, args),
-      Command::Pws => pws(ctx, args),
-      Command::Status => status(ctx, args),
-      Command::Storage => storage(ctx, args),
-    }
-  }
-}
 
 Enum! {ConfigCommand, [
-  Get => "get",
-  Set => "set"
+  Get => ("get", config_get),
+  Set => ("set", config_set)
 ]}
-
-impl ConfigCommand {
-  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match self {
-      ConfigCommand::Get => config_get(ctx, args),
-      ConfigCommand::Set => config_set(ctx, args),
-    }
-  }
-}
 
 #[derive(Clone, Copy, Debug)]
 pub enum ConfigOption<T> {
@@ -149,22 +125,11 @@ impl<T> ConfigOption<T> {
 }
 
 Enum! {OtpCommand, [
-  Clear => "clear",
-  Get => "get",
-  Set => "set",
-  Status => "status"
+  Clear => ("clear", otp_clear),
+  Get => ("get", otp_get),
+  Set => ("set", otp_set),
+  Status => ("status", otp_status)
 ]}
-
-impl OtpCommand {
-  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match self {
-      OtpCommand::Clear => otp_clear(ctx, args),
-      OtpCommand::Get => otp_get(ctx, args),
-      OtpCommand::Set => otp_set(ctx, args),
-      OtpCommand::Status => otp_status(ctx, args),
-    }
-  }
-}
 
 Enum! {OtpAlgorithm, [
   Hotp => "hotp",
@@ -192,38 +157,17 @@ Enum! {OtpSecretFormat, [
 ]}
 
 Enum! {PinCommand, [
-  Clear => "clear",
-  Set => "set",
-  Unblock => "unblock"
+  Clear => ("clear", pin_clear),
+  Set => ("set", pin_set),
+  Unblock => ("unblock", pin_unblock)
 ]}
-
-impl PinCommand {
-  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match self {
-      PinCommand::Clear => pin_clear(ctx, args),
-      PinCommand::Set => pin_set(ctx, args),
-      PinCommand::Unblock => pin_unblock(ctx, args),
-    }
-  }
-}
 
 Enum! {PwsCommand, [
-  Clear => "clear",
-  Get => "get",
-  Set => "set",
-  Status => "status"
+  Clear => ("clear", pws_clear),
+  Get => ("get", pws_get),
+  Set => ("set", pws_set),
+  Status => ("status", pws_status)
 ]}
-
-impl PwsCommand {
-  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match self {
-      PwsCommand::Clear => pws_clear(ctx, args),
-      PwsCommand::Get => pws_get(ctx, args),
-      PwsCommand::Set => pws_set(ctx, args),
-      PwsCommand::Status => pws_status(ctx, args),
-    }
-  }
-}
 
 fn parse(
   ctx: &mut impl Stdio,
@@ -248,20 +192,10 @@ fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 }
 
 Enum! {StorageCommand, [
-  Close => "close",
-  Open => "open",
-  Status => "status"
+  Close => ("close", storage_close),
+  Open => ("open", storage_open),
+  Status => ("status", storage_status)
 ]}
-
-impl StorageCommand {
-  fn execute(self, ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-    match self {
-      StorageCommand::Close => storage_close(ctx, args),
-      StorageCommand::Open => storage_open(ctx, args),
-      StorageCommand::Status => storage_status(ctx, args),
-    }
-  }
-}
 
 /// Execute a storage subcommand.
 fn storage(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {

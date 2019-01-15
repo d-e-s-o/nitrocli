@@ -22,9 +22,28 @@
 // TODO: Right now we hard code the derives we create. We may want to
 //       make this set configurable.
 macro_rules! Enum {
+  ( $name:ident, [ $( $var:ident => ($str:expr, $exec:expr) ), *] ) => {
+    Enum! {$name, [
+      $( $var => $str ),*
+    ]}
+
+    #[allow(unused_qualifications)]
+    impl $name {
+      fn execute(
+        self,
+        ctx: &mut crate::args::ExecCtx<'_>,
+        args: ::std::vec::Vec<::std::string::String>,
+      ) -> crate::Result<()> {
+        match self {
+          $(
+            $name::$var => $exec(ctx, args),
+          )*
+        }
+      }
+    }
+  };
   ( $name:ident, [ $( $var:ident => $str:expr ), *] ) => {
     #[derive(Clone, Copy, Debug, PartialEq)]
-    #[allow(unused)]
     pub enum $name {
       $(
         $var,
@@ -59,7 +78,7 @@ macro_rules! Enum {
         }
       }
     }
-  }
+  };
 }
 
 #[cfg(test)]
