@@ -36,6 +36,7 @@ const NITROKEY_DEFAULT_USER_PIN: &str = "123456";
 #[test_device]
 fn dummy() {}
 
+mod config;
 mod otp;
 mod pin;
 mod run;
