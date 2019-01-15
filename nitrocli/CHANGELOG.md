@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Added the `-V`/`--version` option to print the program's version
+
+
 0.2.3
 -----
 - Added the `storage hidden` subcommand for working with hidden volumes

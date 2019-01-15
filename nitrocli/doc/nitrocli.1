@@ -4,6 +4,7 @@ nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
 .B nitrocli
 [\fB\-m\fR|\fB\-\-model pro\fR|\fBstorage\fR] \fR[\fB\-v\fR|\fB\-\-verbose\fR]
+[\fB\-V\fR|\fB\-\-version\fR]
 \fIcommand\fR
 [\fIarguments\fR]
 .SH DESCRIPTION
@@ -25,6 +26,9 @@ supplied multiple times. A single occurrence will show additional warnings.
 Commands sent to the device will be shown when supplied three times and full
 device communication is available with four occurrences. Supplying this option
 five times enables the highest verbosity.
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print the nitrocli version and exit.
 .SH COMMANDS
 .SS General
 .TP

@@ -844,6 +844,11 @@ fn parse_arguments<'io, 'ctx: 'io>(
   let cmd_help = cmd_help!(command);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
+  parser.add_option(
+    &["-V", "--version"],
+    argparse::Print(format!("nitrocli {}", env!("CARGO_PKG_VERSION"))),
+    "Print version information and exit",
+  );
   let _ = parser.refer(&mut verbosity).add_option(
     &["-v", "--verbose"],
     argparse::IncrBy::<u64>(1),
