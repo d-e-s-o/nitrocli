@@ -17,6 +17,13 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+macro_rules! count {
+  ($head:ident) => { 1 };
+  ($head:ident, $($tail:ident),*) => {
+    1 + count!($($tail),*)
+  }
+}
+
 /// A macro for generating an enum with a set of simple (i.e., no
 /// parameters) variants and their textual representations.
 // TODO: Right now we hard code the derives we create. We may want to
@@ -50,6 +57,21 @@ macro_rules! Enum {
       )*
     }
 
+    impl $name {
+      #[allow(unused)]
+      pub fn all(&self) -> [$name; count!($($var),*) ] {
+        $name::all_variants()
+      }
+
+      pub fn all_variants() -> [$name; count!($($var),*) ] {
+        [
+          $(
+            $name::$var,
+          )*
+        ]
+      }
+    }
+
     impl AsRef<str> for $name {
       fn as_ref(&self) -> &'static str {
         match *self {
@@ -81,6 +103,34 @@ macro_rules! Enum {
   };
 }
 
+/// A macro for formatting the variants of an enum (as created by the
+/// Enum!{} macro) ready to be used in a help text. The supplied `fmt`
+/// needs to contain the named parameter `{variants}`, which will be
+/// replaced with a generated version of the enum's variants.
+macro_rules! fmt_enum {
+  ( $enm:ident ) => {{
+    $enm
+      .all()
+      .iter()
+      .map(::std::convert::AsRef::as_ref)
+      .collect::<::std::vec::Vec<_>>()
+      .join("|")
+  }};
+}
+
+/// A macro for generating the help text for a command/subcommand. The
+/// argument is the variable representing the command (which in turn is
+/// an enum).
+/// Note that the name of this variable is embedded into the help text!
+macro_rules! cmd_help {
+  ( $cmd:ident ) => {
+    format!(
+      concat!("The ", stringify!($cmd), " to execute ({})"),
+      fmt_enum!($cmd)
+    )
+  };
+}
+
 #[cfg(test)]
 mod tests {
   Enum! {Command, [
@@ -88,6 +138,14 @@ mod tests {
     Var2 => "2",
     Var3 => "crazy"
   ]}
+
+  #[test]
+  fn all_variants() {
+    assert_eq!(
+      Command::all_variants(),
+      [Command::Var1, Command::Var2, Command::Var3]
+    )
+  }
 
   #[test]
   fn text_representations() {

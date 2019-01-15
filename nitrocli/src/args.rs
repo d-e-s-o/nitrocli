@@ -200,14 +200,15 @@ Enum! {StorageCommand, [
 /// Execute a storage subcommand.
 fn storage(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = StorageCommand::Open;
+  let help = cmd_help!(subcommand);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Interacts with the device's storage");
-  let _ = parser.refer(&mut subcommand).required().add_argument(
-    "subcommand",
-    argparse::Store,
-    "The subcommand to execute (open|close)",
-  );
+  let _ =
+    parser
+      .refer(&mut subcommand)
+      .required()
+      .add_argument("subcommand", argparse::Store, &help);
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
     argparse::List,
@@ -251,14 +252,15 @@ fn storage_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 /// Execute a config subcommand.
 fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = ConfigCommand::Get;
+  let help = cmd_help!(subcommand);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Reads or writes the device configuration");
-  let _ = parser.refer(&mut subcommand).required().add_argument(
-    "subcommand",
-    argparse::Store,
-    "The subcommand to execute (get|set)",
-  );
+  let _ =
+    parser
+      .refer(&mut subcommand)
+      .required()
+      .add_argument("subcommand", argparse::Store, &help);
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
     argparse::List,
@@ -361,14 +363,15 @@ fn lock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 /// Execute an OTP subcommand.
 fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = OtpCommand::Get;
+  let help = cmd_help!(subcommand);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Accesses one-time passwords");
-  let _ = parser.refer(&mut subcommand).required().add_argument(
-    "subcommand",
-    argparse::Store,
-    "The subcommand to execute (clear|get|set|status)",
-  );
+  let _ =
+    parser
+      .refer(&mut subcommand)
+      .required()
+      .add_argument("subcommand", argparse::Store, &help);
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
     argparse::List,
@@ -538,14 +541,15 @@ fn otp_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 /// Execute a PIN subcommand.
 fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = PinCommand::Clear;
+  let help = cmd_help!(subcommand);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Manages the Nitrokey PINs");
-  let _ = parser.refer(&mut subcommand).required().add_argument(
-    "subcommand",
-    argparse::Store,
-    "The subcommand to execute (clear|set|unblock)",
-  );
+  let _ =
+    parser
+      .refer(&mut subcommand)
+      .required()
+      .add_argument("subcommand", argparse::Store, &help);
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
     argparse::List,
@@ -597,13 +601,14 @@ fn pin_unblock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = PwsCommand::Get;
   let mut subargs = vec![];
+  let help = cmd_help!(subcommand);
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Accesses the password safe");
-  let _ = parser.refer(&mut subcommand).required().add_argument(
-    "subcommand",
-    argparse::Store,
-    "The subcommand to execute (clear|get|set|status)",
-  );
+  let _ =
+    parser
+      .refer(&mut subcommand)
+      .required()
+      .add_argument("subcommand", argparse::Store, &help);
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
     argparse::List,
@@ -732,6 +737,7 @@ fn parse_arguments<'io, 'ctx: 'io>(
   let mut model: Option<DeviceModel> = None;
   let mut verbosity = 0;
   let mut command = Command::Status;
+  let help = cmd_help!(command);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.add_option(
@@ -750,11 +756,10 @@ fn parse_arguments<'io, 'ctx: 'io>(
     "Select the device model to connect to (pro|storage)",
   );
   parser.set_description("Provides access to a Nitrokey device");
-  let _ = parser.refer(&mut command).required().add_argument(
-    "command",
-    argparse::Store,
-    "The command to execute (config|lock|otp|pin|pws|status|storage)",
-  );
+  let _ = parser
+    .refer(&mut command)
+    .required()
+    .add_argument("command", argparse::Store, &help);
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
     argparse::List,
