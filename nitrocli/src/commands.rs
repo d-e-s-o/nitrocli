@@ -19,6 +19,7 @@
 
 use std::fmt;
 use std::result;
+use std::thread;
 use std::time;
 use std::u8;
 
@@ -32,6 +33,8 @@ use crate::args;
 use crate::error::Error;
 use crate::pinentry;
 use crate::Result;
+
+const NITROKEY_DEFAULT_ADMIN_PIN: &str = "12345678";
 
 /// Create an `error::Error` with an error message of the format `msg: err`.
 fn get_error(msg: &'static str, err: nitrokey::CommandError) -> Error {
@@ -289,6 +292,24 @@ pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
     nitrokey::DeviceWrapper::Storage(_) => "Storage",
   };
   print_status(ctx, model, &device)
+}
+
+/// Perform a factory reset.
+pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+  let device = get_device(ctx)?;
+  let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
+
+  // To force the user to enter the admin PIN before performing a factory reset, we clear the
+  // pinentry cache for the admin PIN.
+  pinentry::clear_pin(&pin_entry)?;
+
+  try_with_pin(ctx, &pin_entry, "Factory reset failed", |pin| {
+    device.factory_reset(&pin)?;
+    // Workaround for a timing issue between factory_reset and build_aes_key, see
+    // https://github.com/Nitrokey/nitrokey-storage-firmware/issues/80
+    thread::sleep(time::Duration::from_secs(3));
+    device.build_aes_key(NITROKEY_DEFAULT_ADMIN_PIN)
+  })
 }
 
 /// Open the encrypted volume on the nitrokey.

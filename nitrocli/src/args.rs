@@ -80,6 +80,7 @@ Enum! {Command, [
   Otp => ("otp", otp),
   Pin => ("pin", pin),
   Pws => ("pws", pws),
+  Reset => ("reset", reset),
   Status => ("status", status),
   Storage => ("storage", storage)
 ]}
@@ -189,6 +190,15 @@ fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parse(ctx, &parser, args)?;
 
   commands::status(ctx)
+}
+
+/// Perform a factory reset.
+fn reset(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Performs a factory reset");
+  parse(ctx, &parser, args)?;
+
+  commands::reset(ctx)
 }
 
 Enum! {StorageCommand, [

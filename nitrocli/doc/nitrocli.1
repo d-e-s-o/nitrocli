@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2019-01-15
+.TH NITROCLI 1 2019-01-19
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -41,6 +41,16 @@ Lock the Nitrokey.
 This command locks the password safe (see the Password safe section). On the
 Nitrokey Storage, it will also close the encrypted volume (see the Storage
 section).
+.TP
+.B nitrocli reset
+Perform a factory reset on the Nitrokey.
+This commands performs a factory reset on the OpenPGP smart card, clears the
+flash storage and builds a new AES key.
+The user PIN is reset to 123456, the admin PIN to 12345678.
+
+This command requires the admin PIN.
+To avoid accidental calls of this command, the user has to enter the PIN even
+if it has been cached.
 
 .SS Storage
 .TP
@@ -201,7 +211,7 @@ The initial retry counter is three.
 If the retry counter for the user PIN is zero, you can use the
 \fBpin unblock\fR command to unblock and reset the user PIN.
 If the retry counter for the admin PIN is zero, you have to perform a factory
-reset using \fBgpg\fR(1).
+reset using the \fBreset\fR command or \fBgpg\fR(1).
 Use the \fBstatus\fR command to check the retry counters.
 .TP
 .B nitrocli pin clear

@@ -1,5 +1,6 @@
 Unreleased
 ----------
+- Added the `reset` command to perform a factory reset
 - Store cached PINs on a per-device basis to better support multi-device
   scenarios
 - Added the `-V`/`--version` option to print the nitrocli version
