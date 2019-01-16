@@ -109,8 +109,10 @@ macro_rules! Enum {
 /// replaced with a generated version of the enum's variants.
 macro_rules! fmt_enum {
   ( $enm:ident ) => {{
-    $enm
-      .all()
+    fmt_enum!($enm.all())
+  }};
+  ( $all:expr ) => {{
+    $all
       .iter()
       .map(::std::convert::AsRef::as_ref)
       .collect::<::std::vec::Vec<_>>()

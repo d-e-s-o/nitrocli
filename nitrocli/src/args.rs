@@ -420,7 +420,7 @@ fn otp_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut slot: u8 = 0;
   let mut algorithm = OtpAlgorithm::Totp;
-  let help = format!(
+  let algo_help = format!(
     "The OTP algorithm to use ({}, default: {})",
     fmt_enum!(algorithm),
     algorithm
@@ -432,6 +432,10 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut time_window: u16 = 30;
   let mut ascii = false;
   let mut secret_format: Option<OtpSecretFormat> = None;
+  let fmt_help = format!(
+    "The format of the secret ({})",
+    fmt_enum!(OtpSecretFormat::all_variants())
+  );
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Configures a one-time password slot");
   let _ =
@@ -439,9 +443,10 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
       .refer(&mut slot)
       .required()
       .add_argument("slot", argparse::Store, "The OTP slot to use");
-  let _ = parser
-    .refer(&mut algorithm)
-    .add_option(&["-a", "--algorithm"], argparse::Store, &help);
+  let _ =
+    parser
+      .refer(&mut algorithm)
+      .add_option(&["-a", "--algorithm"], argparse::Store, &algo_help);
   let _ = parser.refer(&mut name).required().add_argument(
     "name",
     argparse::Store,
@@ -475,7 +480,7 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut secret_format).add_option(
     &["-f", "--format"],
     argparse::StoreOption,
-    "The format of the secret (ascii|base32|hex)",
+    &fmt_help,
   );
   parse(ctx, &parser, args)?;
   drop(parser);
@@ -744,9 +749,13 @@ fn parse_arguments<'io, 'ctx: 'io>(
   args: Vec<String>,
 ) -> Result<(Command, ExecCtx<'io>, Vec<String>)> {
   let mut model: Option<DeviceModel> = None;
+  let model_help = format!(
+    "Select the device model to connect to ({})",
+    fmt_enum!(DeviceModel::all_variants())
+  );
   let mut verbosity = 0;
   let mut command = Command::Status;
-  let help = cmd_help!(command);
+  let cmd_help = cmd_help!(command);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   let _ = parser.refer(&mut verbosity).add_option(
@@ -754,16 +763,15 @@ fn parse_arguments<'io, 'ctx: 'io>(
     argparse::IncrBy::<u64>(1),
     "Increase the log level (can be supplied multiple times)",
   );
-  let _ = parser.refer(&mut model).add_option(
-    &["-m", "--model"],
-    argparse::StoreOption,
-    "Select the device model to connect to (pro|storage)",
-  );
+  let _ =
+    parser
+      .refer(&mut model)
+      .add_option(&["-m", "--model"], argparse::StoreOption, &model_help);
   parser.set_description("Provides access to a Nitrokey device");
   let _ = parser
     .refer(&mut command)
     .required()
-    .add_argument("command", argparse::Store, &help);
+    .add_argument("command", argparse::Store, &cmd_help);
   let _ = parser.refer(&mut subargs).add_argument(
     "arguments",
     argparse::List,
