@@ -193,6 +193,7 @@ fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
 Enum! {StorageCommand, [
   Close => ("close", storage_close),
+  Hidden => ("hidden", storage_hidden),
   Open => ("open", storage_open),
   Status => ("status", storage_status)
 ]}
@@ -247,6 +248,90 @@ fn storage_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parse(ctx, &parser, args)?;
 
   commands::storage_status(ctx)
+}
+
+Enum! {HiddenCommand, [
+  Close => ("close", storage_hidden_close),
+  Create => ("create", storage_hidden_create),
+  Open => ("open", storage_hidden_open)
+]}
+
+/// Execute a storage hidden subcommand.
+fn storage_hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+  let mut subcommand = HiddenCommand::Open;
+  let help = cmd_help!(subcommand);
+  let mut subargs = vec![];
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Interact with a hidden volume");
+  let _ =
+    parser
+      .refer(&mut subcommand)
+      .required()
+      .add_argument("subcommand", argparse::Store, &help);
+  let _ = parser.refer(&mut subargs).add_argument(
+    "arguments",
+    argparse::List,
+    "The arguments for the subcommand",
+  );
+  parser.stop_on_first_argument(true);
+  parse(ctx, &parser, args)?;
+  drop(parser);
+
+  subargs.insert(
+    0,
+    format!(
+      "nitrocli {} {} {}",
+      Command::Storage,
+      StorageCommand::Hidden,
+      subcommand
+    ),
+  );
+  subcommand.execute(ctx, subargs)
+}
+
+fn storage_hidden_create(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+  let mut slot: u8 = 0;
+  let mut start: u8 = 0;
+  let mut end: u8 = 0;
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Creates a hidden volume on a Nitrokey Storage");
+  let _ = parser.refer(&mut slot).required().add_argument(
+    "slot",
+    argparse::Store,
+    "The hidden volume slot to use",
+  );
+  let _ = parser.refer(&mut start).required().add_argument(
+    "start",
+    argparse::Store,
+    "The start location of the hidden volume as percentage of the \
+     encrypted volume's size (0-100)",
+  );
+  let _ = parser.refer(&mut end).required().add_argument(
+    "end",
+    argparse::Store,
+    "The end location of the hidden volume as percentage of the \
+     encrypted volume's size (0-100)",
+  );
+  parse(ctx, &parser, args)?;
+  drop(parser);
+
+  Ok(())
+}
+
+fn storage_hidden_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Opens a hidden volume on a Nitrokey Storage");
+  parse(ctx, &parser, args)?;
+
+  Ok(())
+}
+
+fn storage_hidden_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Closes the hidden volume on a Nitrokey Storage");
+  parse(ctx, &parser, args)?;
+
+  Ok(())
 }
 
 /// Execute a config subcommand.
