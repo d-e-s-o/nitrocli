@@ -1,5 +1,6 @@
 Unreleased
 ----------
+- Added the `reset` command to perform a factory reset
 - Added the `-V`/`--version` option to print the program's version
 
 
