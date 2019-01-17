@@ -129,6 +129,14 @@ fn get_password_safe<'a>(
     result.map(|()| PasswordSafe { _device: device })
 }
 
+fn get_pws_result(s: String) -> Result<String, CommandError> {
+    if s.is_empty() {
+        Err(CommandError::SlotNotProgrammed)
+    } else {
+        Ok(s)
+    }
+}
+
 impl<'a> PasswordSafe<'a> {
     /// Returns the status of all password slots.
     ///
@@ -172,10 +180,12 @@ impl<'a> PasswordSafe<'a> {
 
     /// Returns the name of the given slot (if it is programmed).
     ///
+    /// This method also returns a `SlotNotProgrammed` error if the name is empty.
+    ///
     /// # Errors
     ///
     /// - [`InvalidSlot`][] if the given slot is out of range
-    /// - [`Undefined`][] if the slot is not programmed
+    /// - [`SlotNotProgrammed`][] if the slot is not programmed
     ///
     /// # Example
     ///
@@ -199,17 +209,20 @@ impl<'a> PasswordSafe<'a> {
     /// ```
     ///
     /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
+    /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
     pub fn get_slot_name(&self, slot: u8) -> Result<String, CommandError> {
         unsafe { result_from_string(nitrokey_sys::NK_get_password_safe_slot_name(slot)) }
+            .and_then(get_pws_result)
     }
 
     /// Returns the login for the given slot (if it is programmed).
     ///
+    /// This method also returns a `SlotNotProgrammed` error if the login is empty.
+    ///
     /// # Errors
     ///
     /// - [`InvalidSlot`][] if the given slot is out of range
-    /// - [`Undefined`][] if the slot is not programmed
+    /// - [`SlotNotProgrammed`][] if the slot is not programmed
     ///
     /// # Example
     ///
@@ -229,17 +242,20 @@ impl<'a> PasswordSafe<'a> {
     /// ```
     ///
     /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
+    /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
     pub fn get_slot_login(&self, slot: u8) -> Result<String, CommandError> {
         unsafe { result_from_string(nitrokey_sys::NK_get_password_safe_slot_login(slot)) }
+            .and_then(get_pws_result)
     }
 
     /// Returns the password for the given slot (if it is programmed).
     ///
+    /// This method also returns a `SlotNotProgrammed` error if the password is empty.
+    ///
     /// # Errors
     ///
     /// - [`InvalidSlot`][] if the given slot is out of range
-    /// - [`Undefined`][] if the slot is not programmed
+    /// - [`SlotNotProgrammed`][] if the slot is not programmed
     ///
     /// # Example
     ///
@@ -259,9 +275,10 @@ impl<'a> PasswordSafe<'a> {
     /// ```
     ///
     /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
+    /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
     pub fn get_slot_password(&self, slot: u8) -> Result<String, CommandError> {
         unsafe { result_from_string(nitrokey_sys::NK_get_password_safe_slot_password(slot)) }
+            .and_then(get_pws_result)
     }
 
     /// Writes the given slot with the given name, login and password.

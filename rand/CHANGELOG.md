@@ -9,6 +9,31 @@ A [separate changelog is kept for rand_core](rand_core/CHANGELOG.md).
 You may also find the [Upgrade Guide](https://rust-random.github.io/book/update.html) useful.
 
 
+## [0.6.4] - 2019-01-08
+### Fixes
+- Move wasm-bindgen shims to correct crate (#686)
+- Make `wasm32-unknown-unknown` compile but fail at run-time if missing bindingsg (#686)
+
+## [0.6.3] - 2019-01-04
+### Fixes
+- Make the `std` feature require the optional `rand_os` dependency (#675)
+- Re-export the optional WASM dependencies of `rand_os` from `rand` to avoid breakage (#674)
+
+## [0.6.2] - 2019-01-04
+### Additions
+- Add `Default` for `ThreadRng` (#657)
+- Move `rngs::OsRng` to `rand_os` sub-crate; clean up code; use as dependency (#643) ##BLOCKER##
+- Add `rand_xoshiro` sub-crate, plus benchmarks (#642, #668)
+
+### Fixes
+- Fix bias in `UniformInt::sample_single` (#662)
+- Use `autocfg` instead of `rustc_version` for rustc version detection (#664)
+- Disable `i128` and `u128` if the `target_os` is `emscripten` (#671: work-around Emscripten limitation)
+- CI fixes (#660, #671)
+
+### Optimisations
+- Optimise memory usage of `UnitCircle` and `UnitSphereSurface` distributions (no PR)
+
 ## [0.6.1] - 2018-11-22
 - Support sampling `Duration` also for `no_std` (only since Rust 1.25) (#649)
 - Disable default features of `libc` (#647)

@@ -71,8 +71,10 @@ matrix:
         - cargo test --manifest-path rand_isaac/Cargo.toml --features=serde1
         # TODO: cannot test rand_pcg due to explicit dependency on i128
         - cargo test --manifest-path rand_xorshift/Cargo.toml --features=serde1
+        - cargo test --manifest-path rand_xoshiro/Cargo.toml
         - cargo test --manifest-path rand_chacha/Cargo.toml
         - cargo test --manifest-path rand_hc/Cargo.toml
+        - cargo test --manifest-path rand_os/Cargo.toml
 
     - rust: stable
       env: DESCRIPTION="stable Rust release, macOS, iOS (cross-compile only)"
@@ -90,8 +92,10 @@ matrix:
         - cargo test --manifest-path rand_isaac/Cargo.toml --features=serde1
         - cargo test --manifest-path rand_pcg/Cargo.toml --features=serde1
         - cargo test --manifest-path rand_xorshift/Cargo.toml --features=serde1
+        - cargo test --manifest-path rand_xoshiro/Cargo.toml
         - cargo test --manifest-path rand_chacha/Cargo.toml
         - cargo test --manifest-path rand_hc/Cargo.toml
+        - cargo test --manifest-path rand_os/Cargo.toml
         - cargo build --target=aarch64-apple-ios
 
     - rust: beta
@@ -115,8 +119,10 @@ matrix:
         - cargo test --manifest-path rand_isaac/Cargo.toml --features=serde1
         - cargo test --manifest-path rand_pcg/Cargo.toml --features=serde1
         - cargo test --manifest-path rand_xorshift/Cargo.toml --features=serde1
+        - cargo test --manifest-path rand_xoshiro/Cargo.toml
         - cargo test --manifest-path rand_chacha/Cargo.toml
         - cargo test --manifest-path rand_hc/Cargo.toml
+        - cargo test --manifest-path rand_os/Cargo.toml
         # remove cached documentation, otherwise files from previous PRs can get included
         - rm -rf target/doc
         - cargo doc --no-deps --all --all-features
@@ -129,21 +135,22 @@ matrix:
       install:
         - rustup target add wasm32-unknown-unknown
         - rustup target add wasm32-unknown-emscripten
-        # cargo-web takes ±10 min. to install, and cargo and cargo-update offer
-        # no reliable update-or-install command. We ignore updating for now
-        # (just drop the Travis' caches when necessary)
-        - cargo --list | egrep "^\s*web$" -q || cargo install cargo-web
+        - nvm install 9
+        - ./utils/ci/install_cargo_web.sh
+        - cargo web prepare-emscripten
         - cargo web -V
       addons:
         chrome: stable
       script:
-        # testing wasm32-unknown-emscripten fails because of rust-lang/rust#49877
-        - cargo build --target wasm32-unknown-emscripten
+        # Testing wasm32-unknown-emscripten fails because of rust-lang/rust#49877
+        # However, we can still build and link all tests to make sure that works.
+        # This is actually useful as it finds stuff such as rust-random/rand#669
+        - EMCC_CFLAGS="-s ERROR_ON_UNDEFINED_SYMBOLS=0" cargo web test --target wasm32-unknown-emscripten --no-run
         #- cargo web test --target wasm32-unknown-emscripten
         #- cargo web test --nodejs --target wasm32-unknown-emscripten
-        - cargo build --target wasm32-unknown-unknown # without any features
-        - cargo web test --nodejs --target wasm32-unknown-unknown --features=stdweb
+        #- cargo build --target wasm32-unknown-unknown # without any features
         - cargo build --target wasm32-unknown-unknown --features=wasm-bindgen
+        - cargo web test --target wasm32-unknown-unknown --features=stdweb
 
     - rust: nightly
       env: DESCRIPTION="cross-platform builder (doesn't run tests)"
@@ -198,12 +205,18 @@ script:
   - cargo test --manifest-path rand_isaac/Cargo.toml --features=serde1
   - cargo test --manifest-path rand_pcg/Cargo.toml --features=serde1
   - cargo test --manifest-path rand_xorshift/Cargo.toml --features=serde1
+  - cargo test --manifest-path rand_xoshiro/Cargo.toml
   - cargo test --manifest-path rand_chacha/Cargo.toml
   - cargo test --manifest-path rand_hc/Cargo.toml
+  - cargo test --manifest-path rand_os/Cargo.toml
 
 after_script: set +e
 
-cache: cargo
+cache:
+  cargo: true
+  directories:
+    - .local/share/cargo-web
+
 before_cache:
   # Travis can't cache files that are not readable by "others"
   - chmod -R a+r $HOME/.cargo

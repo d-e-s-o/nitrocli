@@ -111,7 +111,7 @@
 
 #[cfg(feature = "std")]
 use std::time::Duration;
-#[cfg(all(not(feature = "std"), rust_1_25))]
+#[cfg(all(not(feature = "std"), rustc_1_25))]
 use core::time::Duration;
 
 use Rng;
@@ -277,7 +277,7 @@ impl<X: SampleUniform> From<::core::ops::Range<X>> for Uniform<X> {
     }
 }
 
-#[cfg(rust_1_27)]
+#[cfg(rustc_1_27)]
 impl<X: SampleUniform> From<::core::ops::RangeInclusive<X>> for Uniform<X> {
     fn from(r: ::core::ops::RangeInclusive<X>) -> Uniform<X> {
         Uniform::new_inclusive(r.start(), r.end())
@@ -452,8 +452,9 @@ macro_rules! uniform_int_impl {
                         let ints_to_reject = (unsigned_max - range + 1) % range;
                         unsigned_max - ints_to_reject
                     } else {
-                        // conservative but fast approximation
-                       range << range.leading_zeros()
+                        // conservative but fast approximation. `- 1` is necessary to allow the
+                        // same comparison without bias.
+                        (range << range.leading_zeros()).wrapping_sub(1)
                     };
 
                 loop {
@@ -472,7 +473,7 @@ uniform_int_impl! { i8, i8, u8, i32, u32 }
 uniform_int_impl! { i16, i16, u16, i32, u32 }
 uniform_int_impl! { i32, i32, u32, i32, u32 }
 uniform_int_impl! { i64, i64, u64, i64, u64 }
-#[cfg(rust_1_26)]
+#[cfg(all(rustc_1_26, not(target_os = "emscripten")))]
 uniform_int_impl! { i128, i128, u128, u128, u128 }
 uniform_int_impl! { isize, isize, usize, isize, usize }
 uniform_int_impl! { u8, i8, u8, i32, u32 }
@@ -480,7 +481,7 @@ uniform_int_impl! { u16, i16, u16, i32, u32 }
 uniform_int_impl! { u32, i32, u32, i32, u32 }
 uniform_int_impl! { u64, i64, u64, i64, u64 }
 uniform_int_impl! { usize, isize, usize, isize, usize }
-#[cfg(rust_1_26)]
+#[cfg(all(rustc_1_26, not(target_os = "emscripten")))]
 uniform_int_impl! { u128, u128, u128, i128, u128 }
 
 #[cfg(all(feature = "simd_support", feature = "nightly"))]
@@ -835,14 +836,14 @@ uniform_float_impl! { f64x8, u64x8, f64, u64, 64 - 52 }
 ///
 /// [`UniformSampler`]: trait.UniformSampler.html
 /// [`Uniform`]: struct.Uniform.html
-#[cfg(any(feature = "std", rust_1_25))]
+#[cfg(any(feature = "std", rustc_1_25))]
 #[derive(Clone, Copy, Debug)]
 pub struct UniformDuration {
     mode: UniformDurationMode,
     offset: u32,
 }
 
-#[cfg(any(feature = "std", rust_1_25))]
+#[cfg(any(feature = "std", rustc_1_25))]
 #[derive(Debug, Copy, Clone)]
 enum UniformDurationMode {
     Small {
@@ -859,12 +860,12 @@ enum UniformDurationMode {
     }
 }
 
-#[cfg(any(feature = "std", rust_1_25))]
+#[cfg(any(feature = "std", rustc_1_25))]
 impl SampleUniform for Duration {
     type Sampler = UniformDuration;
 }
 
-#[cfg(any(feature = "std", rust_1_25))]
+#[cfg(any(feature = "std", rustc_1_25))]
 impl UniformSampler for UniformDuration {
     type X = Duration;
 
@@ -989,7 +990,7 @@ mod tests {
     fn test_integers() {
         use core::{i8, i16, i32, i64, isize};
         use core::{u8, u16, u32, u64, usize};
-        #[cfg(rust_1_26)]
+        #[cfg(all(rustc_1_26, not(target_os = "emscripten")))]
         use core::{i128, u128};
 
         let mut rng = ::test::rng(251);
@@ -1053,7 +1054,7 @@ mod tests {
         }
         t!(i8, i16, i32, i64, isize,
            u8, u16, u32, u64, usize);
-        #[cfg(rust_1_26)]
+        #[cfg(all(rustc_1_26, not(target_os = "emscripten")))]
         t!(i128, u128);
 
         #[cfg(all(feature = "simd_support", feature = "nightly"))]
@@ -1208,11 +1209,11 @@ mod tests {
 
 
     #[test]
-    #[cfg(any(feature = "std", rust_1_25))]
+    #[cfg(any(feature = "std", rustc_1_25))]
     fn test_durations() {
         #[cfg(feature = "std")]
         use std::time::Duration;
-        #[cfg(all(not(feature = "std"), rust_1_25))]
+        #[cfg(all(not(feature = "std"), rustc_1_25))]
         use core::time::Duration;
 
         let mut rng = ::test::rng(253);
@@ -1283,7 +1284,7 @@ mod tests {
         assert_eq!(r.inner.scale, 5.0);
     }
 
-    #[cfg(rust_1_27)]
+    #[cfg(rustc_1_27)]
     #[test]
     fn test_uniform_from_std_range_inclusive() {
         let r = Uniform::from(2u32..=6);

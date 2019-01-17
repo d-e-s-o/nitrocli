@@ -260,6 +260,15 @@ fn unlock_user_pin(device: DeviceWrapper) {
 
 #[test_device]
 fn factory_reset(device: DeviceWrapper) {
+    let admin = device.authenticate_admin(ADMIN_PASSWORD).unwrap();
+    let otp_data = OtpSlotData::new(1, "test", "0123468790", OtpMode::SixDigits);
+    assert_eq!(Ok(()), admin.write_totp_slot(otp_data, 30));
+
+    let device = admin.device();
+    let pws = device.get_password_safe(USER_PASSWORD).unwrap();
+    assert_eq!(Ok(()), pws.write_slot(0, "test", "testlogin", "testpw"));
+    drop(pws);
+
     assert_eq!(
         Ok(()),
         device.change_user_pin(USER_PASSWORD, USER_NEW_PASSWORD)
@@ -268,15 +277,6 @@ fn factory_reset(device: DeviceWrapper) {
         Ok(()),
         device.change_admin_pin(ADMIN_PASSWORD, ADMIN_NEW_PASSWORD)
     );
-
-    let admin = device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap();
-    let otp_data = OtpSlotData::new(1, "test", "0123468790", OtpMode::SixDigits);
-    assert_eq!(Ok(()), admin.write_totp_slot(otp_data, 30));
-
-    let device = admin.device();
-    let pws = device.get_password_safe(USER_NEW_PASSWORD).unwrap();
-    assert_eq!(Ok(()), pws.write_slot(0, "test", "testlogin", "testpw"));
-    drop(pws);
 
     assert_eq!(
         Err(CommandError::WrongPassword),
@@ -436,6 +436,45 @@ fn get_storage_status(device: Storage) {
 
     assert!(status.serial_number_sd_card > 0);
     assert!(status.serial_number_smart_card > 0);
+}
+
+#[test_device]
+fn get_production_info(device: Storage) {
+    let info = device.get_production_info().unwrap();
+    assert_eq!(0, info.firmware_version_major);
+    assert!(info.firmware_version_minor != 0);
+    assert!(info.serial_number_cpu != 0);
+    assert!(info.sd_card.serial_number != 0);
+    assert!(info.sd_card.size > 0);
+    assert!(info.sd_card.manufacturing_year > 10);
+    assert!(info.sd_card.manufacturing_year < 100);
+    // TODO: month value is not valid atm
+    // assert!(info.sd_card.manufacturing_month < 12);
+    assert!(info.sd_card.oem != 0);
+    assert!(info.sd_card.manufacturer != 0);
+
+    let status = device.get_status().unwrap();
+    assert_eq!(status.firmware_version_major, info.firmware_version_major);
+    assert_eq!(status.firmware_version_minor, info.firmware_version_minor);
+    assert_eq!(status.serial_number_sd_card, info.sd_card.serial_number);
+}
+
+#[test_device]
+fn clear_new_sd_card_warning(device: Storage) {
+    assert_eq!(Ok(()), device.factory_reset(ADMIN_PASSWORD));
+    thread::sleep(time::Duration::from_secs(3));
+    assert_eq!(Ok(()), device.build_aes_key(ADMIN_PASSWORD));
+
+    // We have to perform an SD card operation to reset the new_sd_card_found field
+    assert_eq!(Ok(()), device.lock());
+
+    let status = device.get_status().unwrap();
+    assert!(status.new_sd_card_found);
+
+    assert_eq!(Ok(()), device.clear_new_sd_card_warning(ADMIN_PASSWORD));
+
+    let status = device.get_status().unwrap();
+    assert!(!status.new_sd_card_found);
 }
 
 #[test_device]

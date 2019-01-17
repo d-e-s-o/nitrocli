@@ -1,0 +1,22 @@
+image: archlinux
+packages:
+  - rust
+  - libnitrokey
+environment:
+  USE_SYSTEM_LIBNITROKEY: "1"
+sources:
+  - https://git.sr.ht/~ireas/nitrokey-rs
+tasks:
+  - build: |
+      cd nitrokey-rs
+      cargo build --release
+  - test: |
+      cd nitrokey-rs
+      cargo test
+  - format: |
+      cd nitrokey-rs
+      cargo fmt -- --check
+triggers:
+  - action: email
+    condition: failure
+    to: nitrokey-rs-dev <nitrokey-rs-dev@ireas.org>
