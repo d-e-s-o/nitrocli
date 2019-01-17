@@ -24,9 +24,6 @@ from argparse import (
 from concurrent.futures import (
   ThreadPoolExecutor,
 )
-from enum import (
-  Enum,
-)
 from json import (
   loads as jsonLoad,
 )
