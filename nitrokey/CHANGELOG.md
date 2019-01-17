@@ -1,3 +1,12 @@
+# v0.3.3 (2019-01-16)
+- Add the `get_production_info` and `clear_new_sd_card_warning` methods to the
+  `Storage` struct.
+- Use `rand_os` instead of `rand` for random data creation.
+  - (Re-)add `CommandError::RngError` variant.
+- Account for the possibility that an empty string returned by libnitrokey can
+  not only indicate an error but also be a valid return value.
+- Make test cases more robust and avoid side effects on other test cases.
+
 # v0.3.2 (2019-01-12)
 - Make three additional error codes known: `CommandError::StringTooLong`,
   `CommandError::InvalidHexString` and `CommandError::TargetBufferTooSmall`.

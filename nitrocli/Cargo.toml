@@ -67,7 +67,5 @@ cc = { path = "../cc" }
 libc = { path = "../libc" }
 nitrokey = { path = "../nitrokey" }
 nitrokey-sys = { path = "../nitrokey-sys" }
-rand = { path = "../rand" }
-rustc_version = { path = "../rustc_version" }
-semver = { path = "../semver" }
-semver-parser = { path = "../semver-parser" }
+rand_core = { path = "../rand/rand_core" }
+rand_os = { path = "../rand/rand_os" }

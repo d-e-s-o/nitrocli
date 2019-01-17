@@ -98,8 +98,8 @@ use nitrokey_sys;
 pub use crate::auth::{Admin, Authenticate, User};
 pub use crate::config::Config;
 pub use crate::device::{
-    connect, connect_model, Device, DeviceWrapper, Model, Pro, Storage, StorageStatus, VolumeMode,
-    VolumeStatus,
+    connect, connect_model, Device, DeviceWrapper, Model, Pro, SdCardData, Storage,
+    StorageProductionInfo, StorageStatus, VolumeMode, VolumeStatus,
 };
 pub use crate::otp::{ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData};
 pub use crate::pws::{GetPasswordSafe, PasswordSafe, SLOT_COUNT};
@@ -111,12 +111,13 @@ pub use crate::util::{CommandError, LogLevel};
 /// version.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Version {
-    /// The library version as a string.
+    /// The Git library version as a string.
     ///
     /// The library version is the output of `git describe --always` at compile time, for example
     /// `v3.3` or `v3.4.1`.  If the library has not been built from a release, the version string
     /// contains the number of commits since the last release and the hash of the current commit, for
-    /// example `v3.3-19-gaee920b`.
+    /// example `v3.3-19-gaee920b`.  If the library has not been built from a Git checkout, this
+    /// string may be empty.
     pub git: String,
     /// The major library version.
     pub major: u32,

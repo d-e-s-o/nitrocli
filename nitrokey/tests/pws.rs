@@ -20,7 +20,7 @@ fn get_slot_name_direct(slot: u8) -> Result<String, CommandError> {
         true => {
             let error = unsafe { nitrokey_sys::NK_get_last_command_status() } as c_int;
             match error {
-                0 => Err(CommandError::Undefined),
+                0 => Ok(s),
                 other => Err(CommandError::from(other)),
             }
         }
@@ -92,10 +92,12 @@ fn get_data(device: DeviceWrapper) {
     assert_eq!("password", pws.get_slot_password(1).unwrap());
 
     assert_eq!(Ok(()), pws.erase_slot(1));
-    // TODO: check error codes
-    assert_eq!(Err(CommandError::Undefined), pws.get_slot_name(1));
-    assert_eq!(Err(CommandError::Undefined), pws.get_slot_login(1));
-    assert_eq!(Err(CommandError::Undefined), pws.get_slot_password(1));
+    assert_eq!(Err(CommandError::SlotNotProgrammed), pws.get_slot_name(1));
+    assert_eq!(Err(CommandError::SlotNotProgrammed), pws.get_slot_login(1));
+    assert_eq!(
+        Err(CommandError::SlotNotProgrammed),
+        pws.get_slot_password(1)
+    );
 
     let name = "with å";
     let login = "pär@test.com";
@@ -129,19 +131,22 @@ fn write(device: DeviceWrapper) {
     );
 
     assert_eq!(Ok(()), pws.write_slot(0, "", "login", "password"));
-    assert_eq!(Err(CommandError::Undefined), pws.get_slot_name(0));
+    assert_eq!(Err(CommandError::SlotNotProgrammed), pws.get_slot_name(0));
     assert_eq!(Ok(String::from("login")), pws.get_slot_login(0));
     assert_eq!(Ok(String::from("password")), pws.get_slot_password(0));
 
     assert_eq!(Ok(()), pws.write_slot(0, "name", "", "password"));
     assert_eq!(Ok(String::from("name")), pws.get_slot_name(0));
-    assert_eq!(Err(CommandError::Undefined), pws.get_slot_login(0));
+    assert_eq!(Err(CommandError::SlotNotProgrammed), pws.get_slot_login(0));
     assert_eq!(Ok(String::from("password")), pws.get_slot_password(0));
 
     assert_eq!(Ok(()), pws.write_slot(0, "name", "login", ""));
     assert_eq!(Ok(String::from("name")), pws.get_slot_name(0));
     assert_eq!(Ok(String::from("login")), pws.get_slot_login(0));
-    assert_eq!(Err(CommandError::Undefined), pws.get_slot_password(0));
+    assert_eq!(
+        Err(CommandError::SlotNotProgrammed),
+        pws.get_slot_password(0)
+    );
 }
 
 #[test_device]
@@ -152,5 +157,5 @@ fn erase(device: DeviceWrapper) {
     assert_eq!(Ok(()), pws.write_slot(0, "name", "login", "password"));
     assert_eq!(Ok(()), pws.erase_slot(0));
     assert_eq!(Ok(()), pws.erase_slot(0));
-    assert_eq!(Err(CommandError::Undefined), pws.get_slot_name(0));
+    assert_eq!(Err(CommandError::SlotNotProgrammed), pws.get_slot_name(0));
 }

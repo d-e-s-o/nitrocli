@@ -4,7 +4,8 @@ use std::fmt;
 use std::os::raw::{c_char, c_int};
 
 use libc::{c_void, free};
-use rand::Rng;
+use rand_core::RngCore;
+use rand_os::OsRng;
 
 /// Error types returned by Nitrokey device or by the library.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -44,6 +45,8 @@ pub enum CommandError {
     InvalidHexString,
     /// The target buffer was smaller than the source.
     TargetBufferTooSmall,
+    /// An error occurred during random number generation.
+    RngError,
 }
 
 /// Log level for libnitrokey.
@@ -80,10 +83,13 @@ pub fn result_from_string(ptr: *const c_char) -> Result<String, CommandError> {
     unsafe {
         let s = owned_str_from_ptr(ptr);
         free(ptr as *mut c_void);
+        // An empty string can both indicate an error or be a valid return value.  In this case, we
+        // have to check the last command status to decide what to return.
         if s.is_empty() {
-            return Err(get_last_error());
+            get_last_result().map(|_| s)
+        } else {
+            Ok(s)
         }
-        return Ok(s);
     }
 }
 
@@ -106,10 +112,11 @@ pub fn get_last_error() -> CommandError {
     };
 }
 
-pub fn generate_password(length: usize) -> Vec<u8> {
+pub fn generate_password(length: usize) -> Result<Vec<u8>, CommandError> {
+    let mut rng = OsRng::new()?;
     let mut data = vec![0u8; length];
-    rand::thread_rng().fill(&mut data[..]);
-    return data;
+    rng.fill_bytes(&mut data[..]);
+    Ok(data)
 }
 
 pub fn get_cstring<T: Into<Vec<u8>>>(s: T) -> Result<CString, CommandError> {
@@ -146,6 +153,7 @@ impl CommandError {
                 "The supplied string is not in hexadecimal format".into()
             }
             CommandError::TargetBufferTooSmall => "The target buffer is too small".into(),
+            CommandError::RngError => "An error occurred during random number generation".into(),
         }
     }
 }
@@ -175,6 +183,12 @@ impl From<c_int> for CommandError {
             203 => CommandError::TargetBufferTooSmall,
             x => CommandError::Unknown(x.into()),
         }
+    }
+}
+
+impl From<rand_core::Error> for CommandError {
+    fn from(_error: rand_core::Error) -> Self {
+        CommandError::RngError
     }
 }
 

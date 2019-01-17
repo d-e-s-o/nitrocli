@@ -4,7 +4,8 @@ Unreleased
   scenarios
 - Added the `-V`/`--version` option to print the nitrocli version
 - Further decrease binary size by using system allocator
-- Bumped `nitrokey` dependency to `0.3.2`
+- Bumped `nitrokey` dependency to `0.3.3`
+  - Bumped `rand` dependency to `0.6.4`
 - Bumped `nitrokey-sys` dependency to `3.4.3`
 - Bumped `libc` dependency to `0.2.46`
 

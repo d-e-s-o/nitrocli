@@ -208,6 +208,38 @@ pub struct VolumeStatus {
     pub active: bool,
 }
 
+/// Information about the SD card in a Storage device.
+#[derive(Debug)]
+pub struct SdCardData {
+    /// The serial number of the SD card.
+    pub serial_number: u32,
+    /// The size of the SD card in GB.
+    pub size: u8,
+    /// The year the card was manufactured, e. g. 17 for 2017.
+    pub manufacturing_year: u8,
+    /// The month the card was manufactured.
+    pub manufacturing_month: u8,
+    /// The OEM ID.
+    pub oem: u16,
+    /// The manufacturer ID.
+    pub manufacturer: u8,
+}
+
+#[derive(Debug)]
+/// Production information for a Storage device.
+pub struct StorageProductionInfo {
+    /// The major firmware version, e. g. 0 in v0.40.
+    pub firmware_version_major: u8,
+    /// The minor firmware version, e. g. 40 in v0.40.
+    pub firmware_version_minor: u8,
+    /// The internal firmware version.
+    pub firmware_version_internal: u8,
+    /// The serial number of the CPU.
+    pub serial_number_cpu: u32,
+    /// Information about the SD card.
+    pub sd_card: SdCardData,
+}
+
 /// The status of a Nitrokey Storage device.
 #[derive(Debug)]
 pub struct StorageStatus {
@@ -566,7 +598,7 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// The AES key is used to encrypt the password safe and the encrypted volume.  You may need
     /// to call this method after a factory reset, either using [`factory_reset`][] or using `gpg
-    /// --card-edit`.  You can also use it to destory the data stored in the password safe or on
+    /// --card-edit`.  You can also use it to destroy the data stored in the password safe or on
     /// the encrypted volume.
     ///
     /// # Errors
@@ -1166,6 +1198,83 @@ impl Storage {
         result.and(Ok(StorageStatus::from(raw_status)))
     }
 
+    /// Returns the production information for the connected storage device.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use nitrokey::CommandError;
+    ///
+    /// fn use_volume() {}
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::Storage::connect()?;
+    /// match device.get_production_info() {
+    ///     Ok(data) => {
+    ///         println!("SD card ID:   {:#x}", data.sd_card.serial_number);
+    ///         println!("SD card size: {} GB", data.sd_card.size);
+    ///     },
+    ///     Err(err) => println!("Could not get Storage production info: {}", err),
+    /// };
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub fn get_production_info(&self) -> Result<StorageProductionInfo, CommandError> {
+        let mut raw_data = nitrokey_sys::NK_storage_ProductionTest {
+            FirmwareVersion_au8: [0, 2],
+            FirmwareVersionInternal_u8: 0,
+            SD_Card_Size_u8: 0,
+            CPU_CardID_u32: 0,
+            SmartCardID_u32: 0,
+            SD_CardID_u32: 0,
+            SC_UserPwRetryCount: 0,
+            SC_AdminPwRetryCount: 0,
+            SD_Card_ManufacturingYear_u8: 0,
+            SD_Card_ManufacturingMonth_u8: 0,
+            SD_Card_OEM_u16: 0,
+            SD_WriteSpeed_u16: 0,
+            SD_Card_Manufacturer_u8: 0,
+        };
+        let raw_result = unsafe { nitrokey_sys::NK_get_storage_production_info(&mut raw_data) };
+        let result = get_command_result(raw_result);
+        result.and(Ok(StorageProductionInfo::from(raw_data)))
+    }
+
+    /// Clears the warning for a new SD card.
+    ///
+    /// The Storage status contains a field for a new SD card warning.  After a factory reset, the
+    /// field is set to true.  After filling the SD card with random data, it is set to false.
+    /// This method can be used to set it to false without filling the SD card with random data.
+    ///
+    /// # Errors
+    ///
+    /// - [`InvalidString`][] if the provided password contains a null byte
+    /// - [`WrongPassword`][] if the provided admin password is wrong
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use nitrokey::CommandError;
+    ///
+    /// # fn try_main() -> Result<(), CommandError> {
+    /// let device = nitrokey::Storage::connect()?;
+    /// match device.clear_new_sd_card_warning("12345678") {
+    ///     Ok(()) => println!("Cleared the new SD card warning."),
+    ///     Err(err) => println!("Could not set the clear the new SD card warning: {}", err),
+    /// };
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
+    pub fn clear_new_sd_card_warning(&self, admin_pin: &str) -> Result<(), CommandError> {
+        let admin_pin = get_cstring(admin_pin)?;
+        get_command_result(unsafe {
+            nitrokey_sys::NK_clear_new_sd_card_warning(admin_pin.as_ptr())
+        })
+    }
+
     /// Blinks the red and green LED alternatively and infinitely until the device is reconnected.
     pub fn wink(&self) -> Result<(), CommandError> {
         get_command_result(unsafe { nitrokey_sys::NK_wink() })
@@ -1208,6 +1317,25 @@ impl Device for Storage {
 }
 
 impl GenerateOtp for Storage {}
+
+impl From<nitrokey_sys::NK_storage_ProductionTest> for StorageProductionInfo {
+    fn from(data: nitrokey_sys::NK_storage_ProductionTest) -> Self {
+        Self {
+            firmware_version_major: data.FirmwareVersion_au8[0],
+            firmware_version_minor: data.FirmwareVersion_au8[1],
+            firmware_version_internal: data.FirmwareVersionInternal_u8,
+            serial_number_cpu: data.CPU_CardID_u32,
+            sd_card: SdCardData {
+                serial_number: data.SD_CardID_u32,
+                size: data.SD_Card_Size_u8,
+                manufacturing_year: data.SD_Card_ManufacturingYear_u8,
+                manufacturing_month: data.SD_Card_ManufacturingMonth_u8,
+                oem: data.SD_Card_OEM_u16,
+                manufacturer: data.SD_Card_Manufacturer_u8,
+            },
+        }
+    }
+}
 
 impl From<nitrokey_sys::NK_storage_status> for StorageStatus {
     fn from(status: nitrokey_sys::NK_storage_status) -> Self {
