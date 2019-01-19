@@ -41,6 +41,7 @@ mod lock;
 mod otp;
 mod pin;
 mod pws;
+mod reset;
 mod run;
 mod status;
 mod storage;
@@ -108,6 +109,14 @@ impl Nitrocli {
 
     drop(device);
     result
+  }
+
+  pub fn admin_pin(&mut self, pin: impl Into<ffi::OsString>) {
+    self.admin_pin = Some(pin.into())
+  }
+
+  pub fn new_admin_pin(&mut self, pin: impl Into<ffi::OsString>) {
+    self.new_admin_pin = Some(pin.into())
   }
 
   pub fn user_pin(&mut self, pin: impl Into<ffi::OsString>) {
