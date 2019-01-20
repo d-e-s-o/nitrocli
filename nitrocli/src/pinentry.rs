@@ -17,6 +17,7 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::fmt;
 use std::process;
 use std::str;
 
@@ -30,6 +31,16 @@ Enum! {PinType, [
   Admin => "admin",
   User => "user"
 ]}
+
+/// A trait representing a secret to be entered by the user.
+pub trait SecretEntry: fmt::Debug {
+  /// The cache ID to use for this secret.
+  fn cache_id(&self) -> String;
+  /// The prompt to display when asking for the secret.
+  fn prompt(&self) -> &'static str;
+  /// The description to display when asking for the secret.
+  fn description(&self, mode: Mode) -> String;
+}
 
 #[derive(Debug)]
 pub struct PinEntry {
@@ -52,6 +63,12 @@ impl PinEntry {
     })
   }
 
+  pub fn pin_type(&self) -> PinType {
+    self.pin_type
+  }
+}
+
+impl SecretEntry for PinEntry {
   fn cache_id(&self) -> String {
     let model = self.model.to_string().to_lowercase();
     let suffix = format!("{}:{}", model, self.serial);
@@ -88,10 +105,6 @@ impl PinEntry {
       self.serial,
     )
   }
-
-  pub fn pin_type(&self) -> PinType {
-    self.pin_type
-  }
 }
 
 /// Secret entry mode for pinentry.
@@ -116,7 +129,7 @@ impl Mode {
   }
 }
 
-fn parse_pinentry_pin<R>(response: R) -> Result<String, Error>
+fn parse_pinentry_pin<R>(response: R) -> crate::Result<String>
 where
   R: AsRef<str>,
 {
@@ -150,7 +163,10 @@ where
 /// the entry dialog. The mode describes the context of the pinentry
 /// dialog. It is used to choose an appropriate description and to
 /// decide whether a quality bar is shown in the dialog.
-pub fn inquire(entry: &PinEntry, mode: Mode, error_msg: Option<&str>) -> crate::Result<String> {
+pub fn inquire<E>(entry: &E, mode: Mode, error_msg: Option<&str>) -> crate::Result<String>
+where
+  E: SecretEntry,
+{
   let cache_id = entry.cache_id();
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
@@ -205,7 +221,7 @@ pub fn choose(entry: &PinEntry) -> crate::Result<String> {
   }
 }
 
-fn parse_pinentry_response<R>(response: R) -> Result<(), Error>
+fn parse_pinentry_response<R>(response: R) -> crate::Result<()>
 where
   R: AsRef<str>,
 {
@@ -220,7 +236,10 @@ where
 }
 
 /// Clear the cached secret represented by the given entry.
-pub fn clear(entry: &PinEntry) -> Result<(), Error> {
+pub fn clear<E>(entry: &E) -> crate::Result<()>
+where
+  E: SecretEntry,
+{
   let command = format!("CLEAR_PASSPHRASE {}", entry.cache_id());
   let output = process::Command::new("gpg-connect-agent")
     .arg(command)
