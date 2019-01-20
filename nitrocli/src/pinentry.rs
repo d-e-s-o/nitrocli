@@ -43,6 +43,8 @@ pub trait SecretEntry: fmt::Debug {
   fn prompt(&self) -> CowStr;
   /// The description to display when asking for the secret.
   fn description(&self, mode: Mode) -> CowStr;
+  /// The minimum number of characters the secret needs to have.
+  fn min_len(&self) -> u8;
 }
 
 #[derive(Debug)]
@@ -109,6 +111,13 @@ impl SecretEntry for PinEntry {
       self.serial,
     )
     .into()
+  }
+
+  fn min_len(&self) -> u8 {
+    match self.pin_type {
+      PinType::Admin => 8,
+      PinType::User => 6,
+    }
   }
 }
 
@@ -199,26 +208,28 @@ where
   parse_pinentry_pin(str::from_utf8(&output.stdout)?)
 }
 
-fn check(pin_type: PinType, secret: &str) -> crate::Result<()> {
-  let minimum_length = match pin_type {
-    PinType::Admin => 8,
-    PinType::User => 6,
-  };
-  if secret.len() < minimum_length {
+fn check<E>(entry: &E, secret: &str) -> crate::Result<()>
+where
+  E: SecretEntry,
+{
+  if secret.len() < usize::from(entry.min_len()) {
     Err(Error::Error(format!(
       "The secret must be at least {} characters long",
-      minimum_length
+      entry.min_len()
     )))
   } else {
     Ok(())
   }
 }
 
-pub fn choose(entry: &PinEntry) -> crate::Result<String> {
+pub fn choose<E>(entry: &E) -> crate::Result<String>
+where
+  E: SecretEntry,
+{
   clear(entry)?;
   let chosen = inquire(entry, Mode::Choose, None)?;
   clear(entry)?;
-  check(entry.pin_type(), &chosen)?;
+  check(entry, &chosen)?;
 
   let confirmed = inquire(entry, Mode::Confirm, None)?;
   clear(entry)?;
