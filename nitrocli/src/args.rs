@@ -687,7 +687,7 @@ fn pws_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut slot).required().add_argument(
     "slot",
     argparse::Store,
-    "The PWS slot to read",
+    "The PWS slot to write",
   );
   let _ = parser.refer(&mut name).required().add_argument(
     "name",

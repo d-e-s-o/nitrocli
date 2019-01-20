@@ -39,6 +39,7 @@ fn dummy() {}
 mod config;
 mod otp;
 mod pin;
+mod pws;
 mod run;
 mod status;
 
