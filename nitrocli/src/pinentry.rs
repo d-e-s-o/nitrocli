@@ -38,7 +38,7 @@ Enum! {PinType, [
 /// A trait representing a secret to be entered by the user.
 pub trait SecretEntry: fmt::Debug {
   /// The cache ID to use for this secret.
-  fn cache_id(&self) -> CowStr;
+  fn cache_id(&self) -> Option<CowStr>;
   /// The prompt to display when asking for the secret.
   fn prompt(&self) -> CowStr;
   /// The description to display when asking for the secret.
@@ -72,15 +72,14 @@ impl PinEntry {
 }
 
 impl SecretEntry for PinEntry {
-  fn cache_id(&self) -> CowStr {
+  fn cache_id(&self) -> Option<CowStr> {
     let model = self.model.to_string().to_lowercase();
     let suffix = format!("{}:{}", model, self.serial);
-
-    match self.pin_type {
+    let cache_id = match self.pin_type {
       PinType::Admin => format!("nitrocli:admin:{}", suffix),
       PinType::User => format!("nitrocli:user:{}", suffix),
-    }
-    .into()
+    };
+    Some(cache_id.into())
   }
 
   fn prompt(&self) -> CowStr {
@@ -173,7 +172,11 @@ pub fn inquire<E>(entry: &E, mode: Mode, error_msg: Option<&str>) -> crate::Resu
 where
   E: SecretEntry,
 {
-  let cache_id = entry.cache_id().into();
+  let cache_id = entry
+    .cache_id()
+    // "X" is a sentinel value indicating that no caching is desired.
+    .unwrap_or_else(|| "X".into())
+    .into();
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
     .unwrap_or_else(|| String::from("+"));
@@ -246,13 +249,17 @@ pub fn clear<E>(entry: &E) -> crate::Result<()>
 where
   E: SecretEntry,
 {
-  let command = format!("CLEAR_PASSPHRASE {}", entry.cache_id());
-  let output = process::Command::new("gpg-connect-agent")
-    .arg(command)
-    .arg("/bye")
-    .output()?;
+  if let Some(cache_id) = entry.cache_id() {
+    let command = format!("CLEAR_PASSPHRASE {}", cache_id);
+    let output = process::Command::new("gpg-connect-agent")
+      .arg(command)
+      .arg("/bye")
+      .output()?;
 
-  parse_pinentry_response(str::from_utf8(&output.stdout)?)
+    parse_pinentry_response(str::from_utf8(&output.stdout)?)
+  } else {
+    Ok(())
+  }
 }
 
 #[cfg(test)]
