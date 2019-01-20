@@ -1,8 +1,8 @@
 Unreleased
 ----------
+- Added the `-V`/`--version` option to print the nitrocli version
 - Store cached PINs on a per-device basis to better support multi-device
   scenarios
-- Added the `-V`/`--version` option to print the nitrocli version
 - Further decrease binary size by using system allocator
 - Bumped `nitrokey` dependency to `0.3.3`
   - Bumped `rand` dependency to `0.6.4`
