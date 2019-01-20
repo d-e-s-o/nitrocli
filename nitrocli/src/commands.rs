@@ -327,7 +327,14 @@ pub fn storage_hidden_create(
 ) -> Result<()> {
   let device = get_storage_device(ctx)?;
   let pwd_entry = pinentry::PwdEntry::from(&device)?;
-  let pwd = pinentry::choose(&pwd_entry)?;
+  let pwd = if let Some(pwd) = &ctx.password {
+    pwd
+      .to_str()
+      .ok_or_else(|| Error::from("Failed to read password: invalid Unicode data found"))
+      .map(ToOwned::to_owned)
+  } else {
+    pinentry::choose(&pwd_entry)
+  }?;
 
   device
     .create_hidden_volume(slot, start, end, &pwd)
@@ -338,7 +345,14 @@ pub fn storage_hidden_create(
 pub fn storage_hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_storage_device(ctx)?;
   let pwd_entry = pinentry::PwdEntry::from(&device)?;
-  let pwd = pinentry::inquire(&pwd_entry, pinentry::Mode::Query, None)?;
+  let pwd = if let Some(pwd) = &ctx.password {
+    pwd
+      .to_str()
+      .ok_or_else(|| Error::from("Failed to read password: invalid Unicode data found"))
+      .map(ToOwned::to_owned)
+  } else {
+    pinentry::inquire(&pwd_entry, pinentry::Mode::Query, None)
+  }?;
 
   // We may forcefully close an encrypted volume, if active, so be sure
   // to flush caches to disk.

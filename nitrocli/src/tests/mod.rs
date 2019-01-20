@@ -77,6 +77,7 @@ struct Nitrocli {
   user_pin: Option<ffi::OsString>,
   new_admin_pin: Option<ffi::OsString>,
   new_user_pin: Option<ffi::OsString>,
+  password: Option<ffi::OsString>,
 }
 
 impl Nitrocli {
@@ -87,6 +88,7 @@ impl Nitrocli {
       user_pin: Some(NITROKEY_DEFAULT_USER_PIN.into()),
       new_admin_pin: None,
       new_user_pin: None,
+      password: None,
     }
   }
 
@@ -100,6 +102,7 @@ impl Nitrocli {
       user_pin: Some(NITROKEY_DEFAULT_USER_PIN.into()),
       new_admin_pin: None,
       new_user_pin: None,
+      password: Some("1234567".into()),
     };
 
     drop(device);
@@ -143,6 +146,7 @@ impl Nitrocli {
       user_pin: self.user_pin.clone(),
       new_admin_pin: self.new_admin_pin.clone(),
       new_user_pin: self.new_user_pin.clone(),
+      password: self.password.clone(),
     };
 
     (f(ctx, args), stdout, stderr)

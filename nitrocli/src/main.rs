@@ -102,6 +102,7 @@ const NITROCLI_ADMIN_PIN: &str = "NITROCLI_ADMIN_PIN";
 const NITROCLI_USER_PIN: &str = "NITROCLI_USER_PIN";
 const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";
 const NITROCLI_NEW_USER_PIN: &str = "NITROCLI_NEW_USER_PIN";
+const NITROCLI_PASSWORD: &str = "NITROCLI_PASSWORD";
 
 /// The context used when running the program.
 pub(crate) struct RunCtx<'io> {
@@ -121,6 +122,8 @@ pub(crate) struct RunCtx<'io> {
   ///
   /// This variable is only used by commands that change the user PIN.
   pub new_user_pin: Option<ffi::OsString>,
+  /// A password used by some commands, if provided through an environment variable.
+  pub password: Option<ffi::OsString>,
 }
 
 fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
@@ -154,6 +157,7 @@ fn main() {
     user_pin: env::var_os(NITROCLI_USER_PIN),
     new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
     new_user_pin: env::var_os(NITROCLI_NEW_USER_PIN),
+    password: env::var_os(NITROCLI_PASSWORD),
   };
 
   let rc = run(ctx, args);

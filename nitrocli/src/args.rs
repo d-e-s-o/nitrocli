@@ -49,6 +49,7 @@ pub struct ExecCtx<'io> {
   pub user_pin: Option<ffi::OsString>,
   pub new_admin_pin: Option<ffi::OsString>,
   pub new_user_pin: Option<ffi::OsString>,
+  pub password: Option<ffi::OsString>,
   pub verbosity: u64,
 }
 
@@ -881,6 +882,7 @@ fn parse_arguments<'io, 'ctx: 'io>(
     user_pin: ctx.user_pin.take(),
     new_admin_pin: ctx.new_admin_pin.take(),
     new_user_pin: ctx.new_user_pin.take(),
+    password: ctx.password.take(),
     verbosity,
   };
   Ok((command, ctx, subargs))

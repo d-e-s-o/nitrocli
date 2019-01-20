@@ -91,3 +91,27 @@ fn encrypted_open_close(device: nitrokey::Storage) -> crate::Result<()> {
 
   Ok(())
 }
+
+#[test_device]
+fn hidden_create_open_close(device: nitrokey::Storage) -> crate::Result<()> {
+  let mut ncli = Nitrocli::with_dev(device);
+  let out = ncli.handle(&["storage", "hidden", "create", "0", "50", "100"])?;
+  assert!(out.is_empty());
+
+  let out = ncli.handle(&["storage", "hidden", "open"])?;
+  assert!(out.is_empty());
+
+  let device = nitrokey::Storage::connect()?;
+  assert!(!device.get_status()?.encrypted_volume.active);
+  assert!(device.get_status()?.hidden_volume.active);
+  drop(device);
+
+  let out = ncli.handle(&["storage", "hidden", "close"])?;
+  assert!(out.is_empty());
+
+  let device = nitrokey::Storage::connect()?;
+  assert!(!device.get_status()?.encrypted_volume.active);
+  assert!(!device.get_status()?.hidden_volume.active);
+
+  Ok(())
+}
