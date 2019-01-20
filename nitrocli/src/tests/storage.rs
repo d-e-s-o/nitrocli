@@ -70,3 +70,22 @@ $"#,
 
   Ok(())
 }
+
+#[test_device]
+fn encrypted_open_close(device: nitrokey::Storage) -> crate::Result<()> {
+  let mut ncli = Nitrocli::with_dev(device);
+  let _ = ncli.handle(&["storage", "open"])?;
+
+  let device = nitrokey::Storage::connect()?;
+  assert!(device.get_status()?.encrypted_volume.active);
+  assert!(!device.get_status()?.hidden_volume.active);
+  drop(device);
+
+  let _ = ncli.handle(&["storage", "close"])?;
+
+  let device = nitrokey::Storage::connect()?;
+  assert!(!device.get_status()?.encrypted_volume.active);
+  assert!(!device.get_status()?.hidden_volume.active);
+
+  Ok(())
+}
