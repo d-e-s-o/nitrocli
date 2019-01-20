@@ -17,11 +17,14 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::borrow;
 use std::fmt;
 use std::process;
 use std::str;
 
 use crate::error::Error;
+
+type CowStr = borrow::Cow<'static, str>;
 
 /// PIN type requested from pinentry.
 ///
@@ -35,11 +38,11 @@ Enum! {PinType, [
 /// A trait representing a secret to be entered by the user.
 pub trait SecretEntry: fmt::Debug {
   /// The cache ID to use for this secret.
-  fn cache_id(&self) -> String;
+  fn cache_id(&self) -> CowStr;
   /// The prompt to display when asking for the secret.
-  fn prompt(&self) -> &'static str;
+  fn prompt(&self) -> CowStr;
   /// The description to display when asking for the secret.
-  fn description(&self, mode: Mode) -> String;
+  fn description(&self, mode: Mode) -> CowStr;
 }
 
 #[derive(Debug)]
@@ -69,7 +72,7 @@ impl PinEntry {
 }
 
 impl SecretEntry for PinEntry {
-  fn cache_id(&self) -> String {
+  fn cache_id(&self) -> CowStr {
     let model = self.model.to_string().to_lowercase();
     let suffix = format!("{}:{}", model, self.serial);
 
@@ -77,16 +80,18 @@ impl SecretEntry for PinEntry {
       PinType::Admin => format!("nitrocli:admin:{}", suffix),
       PinType::User => format!("nitrocli:user:{}", suffix),
     }
+    .into()
   }
 
-  fn prompt(&self) -> &'static str {
+  fn prompt(&self) -> CowStr {
     match self.pin_type {
       PinType::Admin => "Admin PIN",
       PinType::User => "User PIN",
     }
+    .into()
   }
 
-  fn description(&self, mode: Mode) -> String {
+  fn description(&self, mode: Mode) -> CowStr {
     format!(
       "{} for\rNitrokey {} {}",
       match self.pin_type {
@@ -104,6 +109,7 @@ impl SecretEntry for PinEntry {
       self.model,
       self.serial,
     )
+    .into()
   }
 }
 
@@ -167,7 +173,7 @@ pub fn inquire<E>(entry: &E, mode: Mode, error_msg: Option<&str>) -> crate::Resu
 where
   E: SecretEntry,
 {
-  let cache_id = entry.cache_id();
+  let cache_id = entry.cache_id().into();
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
     .unwrap_or_else(|| String::from("+"));
