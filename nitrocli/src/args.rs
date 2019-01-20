@@ -315,7 +315,7 @@ fn storage_hidden_create(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()>
   parse(ctx, &parser, args)?;
   drop(parser);
 
-  Ok(())
+  commands::storage_hidden_create(ctx, slot, start, end)
 }
 
 fn storage_hidden_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
@@ -323,7 +323,7 @@ fn storage_hidden_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.set_description("Opens a hidden volume on a Nitrokey Storage");
   parse(ctx, &parser, args)?;
 
-  Ok(())
+  commands::storage_hidden_open(ctx)
 }
 
 fn storage_hidden_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
@@ -331,7 +331,7 @@ fn storage_hidden_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> 
   parser.set_description("Closes the hidden volume on a Nitrokey Storage");
   parse(ctx, &parser, args)?;
 
-  Ok(())
+  commands::storage_hidden_close(ctx)
 }
 
 /// Execute a config subcommand.

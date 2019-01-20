@@ -122,14 +122,12 @@ impl SecretEntry for PinEntry {
 }
 
 #[derive(Debug)]
-#[allow(unused)]
 pub struct PwdEntry {
   model: nitrokey::Model,
   serial: String,
 }
 
 impl PwdEntry {
-  #[allow(unused)]
   pub fn from<D>(device: &D) -> crate::Result<Self>
   where
     D: nitrokey::Device,

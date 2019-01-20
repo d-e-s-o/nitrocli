@@ -296,6 +296,10 @@ pub fn storage_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_storage_device(ctx)?;
   let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
 
+  // We may forcefully close a hidden volume, if active, so be sure to
+  // flush caches to disk.
+  unsafe { sync() };
+
   try_with_pin(ctx, &pin_entry, "Opening encrypted volume failed", |pin| {
     device.enable_encrypted_volume(&pin)
   })
@@ -312,6 +316,46 @@ pub fn storage_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   get_storage_device(ctx)?
     .disable_encrypted_volume()
     .map_err(|err| get_error("Closing encrypted volume failed", err))
+}
+
+/// Create a hidden volume.
+pub fn storage_hidden_create(
+  ctx: &mut args::ExecCtx<'_>,
+  slot: u8,
+  start: u8,
+  end: u8,
+) -> Result<()> {
+  let device = get_storage_device(ctx)?;
+  let pwd_entry = pinentry::PwdEntry::from(&device)?;
+  let pwd = pinentry::choose(&pwd_entry)?;
+
+  device
+    .create_hidden_volume(slot, start, end, &pwd)
+    .map_err(|err| get_error("Creating hidden volume failed", err))
+}
+
+/// Open a hidden volume.
+pub fn storage_hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+  let device = get_storage_device(ctx)?;
+  let pwd_entry = pinentry::PwdEntry::from(&device)?;
+  let pwd = pinentry::inquire(&pwd_entry, pinentry::Mode::Query, None)?;
+
+  // We may forcefully close an encrypted volume, if active, so be sure
+  // to flush caches to disk.
+  unsafe { sync() };
+
+  device
+    .enable_hidden_volume(&pwd)
+    .map_err(|err| get_error("Opening hidden volume failed", err))
+}
+
+/// Close a previously opened hidden volume.
+pub fn storage_hidden_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+  unsafe { sync() };
+
+  get_storage_device(ctx)?
+    .disable_hidden_volume()
+    .map_err(|err| get_error("Closing hidden volume failed", err))
 }
 
 /// Pretty print the status of a Nitrokey Storage.
