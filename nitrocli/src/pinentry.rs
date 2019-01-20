@@ -94,18 +94,19 @@ impl PinEntry {
   }
 }
 
-/// PIN entry mode for pinentry.
+/// Secret entry mode for pinentry.
 ///
 /// This enum describes the context of the pinentry query, for example
-/// prompting for the current PIN or requesting a new PIN.  The mode may
-/// affect the pinentry description and whether a quality bar is shown.
+/// prompting for the current secret or requesting a new one. The mode
+/// may affect the pinentry description and whether a quality bar is
+/// shown.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Mode {
-  /// Let the user choose a new PIN.
+  /// Let the user choose a new secret.
   Choose,
-  /// Let the user confirm the previously chosen PIN.
+  /// Let the user confirm the previously chosen secret.
   Confirm,
-  /// Query an existing PIN.
+  /// Query an existing secret.
   Query,
 }
 
@@ -142,21 +143,20 @@ where
   Err(Error::Error(format!("Unexpected response: {}", string)))
 }
 
-/// Inquire a PIN of the given type from the user.
+/// Inquire a secret from the user.
 ///
-/// This function inquires a PIN of the given type from the user or
-/// returns the cached pin, if available.  If an error message is set,
-/// it is displayed in the pin dialog.  The mode describes the context
-/// of the pinentry dialog.  It is used to choose an appropriate
-/// description and to decide whether a quality bar is shown in the
-/// dialog.
-pub fn inquire(pin_entry: &PinEntry, mode: Mode, error_msg: Option<&str>) -> crate::Result<String> {
-  let cache_id = pin_entry.cache_id();
+/// This function inquires a secret from the user or returns a cached
+/// entry, if available. If an error message is set, it is displayed in
+/// the entry dialog. The mode describes the context of the pinentry
+/// dialog. It is used to choose an appropriate description and to
+/// decide whether a quality bar is shown in the dialog.
+pub fn inquire(entry: &PinEntry, mode: Mode, error_msg: Option<&str>) -> crate::Result<String> {
+  let cache_id = entry.cache_id();
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
     .unwrap_or_else(|| String::from("+"));
-  let prompt = pin_entry.prompt().replace(" ", "+");
-  let description = pin_entry.description(mode).replace(" ", "+");
+  let prompt = entry.prompt().replace(" ", "+");
+  let description = entry.description(mode).replace(" ", "+");
 
   let args = vec![cache_id, error_msg, prompt, description].join(" ");
   let mut command = "GET_PASSPHRASE --data ".to_string();
@@ -164,12 +164,9 @@ pub fn inquire(pin_entry: &PinEntry, mode: Mode, error_msg: Option<&str>) -> cra
     command += "--qualitybar ";
   }
   command += &args;
-  // We could also use the --data parameter here to have a more direct
-  // representation of the pin but the resulting response was
-  // considered more difficult to parse overall. It appears an error
-  // reported for the GET_PASSPHRASE command does not actually cause
-  // gpg-connect-agent to exit with a non-zero error code, we have to
-  // evaluate the output to determine success/failure.
+  // An error reported for the GET_PASSPHRASE command does not actually
+  // cause gpg-connect-agent to exit with a non-zero error code, we have
+  // to evaluate the output to determine success/failure.
   let output = process::Command::new("gpg-connect-agent")
     .arg(command)
     .arg("/bye")
@@ -177,14 +174,14 @@ pub fn inquire(pin_entry: &PinEntry, mode: Mode, error_msg: Option<&str>) -> cra
   parse_pinentry_pin(str::from_utf8(&output.stdout)?)
 }
 
-fn check(pin_type: PinType, pin: &str) -> crate::Result<()> {
+fn check(pin_type: PinType, secret: &str) -> crate::Result<()> {
   let minimum_length = match pin_type {
     PinType::Admin => 8,
     PinType::User => 6,
   };
-  if pin.len() < minimum_length {
+  if secret.len() < minimum_length {
     Err(Error::Error(format!(
-      "The PIN must be at least {} characters long",
+      "The secret must be at least {} characters long",
       minimum_length
     )))
   } else {
@@ -192,19 +189,19 @@ fn check(pin_type: PinType, pin: &str) -> crate::Result<()> {
   }
 }
 
-pub fn choose(pin_entry: &PinEntry) -> crate::Result<String> {
-  clear(pin_entry)?;
-  let new_pin = inquire(pin_entry, Mode::Choose, None)?;
-  clear(pin_entry)?;
-  check(pin_entry.pin_type(), &new_pin)?;
+pub fn choose(entry: &PinEntry) -> crate::Result<String> {
+  clear(entry)?;
+  let chosen = inquire(entry, Mode::Choose, None)?;
+  clear(entry)?;
+  check(entry.pin_type(), &chosen)?;
 
-  let confirm_pin = inquire(pin_entry, Mode::Confirm, None)?;
-  clear(pin_entry)?;
+  let confirmed = inquire(entry, Mode::Confirm, None)?;
+  clear(entry)?;
 
-  if new_pin != confirm_pin {
-    Err(Error::from("Entered PINs do not match"))
+  if chosen != confirmed {
+    Err(Error::from("Entered secrets do not match"))
   } else {
-    Ok(new_pin)
+    Ok(chosen)
   }
 }
 
@@ -222,9 +219,9 @@ where
   Err(Error::Error(format!("Unexpected response: {}", string)))
 }
 
-/// Clear the cached pin represented by the given entry.
-pub fn clear(pin_entry: &PinEntry) -> Result<(), Error> {
-  let command = format!("CLEAR_PASSPHRASE {}", pin_entry.cache_id());
+/// Clear the cached secret represented by the given entry.
+pub fn clear(entry: &PinEntry) -> Result<(), Error> {
+  let command = format!("CLEAR_PASSPHRASE {}", entry.cache_id());
   let output = process::Command::new("gpg-connect-agent")
     .arg(command)
     .arg("/bye")
