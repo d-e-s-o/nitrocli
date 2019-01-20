@@ -150,11 +150,7 @@ where
 /// of the pinentry dialog.  It is used to choose an appropriate
 /// description and to decide whether a quality bar is shown in the
 /// dialog.
-pub fn inquire_pin(
-  pin_entry: &PinEntry,
-  mode: Mode,
-  error_msg: Option<&str>,
-) -> Result<String, Error> {
+pub fn inquire(pin_entry: &PinEntry, mode: Mode, error_msg: Option<&str>) -> crate::Result<String> {
   let cache_id = pin_entry.cache_id();
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
@@ -181,7 +177,7 @@ pub fn inquire_pin(
   parse_pinentry_pin(str::from_utf8(&output.stdout)?)
 }
 
-fn check_pin(pin_type: PinType, pin: &str) -> crate::Result<()> {
+fn check(pin_type: PinType, pin: &str) -> crate::Result<()> {
   let minimum_length = match pin_type {
     PinType::Admin => 8,
     PinType::User => 6,
@@ -196,14 +192,14 @@ fn check_pin(pin_type: PinType, pin: &str) -> crate::Result<()> {
   }
 }
 
-pub fn choose_pin(pin_entry: &PinEntry) -> crate::Result<String> {
-  clear_pin(pin_entry)?;
-  let new_pin = inquire_pin(pin_entry, Mode::Choose, None)?;
-  clear_pin(pin_entry)?;
-  check_pin(pin_entry.pin_type(), &new_pin)?;
+pub fn choose(pin_entry: &PinEntry) -> crate::Result<String> {
+  clear(pin_entry)?;
+  let new_pin = inquire(pin_entry, Mode::Choose, None)?;
+  clear(pin_entry)?;
+  check(pin_entry.pin_type(), &new_pin)?;
 
-  let confirm_pin = inquire_pin(pin_entry, Mode::Confirm, None)?;
-  clear_pin(pin_entry)?;
+  let confirm_pin = inquire(pin_entry, Mode::Confirm, None)?;
+  clear(pin_entry)?;
 
   if new_pin != confirm_pin {
     Err(Error::from("Entered PINs do not match"))
@@ -227,7 +223,7 @@ where
 }
 
 /// Clear the cached pin represented by the given entry.
-pub fn clear_pin(pin_entry: &PinEntry) -> Result<(), Error> {
+pub fn clear(pin_entry: &PinEntry) -> Result<(), Error> {
   let command = format!("CLEAR_PASSPHRASE {}", pin_entry.cache_id());
   let output = process::Command::new("gpg-connect-agent")
     .arg(command)

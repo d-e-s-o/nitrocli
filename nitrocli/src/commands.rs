@@ -186,12 +186,12 @@ where
   let mut retry = 3;
   let mut error_msg = None;
   loop {
-    let pin = pinentry::inquire_pin(pin_entry, pinentry::Mode::Query, error_msg)?;
+    let pin = pinentry::inquire(pin_entry, pinentry::Mode::Query, error_msg)?;
     match op(data, &pin) {
       Ok(result) => return Ok(result),
       Err((new_data, err)) => match err {
         nitrokey::CommandError::WrongPassword => {
-          pinentry::clear_pin(pin_entry)?;
+          pinentry::clear(pin_entry)?;
           retry -= 1;
 
           if retry > 0 {
@@ -582,11 +582,11 @@ pub fn otp_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
 pub fn pin_clear(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_device(ctx)?;
 
-  pinentry::clear_pin(&pinentry::PinEntry::from(
+  pinentry::clear(&pinentry::PinEntry::from(
     pinentry::PinType::Admin,
     &device,
   )?)?;
-  pinentry::clear_pin(&pinentry::PinEntry::from(pinentry::PinType::User, &device)?)?;
+  pinentry::clear(&pinentry::PinEntry::from(pinentry::PinType::User, &device)?)?;
   Ok(())
 }
 
@@ -622,7 +622,7 @@ fn choose_pin(
       .ok_or_else(|| Error::from("Failed to read PIN: invalid Unicode data found"))
       .map(ToOwned::to_owned)
   } else {
-    pinentry::choose_pin(pin_entry)
+    pinentry::choose(pin_entry)
   }
 }
 
