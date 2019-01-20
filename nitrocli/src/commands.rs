@@ -590,37 +590,6 @@ pub fn pin_clear(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   Ok(())
 }
 
-fn check_pin(pin_type: pinentry::PinType, pin: &str) -> Result<()> {
-  let minimum_length = match pin_type {
-    pinentry::PinType::Admin => 8,
-    pinentry::PinType::User => 6,
-  };
-  if pin.len() < minimum_length {
-    Err(Error::Error(format!(
-      "The PIN must be at least {} characters long",
-      minimum_length
-    )))
-  } else {
-    Ok(())
-  }
-}
-
-fn choose_pin_with_pinentry(pin_entry: &pinentry::PinEntry) -> Result<String> {
-  pinentry::clear_pin(pin_entry)?;
-  let new_pin = pinentry::inquire_pin(pin_entry, pinentry::Mode::Choose, None)?;
-  pinentry::clear_pin(pin_entry)?;
-  check_pin(pin_entry.pin_type(), &new_pin)?;
-
-  let confirm_pin = pinentry::inquire_pin(pin_entry, pinentry::Mode::Confirm, None)?;
-  pinentry::clear_pin(pin_entry)?;
-
-  if new_pin != confirm_pin {
-    Err(Error::from("Entered PINs do not match"))
-  } else {
-    Ok(new_pin)
-  }
-}
-
 /// Choose a PIN of the given type.
 ///
 /// If the user has set the respective environment variable for the
@@ -653,7 +622,7 @@ fn choose_pin(
       .ok_or_else(|| Error::from("Failed to read PIN: invalid Unicode data found"))
       .map(ToOwned::to_owned)
   } else {
-    choose_pin_with_pinentry(pin_entry)
+    pinentry::choose_pin(pin_entry)
   }
 }
 
