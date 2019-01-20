@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2019-01-15
+.TH NITROCLI 1 2019-01-21
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -39,10 +39,17 @@ number, the firmware version, and the PIN retry count.
 .B nitrocli lock
 Lock the Nitrokey.
 This command locks the password safe (see the Password safe section). On the
-Nitrokey Storage, it will also close the encrypted volume (see the Storage
-section).
+Nitrokey Storage, it will also close any active encrypted or hidden volumes (see
+the Storage section).
 
 .SS Storage
+The Nitrokey Storage comes with a storage area. This area is comprised of an
+\fIunencrypted\fR region and an \fIencrypted\fR one of fixed sizes, each made
+available to the user in the form of block devices. The encrypted region can
+optionally further be overlayed with up to four \fIhidden\fR volumes. Because of
+this overlay (which is required to achieve plausible deniability of the
+existence of hidden volumes), the burden of ensuring that data on the encrypted
+volume does not overlap with data on one of the hidden volumes is on the user.
 .TP
 \fBnitrocli storage open
 Open the encrypted volume on the Nitrokey Storage.
@@ -56,9 +63,27 @@ Close the encrypted volume on the Nitrokey Storage.
 Print the status of the connected Nitrokey Storage device's storage. The
 printed information includes the SD card serial number, the encryption
 status, and the status of the volumes.
+.TP
+\fBnitrocli storage hidden create \fIslot\fR \fIstart\fR \fIend\fR
+Create a new hidden volume inside the encrypted volume. \fIslot\fR must indicate
+one of the four available slots. \fIstart\fR and \fIend\fR represent,
+respectively, the start and end position of the hidden volume inside the
+encrypted volume, as a percentage of the encrypted volume's size.
+This command requires a password which is later used to look up the hidden
+volume to open. Unlike a PIN, this password is not cached by \fBgpg\-agent\fR(1).
+.TP
+\fBnitrocli storage hidden open
+Open a hidden volume. The volume to open is determined based on the password
+entered, which must have a minimum of six characters. Only one hidden volume can
+be active at any point in time and previously opened volumes will be
+automatically closed. Similarly, the encrypted volume will be closed if it was
+open.
+.TP
+\fBnitrocli storage hidden close
+Close a hidden volume.
 
 .SS One-time passwords
-The Nitrokey Pro and the Nitrokey Store support the generation of one-time
+The Nitrokey Pro and the Nitrokey Storage support the generation of one-time
 passwords using the HOTP algorithm according to RFC 4226 or the TOTP algorithm
 according to RFC 6238.
 The required data \(en a name and the secret \(en is stored in slots.
@@ -235,14 +260,22 @@ The admin PIN to use.
 The user PIN to use.
 .TP
 .B NITROCLI_NEW_ADMIN_PIN
-The new admin PIN to set. This variable is only used by the \fBnitrocli
-pin set\fR command for the \fBadmin\fR type.
+The new admin PIN to set. This variable is only used by the \fBpin set\fR
+command for the \fBadmin\fR type.
 .TP
 .B NITROCLI_NEW_USER_PIN
-The new user PIN to set. This variable is only used by the \fBnitrocli
-pin set\fR command for the \fBuser\fR type.
+The new user PIN to set. This variable is only used by the \fBpin set\fR command
+for the \fBuser\fR type.
+.TP
+.B NITROCLI_PASSWORD
+A password used by commands that require one (e.g., \fBstorage hidden open\fR).
 
 .SH EXAMPLES
+.SS Storage
+Create a hidden volume in the first available slot, starting at half the size of
+the encrypted volume (i.e., 50%) and stretching all the way to its end (100%):
+    $ \fBnitrocli storage hidden create 0 50 100\fR
+
 .SS One-time passwords
 Configure a one-time password slot with a hexadecimal secret representation:
     $ \fBnitrocli otp set 0 test\-rfc4226 3132333435363738393031323334353637383930 \-\-algorithm hotp\fR

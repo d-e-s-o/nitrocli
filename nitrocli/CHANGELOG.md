@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Added the `-V`/`--version` option to print the nitrocli version
+- Added the `storage hidden` subcommand for working with hidden volumes
 - Store cached PINs on a per-device basis to better support multi-device
   scenarios
 - Further decrease binary size by using system allocator

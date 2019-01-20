@@ -22,6 +22,10 @@ The following commands are currently supported:
   - open: Open the encrypted volume. The user PIN needs to be entered.
   - close: Close the encrypted volume.
   - status: Print information about the Nitrokey's storage.
+  - hidden:
+    - create: Create a hidden volume.
+    - open: Open a hidden volume with a password.
+    - close: Close a hidden volume.
 - otp: Access one-time passwords (OTP).
   - get: Generate a one-time password.
   - set: Set an OTP slot.
