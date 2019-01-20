@@ -121,6 +121,57 @@ impl SecretEntry for PinEntry {
   }
 }
 
+#[derive(Debug)]
+#[allow(unused)]
+pub struct PwdEntry {
+  model: nitrokey::Model,
+  serial: String,
+}
+
+impl PwdEntry {
+  #[allow(unused)]
+  pub fn from<D>(device: &D) -> crate::Result<Self>
+  where
+    D: nitrokey::Device,
+  {
+    let model = device.get_model();
+    let serial = device.get_serial_number()?;
+    Ok(Self { model, serial })
+  }
+}
+
+impl SecretEntry for PwdEntry {
+  fn cache_id(&self) -> Option<CowStr> {
+    None
+  }
+
+  fn prompt(&self) -> CowStr {
+    "Password".into()
+  }
+
+  fn description(&self, mode: Mode) -> CowStr {
+    format!(
+      "{} for\rNitrokey {} {}",
+      match mode {
+        Mode::Choose => "Please enter a new hidden volume password",
+        Mode::Confirm => "Please confirm the new hidden volume password",
+        Mode::Query => "Please enter a hidden volume password",
+      },
+      self.model,
+      self.serial,
+    )
+    .into()
+  }
+
+  fn min_len(&self) -> u8 {
+    // More or less arbitrary minimum length based on the fact that the
+    // manual mentions six letter passwords in examples. Users
+    // *probably* should go longer than that, but we don't want to be
+    // too opinionated.
+    6
+  }
+}
+
 /// Secret entry mode for pinentry.
 ///
 /// This enum describes the context of the pinentry query, for example
