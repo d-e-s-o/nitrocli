@@ -305,13 +305,13 @@ fn storage_hidden_create(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()>
     "start",
     argparse::Store,
     "The start location of the hidden volume as percentage of the \
-     encrypted volume's size (0-100)",
+     encrypted volume's size (0-99)",
   );
   let _ = parser.refer(&mut end).required().add_argument(
     "end",
     argparse::Store,
     "The end location of the hidden volume as percentage of the \
-     encrypted volume's size (0-100)",
+     encrypted volume's size (1-100)",
   );
   parse(ctx, &parser, args)?;
   drop(parser);
