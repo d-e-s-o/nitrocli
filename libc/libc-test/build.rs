@@ -341,7 +341,6 @@ fn main() {
         cfg.header("mqueue.h");
         cfg.header("ufs/ufs/quota.h");
         cfg.header("pthread_np.h");
-        cfg.header("sys/ioctl_compat.h");
         cfg.header("sys/rtprio.h");
     }
 
@@ -857,6 +856,10 @@ fn main() {
             // These were all included in historical versions of iOS but appear
             // to be removed now
             "system" | "ptrace" if ios => true,
+
+            // Removed in OpenBSD 6.5
+            // https://marc.info/?l=openbsd-cvs&m=154723400730318
+            "mincore" if openbsd => true,
 
             _ => false,
         }

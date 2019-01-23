@@ -447,6 +447,19 @@ pub const TIOCSIG: ::c_uint = 0x2004745f;
 pub const TIOCM_DCD: ::c_int = 0x40;
 pub const H4DISC: ::c_int = 0x7;
 
+pub const FIONCLEX: ::c_ulong = 0x20006602;
+pub const FIONREAD: ::c_ulong = 0x4004667f;
+pub const FIOASYNC: ::c_ulong = 0x8004667d;
+pub const FIOSETOWN: ::c_ulong = 0x8004667c;
+pub const FIOGETOWN: ::c_ulong = 0x4004667b;
+pub const FIODTYPE: ::c_ulong = 0x4004667a;
+pub const FIOGETLBA: ::c_ulong = 0x40046679;
+pub const FIODGNAME: ::c_ulong = 0x80106678;
+pub const FIONWRITE: ::c_ulong = 0x40046677;
+pub const FIONSPACE: ::c_ulong = 0x40046676;
+pub const FIOSEEKDATA: ::c_ulong = 0xc0086661;
+pub const FIOSEEKHOLE: ::c_ulong = 0xc0086662;
+
 pub const JAIL_API_VERSION: u32 = 2;
 pub const JAIL_CREATE: ::c_int = 0x01;
 pub const JAIL_UPDATE: ::c_int = 0x02;
@@ -949,6 +962,12 @@ pub const UF_READONLY:  ::c_ulong = 0x00001000;
 pub const UF_HIDDEN:    ::c_ulong = 0x00008000;
 pub const SF_SNAPSHOT:  ::c_ulong = 0x00200000;
 
+f! {
+    pub fn uname(buf: *mut ::utsname) -> ::c_int {
+        __xuname(256, buf as *mut ::c_void)
+    }
+}
+
 extern {
     pub fn __error() -> *mut ::c_int;
 
@@ -1135,6 +1154,7 @@ extern {
     pub fn fstatfs(fd: ::c_int, buf: *mut statfs) -> ::c_int;
 
     pub fn dup3(src: ::c_int, dst: ::c_int, flags: ::c_int) -> ::c_int;
+    pub fn __xuname(nmln: ::c_int, buf: *mut ::c_void) -> ::c_int;
 }
 
 #[link(name = "util")]
