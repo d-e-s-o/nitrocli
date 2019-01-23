@@ -31,6 +31,7 @@ keywords = ["nitrokey", "nitrokey-storage", "nitrokey-pro", "cli", "usb"]
 description = """
 A command line tool for interacting with the Nitrokey Storage device.
 """
+exclude = ["ci/*", "rustfmt.toml"]
 
 [badges]
 gitlab = { repository = "d-e-s-o/nitrocli", branch = "master" }
