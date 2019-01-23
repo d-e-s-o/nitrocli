@@ -8,7 +8,7 @@ Unreleased
   - Bumped `rand` dependency to `0.6.4`
   - Removed `rustc_version`, `semver`, and `semver-parser` dependencies
 - Bumped `nitrokey-sys` dependency to `3.4.3`
-- Bumped `libc` dependency to `0.2.46`
+- Bumped `libc` dependency to `0.2.47`
 
 
 0.2.2
