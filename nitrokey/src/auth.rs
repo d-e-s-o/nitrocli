@@ -1,4 +1,5 @@
 use std::ops::Deref;
+use std::os::raw::c_char;
 use std::os::raw::c_int;
 
 use nitrokey_sys;
@@ -147,7 +148,7 @@ fn authenticate<D, A, T>(device: D, password: &str, callback: T) -> Result<A, (D
 where
     D: Device,
     A: AuthenticatedDevice<D>,
-    T: Fn(*const i8, *const i8) -> c_int,
+    T: Fn(*const c_char, *const c_char) -> c_int,
 {
     let temp_password = match generate_password(TEMPORARY_PASSWORD_LENGTH) {
         Ok(temp_password) => temp_password,
@@ -158,7 +159,7 @@ where
         Err(err) => return Err((device, err)),
     };
     let password_ptr = password.as_ptr();
-    let temp_password_ptr = temp_password.as_ptr() as *const i8;
+    let temp_password_ptr = temp_password.as_ptr() as *const c_char;
     return match callback(password_ptr, temp_password_ptr) {
         0 => Ok(A::new(device, temp_password)),
         rv => Err((device, CommandError::from(rv))),
@@ -217,14 +218,14 @@ impl<T: Device> Deref for User<T> {
 impl<T: Device> GenerateOtp for User<T> {
     fn get_hotp_code(&self, slot: u8) -> Result<String, CommandError> {
         unsafe {
-            let temp_password_ptr = self.temp_password.as_ptr() as *const i8;
+            let temp_password_ptr = self.temp_password.as_ptr() as *const c_char;
             return result_from_string(nitrokey_sys::NK_get_hotp_code_PIN(slot, temp_password_ptr));
         }
     }
 
     fn get_totp_code(&self, slot: u8) -> Result<String, CommandError> {
         unsafe {
-            let temp_password_ptr = self.temp_password.as_ptr() as *const i8;
+            let temp_password_ptr = self.temp_password.as_ptr() as *const c_char;
             return result_from_string(nitrokey_sys::NK_get_totp_code_PIN(
                 slot,
                 0,
@@ -297,17 +298,17 @@ impl<T: Device> Admin<T> {
                 raw_config.scrollock,
                 raw_config.user_password,
                 false,
-                self.temp_password.as_ptr() as *const i8,
+                self.temp_password.as_ptr() as *const c_char,
             ))
         }
     }
 
     fn write_otp_slot<C>(&self, data: OtpSlotData, callback: C) -> Result<(), CommandError>
     where
-        C: Fn(RawOtpSlotData, *const i8) -> c_int,
+        C: Fn(RawOtpSlotData, *const c_char) -> c_int,
     {
         let raw_data = RawOtpSlotData::new(data)?;
-        let temp_password_ptr = self.temp_password.as_ptr() as *const i8;
+        let temp_password_ptr = self.temp_password.as_ptr() as *const c_char;
         get_command_result(callback(raw_data, temp_password_ptr))
     }
 }
@@ -346,12 +347,12 @@ impl<T: Device> ConfigureOtp for Admin<T> {
     }
 
     fn erase_hotp_slot(&self, slot: u8) -> Result<(), CommandError> {
-        let temp_password_ptr = self.temp_password.as_ptr() as *const i8;
+        let temp_password_ptr = self.temp_password.as_ptr() as *const c_char;
         unsafe { get_command_result(nitrokey_sys::NK_erase_hotp_slot(slot, temp_password_ptr)) }
     }
 
     fn erase_totp_slot(&self, slot: u8) -> Result<(), CommandError> {
-        let temp_password_ptr = self.temp_password.as_ptr() as *const i8;
+        let temp_password_ptr = self.temp_password.as_ptr() as *const c_char;
         unsafe { get_command_result(nitrokey_sys::NK_erase_totp_slot(slot, temp_password_ptr)) }
     }
 }
