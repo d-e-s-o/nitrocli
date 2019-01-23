@@ -1,3 +1,6 @@
+# v0.3.4 (2019-01-20)
+- Fix authentication methods that assumed that `char` is signed.
+
 # v0.3.3 (2019-01-16)
 - Add the `get_production_info` and `clear_new_sd_card_warning` methods to the
   `Storage` struct.
