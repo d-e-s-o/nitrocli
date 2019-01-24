@@ -110,12 +110,17 @@ $ cargo build --release
 It is recommended that the resulting executable be installed in a
 directory accessible via the `PATH` environment variable.
 
-#### Known Problems
 
-Due to a problem with the default `hidapi` version on macOS, users are advised
-to build and install [`libnitrokey`][] from source and then set the
-`USE_SYSTEM_LIBNITROKEY` environment variable when building `nitrocli` using
-one of the methods described above.
+Known Problems
+--------------
+
+- Due to a problem with the default `hidapi` version on macOS, users are
+  advised to build and install [`libnitrokey`][] from source and then
+  set the `USE_SYSTEM_LIBNITROKEY` environment variable when building
+  `nitrocli` using one of the methods described above.
+- `nitrocli` cannot connect to a Nitrokey device that is currently being
+  accessed by `nitrokey-app` ([upstream issue][libnitrokey#32]). To
+  prevent this problem, quit `nitrokey-app` before using `nitrocli`.
 
 
 Contributing
@@ -152,3 +157,4 @@ the full text of the license.
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
 [nitrocli-gentoo]: https://packages.gentoo.org/packages/app-crypt/nitrocli
 [gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
+[libnitrokey#32]: https://github.com/Nitrokey/libnitrokey/issues/32
