@@ -757,6 +757,23 @@ fn print_pws_data(
   Ok(())
 }
 
+fn check_slot(pws: &nitrokey::PasswordSafe<'_>, slot: u8) -> Result<()> {
+  if slot >= nitrokey::SLOT_COUNT {
+    return Err(nitrokey::CommandError::InvalidSlot.into());
+  }
+  let status = pws
+    .get_slot_status()
+    .map_err(|err| get_error("Could not read PWS slot status", err))?;
+  if status[slot as usize] {
+    Ok(())
+  } else {
+    Err(get_error(
+      "Could not access PWS slot",
+      nitrokey::CommandError::SlotNotProgrammed,
+    ))
+  }
+}
+
 /// Read a PWS slot.
 pub fn pws_get(
   ctx: &mut args::ExecCtx<'_>,
@@ -768,6 +785,8 @@ pub fn pws_get(
 ) -> Result<()> {
   let device = get_device(ctx)?;
   let pws = get_password_safe(ctx, &device)?;
+  check_slot(&pws, slot)?;
+
   let show_all = !show_name && !show_login && !show_password;
   if show_all || show_name {
     print_pws_data(ctx, "name:    ", pws.get_slot_name(slot), quiet)?;

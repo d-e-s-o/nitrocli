@@ -2,6 +2,7 @@ Unreleased
 ----------
 - Added the `reset` command to perform a factory reset
 - Added the `-V`/`--version` option to print the program's version
+- Check the status of a PWS slot before accessing it in `pws get`
 
 
 0.2.3
