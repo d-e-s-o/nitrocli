@@ -83,6 +83,29 @@ fn set_get(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 }
 
 #[test_device]
+fn set_reset_get(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+  const NAME: &str = "some/svc";
+  const LOGIN: &str = "a\\user";
+  const PASSWORD: &str = "!@&-)*(&+%^@";
+
+  let mut ncli = Nitrocli::with_dev(device);
+  let _ = ncli.handle(&["pws", "set", "2", &NAME, &LOGIN, &PASSWORD])?;
+
+  let out = ncli.handle(&["reset"])?;
+  assert_eq!(out, "");
+
+  let res = ncli.handle(&["pws", "get", "2"]);
+  assert_eq!(
+    res.unwrap_cmd_err(),
+    (
+      Some("Could not access PWS slot"),
+      nitrokey::CommandError::SlotNotProgrammed
+    )
+  );
+  Ok(())
+}
+
+#[test_device]
 fn clear(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
   let mut ncli = Nitrocli::with_dev(device);
   let _ = ncli.handle(&["pws", "set", "10", "clear-test", "some-login", "abcdef"])?;
