@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.2.3
+-----
 - Added the `storage hidden` subcommand for working with hidden volumes
 - Store cached PINs on a per-device basis to better support multi-device
   scenarios
