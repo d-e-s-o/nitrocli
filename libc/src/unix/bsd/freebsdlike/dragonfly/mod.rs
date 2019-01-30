@@ -210,6 +210,12 @@ s! {
         pub sdl_rcf: ::c_ushort,
         pub sdl_route: [::c_ushort; 16],
     }
+
+    pub struct stack_t {
+        pub ss_sp: *mut ::c_char,
+        pub ss_size: ::size_t,
+        pub ss_flags: ::c_int,
+    }
 }
 
 pub const RAND_MAX: ::c_int = 0x7fff_ffff;
@@ -781,6 +787,39 @@ pub const UF_XLINK:     ::c_ulong = 0x00000100;
 pub const SF_NOHISTORY: ::c_ulong = 0x00400000;
 pub const SF_CACHE:     ::c_ulong = 0x00800000;
 pub const SF_XLINK:     ::c_ulong = 0x01000000;
+
+fn _CMSG_ALIGN(n: usize) -> usize {
+    (n + 3) & !3
+}
+
+f! {
+    pub fn CMSG_DATA(cmsg: *const ::cmsghdr) -> *mut ::c_uchar {
+        (cmsg as *mut ::c_uchar)
+            .offset(_CMSG_ALIGN(mem::size_of::<::cmsghdr>()) as isize)
+    }
+
+    pub fn CMSG_LEN(length: ::c_uint) -> ::c_uint {
+        _CMSG_ALIGN(mem::size_of::<::cmsghdr>()) + length as usize
+    }
+
+    pub fn CMSG_NXTHDR(mhdr: *const ::msghdr, cmsg: *const ::cmsghdr)
+        -> *mut ::cmsghdr
+    {
+        let next = cmsg as usize + _CMSG_ALIGN((*cmsg).cmsg_len)
+            + _CMSG_ALIGN(mem::size_of::<::cmsghdr>());
+        let max = (*mhdr).msg_control as usize
+            + (*mhdr).msg_controllen as usize;
+        if next <= max {
+            (cmsg as usize + _CMSG_ALIGN((*cmsg).cmsg_len)) as *mut ::cmsghdr
+        } else {
+            0 as *mut ::cmsghdr
+        }
+    }
+
+    pub fn CMSG_SPACE(length: ::c_uint) -> ::c_uint {
+        _CMSG_ALIGN(mem::size_of::<::cmsghdr>()) + _CMSG_ALIGN(length as usize)
+    }
+}
 
 extern {
     pub fn mprotect(addr: *mut ::c_void, len: ::size_t, prot: ::c_int)
