@@ -93,6 +93,7 @@ Packages are available for:
 - Arch Linux: [`nitrocli`][nitrocli-arch] in the Arch User Repository
 - Debian: [`nitrocli`][nitrocli-debian] (since Debian Buster)
 - Gentoo Linux: [`app-crypt/nitrocli`][nitrocli-gentoo] ebuild
+- Ubuntu: [`nitrocli`][nitrocli-ubuntu] (since Ubuntu 19.04)
 
 #### From Crates.io
 **nitrocli** is [published][nitrocli-cratesio] on crates.io and can
@@ -158,5 +159,6 @@ the full text of the license.
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
 [nitrocli-debian]: https://packages.debian.org/buster/nitrocli
 [nitrocli-gentoo]: https://packages.gentoo.org/packages/app-crypt/nitrocli
+[nitrocli-ubuntu]: https://packages.ubuntu.com/disco/nitrocli
 [gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
 [libnitrokey#32]: https://github.com/Nitrokey/libnitrokey/issues/32
