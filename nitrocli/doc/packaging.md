@@ -47,6 +47,12 @@ Debian
 For more information, see the [Teams/RustPackaging][] page in the Debian Wiki
 and the [README.rst file][] in the debcargo-conf repository.
 
+Ubuntu
+------
+
+The `nitrocli` package for Ubuntu is automatically generated from the Debian
+package.
+
 [Arch User Repository]: https://wiki.archlinux.org/index.php/Arch_User_Repository
 [Teams/RustPackaging]: https://wiki.debian.org/Teams/RustPackaging
 [README.rst file]: https://salsa.debian.org/rust-team/debcargo-conf/blob/master/README.rst
