@@ -173,20 +173,22 @@ Enum! {PwsCommand, [
 
 fn parse(
   ctx: &mut impl Stdio,
-  parser: &argparse::ArgumentParser<'_>,
+  parser: argparse::ArgumentParser<'_>,
   args: Vec<String>,
 ) -> Result<()> {
   let (stdout, stderr) = ctx.stdio();
-  parser
+  let result = parser
     .parse(args, stdout, stderr)
-    .map_err(Error::ArgparseError)
+    .map_err(Error::ArgparseError);
+  drop(parser);
+  result
 }
 
 /// Inquire the status of the nitrokey.
 fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Prints the status of the connected Nitrokey device");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::status(ctx)
 }
@@ -195,7 +197,7 @@ fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn reset(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Performs a factory reset");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::reset(ctx)
 }
@@ -225,8 +227,7 @@ fn storage(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   subargs.insert(0, format!("nitrocli {} {}", Command::Storage, subcommand));
   subcommand.execute(ctx, subargs)
@@ -236,7 +237,7 @@ fn storage(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn storage_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Opens the encrypted volume on a Nitrokey Storage");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::storage_open(ctx)
 }
@@ -245,7 +246,7 @@ fn storage_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn storage_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Closes the encrypted volume on a Nitrokey Storage");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::storage_close(ctx)
 }
@@ -254,7 +255,7 @@ fn storage_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn storage_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Prints the status of the Nitrokey's storage");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::storage_status(ctx)
 }
@@ -283,8 +284,7 @@ fn storage_hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   subargs.insert(
     0,
@@ -321,8 +321,7 @@ fn storage_hidden_create(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()>
     "The end location of the hidden volume as percentage of the \
      encrypted volume's size (1-100)",
   );
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   commands::storage_hidden_create(ctx, slot, start, end)
 }
@@ -330,7 +329,7 @@ fn storage_hidden_create(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()>
 fn storage_hidden_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Opens a hidden volume on a Nitrokey Storage");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::storage_hidden_open(ctx)
 }
@@ -338,7 +337,7 @@ fn storage_hidden_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn storage_hidden_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Closes the hidden volume on a Nitrokey Storage");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::storage_hidden_close(ctx)
 }
@@ -361,8 +360,7 @@ fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   subargs.insert(0, format!("nitrocli {} {}", Command::Config, subcommand));
   subcommand.execute(ctx, subargs)
@@ -372,7 +370,7 @@ fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn config_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Prints the Nitrokey configuration");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::config_get(ctx)
 }
@@ -429,8 +427,7 @@ fn config_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreTrue,
     "Allow one-time password generation without PIN",
   );
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   let numlock = ConfigOption::try_from(no_numlock, numlock, "numlock")?;
   let capslock = ConfigOption::try_from(no_capslock, capslock, "capslock")?;
@@ -449,7 +446,7 @@ fn config_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn lock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Locks the connected Nitrokey device");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::lock(ctx)
 }
@@ -472,8 +469,7 @@ fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   subargs.insert(0, format!("nitrocli {} {}", Command::Otp, subcommand));
   subcommand.execute(ctx, subargs)
@@ -504,8 +500,7 @@ fn otp_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreOption,
     "The time to use for TOTP generation (Unix timestamp, default: system time)",
   );
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   commands::otp_get(ctx, slot, algorithm, time)
 }
@@ -576,8 +571,7 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreOption,
     &fmt_help,
   );
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   if ascii {
     if secret_format.is_some() {
@@ -624,8 +618,7 @@ fn otp_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let _ = parser
     .refer(&mut algorithm)
     .add_option(&["-a", "--algorithm"], argparse::Store, &help);
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   commands::otp_clear(ctx, slot, algorithm)
 }
@@ -640,8 +633,7 @@ fn otp_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreTrue,
     "Show slots that are not programmed",
   );
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   commands::otp_status(ctx, all)
 }
@@ -664,8 +656,7 @@ fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   subargs.insert(0, format!("nitrocli {} {}", Command::Pin, subcommand));
   subcommand.execute(ctx, subargs)
@@ -675,7 +666,7 @@ fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn pin_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Clears the cached PINs");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::pin_clear(ctx)
 }
@@ -690,8 +681,7 @@ fn pin_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     .refer(&mut pintype)
     .required()
     .add_argument("type", argparse::Store, &help);
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   commands::pin_set(ctx, pintype)
 }
@@ -700,7 +690,7 @@ fn pin_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn pin_unblock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Unblocks and resets the user PIN");
-  parse(ctx, &parser, args)?;
+  parse(ctx, parser, args)?;
 
   commands::pin_unblock(ctx)
 }
@@ -723,8 +713,7 @@ fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     "The arguments for the subcommand",
   );
   parser.stop_on_first_argument(true);
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   subargs.insert(0, format!("nitrocli {} {}", Command::Pws, subcommand));
   subcommand.execute(ctx, subargs)
@@ -764,8 +753,7 @@ fn pws_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreTrue,
     "Print the stored data without description",
   );
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   commands::pws_get(ctx, slot, name, login, password, quiet)
 }
@@ -798,8 +786,7 @@ fn pws_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The password to store on the slot",
   );
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   commands::pws_set(ctx, slot, &name, &login, &password)
 }
@@ -814,8 +801,7 @@ fn pws_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The PWS slot to clear",
   );
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   commands::pws_clear(ctx, slot)
 }
@@ -830,8 +816,7 @@ fn pws_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::StoreTrue,
     "Show slots that are not programmed",
   );
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   commands::pws_status(ctx, all)
 }
@@ -877,8 +862,7 @@ fn parse_arguments<'io, 'ctx: 'io>(
     "The arguments for the command",
   );
   parser.stop_on_first_argument(true);
-  parse(ctx, &parser, args)?;
-  drop(parser);
+  parse(ctx, parser, args)?;
 
   subargs.insert(0, format!("nitrocli {}", command));
 
