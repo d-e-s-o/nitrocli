@@ -177,11 +177,9 @@ fn parse(
   args: Vec<String>,
 ) -> Result<()> {
   let (stdout, stderr) = ctx.stdio();
-  if let Err(err) = parser.parse(args, stdout, stderr) {
-    Err(Error::ArgparseError(err))
-  } else {
-    Ok(())
-  }
+  parser
+    .parse(args, stdout, stderr)
+    .map_err(Error::ArgparseError)
 }
 
 /// Inquire the status of the nitrokey.
