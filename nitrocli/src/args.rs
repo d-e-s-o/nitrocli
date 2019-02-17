@@ -866,6 +866,7 @@ fn pws_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
   use std::io::Write;
 
+  let mut version = false;
   let mut model: Option<DeviceModel> = None;
   let model_help = format!(
     "Select the device model to connect to ({})",
@@ -876,9 +877,9 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
   let cmd_help = cmd_help!(command);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
-  parser.add_option(
+  let _ = parser.refer(&mut version).add_option(
     &["-V", "--version"],
-    argparse::Print(format!("nitrocli {}", env!("CARGO_PKG_VERSION"))),
+    argparse::StoreTrue,
     "Print version information and exit",
   );
   let _ = parser.refer(&mut verbosity).add_option(
@@ -907,22 +908,27 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
   let mut stdio_buf = (&mut stdout_buf, &mut stderr_buf);
   let result = parse(&mut stdio_buf, parser, args);
 
-  stdout_buf.flush()?;
-  stderr_buf.flush()?;
+  if version {
+    println!(ctx, "nitrocli {}", env!("CARGO_PKG_VERSION"))?;
+    Ok(())
+  } else {
+    stdout_buf.flush()?;
+    stderr_buf.flush()?;
 
-  result?;
-  subargs.insert(0, format!("nitrocli {}", command));
+    result?;
+    subargs.insert(0, format!("nitrocli {}", command));
 
-  let mut ctx = ExecCtx {
-    model,
-    stdout: ctx.stdout,
-    stderr: ctx.stderr,
-    admin_pin: ctx.admin_pin.take(),
-    user_pin: ctx.user_pin.take(),
-    new_admin_pin: ctx.new_admin_pin.take(),
-    new_user_pin: ctx.new_user_pin.take(),
-    password: ctx.password.take(),
-    verbosity,
-  };
-  command.execute(&mut ctx, subargs)
+    let mut ctx = ExecCtx {
+      model,
+      stdout: ctx.stdout,
+      stderr: ctx.stderr,
+      admin_pin: ctx.admin_pin.take(),
+      user_pin: ctx.user_pin.take(),
+      new_admin_pin: ctx.new_admin_pin.take(),
+      new_user_pin: ctx.new_user_pin.take(),
+      password: ctx.password.take(),
+      verbosity,
+    };
+    command.execute(&mut ctx, subargs)
+  }
 }
