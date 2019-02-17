@@ -29,6 +29,38 @@ use crate::RunCtx;
 
 type Result<T> = result::Result<T, Error>;
 
+/// Wraps a writer and buffers its output.
+///
+/// This implementation is similar to `std::io::BufWriter`, but:
+/// - The inner writer is only written to if `flush` is called.  Otherwise the buffer is dropped.
+/// - The buffer may grow indefinetly large.
+struct BufWriter<'w, W: io::Write + ?Sized> {
+  buf: Vec<u8>,
+  inner: &'w mut W,
+}
+
+impl<'w, W: io::Write + ?Sized> BufWriter<'w, W> {
+  pub fn new(inner: &'w mut W) -> Self {
+    BufWriter {
+      buf: Vec::with_capacity(100),
+      inner,
+    }
+  }
+}
+
+impl<'w, W: io::Write + ?Sized> io::Write for BufWriter<'w, W> {
+  fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+    self.buf.extend_from_slice(buf);
+    Ok(buf.len())
+  }
+
+  fn flush(&mut self) -> io::Result<()> {
+    let _ = self.inner.write(&self.buf)?;
+    self.buf.clear();
+    self.inner.flush()
+  }
+}
+
 trait Stdio {
   fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write);
 }
@@ -862,22 +894,43 @@ fn parse_arguments<'io, 'ctx: 'io>(
     "The arguments for the command",
   );
   parser.stop_on_first_argument(true);
-  parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {}", command));
-
-  let ctx = ExecCtx {
-    model,
-    stdout: ctx.stdout,
-    stderr: ctx.stderr,
-    admin_pin: ctx.admin_pin.take(),
-    user_pin: ctx.user_pin.take(),
-    new_admin_pin: ctx.new_admin_pin.take(),
-    new_user_pin: ctx.new_user_pin.take(),
-    password: ctx.password.take(),
-    verbosity,
+  let mut stdout_buf = BufWriter::new(ctx.stdout);
+  let mut stderr_buf = BufWriter::new(ctx.stderr);
+  let mut ctx_buf = RunCtx {
+    stdout: &mut stdout_buf,
+    stderr: &mut stderr_buf,
+    admin_pin: ctx.admin_pin.clone(),
+    user_pin: ctx.user_pin.clone(),
+    new_admin_pin: ctx.new_admin_pin.clone(),
+    new_user_pin: ctx.new_user_pin.clone(),
+    password: ctx.password.clone(),
   };
-  Ok((command, ctx, subargs))
+  let result = parse(&mut ctx_buf, parser, args);
+
+  use std::io::Write;
+  stdout_buf.flush()?;
+  stderr_buf.flush()?;
+
+  match result {
+    Ok(()) => {
+      subargs.insert(0, format!("nitrocli {}", command));
+
+      let ctx = ExecCtx {
+        model,
+        stdout: ctx.stdout,
+        stderr: ctx.stderr,
+        admin_pin: ctx.admin_pin.take(),
+        user_pin: ctx.user_pin.take(),
+        new_admin_pin: ctx.new_admin_pin.take(),
+        new_user_pin: ctx.new_user_pin.take(),
+        password: ctx.password.take(),
+        verbosity,
+      };
+      Ok((command, ctx, subargs))
+    }
+    Err(err) => Err(err),
+  }
 }
 
 /// Parse the command-line arguments and execute the selected command.
