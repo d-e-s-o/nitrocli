@@ -29,6 +29,38 @@ use crate::RunCtx;
 
 type Result<T> = result::Result<T, Error>;
 
+/// Wraps a writer and buffers its output.
+///
+/// This implementation is similar to `io::BufWriter`, but:
+/// - The inner writer is only written to if `flush` is called.
+/// - The buffer may grow infinitely large.
+struct BufWriter<'w, W: io::Write + ?Sized> {
+  buf: Vec<u8>,
+  inner: &'w mut W,
+}
+
+impl<'w, W: io::Write + ?Sized> BufWriter<'w, W> {
+  pub fn new(inner: &'w mut W) -> Self {
+    BufWriter {
+      buf: Vec::with_capacity(128),
+      inner,
+    }
+  }
+}
+
+impl<'w, W: io::Write + ?Sized> io::Write for BufWriter<'w, W> {
+  fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+    self.buf.extend_from_slice(buf);
+    Ok(buf.len())
+  }
+
+  fn flush(&mut self) -> io::Result<()> {
+    self.inner.write_all(&self.buf)?;
+    self.buf.clear();
+    self.inner.flush()
+  }
+}
+
 trait Stdio {
   fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write);
 }
@@ -36,6 +68,15 @@ trait Stdio {
 impl<'io> Stdio for RunCtx<'io> {
   fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
     (self.stdout, self.stderr)
+  }
+}
+
+impl<W> Stdio for (&mut W, &mut W)
+where
+  W: io::Write,
+{
+  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
+    (self.0, self.1)
   }
 }
 
@@ -827,6 +868,8 @@ fn parse_arguments<'io, 'ctx: 'io>(
   ctx: &'ctx mut RunCtx<'_>,
   args: Vec<String>,
 ) -> Result<(Command, ExecCtx<'io>, Vec<String>)> {
+  use std::io::Write;
+
   let mut model: Option<DeviceModel> = None;
   let model_help = format!(
     "Select the device model to connect to ({})",
@@ -862,8 +905,16 @@ fn parse_arguments<'io, 'ctx: 'io>(
     "The arguments for the command",
   );
   parser.stop_on_first_argument(true);
-  parse(ctx, parser, args)?;
 
+  let mut stdout_buf = BufWriter::new(ctx.stdout);
+  let mut stderr_buf = BufWriter::new(ctx.stderr);
+  let mut stdio_buf = (&mut stdout_buf, &mut stderr_buf);
+  let result = parse(&mut stdio_buf, parser, args);
+
+  stdout_buf.flush()?;
+  stderr_buf.flush()?;
+
+  result?;
   subargs.insert(0, format!("nitrocli {}", command));
 
   let ctx = ExecCtx {
