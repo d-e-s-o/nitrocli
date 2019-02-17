@@ -42,7 +42,7 @@ fn output(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
     r#"^Status:
   model:             (Pro|Storage)
   serial number:     0x[[:xdigit:]]{8}
-  firmware version:  \d+.\d+
+  firmware version:  \d+\.\d+
   user retry count:  [0-3]
   admin retry count: [0-3]
 $"#,
