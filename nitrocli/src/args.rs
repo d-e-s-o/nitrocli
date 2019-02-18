@@ -862,12 +862,8 @@ fn pws_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   commands::pws_status(ctx, all)
 }
 
-/// Parse the command-line arguments and return the selected command and
-/// the remaining arguments for the command.
-fn parse_arguments<'io, 'ctx: 'io>(
-  ctx: &'ctx mut RunCtx<'_>,
-  args: Vec<String>,
-) -> Result<(Command, ExecCtx<'io>, Vec<String>)> {
+/// Parse the command-line arguments and execute the selected command.
+pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
   use std::io::Write;
 
   let mut model: Option<DeviceModel> = None;
@@ -917,7 +913,7 @@ fn parse_arguments<'io, 'ctx: 'io>(
   result?;
   subargs.insert(0, format!("nitrocli {}", command));
 
-  let ctx = ExecCtx {
+  let mut ctx = ExecCtx {
     model,
     stdout: ctx.stdout,
     stderr: ctx.stderr,
@@ -928,11 +924,5 @@ fn parse_arguments<'io, 'ctx: 'io>(
     password: ctx.password.take(),
     verbosity,
   };
-  Ok((command, ctx, subargs))
-}
-
-/// Parse the command-line arguments and execute the selected command.
-pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
-  let (command, mut ctx, args) = parse_arguments(ctx, args)?;
-  command.execute(&mut ctx, args)
+  command.execute(&mut ctx, subargs)
 }
