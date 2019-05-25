@@ -17,10 +17,12 @@ use Tool;
 
 #[cfg(windows)]
 macro_rules! otry {
-    ($expr:expr) => (match $expr {
-        Some(val) => val,
-        None => return None,
-    })
+    ($expr:expr) => {
+        match $expr {
+            Some(val) => val,
+            None => return None,
+        }
+    };
 }
 
 /// Attempts to find a tool within an MSVC installation using the Windows
@@ -103,6 +105,8 @@ pub enum VsVers {
     Vs14,
     /// Visual Studio 15 (2017)
     Vs15,
+    /// Visual Studio 16 (2019)
+    Vs16,
 
     /// Hidden variant that should not be matched on. Callers that want to
     /// handle an enumeration of `VsVers` instances should always have a default
@@ -128,6 +132,7 @@ pub fn find_vs_version() -> Result<VsVers, String> {
 
     match env::var("VisualStudioVersion") {
         Ok(version) => match &version[..] {
+            "16.0" => Ok(VsVers::Vs16),
             "15.0" => Ok(VsVers::Vs15),
             "14.0" => Ok(VsVers::Vs14),
             "12.0" => Ok(VsVers::Vs12),
@@ -144,7 +149,9 @@ pub fn find_vs_version() -> Result<VsVers, String> {
         _ => {
             // Check for the presense of a specific registry key
             // that indicates visual studio is installed.
-            if impl_::has_msbuild_version("15.0") {
+            if impl_::has_msbuild_version("16.0") {
+                Ok(VsVers::Vs16)
+            } else if impl_::has_msbuild_version("15.0") {
                 Ok(VsVers::Vs15)
             } else if impl_::has_msbuild_version("14.0") {
                 Ok(VsVers::Vs14)
@@ -166,15 +173,16 @@ pub fn find_vs_version() -> Result<VsVers, String> {
 
 #[cfg(windows)]
 mod impl_ {
+    use com;
+    use registry::{RegistryKey, LOCAL_MACHINE};
+    use setup_config::{EnumSetupInstances, SetupConfiguration, SetupInstance};
     use std::env;
     use std::ffi::OsString;
-    use std::mem;
-    use std::path::{Path, PathBuf};
     use std::fs::File;
     use std::io::Read;
-    use registry::{RegistryKey, LOCAL_MACHINE};
-    use com;
-    use setup_config::{EnumSetupInstances, SetupConfiguration, SetupInstance};
+    use std::mem;
+    use std::iter;
+    use std::path::{Path, PathBuf};
 
     use Tool;
 
@@ -208,6 +216,41 @@ mod impl_ {
             add_env(&mut tool, "INCLUDE", include);
             tool
         }
+    }
+
+    fn vs16_instances() -> Box<Iterator<Item=PathBuf>> {
+        let instances = if let Some(instances) = vs15_instances() {
+            instances
+        } else {
+            return Box::new(iter::empty());
+        };
+        Box::new(instances.filter_map(|instance| {
+            let instance = otry!(instance.ok());
+            let installation_name = otry!(instance.installation_name().ok());
+            if otry!(installation_name.to_str()).starts_with("VisualStudio/16.") {
+                Some(PathBuf::from(otry!(instance.installation_path().ok())))
+            } else {
+                None
+            }
+        }))
+    }
+
+    fn find_tool_in_vs16_path(tool: &str, target: &str) -> Option<Tool> {
+        vs16_instances().filter_map(|path| {
+            let path = path.join(tool);
+            if !path.is_file() {
+                return None;
+            }
+            let mut tool = Tool::new(path);
+            if target.contains("x86_64") {
+                tool.env.push(("Platform".into(), "X64".into()));
+            }
+            Some(tool)
+        }).next()
+    }
+
+    fn find_msbuild_vs16(target: &str) -> Option<Tool> {
+        find_tool_in_vs16_path(r"MSBuild\Current\Bin\MSBuild.exe", target)
     }
 
     // In MSVC 15 (2017) MS once again changed the scheme for locating
@@ -251,7 +294,8 @@ mod impl_ {
                     instance
                         .ok()
                         .and_then(|instance| instance.installation_path().ok())
-                }).map(|path| PathBuf::from(path).join(tool))
+                })
+                .map(|path| PathBuf::from(path).join(tool))
                 .find(|ref path| path.is_file()),
             None => None,
         };
@@ -263,7 +307,7 @@ mod impl_ {
                 .ok()
                 .and_then(|key| key.query_str("15.0").ok())
                 .map(|path| PathBuf::from(path).join(tool))
-                .filter(|ref path| path.is_file());
+                .and_then(|path| if path.is_file() { Some(path) } else { None });
         }
 
         path.map(|path| {
@@ -319,13 +363,15 @@ mod impl_ {
         let path = instance_path.join(r"VC\Tools\MSVC").join(version);
         // This is the path to the toolchain for a particular target, running
         // on a given host
-        let bin_path = path.join("bin")
+        let bin_path = path
+            .join("bin")
             .join(&format!("Host{}", host))
             .join(&target);
         // But! we also need PATH to contain the target directory for the host
         // architecture, because it contains dlls like mspdb140.dll compiled for
         // the host architecture.
-        let host_dylib_path = path.join("bin")
+        let host_dylib_path = path
+            .join("bin")
             .join(&format!("Host{}", host))
             .join(&host.to_lowercase());
         let lib_path = path.join("lib").join(&target);
@@ -478,17 +524,16 @@ mod impl_ {
         let key = otry!(LOCAL_MACHINE.open(key.as_ref()).ok());
         let root = otry!(key.query_str("KitsRoot10").ok());
         let readdir = otry!(Path::new(&root).join("lib").read_dir().ok());
-        let max_libdir = otry!(
-            readdir
-                .filter_map(|dir| dir.ok())
-                .map(|dir| dir.path())
-                .filter(|dir| dir.components()
-                    .last()
-                    .and_then(|c| c.as_os_str().to_str())
-                    .map(|c| c.starts_with("10.") && dir.join("ucrt").is_dir())
-                    .unwrap_or(false))
-                .max()
-        );
+        let max_libdir = otry!(readdir
+            .filter_map(|dir| dir.ok())
+            .map(|dir| dir.path())
+            .filter(|dir| dir
+                .components()
+                .last()
+                .and_then(|c| c.as_os_str().to_str())
+                .map(|c| c.starts_with("10.") && dir.join("ucrt").is_dir())
+                .unwrap_or(false))
+            .max());
         let version = max_libdir.components().last().unwrap();
         let version = version.as_os_str().to_str().unwrap().to_string();
         Some((root.into(), version))
@@ -512,12 +557,11 @@ mod impl_ {
             .map(|dir| dir.path())
             .collect::<Vec<_>>();
         dirs.sort();
-        let dir = otry!(
-            dirs.into_iter()
-                .rev()
-                .filter(|dir| dir.join("um").join("x64").join("kernel32.lib").is_file())
-                .next()
-        );
+        let dir = otry!(dirs
+            .into_iter()
+            .rev()
+            .filter(|dir| dir.join("um").join("x64").join("kernel32.lib").is_file())
+            .next());
         let version = dir.components().last().unwrap();
         let version = version.as_os_str().to_str().unwrap().to_string();
         Some((root.into(), version))
@@ -637,7 +681,7 @@ mod impl_ {
         for subkey in key.iter().filter_map(|k| k.ok()) {
             let val = subkey
                 .to_str()
-                .and_then(|s| s.trim_start_matches("v").replace(".", "").parse().ok());
+                .and_then(|s| s.trim_left_matches("v").replace(".", "").parse().ok());
             let val = match val {
                 Some(s) => s,
                 None => continue,
@@ -654,6 +698,10 @@ mod impl_ {
 
     pub fn has_msbuild_version(version: &str) -> bool {
         match version {
+            "16.0" => {
+                find_msbuild_vs16("x86_64-pc-windows-msvc").is_some()
+                    || find_msbuild_vs16("i686-pc-windows-msvc").is_some()
+            }
             "15.0" => {
                 find_msbuild_vs15("x86_64-pc-windows-msvc").is_some()
                     || find_msbuild_vs15("i686-pc-windows-msvc").is_some()

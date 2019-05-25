@@ -4,6 +4,7 @@ Unreleased
 - Added the `-V`/`--version` option to print the program's version
 - Check the status of a PWS slot before accessing it in `pws get`
 - Bumped `libc` dependency to `0.2.55`
+- Bumped `cc` dependency to `1.0.37`
 
 
 0.2.3

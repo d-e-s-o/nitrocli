@@ -1,6 +1,6 @@
 [package]
 name = "cc"
-version = "1.0.28"
+version = "1.0.37"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT/Apache-2.0"
 repository = "https://github.com/alexcrichton/cc-rs"
@@ -13,12 +13,8 @@ code.
 """
 keywords = ["build-dependencies"]
 readme = "README.md"
-categories = ["development-tools"]
+categories = ["development-tools::build-utils"]
 exclude = ["/.travis.yml", "/appveyor.yml"]
-
-[badges]
-travis-ci = { repository = "alexcrichton/cc-rs" }
-appveyor = { repository = "alexcrichton/cc-rs" }
 
 [dependencies]
 rayon = { version = "1.0", optional = true }
