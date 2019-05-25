@@ -101,6 +101,7 @@ impl<'io> Stdio for ExecCtx<'io> {
 }
 
 /// The available Nitrokey models.
+#[allow(unused_doc_comments)]
 Enum! {DeviceModel, [
   Pro => "pro",
   Storage => "storage"
@@ -116,6 +117,7 @@ impl From<DeviceModel> for nitrokey::Model {
 }
 
 /// A top-level command for nitrocli.
+#[allow(unused_doc_comments)]
 Enum! {Command, [
   Config => ("config", config),
   Lock => ("lock", lock),

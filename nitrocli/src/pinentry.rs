@@ -30,6 +30,7 @@ type CowStr = borrow::Cow<'static, str>;
 ///
 /// The available PIN types correspond to the PIN types used by the Nitrokey devices:  user and
 /// admin.
+#[allow(unused_doc_comments)]
 Enum! {PinType, [
   Admin => "admin",
   User => "user"
