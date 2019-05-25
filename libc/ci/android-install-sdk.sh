@@ -19,7 +19,7 @@ set -ex
 # which apparently magically accepts the licenses.
 
 mkdir sdk
-curl --retry 5 https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip -O
+curl --retry 10 https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip -O
 unzip -d sdk sdk-tools-linux-3859397.zip
 
 case "$1" in
@@ -44,6 +44,9 @@ case "$1" in
     exit 1
     ;;
 esac;
+
+# See: https://stackoverflow.com/a/51644855/1422197
+export JAVA_OPTS='-XX:+IgnoreUnrecognizedVMOptions --add-modules java.se.ee'
 
 # --no_https avoids
      # javax.net.ssl.SSLHandshakeException: sun.security.validator.ValidatorException: No trusted certificate found

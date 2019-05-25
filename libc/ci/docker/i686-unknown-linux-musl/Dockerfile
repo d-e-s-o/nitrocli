@@ -1,4 +1,4 @@
-FROM ubuntu:17.10
+FROM ubuntu:19.04
 
 RUN dpkg --add-architecture i386
 RUN apt-get update

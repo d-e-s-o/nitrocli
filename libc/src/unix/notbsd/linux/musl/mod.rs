@@ -37,7 +37,7 @@ s! {
         pub sa_sigaction: ::sighandler_t,
         pub sa_mask: ::sigset_t,
         pub sa_flags: ::c_int,
-        pub sa_restorer: ::dox::Option<extern fn()>,
+        pub sa_restorer: ::Option<extern fn()>,
     }
 
     pub struct statvfs {
@@ -78,7 +78,9 @@ s! {
         pub l_len: ::off_t,
         pub l_pid: ::pid_t,
     }
+}
 
+s_no_extra_traits!{
     pub struct sysinfo {
         pub uptime: ::c_ulong,
         pub loads: [::c_ulong; 3],
@@ -94,6 +96,75 @@ s! {
         pub freehigh: ::c_ulong,
         pub mem_unit: ::c_uint,
         pub __reserved: [::c_char; 256],
+    }
+}
+
+cfg_if! {
+    if #[cfg(feature = "extra_traits")] {
+        impl PartialEq for sysinfo {
+            fn eq(&self, other: &sysinfo) -> bool {
+                self.uptime == other.uptime
+                    && self.loads == other.loads
+                    && self.totalram == other.totalram
+                    && self.freeram == other.freeram
+                    && self.sharedram == other.sharedram
+                    && self.bufferram == other.bufferram
+                    && self.totalswap == other.totalswap
+                    && self.freeswap == other.freeswap
+                    && self.procs == other.procs
+                    && self.pad == other.pad
+                    && self.totalhigh == other.totalhigh
+                    && self.freehigh == other.freehigh
+                    && self.mem_unit == other.mem_unit
+                    && self
+                        .__reserved
+                        .iter()
+                        .zip(other.__reserved.iter())
+                        .all(|(a,b)| a == b)
+            }
+        }
+
+        impl Eq for sysinfo {}
+
+        impl ::fmt::Debug for sysinfo {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("sysinfo")
+                    .field("uptime", &self.uptime)
+                    .field("loads", &self.loads)
+                    .field("totalram", &self.totalram)
+                    .field("freeram", &self.freeram)
+                    .field("sharedram", &self.sharedram)
+                    .field("bufferram", &self.bufferram)
+                    .field("totalswap", &self.totalswap)
+                    .field("freeswap", &self.freeswap)
+                    .field("procs", &self.procs)
+                    .field("pad", &self.pad)
+                    .field("totalhigh", &self.totalhigh)
+                    .field("freehigh", &self.freehigh)
+                    .field("mem_unit", &self.mem_unit)
+                    // FIXME: .field("__reserved", &self.__reserved)
+                    .finish()
+            }
+        }
+
+        impl ::hash::Hash for sysinfo {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.uptime.hash(state);
+                self.loads.hash(state);
+                self.totalram.hash(state);
+                self.freeram.hash(state);
+                self.sharedram.hash(state);
+                self.bufferram.hash(state);
+                self.totalswap.hash(state);
+                self.freeswap.hash(state);
+                self.procs.hash(state);
+                self.pad.hash(state);
+                self.totalhigh.hash(state);
+                self.freehigh.hash(state);
+                self.mem_unit.hash(state);
+                self.__reserved.hash(state);
+            }
+        }
     }
 }
 

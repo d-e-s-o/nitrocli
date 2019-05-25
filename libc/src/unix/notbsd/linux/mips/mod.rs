@@ -20,20 +20,6 @@ s! {
         __unused5: *mut ::c_void,
     }
 
-    // FIXME this is actually a union
-    #[cfg_attr(all(feature = "align", target_pointer_width = "32"),
-               repr(align(4)))]
-    #[cfg_attr(all(feature = "align", target_pointer_width = "64"),
-               repr(align(8)))]
-    pub struct sem_t {
-        #[cfg(target_pointer_width = "32")]
-        __size: [::c_char; 16],
-        #[cfg(target_pointer_width = "64")]
-        __size: [::c_char; 32],
-        #[cfg(not(feature = "align"))]
-        __align: [::c_long; 0],
-    }
-
     pub struct termios2 {
         pub c_iflag: ::tcflag_t,
         pub c_oflag: ::tcflag_t,
@@ -720,10 +706,10 @@ pub const GENL_UNS_ADMIN_PERM: ::c_int = 0x10;
 pub const GENL_ID_VFS_DQUOT: ::c_int = ::NLMSG_MIN_TYPE + 1;
 pub const GENL_ID_PMCRAID: ::c_int = ::NLMSG_MIN_TYPE + 2;
 
-pub const NFT_TABLE_MAXNAMELEN: ::c_int = 32;
-pub const NFT_CHAIN_MAXNAMELEN: ::c_int = 32;
-pub const NFT_SET_MAXNAMELEN: ::c_int = 32;
-pub const NFT_OBJ_MAXNAMELEN: ::c_int = 32;
+pub const NFT_TABLE_MAXNAMELEN: ::c_int = 256;
+pub const NFT_CHAIN_MAXNAMELEN: ::c_int = 256;
+pub const NFT_SET_MAXNAMELEN: ::c_int = 256;
+pub const NFT_OBJ_MAXNAMELEN: ::c_int = 256;
 pub const NFT_USERDATA_MAXLEN: ::c_int = 256;
 
 pub const NFT_REG_VERDICT: ::c_int = 0;
@@ -780,7 +766,7 @@ pub const NFT_MSG_NEWOBJ: ::c_int = 18;
 pub const NFT_MSG_GETOBJ: ::c_int = 19;
 pub const NFT_MSG_DELOBJ: ::c_int = 20;
 pub const NFT_MSG_GETOBJ_RESET: ::c_int = 21;
-pub const NFT_MSG_MAX: ::c_int = 22;
+pub const NFT_MSG_MAX: ::c_int = 25;
 
 pub const NFT_SET_ANONYMOUS: ::c_int = 0x1;
 pub const NFT_SET_CONSTANT: ::c_int = 0x2;
@@ -927,7 +913,7 @@ extern {
                      sz: ::c_int) -> ::c_int;
     pub fn glob64(pattern: *const ::c_char,
                   flags: ::c_int,
-                  errfunc: ::dox::Option<extern fn(epath: *const ::c_char,
+                  errfunc: ::Option<extern fn(epath: *const ::c_char,
                                                    errno: ::c_int)
                                                    -> ::c_int>,
                   pglob: *mut glob64_t) -> ::c_int;
@@ -960,5 +946,15 @@ cfg_if! {
         pub use self::mips64::*;
     } else {
         // Unknown target_arch
+    }
+}
+
+cfg_if! {
+    if #[cfg(libc_align)] {
+        mod align;
+        pub use self::align::*;
+    } else {
+        mod no_align;
+        pub use self::no_align::*;
     }
 }

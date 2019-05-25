@@ -1,9 +1,7 @@
-pub type c_char = i8;
 pub type dev_t = u32;
 pub type mode_t = u16;
 pub type pthread_attr_t = *mut ::c_void;
 pub type rlim_t = i64;
-pub type mqd_t = *mut ::c_void;
 pub type pthread_mutex_t = *mut ::c_void;
 pub type pthread_mutexattr_t = *mut ::c_void;
 pub type pthread_cond_t = *mut ::c_void;
@@ -15,10 +13,25 @@ pub type tcflag_t = ::c_uint;
 pub type speed_t = ::c_uint;
 pub type nl_item = ::c_int;
 pub type id_t = i64;
+pub type vm_size_t = ::uintptr_t;
 
+#[cfg_attr(feature = "extra_traits", derive(Debug))]
 pub enum timezone {}
+impl ::Copy for timezone {}
+impl ::Clone for timezone {
+    fn clone(&self) -> timezone { *self }
+}
 
 s! {
+    pub struct in_addr {
+        pub s_addr: ::in_addr_t,
+    }
+
+    pub struct ip_mreq {
+        pub imr_multiaddr: in_addr,
+        pub imr_interface: in_addr,
+    }
+
     pub struct glob_t {
         pub gl_pathc:  ::size_t,
         pub gl_matchc: ::size_t,
@@ -40,14 +53,6 @@ s! {
         pub fflags: ::c_uint,
         pub data: ::intptr_t,
         pub udata: *mut ::c_void,
-    }
-
-    pub struct sockaddr_storage {
-        pub ss_len: u8,
-        pub ss_family: ::sa_family_t,
-        __ss_pad1: [u8; 6],
-        __ss_align: i64,
-        __ss_pad2: [u8; 112],
     }
 
     pub struct addrinfo {
@@ -180,6 +185,55 @@ s! {
         pub ar_hln: u8,
         pub ar_pln: u8,
         pub ar_op: u16,
+    }
+}
+
+s_no_extra_traits! {
+    pub struct sockaddr_storage {
+        pub ss_len: u8,
+        pub ss_family: ::sa_family_t,
+        __ss_pad1: [u8; 6],
+        __ss_align: i64,
+        __ss_pad2: [u8; 112],
+    }
+}
+
+cfg_if! {
+    if #[cfg(feature = "extra_traits")] {
+        impl PartialEq for sockaddr_storage {
+            fn eq(&self, other: &sockaddr_storage) -> bool {
+                self.ss_len == other.ss_len
+                    && self.ss_family == other.ss_family
+                    && self.__ss_pad1 == other.__ss_pad1
+                    && self.__ss_align == other.__ss_align
+                    && self
+                    .__ss_pad2
+                    .iter()
+                    .zip(other.__ss_pad2.iter())
+                    .all(|(a, b)| a == b)
+            }
+        }
+        impl Eq for sockaddr_storage {}
+        impl ::fmt::Debug for sockaddr_storage {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("sockaddr_storage")
+                    .field("ss_len", &self.ss_len)
+                    .field("ss_family", &self.ss_family)
+                    .field("__ss_pad1", &self.__ss_pad1)
+                    .field("__ss_align", &self.__ss_align)
+                    // FIXME: .field("__ss_pad2", &self.__ss_pad2)
+                    .finish()
+            }
+        }
+        impl ::hash::Hash for sockaddr_storage {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.ss_len.hash(state);
+                self.ss_family.hash(state);
+                self.__ss_pad1.hash(state);
+                self.__ss_align.hash(state);
+                self.__ss_pad2.hash(state);
+            }
+        }
     }
 }
 
@@ -1034,6 +1088,14 @@ f! {
 }
 
 extern {
+    pub fn sem_destroy(sem: *mut sem_t) -> ::c_int;
+    pub fn sem_init(sem: *mut sem_t,
+                    pshared: ::c_int,
+                    value: ::c_uint)
+                    -> ::c_int;
+
+    pub fn daemon(nochdir: ::c_int, noclose: ::c_int) -> ::c_int;
+
     pub fn accept4(s: ::c_int, addr: *mut ::sockaddr,
                    addrlen: *mut ::socklen_t, flags: ::c_int) -> ::c_int;
     pub fn aio_read(aiocbp: *mut aiocb) -> ::c_int;
@@ -1237,6 +1299,7 @@ extern {
                    name: *mut ::c_char,
                    termp: *mut termios,
                    winp: *mut ::winsize) -> ::pid_t;
+    pub fn login_tty(fd: ::c_int) -> ::c_int;
 }
 
 cfg_if! {

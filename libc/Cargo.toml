@@ -1,6 +1,6 @@
 [package]
 name = "libc"
-version = "0.2.48"
+version = "0.2.55"
 authors = ["The Rust Project Developers"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -27,6 +27,7 @@ default = ["use_std"]
 use_std = []
 align = []
 rustc-dep-of-std = ['align', 'rustc-std-workspace-core']
+extra_traits = []
 
 [workspace]
 members = ["libc-test"]

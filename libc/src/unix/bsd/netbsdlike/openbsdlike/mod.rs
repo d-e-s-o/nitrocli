@@ -17,29 +17,21 @@ pub type pthread_rwlockattr_t = *mut ::c_void;
 pub type caddr_t = *mut ::c_char;
 
 s! {
-    pub struct dirent {
-        pub d_fileno: ::ino_t,
-        pub d_off: ::off_t,
-        pub d_reclen: u16,
-        pub d_type: u8,
-        pub d_namlen: u8,
-        __d_padding: [u8; 4],
-        pub d_name: [::c_char; 256],
+    pub struct ip_mreq {
+        pub imr_multiaddr: in_addr,
+        pub imr_interface: in_addr,
     }
 
-    pub struct glob_t {
-        pub gl_pathc:   ::c_int,
-        pub gl_matchc:  ::c_int,
-        pub gl_offs:    ::c_int,
-        pub gl_flags:   ::c_int,
-        pub gl_pathv:   *mut *mut ::c_char,
-        __unused1: *mut ::c_void,
-        __unused2: *mut ::c_void,
-        __unused3: *mut ::c_void,
-        __unused4: *mut ::c_void,
-        __unused5: *mut ::c_void,
-        __unused6: *mut ::c_void,
-        __unused7: *mut ::c_void,
+    pub struct in_addr {
+        pub s_addr: ::in_addr_t,
+    }
+
+    pub struct sockaddr_in {
+        pub sin_len: u8,
+        pub sin_family: ::sa_family_t,
+        pub sin_port: ::in_port_t,
+        pub sin_addr: ::in_addr,
+        pub sin_zero: [::int8_t; 8],
     }
 
     pub struct kevent {
@@ -99,43 +91,11 @@ s! {
         pub ai_next: *mut ::addrinfo,
     }
 
-    pub struct sockaddr_storage {
-        pub ss_len: u8,
-        pub ss_family: ::sa_family_t,
-        __ss_pad1: [u8; 6],
-        __ss_pad2: i64,
-        __ss_pad3: [u8; 240],
-    }
-
-    pub struct siginfo_t {
-        pub si_signo: ::c_int,
-        pub si_code: ::c_int,
-        pub si_errno: ::c_int,
-        pub si_addr: *mut ::c_char,
-        #[cfg(target_pointer_width = "32")]
-        __pad: [u8; 112],
-        #[cfg(target_pointer_width = "64")]
-        __pad: [u8; 108],
-    }
-
     pub struct Dl_info {
         pub dli_fname: *const ::c_char,
         pub dli_fbase: *mut ::c_void,
         pub dli_sname: *const ::c_char,
         pub dli_saddr: *mut ::c_void,
-    }
-
-    pub struct lastlog {
-        ll_time: ::time_t,
-        ll_line: [::c_char; UT_LINESIZE],
-        ll_host: [::c_char; UT_HOSTSIZE],
-    }
-
-    pub struct utmp {
-        pub ut_line: [::c_char; UT_LINESIZE],
-        pub ut_name: [::c_char; UT_NAMESIZE],
-        pub ut_host: [::c_char; UT_HOSTSIZE],
-        pub ut_time: ::time_t,
     }
 
     pub struct if_data {
@@ -204,6 +164,230 @@ s! {
     }
 }
 
+s_no_extra_traits! {
+    pub struct dirent {
+        pub d_fileno: ::ino_t,
+        pub d_off: ::off_t,
+        pub d_reclen: u16,
+        pub d_type: u8,
+        pub d_namlen: u8,
+        __d_padding: [u8; 4],
+        pub d_name: [::c_char; 256],
+    }
+
+    pub struct sockaddr_storage {
+        pub ss_len: u8,
+        pub ss_family: ::sa_family_t,
+        __ss_pad1: [u8; 6],
+        __ss_pad2: i64,
+        __ss_pad3: [u8; 240],
+    }
+
+    pub struct siginfo_t {
+        pub si_signo: ::c_int,
+        pub si_code: ::c_int,
+        pub si_errno: ::c_int,
+        pub si_addr: *mut ::c_char,
+        #[cfg(target_pointer_width = "32")]
+        __pad: [u8; 112],
+        #[cfg(target_pointer_width = "64")]
+        __pad: [u8; 108],
+    }
+
+    pub struct lastlog {
+        ll_time: ::time_t,
+        ll_line: [::c_char; UT_LINESIZE],
+        ll_host: [::c_char; UT_HOSTSIZE],
+    }
+
+    pub struct utmp {
+        pub ut_line: [::c_char; UT_LINESIZE],
+        pub ut_name: [::c_char; UT_NAMESIZE],
+        pub ut_host: [::c_char; UT_HOSTSIZE],
+        pub ut_time: ::time_t,
+    }
+}
+
+cfg_if! {
+    if #[cfg(feature = "extra_traits")] {
+        impl PartialEq for dirent {
+            fn eq(&self, other: &dirent) -> bool {
+                self.d_fileno == other.d_fileno
+                    && self.d_off == other.d_off
+                    && self.d_reclen == other.d_reclen
+                    && self.d_type == other.d_type
+                    && self.d_namlen == other.d_namlen
+                    && self
+                    .d_name
+                    .iter()
+                    .zip(other.d_name.iter())
+                    .all(|(a,b)| a == b)
+            }
+        }
+
+        impl Eq for dirent {}
+
+        impl ::fmt::Debug for dirent {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("dirent")
+                    .field("d_fileno", &self.d_fileno)
+                    .field("d_off", &self.d_off)
+                    .field("d_reclen", &self.d_reclen)
+                    .field("d_type", &self.d_type)
+                    .field("d_namlen", &self.d_namlen)
+                // FIXME: .field("d_name", &self.d_name)
+                    .finish()
+            }
+        }
+
+        impl ::hash::Hash for dirent {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.d_fileno.hash(state);
+                self.d_off.hash(state);
+                self.d_reclen.hash(state);
+                self.d_type.hash(state);
+                self.d_namlen.hash(state);
+                self.d_name.hash(state);
+            }
+        }
+
+        impl PartialEq for sockaddr_storage {
+            fn eq(&self, other: &sockaddr_storage) -> bool {
+                self.ss_len == other.ss_len
+                    && self.ss_family == other.ss_family
+            }
+        }
+
+        impl Eq for sockaddr_storage {}
+
+        impl ::fmt::Debug for sockaddr_storage {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("sockaddr_storage")
+                    .field("ss_len", &self.ss_len)
+                    .field("ss_family", &self.ss_family)
+                    .finish()
+            }
+        }
+
+        impl ::hash::Hash for sockaddr_storage {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.ss_len.hash(state);
+                self.ss_family.hash(state);
+            }
+        }
+
+        impl PartialEq for siginfo_t {
+            fn eq(&self, other: &siginfo_t) -> bool {
+                self.si_signo == other.si_signo
+                    && self.si_code == other.si_code
+                    && self.si_errno == other.si_errno
+                    && self.si_addr == other.si_addr
+            }
+        }
+
+        impl Eq for siginfo_t {}
+
+        impl ::fmt::Debug for siginfo_t {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("siginfo_t")
+                    .field("si_signo", &self.si_signo)
+                    .field("si_code", &self.si_code)
+                    .field("si_errno", &self.si_errno)
+                    .field("si_addr", &self.si_addr)
+                    .finish()
+            }
+        }
+
+        impl ::hash::Hash for siginfo_t {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.si_signo.hash(state);
+                self.si_code.hash(state);
+                self.si_errno.hash(state);
+                self.si_addr.hash(state);
+            }
+        }
+
+        impl PartialEq for lastlog {
+            fn eq(&self, other: &lastlog) -> bool {
+                self.ll_time == other.ll_time
+                    && self
+                    .ll_line
+                    .iter()
+                    .zip(other.ll_line.iter())
+                    .all(|(a,b)| a == b)
+                    && self
+                    .ll_host
+                    .iter()
+                    .zip(other.ll_host.iter())
+                    .all(|(a,b)| a == b)
+            }
+        }
+
+        impl Eq for lastlog {}
+
+        impl ::fmt::Debug for lastlog {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("lastlog")
+                    .field("ll_time", &self.ll_time)
+                // FIXME: .field("ll_line", &self.ll_line)
+                // FIXME: .field("ll_host", &self.ll_host)
+                    .finish()
+            }
+        }
+
+        impl ::hash::Hash for lastlog {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.ll_time.hash(state);
+                self.ll_line.hash(state);
+                self.ll_host.hash(state);
+            }
+        }
+
+        impl PartialEq for utmp {
+            fn eq(&self, other: &utmp) -> bool {
+                self.ut_time == other.ut_time
+                    && self
+                    .ut_line
+                    .iter()
+                    .zip(other.ut_line.iter())
+                    .all(|(a,b)| a == b)
+                    && self
+                    .ut_name
+                    .iter()
+                    .zip(other.ut_name.iter())
+                    .all(|(a,b)| a == b)
+                    && self
+                    .ut_host
+                    .iter()
+                    .zip(other.ut_host.iter())
+                    .all(|(a,b)| a == b)
+            }
+        }
+
+        impl Eq for utmp {}
+
+        impl ::fmt::Debug for utmp {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("utmp")
+                // FIXME: .field("ut_line", &self.ut_line)
+                // FIXME: .field("ut_name", &self.ut_name)
+                // FIXME: .field("ut_host", &self.ut_host)
+                    .field("ut_time", &self.ut_time)
+                    .finish()
+            }
+        }
+
+        impl ::hash::Hash for utmp {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.ut_line.hash(state);
+                self.ut_name.hash(state);
+                self.ut_host.hash(state);
+                self.ut_time.hash(state);
+            }
+        }
+    }
+}
+
 pub const UT_NAMESIZE: usize = 32;
 pub const UT_LINESIZE: usize = 8;
 pub const UT_HOSTSIZE: usize = 256;
@@ -214,8 +398,6 @@ pub const O_RSYNC: ::c_int = O_SYNC;
 
 pub const MS_SYNC : ::c_int = 0x0002;
 pub const MS_INVALIDATE : ::c_int = 0x0004;
-
-pub const PTHREAD_STACK_MIN : ::size_t = 2048;
 
 pub const POLLNORM: ::c_short = ::POLLRDNORM;
 
@@ -757,9 +939,6 @@ cfg_if! {
     if #[cfg(target_os = "openbsd")] {
         mod openbsd;
         pub use self::openbsd::*;
-    } else if #[cfg(target_os = "bitrig")] {
-        mod bitrig;
-        pub use self::bitrig::*;
     } else {
         // Unknown target_os
     }

@@ -9,12 +9,14 @@ path = ".."
 default-features = false
 
 [build-dependencies]
-ctest = "0.2.8"
+cc = "1.0"
+ctest = "0.2"
 
 [features]
 default = [ "use_std" ]
 use_std = [ "libc/use_std" ]
 align = [ "libc/align" ]
+extra_traits = [ "libc/extra_traits" ]
 
 [[test]]
 name = "main"
@@ -26,3 +28,7 @@ name = "linux-fcntl"
 path = "test/linux_fcntl.rs"
 harness = false
 
+[[test]]
+name = "cmsg"
+path = "test/cmsg.rs"
+harness = true
