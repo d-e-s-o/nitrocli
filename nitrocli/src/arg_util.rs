@@ -72,7 +72,7 @@ macro_rules! Enum {
       }
     }
 
-    impl AsRef<str> for $name {
+    impl ::std::convert::AsRef<str> for $name {
       fn as_ref(&self) -> &'static str {
         match *self {
           $(
