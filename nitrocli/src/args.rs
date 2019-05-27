@@ -104,7 +104,7 @@ impl<'io> Stdio for ExecCtx<'io> {
 #[allow(unused_doc_comments)]
 Enum! {DeviceModel, [
   Pro => "pro",
-  Storage => "storage"
+  Storage => "storage",
 ]}
 
 impl From<DeviceModel> for nitrokey::Model {
@@ -126,12 +126,12 @@ Enum! {Command, [
   Pws => ("pws", pws),
   Reset => ("reset", reset),
   Status => ("status", status),
-  Storage => ("storage", storage)
+  Storage => ("storage", storage),
 ]}
 
 Enum! {ConfigCommand, [
   Get => ("get", config_get),
-  Set => ("set", config_set)
+  Set => ("set", config_set),
 ]}
 
 #[derive(Clone, Copy, Debug)]
@@ -173,17 +173,17 @@ Enum! {OtpCommand, [
   Clear => ("clear", otp_clear),
   Get => ("get", otp_get),
   Set => ("set", otp_set),
-  Status => ("status", otp_status)
+  Status => ("status", otp_status),
 ]}
 
 Enum! {OtpAlgorithm, [
   Hotp => "hotp",
-  Totp => "totp"
+  Totp => "totp",
 ]}
 
 Enum! {OtpMode, [
   SixDigits => "6",
-  EightDigits => "8"
+  EightDigits => "8",
 ]}
 
 impl From<OtpMode> for nitrokey::OtpMode {
@@ -198,20 +198,20 @@ impl From<OtpMode> for nitrokey::OtpMode {
 Enum! {OtpSecretFormat, [
   Ascii => "ascii",
   Base32 => "base32",
-  Hex => "hex"
+  Hex => "hex",
 ]}
 
 Enum! {PinCommand, [
   Clear => ("clear", pin_clear),
   Set => ("set", pin_set),
-  Unblock => ("unblock", pin_unblock)
+  Unblock => ("unblock", pin_unblock),
 ]}
 
 Enum! {PwsCommand, [
   Clear => ("clear", pws_clear),
   Get => ("get", pws_get),
   Set => ("set", pws_set),
-  Status => ("status", pws_status)
+  Status => ("status", pws_status),
 ]}
 
 fn parse(
@@ -249,7 +249,7 @@ Enum! {StorageCommand, [
   Close => ("close", storage_close),
   Hidden => ("hidden", storage_hidden),
   Open => ("open", storage_open),
-  Status => ("status", storage_status)
+  Status => ("status", storage_status),
 ]}
 
 /// Execute a storage subcommand.
@@ -306,7 +306,7 @@ fn storage_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 Enum! {HiddenCommand, [
   Close => ("close", storage_hidden_close),
   Create => ("create", storage_hidden_create),
-  Open => ("open", storage_hidden_open)
+  Open => ("open", storage_hidden_open),
 ]}
 
 /// Execute a storage hidden subcommand.

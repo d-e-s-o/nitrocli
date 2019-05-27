@@ -33,7 +33,7 @@ type CowStr = borrow::Cow<'static, str>;
 #[allow(unused_doc_comments)]
 Enum! {PinType, [
   Admin => "admin",
-  User => "user"
+  User => "user",
 ]}
 
 /// A trait representing a secret to be entered by the user.

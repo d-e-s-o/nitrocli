@@ -29,9 +29,9 @@ macro_rules! count {
 // TODO: Right now we hard code the derives we create. We may want to
 //       make this set configurable.
 macro_rules! Enum {
-  ( $name:ident, [ $( $var:ident => ($str:expr, $exec:expr) ), *] ) => {
+  ( $name:ident, [ $( $var:ident => ($str:expr, $exec:expr), ) *] ) => {
     Enum! {$name, [
-      $( $var => $str ),*
+      $( $var => $str, )*
     ]}
 
     #[allow(unused_qualifications)]
@@ -49,7 +49,7 @@ macro_rules! Enum {
       }
     }
   };
-  ( $name:ident, [ $( $var:ident => $str:expr ), *] ) => {
+  ( $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum $name {
       $(
@@ -138,7 +138,7 @@ mod tests {
   Enum! {Command, [
     Var1 => "var1",
     Var2 => "2",
-    Var3 => "crazy"
+    Var3 => "crazy",
   ]}
 
   #[test]
