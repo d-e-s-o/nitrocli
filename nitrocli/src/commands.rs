@@ -258,6 +258,39 @@ where
   })
 }
 
+/// Pretty print the status of a Nitrokey Storage.
+fn print_storage_status(
+  ctx: &mut args::ExecCtx<'_>,
+  status: &nitrokey::StorageStatus,
+) -> Result<()> {
+  println!(
+    ctx,
+    r#"  Storage:
+    SD card ID:        {id:#x}
+    firmware:          {fw}
+    storage keys:      {sk}
+    volumes:
+      unencrypted:     {vu}
+      encrypted:       {ve}
+      hidden:          {vh}"#,
+    id = status.serial_number_sd_card,
+    fw = if status.firmware_locked {
+      "locked"
+    } else {
+      "unlocked"
+    },
+    sk = if status.stick_initialized {
+      "created"
+    } else {
+      "not created"
+    },
+    vu = get_volume_status(&status.unencrypted_volume),
+    ve = get_volume_status(&status.encrypted_volume),
+    vh = get_volume_status(&status.hidden_volume),
+  )?;
+  Ok(())
+}
+
 /// Query and pretty print the status that is common to all Nitrokey devices.
 fn print_status(
   ctx: &mut args::ExecCtx<'_>,
@@ -267,6 +300,7 @@ fn print_status(
   let serial_number = device
     .get_serial_number()
     .map_err(|err| get_error("Could not query the serial number", err))?;
+
   println!(
     ctx,
     r#"Status:
@@ -282,7 +316,16 @@ fn print_status(
     urc = device.get_user_retry_count(),
     arc = device.get_admin_retry_count(),
   )?;
-  Ok(())
+
+  if let nitrokey::DeviceWrapper::Storage(device) = device {
+    let status = device
+      .get_status()
+      .map_err(|err| get_error("Getting Storage status failed", err))?;
+
+    print_storage_status(ctx, &status)
+  } else {
+    Ok(())
+  }
 }
 
 /// Inquire the status of the nitrokey.
@@ -397,49 +440,6 @@ pub fn storage_hidden_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   get_storage_device(ctx)?
     .disable_hidden_volume()
     .map_err(|err| get_error("Closing hidden volume failed", err))
-}
-
-/// Pretty print the status of a Nitrokey Storage.
-fn print_storage_status(
-  ctx: &mut args::ExecCtx<'_>,
-  status: &nitrokey::StorageStatus,
-) -> Result<()> {
-  println!(
-    ctx,
-    r#"Status:
-  SD card ID:        {id:#x}
-  firmware:          {fw}
-  storage keys:      {sk}
-  volumes:
-    unencrypted:     {vu}
-    encrypted:       {ve}
-    hidden:          {vh}"#,
-    id = status.serial_number_sd_card,
-    fw = if status.firmware_locked {
-      "locked"
-    } else {
-      "unlocked"
-    },
-    sk = if status.stick_initialized {
-      "created"
-    } else {
-      "not created"
-    },
-    vu = get_volume_status(&status.unencrypted_volume),
-    ve = get_volume_status(&status.encrypted_volume),
-    vh = get_volume_status(&status.hidden_volume),
-  )?;
-  Ok(())
-}
-
-/// Connect to and pretty print the status of a Nitrokey Storage.
-pub fn storage_status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
-  let device = get_storage_device(ctx)?;
-  let status = device
-    .get_status()
-    .map_err(|err| get_error("Getting Storage status failed", err))?;
-
-  print_storage_status(ctx, &status)
 }
 
 /// Return a String representation of the given Option.

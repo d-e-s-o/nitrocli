@@ -1,3 +1,9 @@
+Unreleased
+----------
+- Removed `storage status` subcommand
+  - Moved its output into `status` command
+
+
 0.2.4
 -----
 - Added the `reset` command to perform a factory reset

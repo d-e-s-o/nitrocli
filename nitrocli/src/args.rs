@@ -250,7 +250,6 @@ Enum! {StorageCommand, [
   Close => ("close", storage_close),
   Hidden => ("hidden", storage_hidden),
   Open => ("open", storage_open),
-  Status => ("status", storage_status),
 ]}
 
 /// Execute a storage subcommand.
@@ -293,15 +292,6 @@ fn storage_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parse(ctx, parser, args)?;
 
   commands::storage_close(ctx)
-}
-
-/// Print the status of the nitrokey's storage.
-fn storage_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Prints the status of the Nitrokey's storage");
-  parse(ctx, parser, args)?;
-
-  commands::storage_status(ctx)
 }
 
 Enum! {HiddenCommand, [

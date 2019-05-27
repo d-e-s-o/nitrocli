@@ -20,15 +20,6 @@
 use super::*;
 
 #[test_device]
-fn status_on_pro(device: nitrokey::Pro) {
-  let res = Nitrocli::with_dev(device).handle(&["storage", "status"]);
-  assert_eq!(
-    res.unwrap_str_err(),
-    "This command is only available on the Nitrokey Storage",
-  );
-}
-
-#[test_device]
 fn status_open_close(device: nitrokey::Storage) -> crate::Result<()> {
   fn make_re(open: Option<bool>) -> regex::Regex {
     let encrypted = match open {
@@ -42,14 +33,11 @@ fn status_open_close(device: nitrokey::Storage) -> crate::Result<()> {
       None => "(read-only|active|inactive)",
     };
     let re = format!(
-      r#"^Status:
-  SD card ID:        0x[[:xdigit:]]{{8}}
-  firmware:          (un)?locked
-  storage keys:      (not )?created
-  volumes:
-    unencrypted:     (read-only|active|inactive)
-    encrypted:       {}
-    hidden:          (read-only|active|inactive)
+      r#"
+    volumes:
+      unencrypted:     (read-only|active|inactive)
+      encrypted:       {}
+      hidden:          (read-only|active|inactive)
 $"#,
       encrypted
     );
@@ -57,18 +45,27 @@ $"#,
   }
 
   let mut ncli = Nitrocli::with_dev(device);
-  let out = ncli.handle(&["storage", "status"])?;
+  let out = ncli.handle(&["status"])?;
   assert!(make_re(None).is_match(&out), out);
 
   let _ = ncli.handle(&["storage", "open"])?;
-  let out = ncli.handle(&["storage", "status"])?;
+  let out = ncli.handle(&["status"])?;
   assert!(make_re(Some(true)).is_match(&out), out);
 
   let _ = ncli.handle(&["storage", "close"])?;
-  let out = ncli.handle(&["storage", "status"])?;
+  let out = ncli.handle(&["status"])?;
   assert!(make_re(Some(false)).is_match(&out), out);
 
   Ok(())
+}
+
+#[test_device]
+fn encrypted_open_on_pro(device: nitrokey::Pro) {
+  let res = Nitrocli::with_dev(device).handle(&["storage", "open"]);
+  assert_eq!(
+    res.unwrap_str_err(),
+    "This command is only available on the Nitrokey Storage",
+  );
 }
 
 #[test_device]

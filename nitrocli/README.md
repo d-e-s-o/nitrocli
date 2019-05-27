@@ -21,7 +21,6 @@ The following commands are currently supported:
 - storage: Work with the Nitrokey's storage.
   - open: Open the encrypted volume. The user PIN needs to be entered.
   - close: Close the encrypted volume.
-  - status: Print information about the Nitrokey's storage.
   - hidden:
     - create: Create a hidden volume.
     - open: Open a hidden volume with a password.
@@ -59,16 +58,14 @@ Status:
   firmware version:  0.47
   user retry count:  3
   admin retry count: 3
-
-$ nitrocli storage status
-Status:
-  SD card ID:        0x05dcad1d
-  firmware:          unlocked
-  storage keys:      created
-  volumes:
-    unencrypted:     active
-    encrypted:       active
-    hidden:          inactive
+  Storage:
+    SD card ID:        0x05dcad1d
+    firmware:          unlocked
+    storage keys:      created
+    volumes:
+      unencrypted:     active
+      encrypted:       active
+      hidden:          inactive
 
 # Close it again.
 $ nitrocli storage close
