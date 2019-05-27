@@ -37,6 +37,7 @@ const NITROKEY_DEFAULT_USER_PIN: &str = "123456";
 fn dummy() {}
 
 mod config;
+mod encrypted;
 mod hidden;
 mod lock;
 mod otp;
@@ -45,7 +46,6 @@ mod pws;
 mod reset;
 mod run;
 mod status;
-mod storage;
 
 /// A trait simplifying checking for expected errors.
 pub trait UnwrapError {

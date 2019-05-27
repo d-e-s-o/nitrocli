@@ -31,7 +31,7 @@ fn lock_pro(device: nitrokey::Pro) -> crate::Result<()> {
 #[test_device]
 fn lock_storage(device: nitrokey::Storage) -> crate::Result<()> {
   let mut ncli = Nitrocli::with_dev(device);
-  let _ = ncli.handle(&["storage", "open"])?;
+  let _ = ncli.handle(&["encrypted", "open"])?;
 
   let out = ncli.handle(&["lock"])?;
   assert!(out.is_empty());
