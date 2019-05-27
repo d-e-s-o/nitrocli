@@ -121,6 +121,7 @@ impl From<DeviceModel> for nitrokey::Model {
 #[allow(unused_doc_comments)]
 Enum! {Command, [
   Config => ("config", config),
+  Encrypted => ("encrypted", encrypted),
   Hidden => ("hidden", hidden),
   Lock => ("lock", lock),
   Otp => ("otp", otp),
@@ -128,7 +129,6 @@ Enum! {Command, [
   Pws => ("pws", pws),
   Reset => ("reset", reset),
   Status => ("status", status),
-  Storage => ("storage", storage),
 ]}
 
 Enum! {ConfigCommand, [
@@ -247,18 +247,18 @@ fn reset(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   commands::reset(ctx)
 }
 
-Enum! {StorageCommand, [
-  Close => ("close", storage_close),
-  Open => ("open", storage_open),
+Enum! {EncryptedCommand, [
+  Close => ("close", encrypted_close),
+  Open => ("open", encrypted_open),
 ]}
 
-/// Execute a storage subcommand.
-fn storage(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = StorageCommand::Open;
+/// Execute an encrypted subcommand.
+fn encrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+  let mut subcommand = EncryptedCommand::Open;
   let help = cmd_help!(subcommand);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Interacts with the device's storage");
+  parser.set_description("Interacts with the device's encrypted volume");
   let _ =
     parser
       .refer(&mut subcommand)
@@ -272,26 +272,26 @@ fn storage(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {} {}", Command::Storage, subcommand));
+  subargs.insert(0, format!("nitrocli {}", subcommand));
   subcommand.execute(ctx, subargs)
 }
 
 /// Open the encrypted volume on the nitrokey.
-fn storage_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+fn encrypted_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Opens the encrypted volume on a Nitrokey Storage");
   parse(ctx, parser, args)?;
 
-  commands::storage_open(ctx)
+  commands::encrypted_open(ctx)
 }
 
 /// Close the previously opened encrypted volume.
-fn storage_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+fn encrypted_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Closes the encrypted volume on a Nitrokey Storage");
   parse(ctx, parser, args)?;
 
-  commands::storage_close(ctx)
+  commands::encrypted_close(ctx)
 }
 
 Enum! {HiddenCommand, [

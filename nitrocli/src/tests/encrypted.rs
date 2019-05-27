@@ -1,4 +1,4 @@
-// storage.rs
+// encrypted.rs
 
 // *************************************************************************
 // * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
@@ -48,11 +48,11 @@ $"#,
   let out = ncli.handle(&["status"])?;
   assert!(make_re(None).is_match(&out), out);
 
-  let _ = ncli.handle(&["storage", "open"])?;
+  let _ = ncli.handle(&["encrypted", "open"])?;
   let out = ncli.handle(&["status"])?;
   assert!(make_re(Some(true)).is_match(&out), out);
 
-  let _ = ncli.handle(&["storage", "close"])?;
+  let _ = ncli.handle(&["encrypted", "close"])?;
   let out = ncli.handle(&["status"])?;
   assert!(make_re(Some(false)).is_match(&out), out);
 
@@ -62,7 +62,7 @@ $"#,
 #[test_device]
 fn encrypted_open_close(device: nitrokey::Storage) -> crate::Result<()> {
   let mut ncli = Nitrocli::with_dev(device);
-  let out = ncli.handle(&["storage", "open"])?;
+  let out = ncli.handle(&["encrypted", "open"])?;
   assert!(out.is_empty());
 
   let device = nitrokey::Storage::connect()?;
@@ -70,7 +70,7 @@ fn encrypted_open_close(device: nitrokey::Storage) -> crate::Result<()> {
   assert!(!device.get_status()?.hidden_volume.active);
   drop(device);
 
-  let out = ncli.handle(&["storage", "close"])?;
+  let out = ncli.handle(&["encrypted", "close"])?;
   assert!(out.is_empty());
 
   let device = nitrokey::Storage::connect()?;

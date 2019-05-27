@@ -63,12 +63,12 @@ this overlay (which is required to achieve plausible deniability of the
 existence of hidden volumes), the burden of ensuring that data on the encrypted
 volume does not overlap with data on one of the hidden volumes is on the user.
 .TP
-\fBnitrocli storage open
+\fBnitrocli encrypted open
 Open the encrypted volume on the Nitrokey Storage.
 The user PIN that is required to open the volume is queried using
 \fBpinentry\fR(1) and cached by \fBgpg\-agent\fR(1).
 .TP
-\fBnitrocli storage close
+\fBnitrocli encrypted close
 Close the encrypted volume on the Nitrokey Storage.
 .TP
 \fBnitrocli hidden create \fIslot\fR \fIstart\fR \fIend\fR

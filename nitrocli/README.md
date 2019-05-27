@@ -18,7 +18,7 @@ The following commands are currently supported:
 - config: Access the Nitrokey's configuration
   - get: Read the current configuration.
   - set: Change the configuration.
-- storage: Work with the Nitrokey Storage's storage.
+- encrypted: Work with the Nitrokey Storage's encrypted volume.
   - open: Open the encrypted volume. The user PIN needs to be entered.
   - close: Close the encrypted volume.
 - hidden: Work with the Nitrokey Storage's hidden volume.

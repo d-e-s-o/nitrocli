@@ -362,7 +362,7 @@ pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Open the encrypted volume on the nitrokey.
-pub fn storage_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn encrypted_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_storage_device(ctx)?;
   let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
 
@@ -376,7 +376,7 @@ pub fn storage_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Close the previously opened encrypted volume.
-pub fn storage_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn encrypted_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   // Flush all filesystem caches to disk. We are mostly interested in
   // making sure that the encrypted volume on the nitrokey we are
   // about to close is not closed while not all data was written to
