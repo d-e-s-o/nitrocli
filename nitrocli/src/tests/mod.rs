@@ -37,6 +37,7 @@ const NITROKEY_DEFAULT_USER_PIN: &str = "123456";
 fn dummy() {}
 
 mod config;
+mod hidden;
 mod lock;
 mod otp;
 mod pin;

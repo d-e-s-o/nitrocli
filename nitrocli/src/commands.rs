@@ -389,12 +389,7 @@ pub fn storage_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Create a hidden volume.
-pub fn storage_hidden_create(
-  ctx: &mut args::ExecCtx<'_>,
-  slot: u8,
-  start: u8,
-  end: u8,
-) -> Result<()> {
+pub fn hidden_create(ctx: &mut args::ExecCtx<'_>, slot: u8, start: u8, end: u8) -> Result<()> {
   let device = get_storage_device(ctx)?;
   let pwd_entry = pinentry::PwdEntry::from(&device)?;
   let pwd = if let Some(pwd) = &ctx.password {
@@ -412,7 +407,7 @@ pub fn storage_hidden_create(
 }
 
 /// Open a hidden volume.
-pub fn storage_hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_storage_device(ctx)?;
   let pwd_entry = pinentry::PwdEntry::from(&device)?;
   let pwd = if let Some(pwd) = &ctx.password {
@@ -434,7 +429,7 @@ pub fn storage_hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Close a previously opened hidden volume.
-pub fn storage_hidden_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn hidden_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   unsafe { sync() };
 
   get_storage_device(ctx)?
