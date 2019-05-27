@@ -22,6 +22,7 @@ use std::fmt;
 use std::process;
 use std::str;
 
+use crate::args;
 use crate::error::Error;
 
 type CowStr = borrow::Cow<'static, str>;
@@ -223,19 +224,27 @@ where
 /// Inquire a secret from the user.
 ///
 /// This function inquires a secret from the user or returns a cached
-/// entry, if available. If an error message is set, it is displayed in
+/// entry, if available (and if caching is not disabled for the given
+/// execution context). If an error message is set, it is displayed in
 /// the entry dialog. The mode describes the context of the pinentry
 /// dialog. It is used to choose an appropriate description and to
 /// decide whether a quality bar is shown in the dialog.
-pub fn inquire<E>(entry: &E, mode: Mode, error_msg: Option<&str>) -> crate::Result<String>
+pub fn inquire<E>(
+  ctx: &mut args::ExecCtx<'_>,
+  entry: &E,
+  mode: Mode,
+  error_msg: Option<&str>,
+) -> crate::Result<String>
 where
   E: SecretEntry,
 {
   let cache_id = entry
     .cache_id()
+    .and_then(|id| if ctx.no_cache { None } else { Some(id) })
     // "X" is a sentinel value indicating that no caching is desired.
     .unwrap_or_else(|| "X".into())
     .into();
+
   let error_msg = error_msg
     .map(|msg| msg.replace(" ", "+"))
     .unwrap_or_else(|| String::from("+"));
@@ -272,16 +281,16 @@ where
   }
 }
 
-pub fn choose<E>(entry: &E) -> crate::Result<String>
+pub fn choose<E>(ctx: &mut args::ExecCtx<'_>, entry: &E) -> crate::Result<String>
 where
   E: SecretEntry,
 {
   clear(entry)?;
-  let chosen = inquire(entry, Mode::Choose, None)?;
+  let chosen = inquire(ctx, entry, Mode::Choose, None)?;
   clear(entry)?;
   check(entry, &chosen)?;
 
-  let confirmed = inquire(entry, Mode::Confirm, None)?;
+  let confirmed = inquire(ctx, entry, Mode::Confirm, None)?;
   clear(entry)?;
 
   if chosen != confirmed {

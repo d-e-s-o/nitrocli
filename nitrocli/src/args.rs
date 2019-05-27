@@ -91,6 +91,7 @@ pub struct ExecCtx<'io> {
   pub new_admin_pin: Option<ffi::OsString>,
   pub new_user_pin: Option<ffi::OsString>,
   pub password: Option<ffi::OsString>,
+  pub no_cache: bool,
   pub verbosity: u64,
 }
 
@@ -929,6 +930,7 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
       new_admin_pin: ctx.new_admin_pin.take(),
       new_user_pin: ctx.new_user_pin.take(),
       password: ctx.password.take(),
+      no_cache: ctx.no_cache,
       verbosity,
     };
     command.execute(&mut ctx, subargs)

@@ -157,6 +157,7 @@ impl Nitrocli {
       new_admin_pin: self.new_admin_pin.clone(),
       new_user_pin: self.new_user_pin.clone(),
       password: self.password.clone(),
+      no_cache: true,
     };
 
     (f(ctx, args), stdout, stderr)

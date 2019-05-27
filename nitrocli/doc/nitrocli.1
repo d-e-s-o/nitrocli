@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2019-01-21
+.TH NITROCLI 1 2019-05-26
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -279,6 +279,13 @@ for the \fBuser\fR type.
 .TP
 .B NITROCLI_PASSWORD
 A password used by commands that require one (e.g., \fBstorage hidden open\fR).
+.TP
+.B NITROCLI_NO_CACHE
+If this variable is present in the environment, do not cache any inquired
+secrets using \fBgpg\-agent\fR(1) but ask for them each time they are needed.
+Note that this variable does not cause any cached secrets to be cleared. If a
+secret is already in the cache it will be ignored, but left otherwise untouched.
+Use the \fBpin clear\fR command to clear secrets from the cache.
 
 .SH EXAMPLES
 .SS Storage

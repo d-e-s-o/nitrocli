@@ -102,6 +102,7 @@ const NITROCLI_USER_PIN: &str = "NITROCLI_USER_PIN";
 const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";
 const NITROCLI_NEW_USER_PIN: &str = "NITROCLI_NEW_USER_PIN";
 const NITROCLI_PASSWORD: &str = "NITROCLI_PASSWORD";
+const NITROCLI_NO_CACHE: &str = "NITROCLI_NO_CACHE";
 
 /// The context used when running the program.
 pub(crate) struct RunCtx<'io> {
@@ -123,6 +124,8 @@ pub(crate) struct RunCtx<'io> {
   pub new_user_pin: Option<ffi::OsString>,
   /// A password used by some commands, if provided through an environment variable.
   pub password: Option<ffi::OsString>,
+  /// Whether to bypass the cache for all secrets or not.
+  pub no_cache: bool,
 }
 
 fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
@@ -157,6 +160,7 @@ fn main() {
     new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
     new_user_pin: env::var_os(NITROCLI_NEW_USER_PIN),
     password: env::var_os(NITROCLI_PASSWORD),
+    no_cache: env::var_os(NITROCLI_NO_CACHE).is_some(),
   };
 
   let rc = run(ctx, args);

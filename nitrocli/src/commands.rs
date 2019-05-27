@@ -166,7 +166,7 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
 ///
 /// This function will query the pin of the given type from the user
 /// using pinentry.  It will then execute the given function.  If this
-/// function returns a result, the result will be passed it on.  If it
+/// function returns a result, the result will be passed on.  If it
 /// returns a `CommandError::WrongPassword`, the user will be asked
 /// again to enter the pin.  Otherwise, this function returns an error
 /// containing the given error message.  The user will have at most
@@ -177,6 +177,7 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
 /// second or third try, it will call `op` with the data returned by the
 /// previous call to `op`.
 fn try_with_pin_and_data_with_pinentry<D, F, R>(
+  ctx: &mut args::ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   data: D,
@@ -189,7 +190,7 @@ where
   let mut retry = 3;
   let mut error_msg = None;
   loop {
-    let pin = pinentry::inquire(pin_entry, pinentry::Mode::Query, error_msg)?;
+    let pin = pinentry::inquire(ctx, pin_entry, pinentry::Mode::Query, error_msg)?;
     match op(data, &pin) {
       Ok(result) => return Ok(result),
       Err((new_data, err)) => match err {
@@ -235,7 +236,7 @@ where
     })?;
     op(data, &pin).map_err(|(_, err)| get_error(msg, err))
   } else {
-    try_with_pin_and_data_with_pinentry(pin_entry, msg, data, op)
+    try_with_pin_and_data_with_pinentry(ctx, pin_entry, msg, data, op)
   }
 }
 
@@ -359,7 +360,7 @@ pub fn storage_hidden_create(
       .ok_or_else(|| Error::from("Failed to read password: invalid Unicode data found"))
       .map(ToOwned::to_owned)
   } else {
-    pinentry::choose(&pwd_entry)
+    pinentry::choose(ctx, &pwd_entry)
   }?;
 
   device
@@ -377,7 +378,7 @@ pub fn storage_hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
       .ok_or_else(|| Error::from("Failed to read password: invalid Unicode data found"))
       .map(ToOwned::to_owned)
   } else {
-    pinentry::inquire(&pwd_entry, pinentry::Mode::Query, None)
+    pinentry::inquire(ctx, &pwd_entry, pinentry::Mode::Query, None)
   }?;
 
   // We may forcefully close an encrypted volume, if active, so be sure
@@ -706,7 +707,7 @@ fn choose_pin(
       .ok_or_else(|| Error::from("Failed to read PIN: invalid Unicode data found"))
       .map(ToOwned::to_owned)
   } else {
-    pinentry::choose(pin_entry)
+    pinentry::choose(ctx, pin_entry)
   }
 }
 
