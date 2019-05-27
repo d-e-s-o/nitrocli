@@ -545,7 +545,6 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut digits = OtpMode::SixDigits;
   let mut counter: u64 = 0;
   let mut time_window: u16 = 30;
-  let mut ascii = false;
   let mut secret_format: Option<OtpSecretFormat> = None;
   let fmt_help = format!(
     "The format of the secret ({})",
@@ -570,7 +569,7 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let _ = parser.refer(&mut secret).required().add_argument(
     "secret",
     argparse::Store,
-    "The secret to store on the slot as a hexadecimal string (unless --ascii is set)",
+    "The secret to store on the slot as a hexadecimal string (unless overwritten by --format)",
   );
   let _ = parser.refer(&mut digits).add_option(
     &["-d", "--digits"],
@@ -587,11 +586,6 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The time window for TOTP (default: 30)",
   );
-  let _ = parser.refer(&mut ascii).add_option(
-    &["--ascii"],
-    argparse::StoreTrue,
-    "Interpret the given secret as an ASCII string of the secret (deprecated, use --format instead)"
-  );
   let _ = parser.refer(&mut secret_format).add_option(
     &["-f", "--format"],
     argparse::StoreOption,
@@ -599,19 +593,6 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   );
   parse(ctx, parser, args)?;
 
-  if ascii {
-    if secret_format.is_some() {
-      return Err(Error::from(
-        "The --format and the --ascii option cannot be used at the same time",
-      ));
-    }
-
-    println!(
-      ctx,
-      "Warning: The --ascii option is deprecated. Please use --format ascii instead."
-    )?;
-    secret_format = Some(OtpSecretFormat::Ascii);
-  }
   let secret_format = secret_format.unwrap_or(OtpSecretFormat::Hex);
 
   let data = nitrokey::OtpSlotData {

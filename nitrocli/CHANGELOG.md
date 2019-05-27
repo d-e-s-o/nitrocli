@@ -4,6 +4,7 @@ Unreleased
 - Renamed `storage` command to `encrypted`
 - Removed `storage status` subcommand
   - Moved its output into `status` command
+- Removed previously deprecated `--ascii` option from `otp set` command
 
 
 0.2.4
