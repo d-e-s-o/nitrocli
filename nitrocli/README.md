@@ -18,13 +18,13 @@ The following commands are currently supported:
 - config: Access the Nitrokey's configuration
   - get: Read the current configuration.
   - set: Change the configuration.
-- storage: Work with the Nitrokey's storage.
+- storage: Work with the Nitrokey Storage's storage.
   - open: Open the encrypted volume. The user PIN needs to be entered.
   - close: Close the encrypted volume.
-  - hidden:
-    - create: Create a hidden volume.
-    - open: Open a hidden volume with a password.
-    - close: Close a hidden volume.
+- hidden: Work with the Nitrokey Storage's hidden volume.
+  - create: Create a hidden volume.
+  - open: Open a hidden volume with a password.
+  - close: Close a hidden volume.
 - otp: Access one-time passwords (OTP).
   - get: Generate a one-time password.
   - set: Set an OTP slot.

@@ -71,7 +71,7 @@ The user PIN that is required to open the volume is queried using
 \fBnitrocli storage close
 Close the encrypted volume on the Nitrokey Storage.
 .TP
-\fBnitrocli storage hidden create \fIslot\fR \fIstart\fR \fIend\fR
+\fBnitrocli hidden create \fIslot\fR \fIstart\fR \fIend\fR
 Create a new hidden volume inside the encrypted volume. \fIslot\fR must indicate
 one of the four available slots. \fIstart\fR and \fIend\fR represent,
 respectively, the start and end position of the hidden volume inside the
@@ -79,14 +79,14 @@ encrypted volume, as a percentage of the encrypted volume's size.
 This command requires a password which is later used to look up the hidden
 volume to open. Unlike a PIN, this password is not cached by \fBgpg\-agent\fR(1).
 .TP
-\fBnitrocli storage hidden open
+\fBnitrocli hidden open
 Open a hidden volume. The volume to open is determined based on the password
 entered, which must have a minimum of six characters. Only one hidden volume can
 be active at any point in time and previously opened volumes will be
 automatically closed. Similarly, the encrypted volume will be closed if it was
 open.
 .TP
-\fBnitrocli storage hidden close
+\fBnitrocli hidden close
 Close a hidden volume.
 
 .SS One-time passwords
@@ -275,7 +275,7 @@ The new user PIN to set. This variable is only used by the \fBpin set\fR command
 for the \fBuser\fR type.
 .TP
 .B NITROCLI_PASSWORD
-A password used by commands that require one (e.g., \fBstorage hidden open\fR).
+A password used by commands that require one (e.g., \fBhidden open\fR).
 .TP
 .B NITROCLI_NO_CACHE
 If this variable is present in the environment, do not cache any inquired
@@ -288,7 +288,7 @@ Use the \fBpin clear\fR command to clear secrets from the cache.
 .SS Storage
 Create a hidden volume in the first available slot, starting at half the size of
 the encrypted volume (i.e., 50%) and stretching all the way to its end (100%):
-    $ \fBnitrocli storage hidden create 0 50 100\fR
+    $ \fBnitrocli hidden create 0 50 100\fR
 
 .SS One-time passwords
 Configure a one-time password slot with a hexadecimal secret representation:

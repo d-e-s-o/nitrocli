@@ -1,5 +1,6 @@
 Unreleased
 ----------
+- Changed `storage hidden` subcommand to `hidden` top-level command
 - Removed `storage status` subcommand
   - Moved its output into `status` command
 

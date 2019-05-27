@@ -1,4 +1,4 @@
-// storage.rs
+// hidden.rs
 
 // *************************************************************************
 // * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
@@ -20,66 +20,20 @@
 use super::*;
 
 #[test_device]
-fn status_open_close(device: nitrokey::Storage) -> crate::Result<()> {
-  fn make_re(open: Option<bool>) -> regex::Regex {
-    let encrypted = match open {
-      Some(open) => {
-        if open {
-          "active"
-        } else {
-          "(read-only|inactive)"
-        }
-      }
-      None => "(read-only|active|inactive)",
-    };
-    let re = format!(
-      r#"
-    volumes:
-      unencrypted:     (read-only|active|inactive)
-      encrypted:       {}
-      hidden:          (read-only|active|inactive)
-$"#,
-      encrypted
-    );
-    regex::Regex::new(&re).unwrap()
-  }
-
+fn hidden_create_open_close(device: nitrokey::Storage) -> crate::Result<()> {
   let mut ncli = Nitrocli::with_dev(device);
-  let out = ncli.handle(&["status"])?;
-  assert!(make_re(None).is_match(&out), out);
+  let out = ncli.handle(&["hidden", "create", "0", "50", "100"])?;
+  assert!(out.is_empty());
 
-  let _ = ncli.handle(&["storage", "open"])?;
-  let out = ncli.handle(&["status"])?;
-  assert!(make_re(Some(true)).is_match(&out), out);
-
-  let _ = ncli.handle(&["storage", "close"])?;
-  let out = ncli.handle(&["status"])?;
-  assert!(make_re(Some(false)).is_match(&out), out);
-
-  Ok(())
-}
-
-#[test_device]
-fn encrypted_open_on_pro(device: nitrokey::Pro) {
-  let res = Nitrocli::with_dev(device).handle(&["storage", "open"]);
-  assert_eq!(
-    res.unwrap_str_err(),
-    "This command is only available on the Nitrokey Storage",
-  );
-}
-
-#[test_device]
-fn encrypted_open_close(device: nitrokey::Storage) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_dev(device);
-  let out = ncli.handle(&["storage", "open"])?;
+  let out = ncli.handle(&["hidden", "open"])?;
   assert!(out.is_empty());
 
   let device = nitrokey::Storage::connect()?;
-  assert!(device.get_status()?.encrypted_volume.active);
-  assert!(!device.get_status()?.hidden_volume.active);
+  assert!(!device.get_status()?.encrypted_volume.active);
+  assert!(device.get_status()?.hidden_volume.active);
   drop(device);
 
-  let out = ncli.handle(&["storage", "close"])?;
+  let out = ncli.handle(&["hidden", "close"])?;
   assert!(out.is_empty());
 
   let device = nitrokey::Storage::connect()?;

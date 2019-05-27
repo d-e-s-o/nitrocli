@@ -121,6 +121,7 @@ impl From<DeviceModel> for nitrokey::Model {
 #[allow(unused_doc_comments)]
 Enum! {Command, [
   Config => ("config", config),
+  Hidden => ("hidden", hidden),
   Lock => ("lock", lock),
   Otp => ("otp", otp),
   Pin => ("pin", pin),
@@ -248,7 +249,6 @@ fn reset(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
 Enum! {StorageCommand, [
   Close => ("close", storage_close),
-  Hidden => ("hidden", storage_hidden),
   Open => ("open", storage_open),
 ]}
 
@@ -295,13 +295,13 @@ fn storage_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 }
 
 Enum! {HiddenCommand, [
-  Close => ("close", storage_hidden_close),
-  Create => ("create", storage_hidden_create),
-  Open => ("open", storage_hidden_open),
+  Close => ("close", hidden_close),
+  Create => ("create", hidden_create),
+  Open => ("open", hidden_open),
 ]}
 
-/// Execute a storage hidden subcommand.
-fn storage_hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+/// Execute a hidden subcommand.
+fn hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = HiddenCommand::Open;
   let help = cmd_help!(subcommand);
   let mut subargs = vec![];
@@ -320,19 +320,11 @@ fn storage_hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(
-    0,
-    format!(
-      "nitrocli {} {} {}",
-      Command::Storage,
-      StorageCommand::Hidden,
-      subcommand
-    ),
-  );
+  subargs.insert(0, format!("nitrocli {} {}", Command::Hidden, subcommand));
   subcommand.execute(ctx, subargs)
 }
 
-fn storage_hidden_create(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+fn hidden_create(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut slot: u8 = 0;
   let mut start: u8 = 0;
   let mut end: u8 = 0;
@@ -357,23 +349,23 @@ fn storage_hidden_create(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()>
   );
   parse(ctx, parser, args)?;
 
-  commands::storage_hidden_create(ctx, slot, start, end)
+  commands::hidden_create(ctx, slot, start, end)
 }
 
-fn storage_hidden_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+fn hidden_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Opens a hidden volume on a Nitrokey Storage");
   parse(ctx, parser, args)?;
 
-  commands::storage_hidden_open(ctx)
+  commands::hidden_open(ctx)
 }
 
-fn storage_hidden_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+fn hidden_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Closes the hidden volume on a Nitrokey Storage");
   parse(ctx, parser, args)?;
 
-  commands::storage_hidden_close(ctx)
+  commands::hidden_close(ctx)
 }
 
 /// Execute a config subcommand.
