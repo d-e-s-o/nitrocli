@@ -161,17 +161,6 @@ s! {
         pub f_namemax: ::c_ulong,
         __f_spare: [::c_int; 6],
     }
-
-    pub struct termios2 {
-        pub c_iflag: ::tcflag_t,
-        pub c_oflag: ::tcflag_t,
-        pub c_cflag: ::tcflag_t,
-        pub c_lflag: ::tcflag_t,
-        pub c_line: ::cc_t,
-        pub c_cc: [::cc_t; 23],
-        pub c_ispeed: ::speed_t,
-        pub c_ospeed: ::speed_t,
-    }
 }
 
 pub const SIGSTKSZ: ::size_t = 8192;
@@ -191,7 +180,7 @@ pub const RLIMIT_NOFILE: ::c_int = 5;
 pub const RLIMIT_AS: ::c_int = 6;
 pub const RLIMIT_NPROC: ::c_int = 8;
 pub const RLIMIT_MEMLOCK: ::c_int = 9;
-pub const RLIMIT_NLIMITS: ::c_int = 16;
+pub const RLIMIT_NLIMITS: ::c_int = 15;
 
 pub const MCL_CURRENT: ::c_int = 0x0001;
 pub const MCL_FUTURE: ::c_int = 0x0002;
@@ -848,6 +837,17 @@ pub const SYS_preadv2: ::c_long = 4000 + 361;
 pub const SYS_pwritev2: ::c_long = 4000 + 362;
 
 #[doc(hidden)]
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
 pub const AF_MAX: ::c_int = 42;
 #[doc(hidden)]
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
+#[allow(deprecated)]
 pub const PF_MAX: ::c_int = AF_MAX;

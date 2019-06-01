@@ -13,7 +13,7 @@ s! {
     pub struct sigaction {
         pub sa_sigaction: ::sighandler_t,
         pub sa_mask: ::sigset_t,
-        pub sa_flags: ::c_ulong,
+        pub sa_flags: ::c_int,
         pub sa_restorer: ::Option<extern fn()>,
     }
 
@@ -35,12 +35,12 @@ s! {
         pub st_size: ::c_longlong,
         pub st_blksize: ::blksize_t,
         pub st_blocks: ::c_ulonglong,
-        pub st_atime: ::c_ulong,
-        pub st_atime_nsec: ::c_ulong,
-        pub st_mtime: ::c_ulong,
-        pub st_mtime_nsec: ::c_ulong,
-        pub st_ctime: ::c_ulong,
-        pub st_ctime_nsec: ::c_ulong,
+        pub st_atime: ::c_long,
+        pub st_atime_nsec: ::c_long,
+        pub st_mtime: ::c_long,
+        pub st_mtime_nsec: ::c_long,
+        pub st_ctime: ::c_long,
+        pub st_ctime_nsec: ::c_long,
         pub st_ino: ::c_ulonglong,
     }
 
@@ -57,12 +57,12 @@ s! {
         pub st_size: ::c_longlong,
         pub st_blksize: ::blksize_t,
         pub st_blocks: ::c_ulonglong,
-        pub st_atime: ::c_ulong,
-        pub st_atime_nsec: ::c_ulong,
-        pub st_mtime: ::c_ulong,
-        pub st_mtime_nsec: ::c_ulong,
-        pub st_ctime: ::c_ulong,
-        pub st_ctime_nsec: ::c_ulong,
+        pub st_atime: ::c_long,
+        pub st_atime_nsec: ::c_long,
+        pub st_mtime: ::c_long,
+        pub st_mtime_nsec: ::c_long,
+        pub st_ctime: ::c_long,
+        pub st_ctime_nsec: ::c_long,
         pub st_ino: ::c_ulonglong,
     }
 
@@ -96,12 +96,12 @@ s! {
     }
 
     pub struct pthread_attr_t {
-        pub flags: ::uint32_t,
+        pub flags: u32,
         pub stack_base: *mut ::c_void,
         pub stack_size: ::size_t,
         pub guard_size: ::size_t,
-        pub sched_policy: ::int32_t,
-        pub sched_priority: ::int32_t,
+        pub sched_policy: i32,
+        pub sched_priority: i32,
     }
 
     pub struct pthread_mutex_t { value: ::c_int }
@@ -129,18 +129,18 @@ s! {
     }
 
     pub struct statfs {
-        pub f_type: ::uint32_t,
-        pub f_bsize: ::uint32_t,
-        pub f_blocks: ::uint64_t,
-        pub f_bfree: ::uint64_t,
-        pub f_bavail: ::uint64_t,
-        pub f_files: ::uint64_t,
-        pub f_ffree: ::uint64_t,
+        pub f_type: u32,
+        pub f_bsize: u32,
+        pub f_blocks: u64,
+        pub f_bfree: u64,
+        pub f_bavail: u64,
+        pub f_files: u64,
+        pub f_ffree: u64,
         pub f_fsid: ::__fsid_t,
-        pub f_namelen: ::uint32_t,
-        pub f_frsize: ::uint32_t,
-        pub f_flags: ::uint32_t,
-        pub f_spare: [::uint32_t; 4],
+        pub f_namelen: u32,
+        pub f_frsize: u32,
+        pub f_flags: u32,
+        pub f_spare: [u32; 4],
     }
 
     pub struct sysinfo {
@@ -160,6 +160,15 @@ s! {
         pub _f: [::c_char; 8],
     }
 }
+
+// These constants must be of the same type of sigaction.sa_flags
+pub const SA_NOCLDSTOP: ::c_int = 0x00000001;
+pub const SA_NOCLDWAIT: ::c_int = 0x00000002;
+pub const SA_NODEFER: ::c_int = 0x40000000;
+pub const SA_ONSTACK: ::c_int = 0x08000000;
+pub const SA_RESETHAND: ::c_int = 0x80000000;
+pub const SA_RESTART: ::c_int = 0x10000000;
+pub const SA_SIGINFO: ::c_int = 0x00000004;
 
 pub const RTLD_GLOBAL: ::c_int = 2;
 pub const RTLD_NOW: ::c_int = 0;

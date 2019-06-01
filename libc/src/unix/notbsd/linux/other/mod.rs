@@ -1,6 +1,38 @@
+pub type pthread_t = c_ulong;
 pub type __priority_which_t = ::c_uint;
+pub type __rlimit_resource_t = ::c_uint;
 
 s! {
+    pub struct statx {
+        pub stx_mask: u32,
+        pub stx_blksize: u32,
+        pub stx_attributes: u64,
+        pub stx_nlink: u32,
+        pub stx_uid: u32,
+        pub stx_gid: u32,
+        pub stx_mode: u16,
+        pub __statx_pad1: [u16; 1],
+        pub stx_ino: u64,
+        pub stx_size: u64,
+        pub stx_blocks: u64,
+        pub stx_attributes_mask: u64,
+        pub stx_atime: ::statx_timestamp,
+        pub stx_btime: ::statx_timestamp,
+        pub stx_ctime: ::statx_timestamp,
+        pub stx_mtime: ::statx_timestamp,
+        pub stx_rdev_major: u32,
+        pub stx_rdev_minor: u32,
+        pub stx_dev_major: u32,
+        pub stx_dev_minor: u32,
+        pub __statx_pad2: [u64; 14],
+    }
+
+    pub struct statx_timestamp {
+        pub tv_sec: i64,
+        pub tv_nsec: u32,
+        pub __statx_timestamp_pad1: [i32; 1],
+    }
+
     pub struct aiocb {
         pub aio_fildes: ::c_int,
         pub aio_lio_opcode: ::c_int,
@@ -25,8 +57,8 @@ s! {
     }
 
     pub struct __timeval {
-        pub tv_sec: ::int32_t,
-        pub tv_usec: ::int32_t,
+        pub tv_sec: i32,
+        pub tv_usec: i32,
     }
 
     pub struct sigaction {
@@ -48,6 +80,7 @@ s! {
         pub si_signo: ::c_int,
         pub si_errno: ::c_int,
         pub si_code: ::c_int,
+        #[doc(hidden)]
         #[deprecated(
             since="0.2.54",
             note="Please leave a comment on \
@@ -236,13 +269,13 @@ s_no_extra_traits! {
         #[cfg(not(any(target_arch = "aarch64",
                       all(target_pointer_width = "32",
                           not(target_arch = "x86_64")))))]
-        pub ut_session: ::int32_t,
+        pub ut_session: i32,
         #[cfg(not(any(target_arch = "aarch64",
                       all(target_pointer_width = "32",
                           not(target_arch = "x86_64")))))]
         pub ut_tv: __timeval,
 
-        pub ut_addr_v6: [::int32_t; 4],
+        pub ut_addr_v6: [i32; 4],
         __glibc_reserved: [::c_char; 20],
     }
 }
@@ -306,6 +339,20 @@ cfg_if! {
         }
     }
 }
+
+pub const RLIMIT_CPU: ::__rlimit_resource_t = 0;
+pub const RLIMIT_FSIZE: ::__rlimit_resource_t = 1;
+pub const RLIMIT_DATA: ::__rlimit_resource_t = 2;
+pub const RLIMIT_STACK: ::__rlimit_resource_t = 3;
+pub const RLIMIT_CORE: ::__rlimit_resource_t = 4;
+pub const RLIMIT_LOCKS: ::__rlimit_resource_t = 10;
+pub const RLIMIT_SIGPENDING: ::__rlimit_resource_t = 11;
+pub const RLIMIT_MSGQUEUE: ::__rlimit_resource_t = 12;
+pub const RLIMIT_NICE: ::__rlimit_resource_t = 13;
+pub const RLIMIT_RTPRIO: ::__rlimit_resource_t = 14;
+
+pub const MADV_SOFT_OFFLINE: ::c_int = 101;
+pub const MS_RMT_MASK: ::c_ulong = 0x02800051;
 
 pub const __UT_LINESIZE: usize = 32;
 pub const __UT_NAMESIZE: usize = 32;
@@ -373,6 +420,8 @@ pub const MAP_EXECUTABLE: ::c_int = 0x01000;
 pub const MAP_POPULATE: ::c_int = 0x08000;
 pub const MAP_NONBLOCK: ::c_int = 0x010000;
 pub const MAP_STACK: ::c_int = 0x020000;
+pub const MAP_SHARED_VALIDATE: ::c_int = 0x3;
+pub const MAP_FIXED_NOREPLACE: ::c_int = 0x100000;
 
 pub const ENOTSUP: ::c_int = EOPNOTSUPP;
 pub const EUCLEAN: ::c_int = 117;
@@ -600,6 +649,41 @@ pub const LINUX_REBOOT_CMD_POWER_OFF: ::c_int = 0x4321FEDC;
 pub const LINUX_REBOOT_CMD_RESTART2: ::c_int = 0xA1B2C3D4;
 pub const LINUX_REBOOT_CMD_SW_SUSPEND: ::c_int = 0xD000FCE2;
 pub const LINUX_REBOOT_CMD_KEXEC: ::c_int = 0x45584543;
+
+// linux/rtnetlink.h
+pub const TCA_PAD: ::c_ushort = 9;
+pub const TCA_DUMP_INVISIBLE: ::c_ushort = 10;
+pub const TCA_CHAIN: ::c_ushort = 11;
+pub const TCA_HW_OFFLOAD: ::c_ushort = 12;
+
+pub const RTM_F_LOOKUP_TABLE: ::c_uint = 0x1000;
+pub const RTM_F_FIB_MATCH: ::c_uint = 0x2000;
+
+pub const RTA_VIA: ::c_ushort = 18;
+pub const RTA_NEWDST: ::c_ushort = 19;
+pub const RTA_PREF: ::c_ushort = 20;
+pub const RTA_ENCAP_TYPE: ::c_ushort = 21;
+pub const RTA_ENCAP: ::c_ushort = 22;
+pub const RTA_EXPIRES: ::c_ushort = 23;
+pub const RTA_PAD: ::c_ushort = 24;
+pub const RTA_UID: ::c_ushort = 25;
+pub const RTA_TTL_PROPAGATE: ::c_ushort = 26;
+
+// linux/neighbor.h
+pub const NTF_EXT_LEARNED: u8 = 0x10;
+pub const NTF_OFFLOADED: u8 = 0x20;
+
+pub const NDA_MASTER: ::c_ushort = 9;
+pub const NDA_LINK_NETNSID: ::c_ushort = 10;
+pub const NDA_SRC_VNI: ::c_ushort = 11;
+
+// linux/if_addr.h
+pub const IFA_FLAGS: ::c_ushort = 8;
+
+pub const IFA_F_MANAGETEMPADDR: u32 = 0x100;
+pub const IFA_F_NOPREFIXROUTE: u32 = 0x200;
+pub const IFA_F_MCAUTOJOIN: u32 = 0x400;
+pub const IFA_F_STABLE_PRIVACY: u32 = 0x800;
 
 pub const NETLINK_ROUTE: ::c_int = 0;
 pub const NETLINK_UNUSED: ::c_int = 1;
@@ -884,9 +968,46 @@ pub const M_ARENA_TEST: ::c_int = -7;
 pub const M_ARENA_MAX: ::c_int = -8;
 
 #[doc(hidden)]
-pub const AF_MAX: ::c_int = 42;
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
+pub const AF_MAX: ::c_int = 45;
 #[doc(hidden)]
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
+#[allow(deprecated)]
 pub const PF_MAX: ::c_int = AF_MAX;
+
+pub const AT_STATX_SYNC_TYPE: ::c_int = 0x6000;
+pub const AT_STATX_SYNC_AS_STAT: ::c_int = 0x0000;
+pub const AT_STATX_FORCE_SYNC: ::c_int = 0x2000;
+pub const AT_STATX_DONT_SYNC: ::c_int = 0x4000;
+pub const STATX_TYPE: ::c_uint = 0x0001;
+pub const STATX_MODE: ::c_uint = 0x0002;
+pub const STATX_NLINK: ::c_uint = 0x0004;
+pub const STATX_UID: ::c_uint = 0x0008;
+pub const STATX_GID: ::c_uint = 0x0010;
+pub const STATX_ATIME: ::c_uint = 0x0020;
+pub const STATX_MTIME: ::c_uint = 0x0040;
+pub const STATX_CTIME: ::c_uint = 0x0080;
+pub const STATX_INO: ::c_uint = 0x0100;
+pub const STATX_SIZE: ::c_uint = 0x0200;
+pub const STATX_BLOCKS: ::c_uint = 0x0400;
+pub const STATX_BASIC_STATS: ::c_uint = 0x07ff;
+pub const STATX_BTIME: ::c_uint = 0x0800;
+pub const STATX_ALL: ::c_uint = 0x0fff;
+pub const STATX__RESERVED: ::c_int = 0x80000000;
+pub const STATX_ATTR_COMPRESSED: ::c_int = 0x0004;
+pub const STATX_ATTR_IMMUTABLE: ::c_int = 0x0010;
+pub const STATX_ATTR_APPEND: ::c_int = 0x0020;
+pub const STATX_ATTR_NODUMP: ::c_int = 0x0040;
+pub const STATX_ATTR_ENCRYPTED: ::c_int = 0x0800;
+pub const STATX_ATTR_AUTOMOUNT: ::c_int = 0x1000;
 
 cfg_if! {
     if #[cfg(any(target_arch = "arm", target_arch = "x86",
@@ -907,6 +1028,26 @@ f! {
 }
 
 extern {
+    pub fn sendmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
+                    flags: ::c_int) -> ::c_int;
+    pub fn recvmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
+                    flags: ::c_int, timeout: *mut ::timespec) -> ::c_int;
+
+    pub fn getrlimit64(resource: ::__rlimit_resource_t,
+                       rlim: *mut ::rlimit64) -> ::c_int;
+    pub fn setrlimit64(resource: ::__rlimit_resource_t,
+                       rlim: *const ::rlimit64) -> ::c_int;
+    pub fn getrlimit(resource: ::__rlimit_resource_t,
+                     rlim: *mut ::rlimit) -> ::c_int;
+    pub fn setrlimit(resource: ::__rlimit_resource_t,
+                     rlim: *const ::rlimit) -> ::c_int;
+    pub fn prlimit(pid: ::pid_t,
+                   resource: ::__rlimit_resource_t, new_limit: *const ::rlimit,
+                   old_limit: *mut ::rlimit) -> ::c_int;
+    pub fn prlimit64(pid: ::pid_t,
+                     resource: ::__rlimit_resource_t,
+                     new_limit: *const ::rlimit64,
+                     old_limit: *mut ::rlimit64) -> ::c_int;
     pub fn utmpxname(file: *const ::c_char) -> ::c_int;
     pub fn getutxent() -> *mut utmpx;
     pub fn getutxid(ut: *const utmpx) -> *mut utmpx;
@@ -916,6 +1057,10 @@ extern {
     pub fn endutxent();
     pub fn getpt() -> ::c_int;
     pub fn mallopt(param: ::c_int, value: ::c_int) -> ::c_int;
+    pub fn gettimeofday(tp: *mut ::timeval,
+                        tz: *mut ::timezone) -> ::c_int;
+    pub fn statx(dirfd: ::c_int, pathname: *const c_char, flags: ::c_int,
+                 mask: ::c_uint, statxbuf: *mut statx) -> ::c_int;
 }
 
 #[link(name = "util")]

@@ -23,6 +23,11 @@ test_target() {
         # See https://github.com/rust-lang/rust/issues/45417
         opt="--release"
     fi
+    # FIXME: https://github.com/rust-lang/rust/issues/61174
+    if [ "${TARGET}" = "sparcv9-sun-solaris" ] ||
+       [ "${TARGET}" = "x86_64-sun-solaris" ]; then
+        return 0
+    fi
 
     # If there is a std component, fetch it:
     if [ "${NO_STD}" != "1" ]; then
@@ -170,6 +175,7 @@ done
 RUST_LINUX_NO_CORE_TARGETS="\
 aarch64-pc-windows-msvc \
 aarch64-unknown-cloudabi \
+aarch64-unknown-freebsd \
 aarch64-unknown-hermit \
 aarch64-unknown-netbsd \
 aarch64-unknown-openbsd \
@@ -189,6 +195,7 @@ mipsel-unknown-linux-uclibc \
 nvptx64-nvidia-cuda \
 powerpc-unknown-linux-gnuspe \
 powerpc-unknown-netbsd \
+powerpc64-unknown-freebsd \
 riscv32imac-unknown-none-elf \
 riscv32imc-unknown-none-elf \
 sparc64-unknown-netbsd \

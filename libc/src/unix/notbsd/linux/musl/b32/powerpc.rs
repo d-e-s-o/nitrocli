@@ -153,19 +153,9 @@ s! {
         pub f_namemax: ::c_ulong,
         __f_spare: [::c_int; 6],
     }
-
-    pub struct termios2 {
-        pub c_iflag: ::tcflag_t,
-        pub c_oflag: ::tcflag_t,
-        pub c_cflag: ::tcflag_t,
-        pub c_lflag: ::tcflag_t,
-        pub c_cc: [::cc_t; 19],
-        pub c_line: ::cc_t,
-        pub c_ispeed: ::speed_t,
-        pub c_ospeed: ::speed_t,
-    }
 }
 
+pub const MADV_SOFT_OFFLINE: ::c_int = 101;
 pub const SIGSTKSZ: ::size_t = 10240;
 pub const MINSIGSTKSZ: ::size_t = 4096;
 
@@ -864,6 +854,17 @@ pub const SYS_pkey_free: ::c_long = 385;
 pub const SYS_pkey_mprotect: ::c_long = 386;
 
 #[doc(hidden)]
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
 pub const AF_MAX: ::c_int = 43;
 #[doc(hidden)]
+#[allow(deprecated)]
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
 pub const PF_MAX: ::c_int = AF_MAX;

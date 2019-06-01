@@ -7,7 +7,7 @@ Unreleased
   secrets
 - Clear cached PIN entry as part of `pin set` command to prevent
   spurious authentication failures
-- Bumped `libc` dependency to `0.2.55`
+- Bumped `libc` dependency to `0.2.57`
 - Bumped `cc` dependency to `1.0.37`
 
 

@@ -9,10 +9,10 @@ s! {
         pub cuid: ::uid_t,
         pub cgid: ::gid_t,
         pub mode: ::mode_t,
-        __seq: ::uint32_t,
-        __pad1: ::uint32_t,
-        __glibc_reserved1: ::uint64_t,
-        __glibc_reserved2: ::uint64_t,
+        __seq: u32,
+        __pad1: u32,
+        __glibc_reserved1: u64,
+        __glibc_reserved2: u64,
     }
 
     pub struct stat64 {
@@ -132,15 +132,15 @@ pub const MCL_FUTURE: ::c_int = 0x4000;
 pub const SIGSTKSZ: ::size_t = 0x4000;
 pub const MINSIGSTKSZ: ::size_t = 4096;
 pub const CBAUD: ::tcflag_t = 0xff;
-pub const TAB1: ::c_int = 0x400;
-pub const TAB2: ::c_int = 0x800;
-pub const TAB3: ::c_int = 0xc00;
-pub const CR1: ::c_int  = 0x1000;
-pub const CR2: ::c_int  = 0x2000;
-pub const CR3: ::c_int  = 0x3000;
-pub const FF1: ::c_int  = 0x4000;
-pub const BS1: ::c_int  = 0x8000;
-pub const VT1: ::c_int  = 0x10000;
+pub const TAB1: ::tcflag_t = 0x400;
+pub const TAB2: ::tcflag_t = 0x800;
+pub const TAB3: ::tcflag_t = 0xc00;
+pub const CR1: ::tcflag_t = 0x1000;
+pub const CR2: ::tcflag_t = 0x2000;
+pub const CR3: ::tcflag_t = 0x3000;
+pub const FF1: ::tcflag_t = 0x4000;
+pub const BS1: ::tcflag_t = 0x8000;
+pub const VT1: ::tcflag_t = 0x10000;
 pub const VWERASE: usize = 0xa;
 pub const VREPRINT: usize = 0xb;
 pub const VSUSP: usize = 0xc;
@@ -241,6 +241,8 @@ pub const TIOCSPGRP: ::c_ulong = 0x80047476;
 pub const TIOCOUTQ: ::c_ulong = 0x40047473;
 pub const TIOCGWINSZ: ::c_ulong = 0x40087468;
 pub const TIOCSWINSZ: ::c_ulong = 0x80087467;
+pub const TIOCGRS485: ::c_int = 0x542e;
+pub const TIOCSRS485: ::c_int = 0x542f;
 pub const FIONREAD: ::c_ulong = 0x4004667f;
 
 pub const SYS_restart_syscall: ::c_long = 0;
@@ -612,3 +614,4 @@ pub const SYS_copy_file_range: ::c_long = 379;
 pub const SYS_preadv2: ::c_long = 380;
 pub const SYS_pwritev2: ::c_long = 381;
 pub const SYS_kexec_file_load: ::c_long = 382;
+pub const SYS_statx: ::c_long = 383;

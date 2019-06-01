@@ -598,6 +598,14 @@ f! {
 }
 
 extern {
+    pub fn getrlimit(resource: ::c_int, rlim: *mut ::rlimit) -> ::c_int;
+    pub fn setrlimit(resource: ::c_int, rlim: *const ::rlimit) -> ::c_int;
+
+    #[cfg_attr(target_os = "linux",
+               link_name = "__xpg_strerror_r")]
+    pub fn strerror_r(errnum: ::c_int, buf: *mut c_char,
+                      buflen: ::size_t) -> ::c_int;
+
     pub fn sem_destroy(sem: *mut sem_t) -> ::c_int;
     pub fn sem_init(sem: *mut sem_t,
                     pshared: ::c_int,
@@ -623,6 +631,8 @@ extern {
     pub fn fexecve(fd: ::c_int, argv: *const *const ::c_char,
                    envp: *const *const ::c_char)
                    -> ::c_int;
+    pub fn gettimeofday(tp: *mut ::timeval,
+                        tz: *mut ::c_void) -> ::c_int;
     #[cfg_attr(target_os = "solaris", link_name = "__posix_getgrgid_r")]
     pub fn getgrgid_r(gid: ::gid_t,
                       grp: *mut ::group,

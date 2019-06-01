@@ -1,5 +1,4 @@
 pub type sa_family_t = u16;
-pub type pthread_key_t = ::c_uint;
 pub type speed_t = ::c_uint;
 pub type tcflag_t = ::c_uint;
 pub type clockid_t = ::c_int;
@@ -60,13 +59,6 @@ s! {
         pub ai_addr: *mut ::sockaddr,
 
         pub ai_next: *mut addrinfo,
-    }
-
-    pub struct sockaddr_nl {
-        pub nl_family: ::sa_family_t,
-        nl_pad: ::c_ushort,
-        pub nl_pid: u32,
-        pub nl_groups: u32
     }
 
     pub struct sockaddr_ll {
@@ -224,8 +216,8 @@ s_no_extra_traits!{
             target_arch = "x86_64"),
         repr(packed))]
     pub struct epoll_event {
-        pub events: ::uint32_t,
-        pub u64: ::uint64_t,
+        pub events: u32,
+        pub u64: u64,
     }
 
     pub struct sockaddr_un {
@@ -465,17 +457,6 @@ pub const CLOCK_BOOTTIME_ALARM: ::clockid_t = 9;
 // pub const CLOCK_TAI: ::clockid_t = 11;
 pub const TIMER_ABSTIME: ::c_int = 1;
 
-pub const RLIMIT_CPU: ::c_int = 0;
-pub const RLIMIT_FSIZE: ::c_int = 1;
-pub const RLIMIT_DATA: ::c_int = 2;
-pub const RLIMIT_STACK: ::c_int = 3;
-pub const RLIMIT_CORE: ::c_int = 4;
-pub const RLIMIT_LOCKS: ::c_int = 10;
-pub const RLIMIT_SIGPENDING: ::c_int = 11;
-pub const RLIMIT_MSGQUEUE: ::c_int = 12;
-pub const RLIMIT_NICE: ::c_int = 13;
-pub const RLIMIT_RTPRIO: ::c_int = 14;
-
 pub const RUSAGE_SELF: ::c_int = 0;
 
 pub const O_RDONLY: ::c_int = 0;
@@ -580,10 +561,8 @@ pub const MS_KERNMOUNT: ::c_ulong = 0x400000;
 pub const MS_I_VERSION: ::c_ulong = 0x800000;
 pub const MS_STRICTATIME: ::c_ulong = 0x1000000;
 pub const MS_ACTIVE: ::c_ulong = 0x40000000;
-pub const MS_NOUSER: ::c_ulong = 0x80000000;
 pub const MS_MGC_VAL: ::c_ulong = 0xc0ed0000;
 pub const MS_MGC_MSK: ::c_ulong = 0xffff0000;
-pub const MS_RMT_MASK: ::c_ulong = 0x800051;
 
 pub const EPERM: ::c_int = 1;
 pub const ENOENT: ::c_int = 2;
@@ -645,7 +624,6 @@ pub const MADV_NOHUGEPAGE: ::c_int = 15;
 pub const MADV_DONTDUMP: ::c_int = 16;
 pub const MADV_DODUMP: ::c_int = 17;
 pub const MADV_HWPOISON: ::c_int = 100;
-pub const MADV_SOFT_OFFLINE: ::c_int = 101;
 
 pub const IFF_UP: ::c_int = 0x1;
 pub const IFF_BROADCAST: ::c_int = 0x2;
@@ -866,16 +844,16 @@ pub const MNT_EXPIRE: ::c_int = 0x4;
 pub const Q_GETFMT: ::c_int = 0x800004;
 pub const Q_GETINFO: ::c_int = 0x800005;
 pub const Q_SETINFO: ::c_int = 0x800006;
-pub const QIF_BLIMITS: ::uint32_t = 1;
-pub const QIF_SPACE: ::uint32_t = 2;
-pub const QIF_ILIMITS: ::uint32_t = 4;
-pub const QIF_INODES: ::uint32_t = 8;
-pub const QIF_BTIME: ::uint32_t = 16;
-pub const QIF_ITIME: ::uint32_t = 32;
-pub const QIF_LIMITS: ::uint32_t = 5;
-pub const QIF_USAGE: ::uint32_t = 10;
-pub const QIF_TIMES: ::uint32_t = 48;
-pub const QIF_ALL: ::uint32_t = 63;
+pub const QIF_BLIMITS: u32 = 1;
+pub const QIF_SPACE: u32 = 2;
+pub const QIF_ILIMITS: u32 = 4;
+pub const QIF_INODES: u32 = 8;
+pub const QIF_BTIME: u32 = 16;
+pub const QIF_ITIME: u32 = 32;
+pub const QIF_LIMITS: u32 = 5;
+pub const QIF_USAGE: u32 = 10;
+pub const QIF_TIMES: u32 = 48;
+pub const QIF_ALL: u32 = 63;
 
 pub const MNT_FORCE: ::c_int = 0x1;
 
@@ -892,13 +870,13 @@ pub const TCOON: ::c_int = 1;
 pub const TCIFLUSH: ::c_int = 0;
 pub const TCOFLUSH: ::c_int = 1;
 pub const TCIOFLUSH: ::c_int = 2;
-pub const NL0: ::c_int  = 0x00000000;
-pub const NL1: ::c_int  = 0x00000100;
-pub const TAB0: ::c_int = 0x00000000;
-pub const CR0: ::c_int  = 0x00000000;
-pub const FF0: ::c_int  = 0x00000000;
-pub const BS0: ::c_int  = 0x00000000;
-pub const VT0: ::c_int  = 0x00000000;
+pub const NL0: ::tcflag_t = 0x00000000;
+pub const NL1: ::tcflag_t = 0x00000100;
+pub const TAB0: ::tcflag_t = 0x00000000;
+pub const CR0: ::tcflag_t = 0x00000000;
+pub const FF0: ::tcflag_t = 0x00000000;
+pub const BS0: ::tcflag_t = 0x00000000;
+pub const VT0: ::tcflag_t = 0x00000000;
 pub const VERASE: usize = 2;
 pub const VKILL: usize = 3;
 pub const VINTR: usize = 0;
@@ -1265,7 +1243,6 @@ extern {
                     pshared: ::c_int,
                     value: ::c_uint)
                     -> ::c_int;
-
     pub fn fdatasync(fd: ::c_int) -> ::c_int;
     pub fn mincore(addr: *mut ::c_void, len: ::size_t,
                    vec: *mut ::c_uchar) -> ::c_int;
@@ -1309,7 +1286,6 @@ extern {
     pub fn fstatat64(dirfd: ::c_int, pathname: *const c_char,
                      buf: *mut stat64, flags: ::c_int) -> ::c_int;
     pub fn ftruncate64(fd: ::c_int, length: off64_t) -> ::c_int;
-    pub fn getrlimit64(resource: ::c_int, rlim: *mut rlimit64) -> ::c_int;
     pub fn lseek64(fd: ::c_int, offset: off64_t, whence: ::c_int) -> off64_t;
     pub fn lstat64(path: *const c_char, buf: *mut stat64) -> ::c_int;
     pub fn mmap64(addr: *mut ::c_void,
@@ -1338,7 +1314,6 @@ extern {
     pub fn readdir64(dirp: *mut ::DIR) -> *mut ::dirent64;
     pub fn readdir64_r(dirp: *mut ::DIR, entry: *mut ::dirent64,
                        result: *mut *mut ::dirent64) -> ::c_int;
-    pub fn setrlimit64(resource: ::c_int, rlim: *const rlimit64) -> ::c_int;
     pub fn stat64(path: *const c_char, buf: *mut stat64) -> ::c_int;
     pub fn truncate64(path: *const c_char, length: off64_t) -> ::c_int;
 

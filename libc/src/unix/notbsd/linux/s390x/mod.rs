@@ -1,5 +1,7 @@
 use ::pthread_mutex_t;
 
+pub type __rlimit_resource_t = ::c_uint;
+pub type pthread_t = c_ulong;
 pub type blkcnt_t = i64;
 pub type blksize_t = i64;
 pub type c_char = u8;
@@ -352,6 +354,9 @@ cfg_if! {
     }
 }
 
+pub const MADV_SOFT_OFFLINE: ::c_int = 101;
+pub const MS_RMT_MASK: ::c_ulong = 0x02800051;
+
 pub const SFD_CLOEXEC: ::c_int = 0x080000;
 
 pub const NCCS: usize = 32;
@@ -517,6 +522,8 @@ pub const MAP_NORESERVE: ::c_int = 0x04000;
 pub const MAP_POPULATE: ::c_int = 0x08000;
 pub const MAP_NONBLOCK: ::c_int = 0x010000;
 pub const MAP_STACK: ::c_int = 0x020000;
+pub const MAP_SHARED_VALIDATE: ::c_int = 0x3;
+pub const MAP_FIXED_NOREPLACE: ::c_int = 0x100000;
 
 pub const EDEADLOCK: ::c_int = 35;
 pub const ENAMETOOLONG: ::c_int = 36;
@@ -636,6 +643,10 @@ pub const SIGURG: ::c_int = 23;
 pub const SIGIO: ::c_int = 29;
 pub const SIGSYS: ::c_int = 31;
 pub const SIGSTKFLT: ::c_int = 16;
+#[deprecated(
+    since = "0.2.55",
+    note = "Use SIGSYS instead"
+)]
 pub const SIGUNUSED: ::c_int = 31;
 pub const SIGTTIN: ::c_int = 21;
 pub const SIGTTOU: ::c_int = 22;
@@ -981,6 +992,17 @@ pub const POLLWRBAND: ::c_short = 0x200;
 pub const IXON: ::tcflag_t = 0o002000;
 pub const IXOFF: ::tcflag_t = 0o010000;
 
+pub const RLIMIT_CPU: ::__rlimit_resource_t = 0;
+pub const RLIMIT_FSIZE: ::__rlimit_resource_t = 1;
+pub const RLIMIT_DATA: ::__rlimit_resource_t = 2;
+pub const RLIMIT_STACK: ::__rlimit_resource_t = 3;
+pub const RLIMIT_CORE: ::__rlimit_resource_t = 4;
+pub const RLIMIT_LOCKS: ::__rlimit_resource_t = 10;
+pub const RLIMIT_SIGPENDING: ::__rlimit_resource_t = 11;
+pub const RLIMIT_MSGQUEUE: ::__rlimit_resource_t = 12;
+pub const RLIMIT_NICE: ::__rlimit_resource_t = 13;
+pub const RLIMIT_RTPRIO: ::__rlimit_resource_t = 14;
+
 pub const SYS_exit: ::c_long = 1;
 pub const SYS_fork: ::c_long = 2;
 pub const SYS_read: ::c_long = 3;
@@ -1306,6 +1328,27 @@ pub const SYS_newfstatat: ::c_long = 293;
 
 #[link(name = "util")]
 extern {
+    pub fn sendmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
+                    flags: ::c_int) -> ::c_int;
+    pub fn recvmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
+                    flags: ::c_int, timeout: *mut ::timespec) -> ::c_int;
+
+    pub fn getrlimit64(resource: ::__rlimit_resource_t,
+                       rlim: *mut ::rlimit64) -> ::c_int;
+    pub fn setrlimit64(resource: ::__rlimit_resource_t,
+                       rlim: *const ::rlimit64) -> ::c_int;
+    pub fn getrlimit(resource: ::__rlimit_resource_t,
+                     rlim: *mut ::rlimit) -> ::c_int;
+    pub fn setrlimit(resource: ::__rlimit_resource_t,
+                     rlim: *const ::rlimit) -> ::c_int;
+    pub fn prlimit(pid: ::pid_t,
+                   resource: ::__rlimit_resource_t, new_limit: *const ::rlimit,
+                   old_limit: *mut ::rlimit) -> ::c_int;
+    pub fn prlimit64(pid: ::pid_t,
+                     resource: ::__rlimit_resource_t,
+                     new_limit: *const ::rlimit64,
+                     old_limit: *mut ::rlimit64) -> ::c_int;
+
     pub fn sysctl(name: *mut ::c_int,
                   namelen: ::c_int,
                   oldp: *mut ::c_void,

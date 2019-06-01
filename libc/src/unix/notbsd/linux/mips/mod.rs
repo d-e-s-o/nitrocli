@@ -1,3 +1,4 @@
+pub type pthread_t = c_ulong;
 pub type shmatt_t = ::c_ulong;
 pub type msgqnum_t = ::c_ulong;
 pub type msglen_t = ::c_ulong;
@@ -5,6 +6,7 @@ pub type fsblkcnt_t = ::c_ulong;
 pub type fsfilcnt_t = ::c_ulong;
 pub type rlim_t = c_ulong;
 pub type __priority_which_t = ::c_uint;
+pub type __rlimit_resource_t = ::c_uint;
 
 s! {
     pub struct glob64_t {
@@ -69,6 +71,8 @@ s! {
         pub nla_type: u16,
     }
 }
+
+pub const MS_RMT_MASK: ::c_ulong = 0x02800051;
 
 pub const SFD_CLOEXEC: ::c_int = 0x080000;
 
@@ -334,6 +338,8 @@ pub const MAP_LOCKED: ::c_int = 0x8000;
 pub const MAP_POPULATE: ::c_int = 0x10000;
 pub const MAP_NONBLOCK: ::c_int = 0x20000;
 pub const MAP_STACK: ::c_int = 0x40000;
+pub const MAP_SHARED_VALIDATE: ::c_int = 0x3;
+pub const MAP_FIXED_NOREPLACE: ::c_int = 0x100000;
 
 pub const SOCK_STREAM: ::c_int = 2;
 pub const SOCK_DGRAM: ::c_int = 1;
@@ -591,15 +597,15 @@ pub const MCL_FUTURE: ::c_int = 0x0002;
 pub const SIGSTKSZ: ::size_t = 8192;
 pub const MINSIGSTKSZ: ::size_t = 2048;
 pub const CBAUD: ::tcflag_t = 0o0010017;
-pub const TAB1: ::c_int = 0x00000800;
-pub const TAB2: ::c_int = 0x00001000;
-pub const TAB3: ::c_int = 0x00001800;
-pub const CR1: ::c_int  = 0x00000200;
-pub const CR2: ::c_int  = 0x00000400;
-pub const CR3: ::c_int  = 0x00000600;
-pub const FF1: ::c_int  = 0x00008000;
-pub const BS1: ::c_int  = 0x00002000;
-pub const VT1: ::c_int  = 0x00004000;
+pub const TAB1: ::tcflag_t = 0x00000800;
+pub const TAB2: ::tcflag_t = 0x00001000;
+pub const TAB3: ::tcflag_t = 0x00001800;
+pub const CR1: ::tcflag_t = 0x00000200;
+pub const CR2: ::tcflag_t = 0x00000400;
+pub const CR3: ::tcflag_t = 0x00000600;
+pub const FF1: ::tcflag_t = 0x00008000;
+pub const BS1: ::tcflag_t = 0x00002000;
+pub const VT1: ::tcflag_t = 0x00004000;
 pub const VWERASE: usize = 14;
 pub const VREPRINT: usize = 12;
 pub const VSUSP: usize = 10;
@@ -888,9 +894,31 @@ pub const NFT_TRACETYPE_RULE: ::c_int = 3;
 pub const NFT_NG_INCREMENTAL: ::c_int = 0;
 pub const NFT_NG_RANDOM: ::c_int = 1;
 
+pub const RLIMIT_CPU: ::__rlimit_resource_t = 0;
+pub const RLIMIT_FSIZE: ::__rlimit_resource_t = 1;
+pub const RLIMIT_DATA: ::__rlimit_resource_t = 2;
+pub const RLIMIT_STACK: ::__rlimit_resource_t = 3;
+pub const RLIMIT_CORE: ::__rlimit_resource_t = 4;
+pub const RLIMIT_LOCKS: ::__rlimit_resource_t = 10;
+pub const RLIMIT_SIGPENDING: ::__rlimit_resource_t = 11;
+pub const RLIMIT_MSGQUEUE: ::__rlimit_resource_t = 12;
+pub const RLIMIT_NICE: ::__rlimit_resource_t = 13;
+pub const RLIMIT_RTPRIO: ::__rlimit_resource_t = 14;
+
 #[doc(hidden)]
-pub const AF_MAX: ::c_int = 42;
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
+pub const AF_MAX: ::c_int = 45;
 #[doc(hidden)]
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
+#[allow(deprecated)]
 pub const PF_MAX: ::c_int = AF_MAX;
 
 f! {
@@ -901,6 +929,26 @@ f! {
 
 #[link(name = "util")]
 extern {
+    pub fn sendmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
+                    flags: ::c_int) -> ::c_int;
+    pub fn recvmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
+                    flags: ::c_int, timeout: *mut ::timespec) -> ::c_int;
+
+    pub fn getrlimit64(resource: ::__rlimit_resource_t,
+                       rlim: *mut ::rlimit64) -> ::c_int;
+    pub fn setrlimit64(resource: ::__rlimit_resource_t,
+                       rlim: *const ::rlimit64) -> ::c_int;
+    pub fn getrlimit(resource: ::__rlimit_resource_t,
+                     rlim: *mut ::rlimit) -> ::c_int;
+    pub fn setrlimit(resource: ::__rlimit_resource_t,
+                     rlim: *const ::rlimit) -> ::c_int;
+    pub fn prlimit(pid: ::pid_t,
+                   resource: ::__rlimit_resource_t, new_limit: *const ::rlimit,
+                   old_limit: *mut ::rlimit) -> ::c_int;
+    pub fn prlimit64(pid: ::pid_t,
+                     resource: ::__rlimit_resource_t,
+                     new_limit: *const ::rlimit64,
+                     old_limit: *mut ::rlimit64) -> ::c_int;
     pub fn sysctl(name: *mut ::c_int,
                   namelen: ::c_int,
                   oldp: *mut ::c_void,

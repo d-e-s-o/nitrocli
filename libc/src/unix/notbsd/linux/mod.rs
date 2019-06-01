@@ -3,7 +3,6 @@
 pub type useconds_t = u32;
 pub type dev_t = u64;
 pub type socklen_t = u32;
-pub type pthread_t = c_ulong;
 pub type mode_t = u32;
 pub type ino64_t = u64;
 pub type off64_t = i64;
@@ -14,6 +13,7 @@ pub type nfds_t = ::c_ulong;
 pub type nl_item = ::c_int;
 pub type idtype_t = ::c_uint;
 pub type loff_t = ::c_longlong;
+pub type pthread_key_t = ::c_uint;
 
 pub type __u8 = ::c_uchar;
 pub type __u16 = ::c_ushort;
@@ -85,40 +85,40 @@ s! {
     }
 
     pub struct dqblk {
-        pub dqb_bhardlimit: ::uint64_t,
-        pub dqb_bsoftlimit: ::uint64_t,
-        pub dqb_curspace: ::uint64_t,
-        pub dqb_ihardlimit: ::uint64_t,
-        pub dqb_isoftlimit: ::uint64_t,
-        pub dqb_curinodes: ::uint64_t,
-        pub dqb_btime: ::uint64_t,
-        pub dqb_itime: ::uint64_t,
-        pub dqb_valid: ::uint32_t,
+        pub dqb_bhardlimit: u64,
+        pub dqb_bsoftlimit: u64,
+        pub dqb_curspace: u64,
+        pub dqb_ihardlimit: u64,
+        pub dqb_isoftlimit: u64,
+        pub dqb_curinodes: u64,
+        pub dqb_btime: u64,
+        pub dqb_itime: u64,
+        pub dqb_valid: u32,
     }
 
     pub struct signalfd_siginfo {
-        pub ssi_signo: ::uint32_t,
-        pub ssi_errno: ::int32_t,
-        pub ssi_code: ::int32_t,
-        pub ssi_pid: ::uint32_t,
-        pub ssi_uid: ::uint32_t,
-        pub ssi_fd: ::int32_t,
-        pub ssi_tid: ::uint32_t,
-        pub ssi_band: ::uint32_t,
-        pub ssi_overrun: ::uint32_t,
-        pub ssi_trapno: ::uint32_t,
-        pub ssi_status: ::int32_t,
-        pub ssi_int: ::int32_t,
-        pub ssi_ptr: ::uint64_t,
-        pub ssi_utime: ::uint64_t,
-        pub ssi_stime: ::uint64_t,
-        pub ssi_addr: ::uint64_t,
-        pub ssi_addr_lsb: ::uint16_t,
-        _pad2: ::uint16_t,
-        pub ssi_syscall: ::int32_t,
-        pub ssi_call_addr: ::uint64_t,
-        pub ssi_arch: ::uint32_t,
-        _pad: [::uint8_t; 28],
+        pub ssi_signo: u32,
+        pub ssi_errno: i32,
+        pub ssi_code: i32,
+        pub ssi_pid: u32,
+        pub ssi_uid: u32,
+        pub ssi_fd: i32,
+        pub ssi_tid: u32,
+        pub ssi_band: u32,
+        pub ssi_overrun: u32,
+        pub ssi_trapno: u32,
+        pub ssi_status: i32,
+        pub ssi_int: i32,
+        pub ssi_ptr: u64,
+        pub ssi_utime: u64,
+        pub ssi_stime: u64,
+        pub ssi_addr: u64,
+        pub ssi_addr_lsb: u16,
+        _pad2: u16,
+        pub ssi_syscall: i32,
+        pub ssi_call_addr: u64,
+        pub ssi_arch: u32,
+        _pad: [u8; 28],
     }
 
     pub struct itimerspec {
@@ -128,32 +128,6 @@ s! {
 
     pub struct fsid_t {
         __val: [::c_int; 2],
-    }
-
-    // x32 compatibility
-    // See https://sourceware.org/bugzilla/show_bug.cgi?id=21279
-    pub struct mq_attr {
-        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
-        pub mq_flags: i64,
-        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
-        pub mq_maxmsg: i64,
-        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
-        pub mq_msgsize: i64,
-        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
-        pub mq_curmsgs: i64,
-        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
-        pad: [i64; 4],
-
-        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
-        pub mq_flags: ::c_long,
-        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
-        pub mq_maxmsg: ::c_long,
-        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
-        pub mq_msgsize: ::c_long,
-        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
-        pub mq_curmsgs: ::c_long,
-        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
-        pad: [::c_long; 4],
     }
 
     pub struct packet_mreq {
@@ -496,13 +470,20 @@ s! {
 
     pub struct inotify_event {
         pub wd: ::c_int,
-        pub mask: ::uint32_t,
-        pub cookie: ::uint32_t,
-        pub len: ::uint32_t
+        pub mask: u32,
+        pub cookie: u32,
+        pub len: u32
     }
 }
 
 s_no_extra_traits!{
+    pub struct sockaddr_nl {
+        pub nl_family: ::sa_family_t,
+        nl_pad: ::c_ushort,
+        pub nl_pid: u32,
+        pub nl_groups: u32
+    }
+
     pub struct dirent {
         pub d_ino: ::ino_t,
         pub d_off: ::off_t,
@@ -531,10 +512,61 @@ s_no_extra_traits!{
         pub ivlen: u32,
         pub iv: [::c_uchar; 0],
     }
+
+    // x32 compatibility
+    // See https://sourceware.org/bugzilla/show_bug.cgi?id=21279
+    pub struct mq_attr {
+        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
+        pub mq_flags: i64,
+        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
+        pub mq_maxmsg: i64,
+        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
+        pub mq_msgsize: i64,
+        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
+        pub mq_curmsgs: i64,
+        #[cfg(all(target_arch = "x86_64", target_pointer_width = "32"))]
+        pad: [i64; 4],
+
+        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
+        pub mq_flags: ::c_long,
+        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
+        pub mq_maxmsg: ::c_long,
+        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
+        pub mq_msgsize: ::c_long,
+        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
+        pub mq_curmsgs: ::c_long,
+        #[cfg(not(all(target_arch = "x86_64", target_pointer_width = "32")))]
+        pad: [::c_long; 4],
+    }
 }
 
 cfg_if! {
     if #[cfg(feature = "extra_traits")] {
+        impl PartialEq for sockaddr_nl {
+            fn eq(&self, other: &sockaddr_nl) -> bool {
+                self.nl_family == other.nl_family &&
+                    self.nl_pid == other.nl_pid &&
+                    self.nl_groups == other.nl_groups
+            }
+        }
+        impl Eq for sockaddr_nl {}
+        impl ::fmt::Debug for sockaddr_nl {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("sockaddr_nl")
+                    .field("nl_family", &self.nl_family)
+                    .field("nl_pid", &self.nl_pid)
+                    .field("nl_groups", &self.nl_groups)
+                    .finish()
+            }
+        }
+        impl ::hash::Hash for sockaddr_nl {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.nl_family.hash(state);
+                self.nl_pid.hash(state);
+                self.nl_groups.hash(state);
+            }
+        }
+
         impl PartialEq for dirent {
             fn eq(&self, other: &dirent) -> bool {
                 self.d_ino == other.d_ino
@@ -751,6 +783,34 @@ cfg_if! {
                 self.as_slice().hash(state);
             }
         }
+
+        impl PartialEq for mq_attr {
+            fn eq(&self, other: &mq_attr) -> bool {
+                self.mq_flags == other.mq_flags &&
+                self.mq_maxmsg == other.mq_maxmsg &&
+                self.mq_msgsize == other.mq_msgsize &&
+                self.mq_curmsgs == other.mq_curmsgs
+            }
+        }
+        impl Eq for mq_attr {}
+        impl ::fmt::Debug for mq_attr {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("mq_attr")
+                    .field("mq_flags", &self.mq_flags)
+                    .field("mq_maxmsg", &self.mq_maxmsg)
+                    .field("mq_msgsize", &self.mq_msgsize)
+                    .field("mq_curmsgs", &self.mq_curmsgs)
+                    .finish()
+            }
+        }
+        impl ::hash::Hash for mq_attr {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.mq_flags.hash(state);
+                self.mq_maxmsg.hash(state);
+                self.mq_msgsize.hash(state);
+                self.mq_curmsgs.hash(state);
+            }
+        }
     }
 }
 
@@ -848,6 +908,8 @@ pub const _PC_REC_XFER_ALIGN: ::c_int = 17;
 pub const _PC_ALLOC_SIZE_MIN: ::c_int = 18;
 pub const _PC_SYMLINK_MAX: ::c_int = 19;
 pub const _PC_2_SYMLINKS: ::c_int = 20;
+
+pub const MS_NOUSER: ::c_ulong = 0xffffffff80000000;
 
 pub const _SC_ARG_MAX: ::c_int = 0;
 pub const _SC_CHILD_MAX: ::c_int = 1;
@@ -1020,30 +1082,62 @@ pub const F_TEST: ::c_int = 3;
 pub const F_TLOCK: ::c_int = 2;
 pub const F_ULOCK: ::c_int = 0;
 
+pub const F_SEAL_FUTURE_WRITE: ::c_int = 0x0010;
+
 pub const IFF_LOWER_UP: ::c_int = 0x10000;
 pub const IFF_DORMANT: ::c_int = 0x20000;
 pub const IFF_ECHO: ::c_int = 0x40000;
 
+// linux/if_addr.h
+pub const IFA_UNSPEC: ::c_ushort = 0;
+pub const IFA_ADDRESS: ::c_ushort = 1;
+pub const IFA_LOCAL: ::c_ushort = 2;
+pub const IFA_LABEL: ::c_ushort = 3;
+pub const IFA_BROADCAST: ::c_ushort = 4;
+pub const IFA_ANYCAST: ::c_ushort = 5;
+pub const IFA_CACHEINFO: ::c_ushort = 6;
+pub const IFA_MULTICAST: ::c_ushort = 7;
+
+pub const IFA_F_SECONDARY: u32 = 0x01;
+pub const IFA_F_TEMPORARY: u32 = 0x01;
+pub const IFA_F_NODAD: u32 = 0x02;
+pub const IFA_F_OPTIMISTIC: u32 = 0x04;
+pub const IFA_F_DADFAILED: u32 = 0x08;
+pub const IFA_F_HOMEADDRESS: u32 = 0x10;
+pub const IFA_F_DEPRECATED: u32 = 0x20;
+pub const IFA_F_TENTATIVE: u32 = 0x40;
+pub const IFA_F_PERMANENT: u32 = 0x80;
+
+// linux/if_link.h
+pub const IFLA_UNSPEC: ::c_ushort = 0;
+pub const IFLA_ADDRESS: ::c_ushort = 1;
+pub const IFLA_BROADCAST: ::c_ushort = 2;
+pub const IFLA_IFNAME: ::c_ushort = 3;
+pub const IFLA_MTU: ::c_ushort = 4;
+pub const IFLA_LINK: ::c_ushort = 5;
+pub const IFLA_QDISC: ::c_ushort = 6;
+pub const IFLA_STATS: ::c_ushort = 7;
+
 // linux/if_tun.h
-pub const IFF_TUN: ::c_short = 0x0001;
-pub const IFF_TAP: ::c_short = 0x0002;
-pub const IFF_NO_PI: ::c_short = 0x1000;
+pub const IFF_TUN: ::c_int = 0x0001;
+pub const IFF_TAP: ::c_int = 0x0002;
+pub const IFF_NO_PI: ::c_int = 0x1000;
 // Read queue size
 pub const TUN_READQ_SIZE: ::c_short = 500;
 // TUN device type flags: deprecated. Use IFF_TUN/IFF_TAP instead.
-pub const TUN_TUN_DEV: ::c_short   = ::IFF_TUN;
-pub const TUN_TAP_DEV: ::c_short   = ::IFF_TAP;
+pub const TUN_TUN_DEV: ::c_short   = ::IFF_TUN as ::c_short;
+pub const TUN_TAP_DEV: ::c_short   = ::IFF_TAP as ::c_short;
 pub const TUN_TYPE_MASK: ::c_short = 0x000f;
 // This flag has no real effect
-pub const IFF_ONE_QUEUE: ::c_short    = 0x2000;
-pub const IFF_VNET_HDR: ::c_short     = 0x4000;
-pub const IFF_TUN_EXCL: ::c_short     = 0x8000;
-pub const IFF_MULTI_QUEUE: ::c_short  = 0x0100;
-pub const IFF_ATTACH_QUEUE: ::c_short = 0x0200;
-pub const IFF_DETACH_QUEUE: ::c_short = 0x0400;
+pub const IFF_ONE_QUEUE: ::c_int    = 0x2000;
+pub const IFF_VNET_HDR: ::c_int     = 0x4000;
+pub const IFF_TUN_EXCL: ::c_int     = 0x8000;
+pub const IFF_MULTI_QUEUE: ::c_int  = 0x0100;
+pub const IFF_ATTACH_QUEUE: ::c_int = 0x0200;
+pub const IFF_DETACH_QUEUE: ::c_int = 0x0400;
 // read-only flag
-pub const IFF_PERSIST: ::c_short  = 0x0800;
-pub const IFF_NOFILTER: ::c_short = 0x1000;
+pub const IFF_PERSIST: ::c_int  = 0x0800;
+pub const IFF_NOFILTER: ::c_int = 0x1000;
 
 pub const ST_RDONLY: ::c_ulong = 1;
 pub const ST_NOSUID: ::c_ulong = 2;
@@ -1406,9 +1500,10 @@ pub const FALLOC_FL_ZERO_RANGE: ::c_int = 0x10;
 pub const FALLOC_FL_INSERT_RANGE: ::c_int = 0x20;
 pub const FALLOC_FL_UNSHARE_RANGE: ::c_int = 0x40;
 
-// On Linux, libc doesn't define this constant, libattr does instead.
-// We still define it for Linux as it's defined by libc on other platforms,
-// and it's mentioned in the man pages for getxattr and setxattr.
+#[deprecated(
+    since = "0.2.55",
+    note = "ENOATTR is not available on Linux; use ENODATA instead"
+)]
 pub const ENOATTR: ::c_int = ::ENODATA;
 
 pub const SO_ORIGINAL_DST: ::c_int = 80;
@@ -1767,6 +1862,99 @@ pub const RT_CLASS_MAIN: u8 = 254;
 pub const RT_CLASS_LOCAL: u8 = 255;
 pub const RT_CLASS_MAX: u8 = 255;
 
+// linux/neighbor.h
+pub const NUD_NONE: u16 = 0x00;
+pub const NUD_INCOMPLETE: u16 = 0x01;
+pub const NUD_REACHABLE: u16 = 0x02;
+pub const NUD_STALE: u16 = 0x04;
+pub const NUD_DELAY: u16 = 0x08;
+pub const NUD_PROBE: u16 = 0x10;
+pub const NUD_FAILED: u16 = 0x20;
+pub const NUD_NOARP: u16 = 0x40;
+pub const NUD_PERMANENT: u16 = 0x80;
+
+pub const NTF_USE: u8 = 0x01;
+pub const NTF_SELF: u8 = 0x02;
+pub const NTF_MASTER: u8 = 0x04;
+pub const NTF_PROXY: u8 = 0x08;
+pub const NTF_ROUTER: u8 = 0x80;
+
+pub const NDA_UNSPEC: ::c_ushort = 0;
+pub const NDA_DST: ::c_ushort = 1;
+pub const NDA_LLADDR: ::c_ushort = 2;
+pub const NDA_CACHEINFO: ::c_ushort = 3;
+pub const NDA_PROBES: ::c_ushort = 4;
+pub const NDA_VLAN: ::c_ushort = 5;
+pub const NDA_PORT: ::c_ushort = 6;
+pub const NDA_VNI: ::c_ushort = 7;
+pub const NDA_IFINDEX: ::c_ushort = 8;
+
+// linux/rtnetlink.h
+pub const TCA_UNSPEC: ::c_ushort = 0;
+pub const TCA_KIND: ::c_ushort = 1;
+pub const TCA_OPTIONS: ::c_ushort = 2;
+pub const TCA_STATS: ::c_ushort = 3;
+pub const TCA_XSTATS: ::c_ushort = 4;
+pub const TCA_RATE: ::c_ushort = 5;
+pub const TCA_FCNT: ::c_ushort = 6;
+pub const TCA_STATS2: ::c_ushort = 7;
+pub const TCA_STAB: ::c_ushort = 8;
+
+pub const RTM_F_NOTIFY: ::c_uint = 0x100;
+pub const RTM_F_CLONED: ::c_uint = 0x200;
+pub const RTM_F_EQUALIZE: ::c_uint = 0x400;
+pub const RTM_F_PREFIX: ::c_uint = 0x800;
+
+pub const RTA_UNSPEC: ::c_ushort = 0;
+pub const RTA_DST: ::c_ushort = 1;
+pub const RTA_SRC: ::c_ushort = 2;
+pub const RTA_IIF: ::c_ushort = 3;
+pub const RTA_OIF: ::c_ushort = 4;
+pub const RTA_GATEWAY: ::c_ushort = 5;
+pub const RTA_PRIORITY: ::c_ushort = 6;
+pub const RTA_PREFSRC: ::c_ushort = 7;
+pub const RTA_METRICS: ::c_ushort = 8;
+pub const RTA_MULTIPATH: ::c_ushort = 9;
+pub const RTA_PROTOINFO: ::c_ushort = 10; // No longer used
+pub const RTA_FLOW: ::c_ushort = 11;
+pub const RTA_CACHEINFO: ::c_ushort = 12;
+pub const RTA_SESSION: ::c_ushort = 13; // No longer used
+pub const RTA_MP_ALGO: ::c_ushort = 14; // No longer used
+pub const RTA_TABLE: ::c_ushort = 15;
+pub const RTA_MARK: ::c_ushort = 16;
+pub const RTA_MFC_STATS: ::c_ushort = 17;
+
+pub const RTN_UNSPEC: ::c_uchar = 0;
+pub const RTN_UNICAST: ::c_uchar = 1;
+pub const RTN_LOCAL: ::c_uchar = 2;
+pub const RTN_BROADCAST: ::c_uchar = 3;
+pub const RTN_ANYCAST: ::c_uchar = 4;
+pub const RTN_MULTICAST: ::c_uchar = 5;
+pub const RTN_BLACKHOLE: ::c_uchar = 6;
+pub const RTN_UNREACHABLE: ::c_uchar = 7;
+pub const RTN_PROHIBIT: ::c_uchar = 8;
+pub const RTN_THROW: ::c_uchar = 9;
+pub const RTN_NAT: ::c_uchar = 10;
+pub const RTN_XRESOLVE: ::c_uchar = 11;
+
+pub const RTPROT_UNSPEC: ::c_uchar = 0;
+pub const RTPROT_REDIRECT: ::c_uchar = 1;
+pub const RTPROT_KERNEL: ::c_uchar = 2;
+pub const RTPROT_BOOT: ::c_uchar = 3;
+pub const RTPROT_STATIC: ::c_uchar = 4;
+
+pub const RT_SCOPE_UNIVERSE: ::c_uchar = 0;
+pub const RT_SCOPE_SITE: ::c_uchar = 200;
+pub const RT_SCOPE_LINK: ::c_uchar = 253;
+pub const RT_SCOPE_HOST: ::c_uchar = 254;
+pub const RT_SCOPE_NOWHERE: ::c_uchar = 255;
+
+pub const RT_TABLE_UNSPEC: ::c_uchar = 0;
+pub const RT_TABLE_COMPAT: ::c_uchar = 252;
+pub const RT_TABLE_DEFAULT: ::c_uchar = 253;
+pub const RT_TABLE_MAIN: ::c_uchar = 254;
+pub const RT_TABLE_LOCAL: ::c_uchar = 255;
+
 pub const RTMSG_OVERRUN: u32 = ::NLMSG_OVERRUN as u32;
 pub const RTMSG_NEWDEVICE: u32 = 0x11;
 pub const RTMSG_DELDEVICE: u32 = 0x12;
@@ -1813,33 +2001,33 @@ pub const ALG_OP_DECRYPT: ::c_int = 0;
 pub const ALG_OP_ENCRYPT: ::c_int = 1;
 
 // uapi/linux/inotify.h
-pub const IN_ACCESS:        ::uint32_t = 0x0000_0001;
-pub const IN_MODIFY:        ::uint32_t = 0x0000_0002;
-pub const IN_ATTRIB:        ::uint32_t = 0x0000_0004;
-pub const IN_CLOSE_WRITE:   ::uint32_t = 0x0000_0008;
-pub const IN_CLOSE_NOWRITE: ::uint32_t = 0x0000_0010;
-pub const IN_CLOSE:         ::uint32_t = (IN_CLOSE_WRITE | IN_CLOSE_NOWRITE);
-pub const IN_OPEN:          ::uint32_t = 0x0000_0020;
-pub const IN_MOVED_FROM:    ::uint32_t = 0x0000_0040;
-pub const IN_MOVED_TO:      ::uint32_t = 0x0000_0080;
-pub const IN_MOVE:          ::uint32_t = (IN_MOVED_FROM | IN_MOVED_TO);
-pub const IN_CREATE:        ::uint32_t = 0x0000_0100;
-pub const IN_DELETE:        ::uint32_t = 0x0000_0200;
-pub const IN_DELETE_SELF:   ::uint32_t = 0x0000_0400;
-pub const IN_MOVE_SELF:     ::uint32_t = 0x0000_0800;
-pub const IN_UNMOUNT:       ::uint32_t = 0x0000_2000;
-pub const IN_Q_OVERFLOW:    ::uint32_t = 0x0000_4000;
-pub const IN_IGNORED:       ::uint32_t = 0x0000_8000;
-pub const IN_ONLYDIR:       ::uint32_t = 0x0100_0000;
-pub const IN_DONT_FOLLOW:   ::uint32_t = 0x0200_0000;
-// pub const IN_EXCL_UNLINK:   ::uint32_t = 0x0400_0000;
+pub const IN_ACCESS:        u32 = 0x0000_0001;
+pub const IN_MODIFY:        u32 = 0x0000_0002;
+pub const IN_ATTRIB:        u32 = 0x0000_0004;
+pub const IN_CLOSE_WRITE:   u32 = 0x0000_0008;
+pub const IN_CLOSE_NOWRITE: u32 = 0x0000_0010;
+pub const IN_CLOSE:         u32 = (IN_CLOSE_WRITE | IN_CLOSE_NOWRITE);
+pub const IN_OPEN:          u32 = 0x0000_0020;
+pub const IN_MOVED_FROM:    u32 = 0x0000_0040;
+pub const IN_MOVED_TO:      u32 = 0x0000_0080;
+pub const IN_MOVE:          u32 = (IN_MOVED_FROM | IN_MOVED_TO);
+pub const IN_CREATE:        u32 = 0x0000_0100;
+pub const IN_DELETE:        u32 = 0x0000_0200;
+pub const IN_DELETE_SELF:   u32 = 0x0000_0400;
+pub const IN_MOVE_SELF:     u32 = 0x0000_0800;
+pub const IN_UNMOUNT:       u32 = 0x0000_2000;
+pub const IN_Q_OVERFLOW:    u32 = 0x0000_4000;
+pub const IN_IGNORED:       u32 = 0x0000_8000;
+pub const IN_ONLYDIR:       u32 = 0x0100_0000;
+pub const IN_DONT_FOLLOW:   u32 = 0x0200_0000;
+// pub const IN_EXCL_UNLINK:   u32 = 0x0400_0000;
 
-// pub const IN_MASK_CREATE:   ::uint32_t = 0x1000_0000;
-// pub const IN_MASK_ADD:      ::uint32_t = 0x2000_0000;
-pub const IN_ISDIR:         ::uint32_t = 0x4000_0000;
-pub const IN_ONESHOT:       ::uint32_t = 0x8000_0000;
+// pub const IN_MASK_CREATE:   u32 = 0x1000_0000;
+// pub const IN_MASK_ADD:      u32 = 0x2000_0000;
+pub const IN_ISDIR:         u32 = 0x4000_0000;
+pub const IN_ONESHOT:       u32 = 0x8000_0000;
 
-pub const IN_ALL_EVENTS:    ::uint32_t = (
+pub const IN_ALL_EVENTS:    u32 = (
   IN_ACCESS | IN_MODIFY | IN_ATTRIB | IN_CLOSE_WRITE |
   IN_CLOSE_NOWRITE | IN_OPEN | IN_MOVED_FROM |
   IN_MOVED_TO | IN_DELETE | IN_CREATE | IN_DELETE_SELF |
@@ -1967,6 +2155,11 @@ f! {
 }
 
 extern {
+    #[cfg_attr(not(target_env = "musl"),
+               link_name = "__xpg_strerror_r")]
+    pub fn strerror_r(errnum: ::c_int, buf: *mut c_char,
+                      buflen: ::size_t) -> ::c_int;
+
     pub fn abs(i: ::c_int) -> ::c_int;
     pub fn atof(s: *const ::c_char) -> ::c_double;
     pub fn labs(i: ::c_long) -> ::c_long;
@@ -2134,12 +2327,6 @@ extern {
                        flags: ::c_int) -> ::c_int;
     pub fn pthread_setschedprio(native: ::pthread_t,
                                 priority: ::c_int) -> ::c_int;
-    pub fn prlimit(pid: ::pid_t, resource: ::c_int, new_limit: *const ::rlimit,
-                   old_limit: *mut ::rlimit) -> ::c_int;
-    pub fn prlimit64(pid: ::pid_t,
-                     resource: ::c_int,
-                     new_limit: *const ::rlimit64,
-                     old_limit: *mut ::rlimit64) -> ::c_int;
     pub fn getloadavg(loadavg: *mut ::c_double, nelem: ::c_int) -> ::c_int;
     pub fn process_vm_readv(pid: ::pid_t,
                             local_iov: *const ::iovec,
@@ -2201,10 +2388,6 @@ extern {
     pub fn getdomainname(name: *mut ::c_char, len: ::size_t) -> ::c_int;
     pub fn setdomainname(name: *const ::c_char, len: ::size_t) -> ::c_int;
     pub fn vhangup() -> ::c_int;
-    pub fn sendmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
-                    flags: ::c_int) -> ::c_int;
-    pub fn recvmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
-                    flags: ::c_int, timeout: *mut ::timespec) -> ::c_int;
     pub fn sync();
     pub fn syscall(num: ::c_long, ...) -> ::c_long;
     pub fn sched_getaffinity(pid: ::pid_t,
@@ -2457,7 +2640,7 @@ extern {
     pub fn inotify_init1(flags: ::c_int) -> ::c_int;
     pub fn inotify_add_watch(fd: ::c_int,
                              path: *const ::c_char,
-                             mask: ::uint32_t) -> ::c_int;
+                             mask: u32) -> ::c_int;
 }
 
 cfg_if! {

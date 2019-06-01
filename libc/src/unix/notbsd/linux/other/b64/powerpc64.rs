@@ -110,9 +110,9 @@ s! {
         pub cuid: ::uid_t,
         pub cgid: ::gid_t,
         pub mode: ::mode_t,
-        pub __seq: ::uint32_t,
-        __pad1: ::uint32_t,
-        __unused1: ::uint64_t,
+        pub __seq: u32,
+        __pad1: u32,
+        __unused1: u64,
         __unused2: ::c_ulong,
     }
 
@@ -302,6 +302,10 @@ pub const SIGURG: ::c_int = 23;
 pub const SIGIO: ::c_int = 29;
 pub const SIGSYS: ::c_int = 31;
 pub const SIGSTKFLT: ::c_int = 16;
+#[deprecated(
+    since = "0.2.55",
+    note = "Use SIGSYS instead"
+)]
 pub const SIGUNUSED: ::c_int = 31;
 pub const SIGPOLL: ::c_int = 29;
 pub const SIGPWR: ::c_int = 30;
@@ -340,6 +344,8 @@ pub const TIOCMBIS: ::c_ulong = 0x5416;
 pub const TIOCMBIC: ::c_ulong = 0x5417;
 pub const TIOCMSET: ::c_ulong = 0x5418;
 pub const TIOCCONS: ::c_ulong = 0x541D;
+pub const TIOCGRS485: ::c_int = 0x542E;
+pub const TIOCSRS485: ::c_int = 0x542F;
 
 pub const SFD_CLOEXEC: ::c_int = 0x080000;
 
@@ -446,15 +452,15 @@ pub const MCL_FUTURE: ::c_int = 0x4000;
 pub const SIGSTKSZ: ::size_t = 0x4000;
 pub const MINSIGSTKSZ: ::size_t = 4096;
 pub const CBAUD: ::tcflag_t = 0xff;
-pub const TAB1: ::c_int = 0x400;
-pub const TAB2: ::c_int = 0x800;
-pub const TAB3: ::c_int = 0xc00;
-pub const CR1: ::c_int  = 0x1000;
-pub const CR2: ::c_int  = 0x2000;
-pub const CR3: ::c_int  = 0x3000;
-pub const FF1: ::c_int  = 0x4000;
-pub const BS1: ::c_int  = 0x8000;
-pub const VT1: ::c_int  = 0x10000;
+pub const TAB1: ::tcflag_t = 0x400;
+pub const TAB2: ::tcflag_t = 0x800;
+pub const TAB3: ::tcflag_t = 0xc00;
+pub const CR1: ::tcflag_t = 0x1000;
+pub const CR2: ::tcflag_t = 0x2000;
+pub const CR3: ::tcflag_t = 0x3000;
+pub const FF1: ::tcflag_t = 0x4000;
+pub const BS1: ::tcflag_t = 0x8000;
+pub const VT1: ::tcflag_t = 0x10000;
 pub const VWERASE: usize = 0xa;
 pub const VREPRINT: usize = 0xb;
 pub const VSUSP: usize = 0xc;
@@ -917,6 +923,7 @@ pub const SYS_copy_file_range: ::c_long = 379;
 pub const SYS_preadv2: ::c_long = 380;
 pub const SYS_pwritev2: ::c_long = 381;
 pub const SYS_kexec_file_load: ::c_long = 382;
+pub const SYS_statx: ::c_long = 383;
 
 #[link(name = "util")]
 extern {

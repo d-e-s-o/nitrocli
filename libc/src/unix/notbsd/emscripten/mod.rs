@@ -17,6 +17,7 @@ pub type nfds_t = ::c_ulong;
 pub type nl_item = ::c_int;
 pub type idtype_t = ::c_uint;
 pub type loff_t = i32;
+pub type pthread_key_t = ::c_uint;
 
 pub type clock_t = c_long;
 pub type time_t = c_long;
@@ -98,52 +99,44 @@ s! {
     }
 
     pub struct dqblk {
-        pub dqb_bhardlimit: ::uint64_t,
-        pub dqb_bsoftlimit: ::uint64_t,
-        pub dqb_curspace: ::uint64_t,
-        pub dqb_ihardlimit: ::uint64_t,
-        pub dqb_isoftlimit: ::uint64_t,
-        pub dqb_curinodes: ::uint64_t,
-        pub dqb_btime: ::uint64_t,
-        pub dqb_itime: ::uint64_t,
-        pub dqb_valid: ::uint32_t,
+        pub dqb_bhardlimit: u64,
+        pub dqb_bsoftlimit: u64,
+        pub dqb_curspace: u64,
+        pub dqb_ihardlimit: u64,
+        pub dqb_isoftlimit: u64,
+        pub dqb_curinodes: u64,
+        pub dqb_btime: u64,
+        pub dqb_itime: u64,
+        pub dqb_valid: u32,
     }
 
     pub struct signalfd_siginfo {
-        pub ssi_signo: ::uint32_t,
-        pub ssi_errno: ::int32_t,
-        pub ssi_code: ::int32_t,
-        pub ssi_pid: ::uint32_t,
-        pub ssi_uid: ::uint32_t,
-        pub ssi_fd: ::int32_t,
-        pub ssi_tid: ::uint32_t,
-        pub ssi_band: ::uint32_t,
-        pub ssi_overrun: ::uint32_t,
-        pub ssi_trapno: ::uint32_t,
-        pub ssi_status: ::int32_t,
-        pub ssi_int: ::int32_t,
-        pub ssi_ptr: ::uint64_t,
-        pub ssi_utime: ::uint64_t,
-        pub ssi_stime: ::uint64_t,
-        pub ssi_addr: ::uint64_t,
-        pub ssi_addr_lsb: ::uint16_t,
-        _pad2: ::uint16_t,
-        pub ssi_syscall: ::int32_t,
-        pub ssi_call_addr: ::uint64_t,
-        pub ssi_arch: ::uint32_t,
-        _pad: [::uint8_t; 28],
+        pub ssi_signo: u32,
+        pub ssi_errno: i32,
+        pub ssi_code: i32,
+        pub ssi_pid: u32,
+        pub ssi_uid: u32,
+        pub ssi_fd: i32,
+        pub ssi_tid: u32,
+        pub ssi_band: u32,
+        pub ssi_overrun: u32,
+        pub ssi_trapno: u32,
+        pub ssi_status: i32,
+        pub ssi_int: i32,
+        pub ssi_ptr: u64,
+        pub ssi_utime: u64,
+        pub ssi_stime: u64,
+        pub ssi_addr: u64,
+        pub ssi_addr_lsb: u16,
+        _pad2: u16,
+        pub ssi_syscall: i32,
+        pub ssi_call_addr: u64,
+        pub ssi_arch: u32,
+        _pad: [u8; 28],
     }
 
     pub struct fsid_t {
         __val: [::c_int; 2],
-    }
-
-    pub struct mq_attr {
-        pub mq_flags: ::c_long,
-        pub mq_maxmsg: ::c_long,
-        pub mq_msgsize: ::c_long,
-        pub mq_curmsgs: ::c_long,
-        pad: [::c_long; 4]
     }
 
     pub struct cpu_set_t {
@@ -435,6 +428,14 @@ s_no_extra_traits! {
         pub mem_unit: ::c_uint,
         pub __reserved: [::c_char; 256],
     }
+
+    pub struct mq_attr {
+        pub mq_flags: ::c_long,
+        pub mq_maxmsg: ::c_long,
+        pub mq_msgsize: ::c_long,
+        pub mq_curmsgs: ::c_long,
+        pad: [::c_long; 4]
+    }
 }
 
 cfg_if! {
@@ -570,8 +571,40 @@ cfg_if! {
                 self.__reserved.hash(state);
             }
         }
+
+        impl PartialEq for mq_attr {
+            fn eq(&self, other: &mq_attr) -> bool {
+                self.mq_flags == other.mq_flags &&
+                self.mq_maxmsg == other.mq_maxmsg &&
+                self.mq_msgsize == other.mq_msgsize &&
+                self.mq_curmsgs == other.mq_curmsgs
+            }
+        }
+        impl Eq for mq_attr {}
+        impl ::fmt::Debug for mq_attr {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("mq_attr")
+                    .field("mq_flags", &self.mq_flags)
+                    .field("mq_maxmsg", &self.mq_maxmsg)
+                    .field("mq_msgsize", &self.mq_msgsize)
+                    .field("mq_curmsgs", &self.mq_curmsgs)
+                    .finish()
+            }
+        }
+        impl ::hash::Hash for mq_attr {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.mq_flags.hash(state);
+                self.mq_maxmsg.hash(state);
+                self.mq_msgsize.hash(state);
+                self.mq_curmsgs.hash(state);
+            }
+        }
     }
 }
+
+pub const MADV_SOFT_OFFLINE: ::c_int = 101;
+pub const MS_NOUSER: ::c_ulong = 0x80000000;
+pub const MS_RMT_MASK: ::c_ulong = 0x02800051;
 
 pub const ABDAY_1: ::nl_item = 0x20000;
 pub const ABDAY_2: ::nl_item = 0x20001;
@@ -889,12 +922,23 @@ pub const AF_MPLS: ::c_int = 28;
 pub const AF_NFC: ::c_int = 39;
 pub const AF_VSOCK: ::c_int = 40;
 #[doc(hidden)]
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
 pub const AF_MAX: ::c_int = 42;
 pub const PF_IB: ::c_int = AF_IB;
 pub const PF_MPLS: ::c_int = AF_MPLS;
 pub const PF_NFC: ::c_int = AF_NFC;
 pub const PF_VSOCK: ::c_int = AF_VSOCK;
 #[doc(hidden)]
+#[allow(deprecated)]
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
 pub const PF_MAX: ::c_int = AF_MAX;
 
 // System V IPC
@@ -913,7 +957,6 @@ pub const MSG_INFO: ::c_int = 12;
 
 pub const MSG_NOERROR: ::c_int = 0o10000;
 pub const MSG_EXCEPT: ::c_int = 0o20000;
-pub const MSG_COPY: ::c_int = 0o40000;
 
 pub const SHM_R: ::c_int = 0o400;
 pub const SHM_W: ::c_int = 0o200;
@@ -1124,10 +1167,6 @@ pub const _POSIX_VDISABLE: ::cc_t = 0;
 
 pub const FALLOC_FL_KEEP_SIZE: ::c_int = 0x01;
 pub const FALLOC_FL_PUNCH_HOLE: ::c_int = 0x02;
-pub const FALLOC_FL_COLLAPSE_RANGE: ::c_int = 0x08;
-pub const FALLOC_FL_ZERO_RANGE: ::c_int = 0x10;
-pub const FALLOC_FL_INSERT_RANGE: ::c_int = 0x20;
-pub const FALLOC_FL_UNSHARE_RANGE: ::c_int = 0x40;
 
 // On Linux, libc doesn't define this constant, libattr does instead.
 // We still define it for Linux as it's defined by libc on other platforms,
@@ -1180,12 +1219,10 @@ pub const POSIX_FADV_NOREUSE: ::c_int = 5;
 pub const POSIX_MADV_DONTNEED: ::c_int = 0;
 
 pub const RLIM_INFINITY: ::rlim_t = !0;
-pub const RLIMIT_RTTIME: ::c_int = 15;
-pub const RLIMIT_NLIMITS: ::c_int = 16;
+pub const RLIMIT_NLIMITS: ::c_int = 15;
 
 pub const MAP_ANONYMOUS: ::c_int = MAP_ANON;
 
-pub const TCP_COOKIE_TRANSACTIONS: ::c_int = 15;
 pub const TCP_THIN_LINEAR_TIMEOUTS: ::c_int = 16;
 pub const TCP_THIN_DUPACK: ::c_int = 17;
 pub const TCP_USER_TIMEOUT: ::c_int = 18;
@@ -1196,6 +1233,11 @@ pub const TCP_REPAIR_OPTIONS: ::c_int = 22;
 pub const TCP_FASTOPEN: ::c_int = 23;
 pub const TCP_TIMESTAMP: ::c_int = 24;
 
+#[doc(hidden)]
+#[deprecated(
+    since = "0.2.55",
+    note = "Use SIGSYS instead"
+)]
 pub const SIGUNUSED: ::c_int = ::SIGSYS;
 
 pub const __SIZEOF_PTHREAD_CONDATTR_T: usize = 4;
@@ -1368,6 +1410,16 @@ pub const RLIMIT_NOFILE: ::c_int = 7;
 pub const RLIMIT_AS: ::c_int = 9;
 pub const RLIMIT_NPROC: ::c_int = 6;
 pub const RLIMIT_MEMLOCK: ::c_int = 8;
+pub const RLIMIT_CPU: ::c_int = 0;
+pub const RLIMIT_FSIZE: ::c_int = 1;
+pub const RLIMIT_DATA: ::c_int = 2;
+pub const RLIMIT_STACK: ::c_int = 3;
+pub const RLIMIT_CORE: ::c_int = 4;
+pub const RLIMIT_LOCKS: ::c_int = 10;
+pub const RLIMIT_SIGPENDING: ::c_int = 11;
+pub const RLIMIT_MSGQUEUE: ::c_int = 12;
+pub const RLIMIT_NICE: ::c_int = 13;
+pub const RLIMIT_RTPRIO: ::c_int = 14;
 
 pub const O_APPEND: ::c_int = 1024;
 pub const O_CREAT: ::c_int = 64;
@@ -1683,11 +1735,23 @@ f! {
 }
 
 extern {
+    pub fn getrlimit64(resource: ::c_int,
+                       rlim: *mut rlimit64) -> ::c_int;
+    pub fn setrlimit64(resource: ::c_int,
+                       rlim: *const rlimit64) -> ::c_int;
+    pub fn getrlimit(resource: ::c_int, rlim: *mut ::rlimit) -> ::c_int;
+    pub fn setrlimit(resource: ::c_int, rlim: *const ::rlimit) -> ::c_int;
+    pub fn strerror_r(errnum: ::c_int, buf: *mut c_char,
+                      buflen: ::size_t) -> ::c_int;
+
     pub fn abs(i: ::c_int) -> ::c_int;
     pub fn atof(s: *const ::c_char) -> ::c_double;
     pub fn labs(i: ::c_long) -> ::c_long;
     pub fn rand() -> ::c_int;
     pub fn srand(seed: ::c_uint);
+
+    pub fn gettimeofday(tp: *mut ::timeval,
+                        tz: *mut ::c_void) -> ::c_int;
 
     pub fn setpwent();
     pub fn endpwent();
@@ -1777,9 +1841,9 @@ extern {
     pub fn getdomainname(name: *mut ::c_char, len: ::size_t) -> ::c_int;
     pub fn setdomainname(name: *const ::c_char, len: ::size_t) -> ::c_int;
     pub fn sendmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
-                    flags: ::c_int) -> ::c_int;
+                    flags: ::c_uint) -> ::c_int;
     pub fn recvmmsg(sockfd: ::c_int, msgvec: *mut ::mmsghdr, vlen: ::c_uint,
-                    flags: ::c_int, timeout: *mut ::timespec) -> ::c_int;
+                    flags: ::c_uint, timeout: *mut ::timespec) -> ::c_int;
     pub fn sync();
     pub fn ioctl(fd: ::c_int, request: ::c_int, ...) -> ::c_int;
     pub fn getpriority(which: ::c_int, who: ::id_t) -> ::c_int;

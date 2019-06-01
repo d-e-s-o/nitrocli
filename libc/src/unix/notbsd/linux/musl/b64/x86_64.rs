@@ -483,21 +483,36 @@ pub const ES: ::c_int = 24;
 pub const FS: ::c_int = 25;
 pub const GS: ::c_int = 26;
 
+pub const MADV_SOFT_OFFLINE: ::c_int = 101;
 pub const MAP_32BIT: ::c_int = 0x0040;
 pub const O_DIRECT: ::c_int = 0x4000;
 pub const O_DIRECTORY: ::c_int = 0x10000;
 pub const O_LARGEFILE: ::c_int = 0;
 pub const O_NOFOLLOW: ::c_int = 0x20000;
 
+pub const TIOCGRS485: ::c_int = 0x542E;
+pub const TIOCSRS485: ::c_int = 0x542F;
+
 pub const SIGSTKSZ: ::size_t = 8192;
 pub const MINSIGSTKSZ: ::size_t = 2048;
 
 #[doc(hidden)]
-pub const AF_MAX: ::c_int = 42;
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
+pub const AF_MAX: ::c_int = 45;
 #[doc(hidden)]
+#[deprecated(
+    since = "0.2.55",
+    note = "If you are using this report to: \
+            https://github.com/rust-lang/libc/issues/665"
+)]
+#[allow(deprecated)]
 pub const PF_MAX: ::c_int = AF_MAX;
 
-pub const RLIMIT_NLIMITS: ::c_int = 16;
+pub const RLIMIT_NLIMITS: ::c_int = 15;
 pub const TIOCINQ: ::c_int = ::FIONREAD;
 pub const MCL_CURRENT: ::c_int = 0x0001;
 pub const MCL_FUTURE: ::c_int = 0x0002;
