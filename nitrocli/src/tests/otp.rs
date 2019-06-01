@@ -51,7 +51,7 @@ fn status(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 
   let mut ncli = Nitrocli::with_dev(device);
   // Make sure that we have at least something to display by ensuring
-  // that there are there is one slot programmed.
+  // that there is one slot programmed.
   let _ = ncli.handle(&["otp", "set", "0", "the-name", "123456"])?;
 
   let out = ncli.handle(&["otp", "status"])?;

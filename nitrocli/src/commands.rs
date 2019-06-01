@@ -725,7 +725,12 @@ pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Resu
       pinentry::PinType::Admin => device.change_admin_pin(&current_pin, &new_pin),
       pinentry::PinType::User => device.change_user_pin(&current_pin, &new_pin),
     },
-  )
+  )?;
+
+  // We just changed the PIN but confirmed the action with the old PIN,
+  // which may have caused it to be cached. Since it no longer applies,
+  // make sure to evict the corresponding entry from the cache.
+  pinentry::clear(&pin_entry)
 }
 
 /// Unblock and reset the user PIN.

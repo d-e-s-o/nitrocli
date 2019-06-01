@@ -5,6 +5,8 @@ Unreleased
 - Check the status of a PWS slot before accessing it in `pws get`
 - Added `NITROCLI_NO_CACHE` environment variable to bypass caching of
   secrets
+- Clear cached PIN entry as part of `pin set` command to prevent
+  spurious authentication failures
 - Bumped `libc` dependency to `0.2.55`
 - Bumped `cc` dependency to `1.0.37`
 
