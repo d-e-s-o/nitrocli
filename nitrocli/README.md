@@ -39,6 +39,8 @@ The following commands are currently supported:
   - set: Set the data on a PWS slot.
   - status: List all PWS slots.
   - clear: Delete a PWS slot.
+- unencrypted: Work with the Nitrokey Storage's unencrypted volume.
+  - set: Change the read-write mode of the unencrypted volume.
 
 
 Usage

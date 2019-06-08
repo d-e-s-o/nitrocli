@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2019-05-26
+.TH NITROCLI 1 2019-06-08
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -62,6 +62,15 @@ optionally further be overlayed with up to four \fIhidden\fR volumes. Because of
 this overlay (which is required to achieve plausible deniability of the
 existence of hidden volumes), the burden of ensuring that data on the encrypted
 volume does not overlap with data on one of the hidden volumes is on the user.
+.TP
+\fBnitrocli unencrypted set \fImode\fR
+Change the read-write mode of the volume.
+\fImode\fR is the type of the mode to change to: \fBread-write\fR to make the
+volume readable and writable or \fBread-only\fR to make it only readable.
+This command requires the admin PIN.
+
+Note that this command requires firmware version 0.51 or higher. Earlier
+versions are not supported.
 .TP
 \fBnitrocli encrypted open
 Open the encrypted volume on the Nitrokey Storage.

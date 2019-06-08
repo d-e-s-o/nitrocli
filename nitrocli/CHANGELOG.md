@@ -1,5 +1,7 @@
 Unreleased
 ----------
+- Added `unencrypted` command with `set` subcommand for changing the
+  unencrypted volume's read-write mode
 - Changed `storage hidden` subcommand to `hidden` top-level command
 - Renamed `storage` command to `encrypted`
 - Removed `storage status` subcommand

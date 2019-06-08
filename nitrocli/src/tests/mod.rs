@@ -46,6 +46,7 @@ mod pws;
 mod reset;
 mod run;
 mod status;
+mod unencrypted;
 
 /// A trait simplifying checking for expected errors.
 pub trait UnwrapError {

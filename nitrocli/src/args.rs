@@ -129,6 +129,7 @@ Enum! {Command, [
   Pws => ("pws", pws),
   Reset => ("reset", reset),
   Status => ("status", status),
+  Unencrypted => ("unencrypted", unencrypted),
 ]}
 
 Enum! {ConfigCommand, [
@@ -245,6 +246,55 @@ fn reset(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parse(ctx, parser, args)?;
 
   commands::reset(ctx)
+}
+
+Enum! {UnencryptedCommand, [
+  Set => ("set", unencrypted_set),
+]}
+
+Enum! {UnencryptedVolumeMode, [
+  ReadWrite => "read-write",
+  ReadOnly => "read-only",
+]}
+
+/// Execute an unencrypted subcommand.
+fn unencrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+  let mut subcommand = UnencryptedCommand::Set;
+  let help = cmd_help!(subcommand);
+  let mut subargs = vec![];
+  let mut parser = argparse::ArgumentParser::new();
+  parser.set_description("Interacts with the device's unencrypted volume");
+  let _ =
+    parser
+      .refer(&mut subcommand)
+      .required()
+      .add_argument("subcommand", argparse::Store, &help);
+  let _ = parser.refer(&mut subargs).add_argument(
+    "arguments",
+    argparse::List,
+    "The arguments for the subcommand",
+  );
+  parser.stop_on_first_argument(true);
+  parse(ctx, parser, args)?;
+
+  subargs.insert(0, format!("nitrocli {}", subcommand));
+  subcommand.execute(ctx, subargs)
+}
+
+/// Change the configuration of the unencrypted volume.
+fn unencrypted_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
+  let mut mode = UnencryptedVolumeMode::ReadWrite;
+  let help = format!("The mode to change to ({})", fmt_enum!(mode));
+  let mut parser = argparse::ArgumentParser::new();
+  parser
+    .set_description("Changes the configuration of the unencrypted volume on a Nitrokey Storage");
+  let _ = parser
+    .refer(&mut mode)
+    .required()
+    .add_argument("type", argparse::Store, &help);
+  parse(ctx, parser, args)?;
+
+  commands::unencrypted_set(ctx, mode)
 }
 
 Enum! {EncryptedCommand, [

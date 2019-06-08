@@ -361,6 +361,30 @@ pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   })
 }
 
+/// Change the configuration of the unencrypted volume.
+pub fn unencrypted_set(
+  ctx: &mut args::ExecCtx<'_>,
+  mode: args::UnencryptedVolumeMode,
+) -> Result<()> {
+  let device = get_storage_device(ctx)?;
+  let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
+  let mode = match mode {
+    args::UnencryptedVolumeMode::ReadWrite => nitrokey::VolumeMode::ReadWrite,
+    args::UnencryptedVolumeMode::ReadOnly => nitrokey::VolumeMode::ReadOnly,
+  };
+
+  // The unencrypted volume may reconnect, so be sure to flush caches to
+  // disk.
+  unsafe { sync() };
+
+  try_with_pin(
+    ctx,
+    &pin_entry,
+    "Changing unencrypted volume mode failed",
+    |pin| device.set_unencrypted_volume_mode(&pin, mode),
+  )
+}
+
 /// Open the encrypted volume on the Nitrokey.
 pub fn encrypted_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_storage_device(ctx)?;
