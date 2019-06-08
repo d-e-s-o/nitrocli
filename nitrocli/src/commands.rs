@@ -361,7 +361,7 @@ pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   })
 }
 
-/// Open the encrypted volume on the nitrokey.
+/// Open the encrypted volume on the Nitrokey.
 pub fn encrypted_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   let device = get_storage_device(ctx)?;
   let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
@@ -378,7 +378,7 @@ pub fn encrypted_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 /// Close the previously opened encrypted volume.
 pub fn encrypted_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   // Flush all filesystem caches to disk. We are mostly interested in
-  // making sure that the encrypted volume on the nitrokey we are
+  // making sure that the encrypted volume on the Nitrokey we are
   // about to close is not closed while not all data was written to
   // it.
   unsafe { sync() };
@@ -493,7 +493,7 @@ pub fn config_set(
 pub fn lock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   get_device(ctx)?
     .lock()
-    .map_err(|err| get_error("Getting Storage status failed", err))
+    .map_err(|err| get_error("Could not lock the device", err))
 }
 
 fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) -> Result<String> {

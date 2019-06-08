@@ -229,7 +229,7 @@ fn parse(
   result
 }
 
-/// Inquire the status of the nitrokey.
+/// Inquire the status of the Nitrokey.
 fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Prints the status of the connected Nitrokey device");
@@ -276,7 +276,7 @@ fn encrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   subcommand.execute(ctx, subargs)
 }
 
-/// Open the encrypted volume on the nitrokey.
+/// Open the encrypted volume on the Nitrokey.
 fn encrypted_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Opens the encrypted volume on a Nitrokey Storage");
@@ -306,7 +306,7 @@ fn hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let help = cmd_help!(subcommand);
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Interact with a hidden volume");
+  parser.set_description("Interacts with the device's hidden volume");
   let _ =
     parser
       .refer(&mut subcommand)
