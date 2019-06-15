@@ -19,6 +19,7 @@
 
 use std::borrow;
 use std::fmt;
+use std::io;
 use std::process;
 use std::str;
 
@@ -263,7 +264,13 @@ where
   let output = process::Command::new("gpg-connect-agent")
     .arg(command)
     .arg("/bye")
-    .output()?;
+    .output()
+    .map_err(|err| match err.kind() {
+      io::ErrorKind::NotFound => {
+        io::Error::new(io::ErrorKind::NotFound, "gpg-connect-agent not found")
+      }
+      _ => err,
+    })?;
   parse_pinentry_pin(str::from_utf8(&output.stdout)?)
 }
 
