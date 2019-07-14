@@ -80,7 +80,7 @@ fn get_storage_device(ctx: &mut args::ExecCtx<'_>) -> Result<nitrokey::Storage> 
     }
   }
 
-  nitrokey::Storage::connect().or_else(|_| Err(Error::from("Nitrokey Storage device not found")))
+  nitrokey::Storage::connect().map_err(|_| Error::from("Nitrokey Storage device not found"))
 }
 
 /// Open the password safe on the given device.
@@ -531,7 +531,7 @@ fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) 
 fn get_unix_timestamp() -> Result<u64> {
   time::SystemTime::now()
     .duration_since(time::UNIX_EPOCH)
-    .or_else(|_| Err(Error::from("Current system time is before the Unix epoch")))
+    .map_err(|_| Error::from("Current system time is before the Unix epoch"))
     .map(|duration| duration.as_secs())
 }
 
