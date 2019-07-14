@@ -116,7 +116,7 @@ fn authenticate<D, A, F>(
 ) -> Result<A>
 where
   D: Device,
-  F: Fn(D, &str) -> result::Result<A, (D, nitrokey::CommandError)>,
+  F: FnMut(D, &str) -> result::Result<A, (D, nitrokey::CommandError)>,
 {
   let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
 
@@ -183,10 +183,10 @@ fn try_with_pin_and_data_with_pinentry<D, F, R>(
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   data: D,
-  op: F,
+  mut op: F,
 ) -> Result<R>
 where
-  F: Fn(D, &str) -> result::Result<R, (D, nitrokey::CommandError)>,
+  F: FnMut(D, &str) -> result::Result<R, (D, nitrokey::CommandError)>,
 {
   let mut data = data;
   let mut retry = 3;
@@ -219,10 +219,10 @@ fn try_with_pin_and_data<D, F, R>(
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   data: D,
-  op: F,
+  mut op: F,
 ) -> Result<R>
 where
-  F: Fn(D, &str) -> result::Result<R, (D, nitrokey::CommandError)>,
+  F: FnMut(D, &str) -> result::Result<R, (D, nitrokey::CommandError)>,
 {
   let pin = match pin_entry.pin_type() {
     pinentry::PinType::Admin => &ctx.admin_pin,
@@ -250,10 +250,10 @@ fn try_with_pin<F>(
   ctx: &mut args::ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
-  op: F,
+  mut op: F,
 ) -> Result<()>
 where
-  F: Fn(&str) -> result::Result<(), nitrokey::CommandError>,
+  F: FnMut(&str) -> result::Result<(), nitrokey::CommandError>,
 {
   try_with_pin_and_data(ctx, pin_entry, msg, (), |data, pin| {
     op(pin).map_err(|err| (data, err))
