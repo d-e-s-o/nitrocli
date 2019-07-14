@@ -111,7 +111,7 @@ where
     &pin_entry,
     "Could not access the password safe",
     (),
-    |_, pin| device.get_password_safe(pin).map_err(|err| ((), err)),
+    |_ctx, _, pin| device.get_password_safe(pin).map_err(|err| ((), err)),
   )
 }
 
@@ -127,7 +127,7 @@ fn authenticate<D, A, F>(
 ) -> Result<A>
 where
   D: Device,
-  F: FnMut(D, &str) -> result::Result<A, (D, nitrokey::CommandError)>,
+  F: FnMut(&mut args::ExecCtx<'_>, D, &str) -> result::Result<A, (D, nitrokey::CommandError)>,
 {
   let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
 
@@ -144,7 +144,7 @@ where
     device,
     pinentry::PinType::User,
     "Could not authenticate as user",
-    |device, pin| device.authenticate_user(pin),
+    |_ctx, device, pin| device.authenticate_user(pin),
   )
 }
 
@@ -158,7 +158,7 @@ where
     device,
     pinentry::PinType::Admin,
     "Could not authenticate as admin",
-    |device, pin| device.authenticate_admin(pin),
+    |_ctx, device, pin| device.authenticate_admin(pin),
   )
 }
 
@@ -197,7 +197,7 @@ fn try_with_pin_and_data_with_pinentry<D, F, R, E>(
   mut op: F,
 ) -> Result<R>
 where
-  F: FnMut(D, &str) -> result::Result<R, (D, E)>,
+  F: FnMut(&mut args::ExecCtx<'_>, D, &str) -> result::Result<R, (D, E)>,
   E: error::TryInto<nitrokey::CommandError>,
 {
   let mut data = data;
@@ -205,7 +205,7 @@ where
   let mut error_msg = None;
   loop {
     let pin = pinentry::inquire(ctx, pin_entry, pinentry::Mode::Query, error_msg)?;
-    match op(data, &pin) {
+    match op(ctx, data, &pin) {
       Ok(result) => return Ok(result),
       Err((new_data, err)) => match err.try_into() {
         Ok(err) => match err {
@@ -237,12 +237,15 @@ fn try_with_pin_and_data<D, F, R, E>(
   mut op: F,
 ) -> Result<R>
 where
-  F: FnMut(D, &str) -> result::Result<R, (D, E)>,
+  F: FnMut(&mut args::ExecCtx<'_>, D, &str) -> result::Result<R, (D, E)>,
   E: Into<Error> + error::TryInto<nitrokey::CommandError>,
 {
   let pin = match pin_entry.pin_type() {
-    pinentry::PinType::Admin => &ctx.admin_pin,
-    pinentry::PinType::User => &ctx.user_pin,
+    // Ideally we would not clone here, but that would require us to
+    // restrict op to work with an immutable ExecCtx, which is not
+    // possible given that some clients print data.
+    pinentry::PinType::Admin => ctx.admin_pin.clone(),
+    pinentry::PinType::User => ctx.user_pin.clone(),
   };
 
   if let Some(pin) = pin {
@@ -252,7 +255,7 @@ where
         msg
       ))
     })?;
-    op(data, &pin).map_err(|(_, err)| err.into())
+    op(ctx, data, &pin).map_err(|(_, err)| err.into())
   } else {
     try_with_pin_and_data_with_pinentry(ctx, pin_entry, msg, data, op)
   }
@@ -272,7 +275,7 @@ where
   F: FnMut(&str) -> result::Result<(), E>,
   E: Into<Error> + error::TryInto<nitrokey::CommandError>,
 {
-  try_with_pin_and_data(ctx, pin_entry, msg, (), |data, pin| {
+  try_with_pin_and_data(ctx, pin_entry, msg, (), |_ctx, data, pin| {
     op(pin).map_err(|err| (data, err))
   })
 }
