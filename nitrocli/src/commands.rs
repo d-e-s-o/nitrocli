@@ -28,6 +28,7 @@ use libc::sync;
 use nitrokey::ConfigureOtp;
 use nitrokey::Device;
 use nitrokey::GenerateOtp;
+use nitrokey::GetPasswordSafe;
 
 use crate::args;
 use crate::error;
@@ -96,23 +97,29 @@ where
   op(ctx, device)
 }
 
-/// Open the password safe on the given device.
-fn get_password_safe<'dev, D>(
-  ctx: &mut args::ExecCtx<'_>,
-  device: &'dev D,
-) -> Result<nitrokey::PasswordSafe<'dev>>
+/// Connect to any Nitrokey device, retrieve a password safe handle, and
+/// do something with it.
+fn with_password_safe<F>(ctx: &mut args::ExecCtx<'_>, mut op: F) -> Result<()>
 where
-  D: Device,
+  F: FnMut(&mut args::ExecCtx<'_>, nitrokey::PasswordSafe<'_>) -> Result<()>,
 {
-  let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, device)?;
+  with_device(ctx, |ctx, device| {
+    let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
+    try_with_pin_and_data(
+      ctx,
+      &pin_entry,
+      "Could not access the password safe",
+      (),
+      move |ctx, _, pin| {
+        let pws = device
+          .get_password_safe(pin)
+          .map_err(|err| ((), Error::from(err)))?;
 
-  try_with_pin_and_data(
-    ctx,
-    &pin_entry,
-    "Could not access the password safe",
-    (),
-    |_ctx, _, pin| device.get_password_safe(pin).map_err(|err| ((), err)),
-  )
+        op(ctx, pws).map_err(|err| ((), err))
+      },
+    )
+  })?;
+  Ok(())
 }
 
 /// Authenticate the given device using the given PIN type and operation.
@@ -851,8 +858,7 @@ pub fn pws_get(
   show_password: bool,
   quiet: bool,
 ) -> Result<()> {
-  with_device(ctx, |ctx, device| {
-    let pws = get_password_safe(ctx, &device)?;
+  with_password_safe(ctx, |ctx, pws| {
     check_slot(&pws, slot)?;
 
     let show_all = !show_name && !show_login && !show_password;
@@ -877,8 +883,7 @@ pub fn pws_set(
   login: &str,
   password: &str,
 ) -> Result<()> {
-  with_device(ctx, |ctx, device| {
-    let pws = get_password_safe(ctx, &device)?;
+  with_password_safe(ctx, |_ctx, pws| {
     pws
       .write_slot(slot, name, login, password)
       .map_err(|err| get_error("Could not write PWS slot", err))
@@ -887,8 +892,7 @@ pub fn pws_set(
 
 /// Clear a PWS slot.
 pub fn pws_clear(ctx: &mut args::ExecCtx<'_>, slot: u8) -> Result<()> {
-  with_device(ctx, |ctx, device| {
-    let pws = get_password_safe(ctx, &device)?;
+  with_password_safe(ctx, |_ctx, pws| {
     pws
       .erase_slot(slot)
       .map_err(|err| get_error("Could not clear PWS slot", err))
@@ -918,8 +922,7 @@ fn print_pws_slot(
 
 /// Print the status of all PWS slots.
 pub fn pws_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
-  with_device(ctx, |ctx, device| {
-    let pws = get_password_safe(ctx, &device)?;
+  with_password_safe(ctx, |ctx, pws| {
     let slots = pws
       .get_slot_status()
       .map_err(|err| get_error("Could not read PWS slot status", err))?;

@@ -47,6 +47,15 @@ pub enum Error {
   Error(String),
 }
 
+impl TryInto<nitrokey::CommandError> for Error {
+  fn try_into(self) -> Result<nitrokey::CommandError, Error> {
+    match self {
+      Error::CommandError(_, err) => Ok(err),
+      err => Err(err),
+    }
+  }
+}
+
 impl From<&str> for Error {
   fn from(s: &str) -> Error {
     Error::Error(s.to_string())
