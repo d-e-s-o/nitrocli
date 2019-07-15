@@ -30,6 +30,7 @@ use nitrokey::Device;
 use nitrokey::GenerateOtp;
 
 use crate::args;
+use crate::error;
 use crate::error::Error;
 use crate::pinentry;
 use crate::Result;
@@ -188,7 +189,7 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
 /// the first try, this function will call `op` with `data`.  At the
 /// second or third try, it will call `op` with the data returned by the
 /// previous call to `op`.
-fn try_with_pin_and_data_with_pinentry<D, F, R>(
+fn try_with_pin_and_data_with_pinentry<D, F, R, E>(
   ctx: &mut args::ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
@@ -196,7 +197,8 @@ fn try_with_pin_and_data_with_pinentry<D, F, R>(
   mut op: F,
 ) -> Result<R>
 where
-  F: FnMut(D, &str) -> result::Result<R, (D, nitrokey::CommandError)>,
+  F: FnMut(D, &str) -> result::Result<R, (D, E)>,
+  E: error::TryInto<nitrokey::CommandError>,
 {
   let mut data = data;
   let mut retry = 3;
@@ -205,26 +207,29 @@ where
     let pin = pinentry::inquire(ctx, pin_entry, pinentry::Mode::Query, error_msg)?;
     match op(data, &pin) {
       Ok(result) => return Ok(result),
-      Err((new_data, err)) => match err {
-        nitrokey::CommandError::WrongPassword => {
-          pinentry::clear(pin_entry)?;
-          retry -= 1;
+      Err((new_data, err)) => match err.try_into() {
+        Ok(err) => match err {
+          nitrokey::CommandError::WrongPassword => {
+            pinentry::clear(pin_entry)?;
+            retry -= 1;
 
-          if retry > 0 {
-            error_msg = Some("Wrong password, please reenter");
-            data = new_data;
-            continue;
+            if retry > 0 {
+              error_msg = Some("Wrong password, please reenter");
+              data = new_data;
+              continue;
+            }
+            return Err(get_error(msg, err));
           }
-          return Err(get_error(msg, err));
-        }
-        err => return Err(get_error(msg, err)),
+          err => return Err(get_error(msg, err)),
+        },
+        Err(err) => return Err(err),
       },
     };
   }
 }
 
 /// Try to execute the given function with a PIN.
-fn try_with_pin_and_data<D, F, R>(
+fn try_with_pin_and_data<D, F, R, E>(
   ctx: &mut args::ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
@@ -232,7 +237,8 @@ fn try_with_pin_and_data<D, F, R>(
   mut op: F,
 ) -> Result<R>
 where
-  F: FnMut(D, &str) -> result::Result<R, (D, nitrokey::CommandError)>,
+  F: FnMut(D, &str) -> result::Result<R, (D, E)>,
+  E: Into<Error> + error::TryInto<nitrokey::CommandError>,
 {
   let pin = match pin_entry.pin_type() {
     pinentry::PinType::Admin => &ctx.admin_pin,
@@ -246,7 +252,7 @@ where
         msg
       ))
     })?;
-    op(data, &pin).map_err(|(_, err)| get_error(msg, err))
+    op(data, &pin).map_err(|(_, err)| err.into())
   } else {
     try_with_pin_and_data_with_pinentry(ctx, pin_entry, msg, data, op)
   }
@@ -256,14 +262,15 @@ where
 ///
 /// This function behaves exactly as `try_with_pin_and_data`, but
 /// it refrains from passing any data to it.
-fn try_with_pin<F>(
+fn try_with_pin<F, E>(
   ctx: &mut args::ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   mut op: F,
 ) -> Result<()>
 where
-  F: FnMut(&str) -> result::Result<(), nitrokey::CommandError>,
+  F: FnMut(&str) -> result::Result<(), E>,
+  E: Into<Error> + error::TryInto<nitrokey::CommandError>,
 {
   try_with_pin_and_data(ctx, pin_entry, msg, (), |data, pin| {
     op(pin).map_err(|err| (data, err))

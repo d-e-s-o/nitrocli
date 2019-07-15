@@ -22,6 +22,22 @@ use std::io;
 use std::str;
 use std::string;
 
+/// A trait used to simplify error handling in conjunction with the
+/// try_with_* functions we use for repeatedly asking the user for a
+/// secret.
+pub trait TryInto<T> {
+  fn try_into(self) -> Result<T, Error>;
+}
+
+impl<T, U> TryInto<U> for T
+where
+  T: Into<U>,
+{
+  fn try_into(self) -> Result<U, Error> {
+    Ok(self.into())
+  }
+}
+
 #[derive(Debug)]
 pub enum Error {
   ArgparseError(i32),
