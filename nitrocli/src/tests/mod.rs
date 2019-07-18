@@ -22,11 +22,6 @@ use std::fmt;
 
 use nitrokey_test::test as test_device;
 
-// TODO: Those defines should potentially be taken from the `nitrokey`
-//       crate, once exported.
-const NITROKEY_DEFAULT_ADMIN_PIN: &str = "12345678";
-const NITROKEY_DEFAULT_USER_PIN: &str = "123456";
-
 mod config;
 mod encrypted;
 mod hidden;
@@ -94,8 +89,8 @@ impl Nitrocli {
   pub fn new() -> Self {
     Self {
       model: None,
-      admin_pin: Some(NITROKEY_DEFAULT_ADMIN_PIN.into()),
-      user_pin: Some(NITROKEY_DEFAULT_USER_PIN.into()),
+      admin_pin: Some(nitrokey::DEFAULT_ADMIN_PIN.into()),
+      user_pin: Some(nitrokey::DEFAULT_USER_PIN.into()),
       new_admin_pin: None,
       new_user_pin: None,
       password: None,
@@ -108,8 +103,8 @@ impl Nitrocli {
   {
     let result = Self {
       model: Some(device.get_model()),
-      admin_pin: Some(NITROKEY_DEFAULT_ADMIN_PIN.into()),
-      user_pin: Some(NITROKEY_DEFAULT_USER_PIN.into()),
+      admin_pin: Some(nitrokey::DEFAULT_ADMIN_PIN.into()),
+      user_pin: Some(nitrokey::DEFAULT_USER_PIN.into()),
       new_admin_pin: None,
       new_user_pin: None,
       password: Some("1234567".into()),

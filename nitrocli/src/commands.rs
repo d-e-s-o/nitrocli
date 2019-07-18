@@ -36,8 +36,6 @@ use crate::error::Error;
 use crate::pinentry;
 use crate::Result;
 
-const NITROKEY_DEFAULT_ADMIN_PIN: &str = "12345678";
-
 /// Create an `error::Error` with an error message of the format `msg: err`.
 fn get_error(msg: &'static str, err: nitrokey::Error) -> Error {
   Error::NitrokeyError(Some(msg), err)
@@ -387,7 +385,7 @@ pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
       // build_aes_key after a factory reset on Pro devices.
       // https://github.com/Nitrokey/nitrokey-pro-firmware/issues/57
       let _ = device.get_user_retry_count();
-      device.build_aes_key(NITROKEY_DEFAULT_ADMIN_PIN)
+      device.build_aes_key(nitrokey::DEFAULT_ADMIN_PIN)
     })
   })
 }

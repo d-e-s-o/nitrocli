@@ -49,7 +49,7 @@ fn set_user(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 
   let device = nitrokey::connect_model(ncli.model().unwrap())?;
   let (device, err) = device
-    .authenticate_user(NITROKEY_DEFAULT_USER_PIN)
+    .authenticate_user(nitrokey::DEFAULT_USER_PIN)
     .unwrap_err();
 
   match err {
@@ -60,12 +60,14 @@ fn set_user(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 
   // Revert to the default user PIN.
   ncli.user_pin("new-pin");
-  ncli.new_user_pin(NITROKEY_DEFAULT_USER_PIN);
+  ncli.new_user_pin(nitrokey::DEFAULT_USER_PIN);
 
   let out = ncli.handle(&["pin", "set", "user"])?;
   assert!(out.is_empty());
 
   let device = nitrokey::connect_model(ncli.model().unwrap())?;
-  let _ = device.authenticate_user(NITROKEY_DEFAULT_USER_PIN).unwrap();
+  let _ = device
+    .authenticate_user(nitrokey::DEFAULT_USER_PIN)
+    .unwrap();
   Ok(())
 }

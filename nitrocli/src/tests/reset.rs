@@ -43,12 +43,12 @@ fn reset(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
   // Check that the admin PIN has been reset.
   let device = nitrokey::connect_model(ncli.model().unwrap())?;
   let device = device
-    .authenticate_admin(NITROKEY_DEFAULT_ADMIN_PIN)
+    .authenticate_admin(nitrokey::DEFAULT_ADMIN_PIN)
     .unwrap();
 
   // Check that the password store works, i.e., the AES key has been
   // built.
-  let _ = device.get_password_safe(NITROKEY_DEFAULT_USER_PIN)?;
+  let _ = device.get_password_safe(nitrokey::DEFAULT_USER_PIN)?;
 
   Ok(())
 }
