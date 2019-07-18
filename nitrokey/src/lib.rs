@@ -1,3 +1,6 @@
+// Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
+// SPDX-License-Identifier: MIT
+
 //! Provides access to a Nitrokey device using the native libnitrokey API.
 //!
 //! # Usage
@@ -25,9 +28,9 @@
 //!
 //! ```no_run
 //! use nitrokey::Device;
-//! # use nitrokey::CommandError;
+//! # use nitrokey::Error;
 //!
-//! # fn try_main() -> Result<(), CommandError> {
+//! # fn try_main() -> Result<(), Error> {
 //! let device = nitrokey::connect()?;
 //! println!("{}", device.get_serial_number()?);
 //! #     Ok(())
@@ -38,9 +41,9 @@
 //!
 //! ```no_run
 //! use nitrokey::{Authenticate, ConfigureOtp, OtpMode, OtpSlotData};
-//! # use nitrokey::CommandError;
+//! # use nitrokey::Error;
 //!
-//! # fn try_main() -> Result<(), (CommandError)> {
+//! # fn try_main() -> Result<(), Error> {
 //! let device = nitrokey::connect()?;
 //! let slot_data = OtpSlotData::new(1, "test", "01234567890123456689", OtpMode::SixDigits);
 //! match device.authenticate_admin("12345678") {
@@ -60,9 +63,9 @@
 //!
 //! ```no_run
 //! use nitrokey::{Device, GenerateOtp};
-//! # use nitrokey::CommandError;
+//! # use nitrokey::Error;
 //!
-//! # fn try_main() -> Result<(), (CommandError)> {
+//! # fn try_main() -> Result<(), Error> {
 //! let device = nitrokey::connect()?;
 //! match device.get_hotp_code(1) {
 //!     Ok(code) => println!("Generated HOTP code: {}", code),
@@ -89,9 +92,12 @@
 mod auth;
 mod config;
 mod device;
+mod error;
 mod otp;
 mod pws;
 mod util;
+
+use std::fmt;
 
 use nitrokey_sys;
 
@@ -101,9 +107,15 @@ pub use crate::device::{
     connect, connect_model, Device, DeviceWrapper, Model, Pro, SdCardData, Storage,
     StorageProductionInfo, StorageStatus, VolumeMode, VolumeStatus,
 };
+pub use crate::error::{CommandError, CommunicationError, Error, LibraryError};
 pub use crate::otp::{ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData};
 pub use crate::pws::{GetPasswordSafe, PasswordSafe, SLOT_COUNT};
-pub use crate::util::{CommandError, LogLevel};
+pub use crate::util::LogLevel;
+
+/// The default admin PIN for all Nitrokey devices.
+pub const DEFAULT_ADMIN_PIN: &str = "12345678";
+/// The default user PIN for all Nitrokey devices.
+pub const DEFAULT_USER_PIN: &str = "123456";
 
 /// A version of the libnitrokey library.
 ///
@@ -123,6 +135,16 @@ pub struct Version {
     pub major: u32,
     /// The minor library version.
     pub minor: u32,
+}
+
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.git.is_empty() {
+            write!(f, "v{}.{}", self.major, self.minor)
+        } else {
+            f.write_str(&self.git)
+        }
+    }
 }
 
 /// Enables or disables debug output.  Calling this method with `true` is equivalent to setting the
@@ -149,21 +171,30 @@ pub fn set_log_level(level: LogLevel) {
 
 /// Returns the libnitrokey library version.
 ///
+/// # Errors
+///
+/// - [`Utf8Error`][] if libnitrokey returned an invalid UTF-8 string
+///
 /// # Example
 ///
 /// ```
-/// let version = nitrokey::get_library_version();
+/// # fn main() -> Result<(), nitrokey::Error> {
+/// let version = nitrokey::get_library_version()?;
 /// println!("Using libnitrokey {}", version.git);
+/// #    Ok(())
+/// # }
 /// ```
-pub fn get_library_version() -> Version {
+///
+/// [`Utf8Error`]: enum.Error.html#variant.Utf8Error
+pub fn get_library_version() -> Result<Version, Error> {
     // NK_get_library_version returns a static string, so we don’t have to free the pointer.
     let git = unsafe { nitrokey_sys::NK_get_library_version() };
     let git = if git.is_null() {
         String::new()
     } else {
-        util::owned_str_from_ptr(git)
+        util::owned_str_from_ptr(git)?
     };
     let major = unsafe { nitrokey_sys::NK_get_major_library_version() };
     let minor = unsafe { nitrokey_sys::NK_get_minor_library_version() };
-    Version { git, major, minor }
+    Ok(Version { git, major, minor })
 }

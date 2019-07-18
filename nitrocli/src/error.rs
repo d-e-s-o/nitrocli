@@ -41,16 +41,16 @@ where
 #[derive(Debug)]
 pub enum Error {
   ArgparseError(i32),
-  CommandError(Option<&'static str>, nitrokey::CommandError),
   IoError(io::Error),
+  NitrokeyError(Option<&'static str>, nitrokey::Error),
   Utf8Error(str::Utf8Error),
   Error(String),
 }
 
-impl TryInto<nitrokey::CommandError> for Error {
-  fn try_into(self) -> Result<nitrokey::CommandError, Error> {
+impl TryInto<nitrokey::Error> for Error {
+  fn try_into(self) -> Result<nitrokey::Error, Error> {
     match self {
-      Error::CommandError(_, err) => Ok(err),
+      Error::NitrokeyError(_, err) => Ok(err),
       err => Err(err),
     }
   }
@@ -62,9 +62,9 @@ impl From<&str> for Error {
   }
 }
 
-impl From<nitrokey::CommandError> for Error {
-  fn from(e: nitrokey::CommandError) -> Error {
-    Error::CommandError(None, e)
+impl From<nitrokey::Error> for Error {
+  fn from(e: nitrokey::Error) -> Error {
+    Error::NitrokeyError(None, e)
   }
 }
 
@@ -90,7 +90,7 @@ impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
       Error::ArgparseError(_) => write!(f, "Could not parse arguments"),
-      Error::CommandError(ref ctx, ref e) => {
+      Error::NitrokeyError(ref ctx, ref e) => {
         if let Some(ctx) = ctx {
           write!(f, "{}: ", ctx)?;
         }

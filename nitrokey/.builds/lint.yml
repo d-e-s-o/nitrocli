@@ -1,0 +1,27 @@
+# Copyright (C) 2019 Robin Krahl <robin.krahl@ireas.org>
+# SPDX-License-Identifier: MIT
+image: archlinux
+packages:
+  - rustup
+  - python
+  - python-pip
+  - python-pygit2
+sources:
+  - https://git.ireas.org/nitrokey-rs
+tasks:
+  - setup: |
+      pip install --user fsfe-reuse
+      rustup update stable
+      rustup self upgrade-data
+      rustup default stable
+      rustup component add rustfmt
+      rustup component add clippy
+  - format: |
+      cd nitrokey-rs
+      cargo fmt -- --check
+  - reuse: |
+      cd nitrokey-rs
+      ~/.local/bin/reuse lint
+  - clippy: |
+      cd nitrokey-rs
+      cargo clippy -- -D warnings

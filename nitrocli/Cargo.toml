@@ -53,10 +53,10 @@ path = "../base32"
 version = "0.2"
 
 [dependencies.nitrokey]
-version = "0.3.1"
+version = "0.4.0-alpha.0"
 
 [dev-dependencies.nitrokey-test]
-version = "0.1.1"
+version = "0.2"
 
 [dev-dependencies.regex]
 version = "1"

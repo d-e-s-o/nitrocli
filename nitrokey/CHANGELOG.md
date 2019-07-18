@@ -1,3 +1,37 @@
+<!---
+Copyright (C) 2019 Robin Krahl <robin.krahl@ireas.org>
+SPDX-License-Identifier: MIT
+-->
+
+# Unreleased
+- Remove the `test-pro` and `test-storage` features.
+- Implement `Display` for `Version`.
+- Introduce `DEFAULT_ADMIN_PIN` and `DEFAULT_USER_PIN` constants.
+- Refactor the error handling code:
+  - Implement `std::error::Error` for `CommandError`.
+  - Add the `Error` enum.
+  - Add the `LibraryError` enum and move the library error variants from
+    `CommandError` to `LibraryError`.
+  - Add the `CommunicationError` enum and move the communication error variants
+    from `CommandError` to `CommunicationError`.
+  - Return `Error` instead of `CommandError` in all public functions.
+  - Move the `CommandError::RngError` variant to `Error::RandError` and the
+    `CommandError::Unknown` variant to `Error::UnknownError`.
+  - Return `CommunicationError::NotConnected` instead of
+    `CommandError::Undefined` from the connect functions.
+  - Remove the `CommandError::Undefined` variant.
+- Add a private `PhantomData` field to `Pro` and `Storage` to make direct
+  instantiation impossible.
+- Refactor and clean up internal code:
+  - Prefer using the `Into` trait over numeric casting.
+  - Add `Pro::new` and `Storage::new` functions.
+- Implement `From<Pro>` and `From<Storage>` for `DeviceWrapper`.
+- Add `Error::Utf8Error` variant.
+  - Return `Result<Version>` instead of `Version` from `get_library_version`.
+  - Return `Error::Utf8Error` if libnitrokey returns an invalid UTF-8 string.
+- Implement `From<(T: Device, Error)>` for `Error`.
+- Fix timing issues with the `totp_no_pin` and `totp_pin` test cases.
+
 # v0.3.4 (2019-01-20)
 - Fix authentication methods that assumed that `char` is signed.
 

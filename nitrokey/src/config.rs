@@ -1,4 +1,7 @@
-use crate::util::CommandError;
+// Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
+// SPDX-License-Identifier: MIT
+
+use crate::error::{Error, LibraryError};
 
 /// The configuration for a Nitrokey.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -30,21 +33,21 @@ pub struct RawConfig {
 
 fn config_otp_slot_to_option(value: u8) -> Option<u8> {
     if value < 3 {
-        return Some(value);
+        Some(value)
+    } else {
+        None
     }
-    None
 }
 
-fn option_to_config_otp_slot(value: Option<u8>) -> Result<u8, CommandError> {
-    match value {
-        Some(value) => {
-            if value < 3 {
-                Ok(value)
-            } else {
-                Err(CommandError::InvalidSlot)
-            }
+fn option_to_config_otp_slot(value: Option<u8>) -> Result<u8, Error> {
+    if let Some(value) = value {
+        if value < 3 {
+            Ok(value)
+        } else {
+            Err(LibraryError::InvalidSlot.into())
         }
-        None => Ok(255),
+    } else {
+        Ok(255)
     }
 }
 
@@ -66,7 +69,7 @@ impl Config {
 }
 
 impl RawConfig {
-    pub fn try_from(config: Config) -> Result<RawConfig, CommandError> {
+    pub fn try_from(config: Config) -> Result<RawConfig, Error> {
         Ok(RawConfig {
             numlock: option_to_config_otp_slot(config.numlock)?,
             capslock: option_to_config_otp_slot(config.capslock)?,

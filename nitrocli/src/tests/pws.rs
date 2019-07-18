@@ -24,10 +24,10 @@ fn set_invalid_slot(device: nitrokey::DeviceWrapper) {
   let res = Nitrocli::with_dev(device).handle(&["pws", "set", "100", "name", "login", "1234"]);
 
   assert_eq!(
-    res.unwrap_cmd_err(),
+    res.unwrap_lib_err(),
     (
       Some("Could not write PWS slot"),
-      nitrokey::CommandError::InvalidSlot
+      nitrokey::LibraryError::InvalidSlot
     )
   );
 }

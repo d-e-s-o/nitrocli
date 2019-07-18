@@ -1,10 +1,12 @@
+// Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
+// SPDX-License-Identifier: MIT
+
 use libc;
 use nitrokey_sys;
 
 use crate::device::{Device, DeviceWrapper, Pro, Storage};
-use crate::util::{
-    get_command_result, get_cstring, get_last_error, result_from_string, CommandError,
-};
+use crate::error::{CommandError, Error};
+use crate::util::{get_command_result, get_cstring, get_last_error, result_from_string};
 
 /// The number of slots in a [`PasswordSafe`][].
 ///
@@ -30,9 +32,9 @@ pub const SLOT_COUNT: u8 = 16;
 ///
 /// ```no_run
 /// use nitrokey::{Device, GetPasswordSafe, PasswordSafe};
-/// # use nitrokey::CommandError;
+/// # use nitrokey::Error;
 ///
-/// fn use_password_safe(pws: &PasswordSafe) -> Result<(), CommandError> {
+/// fn use_password_safe(pws: &PasswordSafe) -> Result<(), Error> {
 ///     let name = pws.get_slot_name(0)?;
 ///     let login = pws.get_slot_login(0)?;
 ///     let password = pws.get_slot_login(0)?;
@@ -40,7 +42,7 @@ pub const SLOT_COUNT: u8 = 16;
 ///     Ok(())
 /// }
 ///
-/// # fn try_main() -> Result<(), CommandError> {
+/// # fn try_main() -> Result<(), Error> {
 /// let device = nitrokey::connect()?;
 /// let pws = device.get_password_safe("123456")?;
 /// use_password_safe(&pws);
@@ -53,6 +55,7 @@ pub const SLOT_COUNT: u8 = 16;
 /// [`get_password_safe`]: trait.GetPasswordSafe.html#method.get_password_safe
 /// [`lock`]: trait.Device.html#method.lock
 /// [`GetPasswordSafe`]: trait.GetPasswordSafe.html
+#[derive(Debug)]
 pub struct PasswordSafe<'a> {
     _device: &'a dyn Device,
 }
@@ -89,11 +92,11 @@ pub trait GetPasswordSafe {
     ///
     /// ```no_run
     /// use nitrokey::{Device, GetPasswordSafe, PasswordSafe};
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
     /// fn use_password_safe(pws: &PasswordSafe) {}
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.get_password_safe("123456") {
     ///     Ok(pws) => {
@@ -110,28 +113,24 @@ pub trait GetPasswordSafe {
     /// [`lock`]: trait.Device.html#method.lock
     /// [`AesDecryptionFailed`]: enum.CommandError.html#variant.AesDecryptionFailed
     /// [`Device::build_aes_key`]: trait.Device.html#method.build_aes_key
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`Unknown`]: enum.CommandError.html#variant.Unknown
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, CommandError>;
+    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, Error>;
 }
 
 fn get_password_safe<'a>(
     device: &'a dyn Device,
     user_pin: &str,
-) -> Result<PasswordSafe<'a>, CommandError> {
+) -> Result<PasswordSafe<'a>, Error> {
     let user_pin_string = get_cstring(user_pin)?;
-    let result = unsafe {
-        get_command_result(nitrokey_sys::NK_enable_password_safe(
-            user_pin_string.as_ptr(),
-        ))
-    };
-    result.map(|()| PasswordSafe { _device: device })
+    get_command_result(unsafe { nitrokey_sys::NK_enable_password_safe(user_pin_string.as_ptr()) })
+        .map(|_| PasswordSafe { _device: device })
 }
 
-fn get_pws_result(s: String) -> Result<String, CommandError> {
+fn get_pws_result(s: String) -> Result<String, Error> {
     if s.is_empty() {
-        Err(CommandError::SlotNotProgrammed)
+        Err(CommandError::SlotNotProgrammed.into())
     } else {
         Ok(s)
     }
@@ -146,9 +145,9 @@ impl<'a> PasswordSafe<'a> {
     ///
     /// ```no_run
     /// use nitrokey::{GetPasswordSafe, SLOT_COUNT};
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let pws = device.get_password_safe("123456")?;
     /// pws.get_slot_status()?.iter().enumerate().for_each(|(slot, programmed)| {
@@ -161,7 +160,7 @@ impl<'a> PasswordSafe<'a> {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_slot_status(&self) -> Result<[bool; SLOT_COUNT as usize], CommandError> {
+    pub fn get_slot_status(&self) -> Result<[bool; SLOT_COUNT as usize], Error> {
         let status_ptr = unsafe { nitrokey_sys::NK_get_password_safe_slot_status() };
         if status_ptr.is_null() {
             return Err(get_last_error());
@@ -191,9 +190,9 @@ impl<'a> PasswordSafe<'a> {
     ///
     /// ```no_run
     /// use nitrokey::GetPasswordSafe;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.get_password_safe("123456") {
     ///     Ok(pws) => {
@@ -208,10 +207,10 @@ impl<'a> PasswordSafe<'a> {
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
-    pub fn get_slot_name(&self, slot: u8) -> Result<String, CommandError> {
-        unsafe { result_from_string(nitrokey_sys::NK_get_password_safe_slot_name(slot)) }
+    pub fn get_slot_name(&self, slot: u8) -> Result<String, Error> {
+        result_from_string(unsafe { nitrokey_sys::NK_get_password_safe_slot_name(slot) })
             .and_then(get_pws_result)
     }
 
@@ -228,9 +227,9 @@ impl<'a> PasswordSafe<'a> {
     ///
     /// ```no_run
     /// use nitrokey::GetPasswordSafe;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let pws = device.get_password_safe("123456")?;
     /// let name = pws.get_slot_name(0)?;
@@ -241,10 +240,10 @@ impl<'a> PasswordSafe<'a> {
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
-    pub fn get_slot_login(&self, slot: u8) -> Result<String, CommandError> {
-        unsafe { result_from_string(nitrokey_sys::NK_get_password_safe_slot_login(slot)) }
+    pub fn get_slot_login(&self, slot: u8) -> Result<String, Error> {
+        result_from_string(unsafe { nitrokey_sys::NK_get_password_safe_slot_login(slot) })
             .and_then(get_pws_result)
     }
 
@@ -261,9 +260,9 @@ impl<'a> PasswordSafe<'a> {
     ///
     /// ```no_run
     /// use nitrokey::GetPasswordSafe;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let pws = device.get_password_safe("123456")?;
     /// let name = pws.get_slot_name(0)?;
@@ -274,10 +273,10 @@ impl<'a> PasswordSafe<'a> {
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
-    pub fn get_slot_password(&self, slot: u8) -> Result<String, CommandError> {
-        unsafe { result_from_string(nitrokey_sys::NK_get_password_safe_slot_password(slot)) }
+    pub fn get_slot_password(&self, slot: u8) -> Result<String, Error> {
+        result_from_string(unsafe { nitrokey_sys::NK_get_password_safe_slot_password(slot) })
             .and_then(get_pws_result)
     }
 
@@ -292,9 +291,9 @@ impl<'a> PasswordSafe<'a> {
     ///
     /// ```no_run
     /// use nitrokey::GetPasswordSafe;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let pws = device.get_password_safe("123456")?;
     /// let name = pws.get_slot_name(0)?;
@@ -305,26 +304,26 @@ impl<'a> PasswordSafe<'a> {
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     pub fn write_slot(
         &self,
         slot: u8,
         name: &str,
         login: &str,
         password: &str,
-    ) -> Result<(), CommandError> {
+    ) -> Result<(), Error> {
         let name_string = get_cstring(name)?;
         let login_string = get_cstring(login)?;
         let password_string = get_cstring(password)?;
-        unsafe {
-            get_command_result(nitrokey_sys::NK_write_password_safe_slot(
+        get_command_result(unsafe {
+            nitrokey_sys::NK_write_password_safe_slot(
                 slot,
                 name_string.as_ptr(),
                 login_string.as_ptr(),
                 password_string.as_ptr(),
-            ))
-        }
+            )
+        })
     }
 
     /// Erases the given slot.  Erasing clears the stored name, login and password (if the slot was
@@ -338,9 +337,9 @@ impl<'a> PasswordSafe<'a> {
     ///
     /// ```no_run
     /// use nitrokey::GetPasswordSafe;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let pws = device.get_password_safe("123456")?;
     /// match pws.erase_slot(0) {
@@ -351,9 +350,9 @@ impl<'a> PasswordSafe<'a> {
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    pub fn erase_slot(&self, slot: u8) -> Result<(), CommandError> {
-        unsafe { get_command_result(nitrokey_sys::NK_erase_password_safe_slot(slot)) }
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
+    pub fn erase_slot(&self, slot: u8) -> Result<(), Error> {
+        get_command_result(unsafe { nitrokey_sys::NK_erase_password_safe_slot(slot) })
     }
 }
 
@@ -365,19 +364,19 @@ impl<'a> Drop for PasswordSafe<'a> {
 }
 
 impl GetPasswordSafe for Pro {
-    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, CommandError> {
+    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, Error> {
         get_password_safe(self, user_pin)
     }
 }
 
 impl GetPasswordSafe for Storage {
-    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, CommandError> {
+    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, Error> {
         get_password_safe(self, user_pin)
     }
 }
 
 impl GetPasswordSafe for DeviceWrapper {
-    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, CommandError> {
+    fn get_password_safe(&self, user_pin: &str) -> Result<PasswordSafe<'_>, Error> {
         get_password_safe(self, user_pin)
     }
 }
