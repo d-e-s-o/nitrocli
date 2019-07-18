@@ -56,7 +56,10 @@ version = "0.2"
 version = "0.4.0-alpha.0"
 
 [dev-dependencies.nitrokey-test]
-version = "0.2"
+version = "0.2.1"
+
+[dev-dependencies.nitrokey-test-state]
+version = "0.1"
 
 [dev-dependencies.regex]
 version = "1"

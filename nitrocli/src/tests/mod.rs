@@ -27,15 +27,6 @@ use nitrokey_test::test as test_device;
 const NITROKEY_DEFAULT_ADMIN_PIN: &str = "12345678";
 const NITROKEY_DEFAULT_USER_PIN: &str = "123456";
 
-// TODO: This is a hack to make the nitrokey-test crate work across
-//       module boundaries. Upon first use of the nitrokey_test::test
-//       macro a new function, __nitrokey_mutex, will be emitted, but it
-//       is not visible in a different module. To work around that we
-//       trigger the macro here first and then `use super::*` from all
-//       of the submodules.
-#[test_device]
-fn dummy() {}
-
 mod config;
 mod encrypted;
 mod hidden;
