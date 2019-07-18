@@ -1,3 +1,6 @@
+// Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
+// SPDX-License-Identifier: MIT
+
 mod util;
 
 use std::ffi::CStr;
@@ -5,8 +8,8 @@ use std::process::Command;
 use std::{thread, time};
 
 use nitrokey::{
-    Authenticate, CommandError, Config, ConfigureOtp, Device, GenerateOtp, GetPasswordSafe,
-    OtpMode, OtpSlotData, Storage, VolumeMode,
+    Authenticate, CommandError, CommunicationError, Config, ConfigureOtp, Device, Error,
+    GenerateOtp, GetPasswordSafe, LibraryError, OtpMode, OtpSlotData, Storage, VolumeMode,
 };
 use nitrokey_test::test as test_device;
 
@@ -31,11 +34,20 @@ fn count_nitrokey_block_devices() -> usize {
 
 #[test_device]
 fn connect_no_device() {
-    assert!(nitrokey::connect().is_err());
-    assert!(nitrokey::connect_model(nitrokey::Model::Pro).is_err());
-    assert!(nitrokey::connect_model(nitrokey::Model::Storage).is_err());
-    assert!(nitrokey::Pro::connect().is_err());
-    assert!(nitrokey::Storage::connect().is_err());
+    assert_cmu_err!(CommunicationError::NotConnected, nitrokey::connect());
+    assert_cmu_err!(
+        CommunicationError::NotConnected,
+        nitrokey::connect_model(nitrokey::Model::Pro)
+    );
+    assert_cmu_err!(
+        CommunicationError::NotConnected,
+        nitrokey::connect_model(nitrokey::Model::Storage)
+    );
+    assert_cmu_err!(CommunicationError::NotConnected, nitrokey::Pro::connect());
+    assert_cmu_err!(
+        CommunicationError::NotConnected,
+        nitrokey::Storage::connect()
+    );
 }
 
 #[test_device]
@@ -124,23 +136,21 @@ fn get_retry_count(device: DeviceWrapper) {
 #[test_device]
 fn config(device: DeviceWrapper) {
     let admin = device.authenticate_admin(ADMIN_PASSWORD).unwrap();
+
     let config = Config::new(None, None, None, true);
-    assert_eq!(Ok(()), admin.write_config(config));
-    let get_config = admin.get_config().unwrap();
-    assert_eq!(config, get_config);
+    assert_ok!((), admin.write_config(config));
+    assert_ok!(config, admin.get_config());
 
     let config = Config::new(None, Some(9), None, true);
-    assert_eq!(Err(CommandError::InvalidSlot), admin.write_config(config));
+    assert_lib_err!(LibraryError::InvalidSlot, admin.write_config(config));
 
     let config = Config::new(Some(1), None, Some(0), false);
-    assert_eq!(Ok(()), admin.write_config(config));
-    let get_config = admin.get_config().unwrap();
-    assert_eq!(config, get_config);
+    assert_ok!((), admin.write_config(config));
+    assert_ok!(config, admin.get_config());
 
     let config = Config::new(None, None, None, false);
-    assert_eq!(Ok(()), admin.write_config(config));
-    let get_config = admin.get_config().unwrap();
-    assert_eq!(config, get_config);
+    assert_ok!((), admin.write_config(config));
+    assert_ok!(config, admin.get_config());
 }
 
 #[test_device]
@@ -148,9 +158,7 @@ fn change_user_pin(device: DeviceWrapper) {
     let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
     let device = device.authenticate_user(USER_NEW_PASSWORD).unwrap_err().0;
 
-    assert!(device
-        .change_user_pin(USER_PASSWORD, USER_NEW_PASSWORD)
-        .is_ok());
+    assert_ok!((), device.change_user_pin(USER_PASSWORD, USER_NEW_PASSWORD));
 
     let device = device.authenticate_user(USER_PASSWORD).unwrap_err().0;
     let device = device
@@ -159,11 +167,9 @@ fn change_user_pin(device: DeviceWrapper) {
         .device();
 
     let result = device.change_user_pin(USER_PASSWORD, USER_PASSWORD);
-    assert_eq!(Err(CommandError::WrongPassword), result);
+    assert_cmd_err!(CommandError::WrongPassword, result);
 
-    assert!(device
-        .change_user_pin(USER_NEW_PASSWORD, USER_PASSWORD)
-        .is_ok());
+    assert_ok!((), device.change_user_pin(USER_NEW_PASSWORD, USER_PASSWORD));
 
     let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
     assert!(device.authenticate_user(USER_NEW_PASSWORD).is_err());
@@ -174,9 +180,10 @@ fn change_admin_pin(device: DeviceWrapper) {
     let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
     let device = device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap_err().0;
 
-    assert!(device
-        .change_admin_pin(ADMIN_PASSWORD, ADMIN_NEW_PASSWORD)
-        .is_ok());
+    assert_ok!(
+        (),
+        device.change_admin_pin(ADMIN_PASSWORD, ADMIN_NEW_PASSWORD)
+    );
 
     let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap_err().0;
     let device = device
@@ -184,14 +191,15 @@ fn change_admin_pin(device: DeviceWrapper) {
         .unwrap()
         .device();
 
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.change_admin_pin(ADMIN_PASSWORD, ADMIN_PASSWORD)
     );
 
-    assert!(device
-        .change_admin_pin(ADMIN_NEW_PASSWORD, ADMIN_PASSWORD)
-        .is_ok());
+    assert_ok!(
+        (),
+        device.change_admin_pin(ADMIN_NEW_PASSWORD, ADMIN_PASSWORD)
+    );
 
     let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
     device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap_err();
@@ -205,18 +213,19 @@ where
     let result = device.authenticate_user(password);
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert_eq!(error, err.1);
+    match err.1 {
+        Error::CommandError(err) => assert_eq!(error, err),
+        _ => assert!(false),
+    };
     err.0
 }
 
 #[test_device]
 fn unlock_user_pin(device: DeviceWrapper) {
     let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
-    assert!(device
-        .unlock_user_pin(ADMIN_PASSWORD, USER_PASSWORD)
-        .is_ok());
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_ok!((), device.unlock_user_pin(ADMIN_PASSWORD, USER_PASSWORD));
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.unlock_user_pin(USER_PASSWORD, USER_PASSWORD)
     );
 
@@ -228,13 +237,11 @@ fn unlock_user_pin(device: DeviceWrapper) {
     let device = require_failed_user_login(device, USER_PASSWORD, CommandError::WrongPassword);
 
     // unblock with current PIN
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.unlock_user_pin(USER_PASSWORD, USER_PASSWORD)
     );
-    assert!(device
-        .unlock_user_pin(ADMIN_PASSWORD, USER_PASSWORD)
-        .is_ok());
+    assert_ok!((), device.unlock_user_pin(ADMIN_PASSWORD, USER_PASSWORD));
     let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
 
     // block user PIN
@@ -244,57 +251,50 @@ fn unlock_user_pin(device: DeviceWrapper) {
     let device = require_failed_user_login(device, USER_PASSWORD, CommandError::WrongPassword);
 
     // unblock with new PIN
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.unlock_user_pin(USER_PASSWORD, USER_PASSWORD)
     );
-    assert!(device
-        .unlock_user_pin(ADMIN_PASSWORD, USER_NEW_PASSWORD)
-        .is_ok());
+    assert_ok!(
+        (),
+        device.unlock_user_pin(ADMIN_PASSWORD, USER_NEW_PASSWORD)
+    );
 
     // reset user PIN
-    assert!(device
-        .change_user_pin(USER_NEW_PASSWORD, USER_PASSWORD)
-        .is_ok());
+    assert_ok!((), device.change_user_pin(USER_NEW_PASSWORD, USER_PASSWORD));
 }
 
 #[test_device]
 fn factory_reset(device: DeviceWrapper) {
     let admin = device.authenticate_admin(ADMIN_PASSWORD).unwrap();
     let otp_data = OtpSlotData::new(1, "test", "0123468790", OtpMode::SixDigits);
-    assert_eq!(Ok(()), admin.write_totp_slot(otp_data, 30));
+    assert_ok!((), admin.write_totp_slot(otp_data, 30));
 
     let device = admin.device();
     let pws = device.get_password_safe(USER_PASSWORD).unwrap();
-    assert_eq!(Ok(()), pws.write_slot(0, "test", "testlogin", "testpw"));
+    assert_ok!((), pws.write_slot(0, "test", "testlogin", "testpw"));
     drop(pws);
 
-    assert_eq!(
-        Ok(()),
-        device.change_user_pin(USER_PASSWORD, USER_NEW_PASSWORD)
-    );
-    assert_eq!(
-        Ok(()),
+    assert_ok!((), device.change_user_pin(USER_PASSWORD, USER_NEW_PASSWORD));
+    assert_ok!(
+        (),
         device.change_admin_pin(ADMIN_PASSWORD, ADMIN_NEW_PASSWORD)
     );
 
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.factory_reset(USER_NEW_PASSWORD)
     );
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.factory_reset(ADMIN_PASSWORD)
     );
-    assert_eq!(Ok(()), device.factory_reset(ADMIN_NEW_PASSWORD));
+    assert_ok!((), device.factory_reset(ADMIN_NEW_PASSWORD));
 
     let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
 
     let user = device.authenticate_user(USER_PASSWORD).unwrap();
-    assert_eq!(
-        Err(CommandError::SlotNotProgrammed),
-        user.get_totp_slot_name(1)
-    );
+    assert_cmd_err!(CommandError::SlotNotProgrammed, user.get_totp_slot_name(1));
 
     let device = user.device();
     let pws = device.get_password_safe(USER_PASSWORD).unwrap();
@@ -302,20 +302,20 @@ fn factory_reset(device: DeviceWrapper) {
     assert_ne!("testlogin".to_string(), pws.get_slot_login(0).unwrap());
     assert_ne!("testpw".to_string(), pws.get_slot_password(0).unwrap());
 
-    assert_eq!(Ok(()), device.build_aes_key(ADMIN_PASSWORD));
+    assert_ok!((), device.build_aes_key(ADMIN_PASSWORD));
 }
 
 #[test_device]
 fn build_aes_key(device: DeviceWrapper) {
     let pws = device.get_password_safe(USER_PASSWORD).unwrap();
-    assert_eq!(Ok(()), pws.write_slot(0, "test", "testlogin", "testpw"));
+    assert_ok!((), pws.write_slot(0, "test", "testlogin", "testpw"));
     drop(pws);
 
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.build_aes_key(USER_PASSWORD)
     );
-    assert_eq!(Ok(()), device.build_aes_key(ADMIN_PASSWORD));
+    assert_ok!((), device.build_aes_key(ADMIN_PASSWORD));
 
     let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
 
@@ -327,74 +327,71 @@ fn build_aes_key(device: DeviceWrapper) {
 
 #[test_device]
 fn change_update_pin(device: Storage) {
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.change_update_pin(UPDATE_NEW_PIN, UPDATE_PIN)
     );
-    assert_eq!(Ok(()), device.change_update_pin(UPDATE_PIN, UPDATE_NEW_PIN));
-    assert_eq!(Ok(()), device.change_update_pin(UPDATE_NEW_PIN, UPDATE_PIN));
+    assert_ok!((), device.change_update_pin(UPDATE_PIN, UPDATE_NEW_PIN));
+    assert_ok!((), device.change_update_pin(UPDATE_NEW_PIN, UPDATE_PIN));
 }
 
 #[test_device]
 fn encrypted_volume(device: Storage) {
-    assert_eq!(Ok(()), device.lock());
+    assert_ok!((), device.lock());
 
     assert_eq!(1, count_nitrokey_block_devices());
-    assert_eq!(Ok(()), device.disable_encrypted_volume());
+    assert_ok!((), device.disable_encrypted_volume());
     assert_eq!(1, count_nitrokey_block_devices());
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.enable_encrypted_volume("123")
     );
     assert_eq!(1, count_nitrokey_block_devices());
-    assert_eq!(Ok(()), device.enable_encrypted_volume(USER_PASSWORD));
+    assert_ok!((), device.enable_encrypted_volume(USER_PASSWORD));
     assert_eq!(2, count_nitrokey_block_devices());
-    assert_eq!(Ok(()), device.disable_encrypted_volume());
+    assert_ok!((), device.disable_encrypted_volume());
     assert_eq!(1, count_nitrokey_block_devices());
 }
 
 #[test_device]
 fn hidden_volume(device: Storage) {
-    assert_eq!(Ok(()), device.lock());
+    assert_ok!((), device.lock());
 
     assert_eq!(1, count_nitrokey_block_devices());
-    assert_eq!(Ok(()), device.disable_hidden_volume());
+    assert_ok!((), device.disable_hidden_volume());
     assert_eq!(1, count_nitrokey_block_devices());
 
-    assert_eq!(Ok(()), device.enable_encrypted_volume(USER_PASSWORD));
+    assert_ok!((), device.enable_encrypted_volume(USER_PASSWORD));
     assert_eq!(2, count_nitrokey_block_devices());
 
     // TODO: why this error code?
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.create_hidden_volume(5, 0, 100, "hiddenpw")
     );
-    assert_eq!(Ok(()), device.create_hidden_volume(0, 20, 21, "hidden-pw"));
-    assert_eq!(
-        Ok(()),
-        device.create_hidden_volume(0, 20, 21, "hiddenpassword")
-    );
-    assert_eq!(Ok(()), device.create_hidden_volume(1, 0, 1, "otherpw"));
+    assert_ok!((), device.create_hidden_volume(0, 20, 21, "hidden-pw"));
+    assert_ok!((), device.create_hidden_volume(0, 20, 21, "hiddenpassword"));
+    assert_ok!((), device.create_hidden_volume(1, 0, 1, "otherpw"));
     // TODO: test invalid range (not handled by libnitrokey)
     assert_eq!(2, count_nitrokey_block_devices());
 
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.enable_hidden_volume("blubb")
     );
-    assert_eq!(Ok(()), device.enable_hidden_volume("hiddenpassword"));
+    assert_ok!((), device.enable_hidden_volume("hiddenpassword"));
     assert_eq!(2, count_nitrokey_block_devices());
-    assert_eq!(Ok(()), device.enable_hidden_volume("otherpw"));
+    assert_ok!((), device.enable_hidden_volume("otherpw"));
     assert_eq!(2, count_nitrokey_block_devices());
 
-    assert_eq!(Ok(()), device.disable_hidden_volume());
+    assert_ok!((), device.disable_hidden_volume());
     assert_eq!(1, count_nitrokey_block_devices());
 }
 
 #[test_device]
 fn lock(device: Storage) {
-    assert_eq!(Ok(()), device.enable_encrypted_volume(USER_PASSWORD));
-    assert_eq!(Ok(()), device.lock());
+    assert_ok!((), device.enable_encrypted_volume(USER_PASSWORD));
+    assert_ok!((), device.lock());
     assert_eq!(1, count_nitrokey_block_devices());
 }
 
@@ -410,17 +407,14 @@ fn set_unencrypted_volume_mode(device: Storage) {
     }
 
     fn assert_success(device: &Storage, mode: VolumeMode) {
-        assert_eq!(
-            Ok(()),
-            device.set_unencrypted_volume_mode(ADMIN_PASSWORD, mode)
-        );
+        assert_ok!((), device.set_unencrypted_volume_mode(ADMIN_PASSWORD, mode));
         assert_mode(&device, mode);
     }
 
     assert_success(&device, VolumeMode::ReadOnly);
 
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.set_unencrypted_volume_mode(USER_PASSWORD, VolumeMode::ReadOnly)
     );
     assert_mode(&device, VolumeMode::ReadOnly);
@@ -441,8 +435,8 @@ fn get_storage_status(device: Storage) {
 #[test_device]
 fn get_production_info(device: Storage) {
     let info = device.get_production_info().unwrap();
-    assert_eq!(0, info.firmware_version_major);
-    assert!(info.firmware_version_minor != 0);
+    assert_eq!(0, info.firmware_version.major);
+    assert!(info.firmware_version.minor != 0);
     assert!(info.serial_number_cpu != 0);
     assert!(info.sd_card.serial_number != 0);
     assert!(info.sd_card.size > 0);
@@ -454,24 +448,23 @@ fn get_production_info(device: Storage) {
     assert!(info.sd_card.manufacturer != 0);
 
     let status = device.get_status().unwrap();
-    assert_eq!(status.firmware_version_major, info.firmware_version_major);
-    assert_eq!(status.firmware_version_minor, info.firmware_version_minor);
+    assert_eq!(status.firmware_version, info.firmware_version);
     assert_eq!(status.serial_number_sd_card, info.sd_card.serial_number);
 }
 
 #[test_device]
 fn clear_new_sd_card_warning(device: Storage) {
-    assert_eq!(Ok(()), device.factory_reset(ADMIN_PASSWORD));
+    assert_ok!((), device.factory_reset(ADMIN_PASSWORD));
     thread::sleep(time::Duration::from_secs(3));
-    assert_eq!(Ok(()), device.build_aes_key(ADMIN_PASSWORD));
+    assert_ok!((), device.build_aes_key(ADMIN_PASSWORD));
 
     // We have to perform an SD card operation to reset the new_sd_card_found field
-    assert_eq!(Ok(()), device.lock());
+    assert_ok!((), device.lock());
 
     let status = device.get_status().unwrap();
     assert!(status.new_sd_card_found);
 
-    assert_eq!(Ok(()), device.clear_new_sd_card_warning(ADMIN_PASSWORD));
+    assert_ok!((), device.clear_new_sd_card_warning(ADMIN_PASSWORD));
 
     let status = device.get_status().unwrap();
     assert!(!status.new_sd_card_found);
@@ -479,18 +472,18 @@ fn clear_new_sd_card_warning(device: Storage) {
 
 #[test_device]
 fn export_firmware(device: Storage) {
-    assert_eq!(
-        Err(CommandError::WrongPassword),
+    assert_cmd_err!(
+        CommandError::WrongPassword,
         device.export_firmware("someadminpn")
     );
-    assert_eq!(Ok(()), device.export_firmware(ADMIN_PASSWORD));
-    assert_eq!(
-        Ok(()),
+    assert_ok!((), device.export_firmware(ADMIN_PASSWORD));
+    assert_ok!(
+        (),
         device.set_unencrypted_volume_mode(ADMIN_PASSWORD, VolumeMode::ReadWrite)
     );
-    assert_eq!(Ok(()), device.export_firmware(ADMIN_PASSWORD));
-    assert_eq!(
-        Ok(()),
+    assert_ok!((), device.export_firmware(ADMIN_PASSWORD));
+    assert_ok!(
+        (),
         device.set_unencrypted_volume_mode(ADMIN_PASSWORD, VolumeMode::ReadOnly)
     );
 }

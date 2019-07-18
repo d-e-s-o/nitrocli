@@ -25,7 +25,10 @@ use super::*;
 #[test_device]
 fn unblock(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
   let (device, err) = device.authenticate_user("wrong-pin").unwrap_err();
-  assert_eq!(err, nitrokey::CommandError::WrongPassword);
+  match err {
+    nitrokey::Error::CommandError(err) if err == nitrokey::CommandError::WrongPassword => (),
+    _ => panic!("Unexpected error variant found: {:?}", err),
+  }
   assert!(device.get_user_retry_count() < 3);
 
   let model = device.get_model();
@@ -48,7 +51,11 @@ fn set_user(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
   let (device, err) = device
     .authenticate_user(NITROKEY_DEFAULT_USER_PIN)
     .unwrap_err();
-  assert_eq!(err, nitrokey::CommandError::WrongPassword);
+
+  match err {
+    nitrokey::Error::CommandError(err) if err == nitrokey::CommandError::WrongPassword => (),
+    _ => panic!("Unexpected error variant found: {:?}", err),
+  }
   drop(device);
 
   // Revert to the default user PIN.

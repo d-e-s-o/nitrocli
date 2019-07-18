@@ -1,3 +1,8 @@
+<!---
+Copyright (C) 2019 Robin Krahl <robin.krahl@ireas.org>
+SPDX-License-Identifier: MIT
+-->
+
 # nitrokey-rs
 
 A libnitrokey wrapper for Rust providing access to Nitrokey devices.
@@ -30,6 +35,8 @@ supported by `nitrokey-rs`:
   configuration).
 - `NK_get_status_storage_as_string`.  This method only provides an incomplete
   string representation of the data returned by `NK_get_status_storage`.
+- `NK_is_AES_supported`.  This method is no longer needed for Nitrokey devices
+  with a recent firmware version.
 - `NK_set_unencrypted_volume_rorw_pin_type_user`,
   `NK_set_unencrypted_read_only`, `NK_set_unencrypted_read_write`,
   `NK_set_encrypted_read_only` and `NK_set_encrypted_read_write`.  These
@@ -53,8 +60,6 @@ an AES key has been built.  Some tests will overwrite the data stored on the
 Nitrokey device or perform a factory reset.  Never execute the tests if you
 unless yout want to destroy all data on all connected Nitrokey devices!
 
-The `totp_no_pin` and `totp_pin` tests can occasionally fail due to bad timing.
-
 ## Acknowledgments
 
 Thanks to Nitrokey UG for providing a Nitrokey Storage to support the
@@ -71,6 +76,8 @@ mail to [nitrokey-rs-dev@ireas.org][].
 This project is licensed under the [MIT License][].  `libnitrokey` is licensed
 under the [LGPL-3.0][].
 
+`nitrokey-rs` complies with [version 2.0 of the REUSE practices][reuse].
+
 [Documentation]: https://docs.rs/nitrokey
 [Nitrokey udev rules]: https://www.nitrokey.com/documentation/frequently-asked-questions-faq#openpgp-card-not-available
 [`libnitrokey`]: https://github.com/nitrokey/libnitrokey
@@ -79,3 +86,4 @@ under the [LGPL-3.0][].
 [pull request #114]: https://github.com/Nitrokey/libnitrokey/pull/114
 [MIT license]: https://opensource.org/licenses/MIT
 [LGPL-3.0]: https://opensource.org/licenses/lgpl-3.0.html
+[reuse]: https://reuse.software/practices/2.0/

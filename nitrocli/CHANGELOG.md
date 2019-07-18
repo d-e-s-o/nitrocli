@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Bumped `nitrokey` dependency to `0.4.0-alpha.0`
+
+
 0.3.0
 -----
 - Added `unencrypted` command with `set` subcommand for changing the

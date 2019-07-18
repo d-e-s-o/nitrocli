@@ -1,15 +1,18 @@
+// Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
+// SPDX-License-Identifier: MIT
+
 use std::fmt;
+use std::marker;
 
 use libc;
 use nitrokey_sys;
 
 use crate::auth::Authenticate;
 use crate::config::{Config, RawConfig};
+use crate::error::{CommunicationError, Error};
 use crate::otp::GenerateOtp;
 use crate::pws::GetPasswordSafe;
-use crate::util::{
-    get_command_result, get_cstring, get_last_error, result_from_string, CommandError,
-};
+use crate::util::{get_command_result, get_cstring, get_last_error, result_from_string};
 
 /// Available Nitrokey models.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -22,14 +25,10 @@ pub enum Model {
 
 impl fmt::Display for Model {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match *self {
-                Model::Pro => "Pro",
-                Model::Storage => "Storage",
-            }
-        )
+        f.write_str(match *self {
+            Model::Pro => "Pro",
+            Model::Storage => "Storage",
+        })
     }
 }
 
@@ -44,10 +43,10 @@ pub enum VolumeMode {
 
 impl fmt::Display for VolumeMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            VolumeMode::ReadOnly => f.write_str("read-only"),
-            VolumeMode::ReadWrite => f.write_str("read-write"),
-        }
+        f.write_str(match *self {
+            VolumeMode::ReadOnly => "read-only",
+            VolumeMode::ReadWrite => "read-write",
+        })
     }
 }
 
@@ -64,12 +63,12 @@ impl fmt::Display for VolumeMode {
 ///
 /// ```no_run
 /// use nitrokey::{Authenticate, DeviceWrapper, User};
-/// # use nitrokey::CommandError;
+/// # use nitrokey::Error;
 ///
 /// fn perform_user_task(device: &User<DeviceWrapper>) {}
 /// fn perform_other_task(device: &DeviceWrapper) {}
 ///
-/// # fn try_main() -> Result<(), CommandError> {
+/// # fn try_main() -> Result<(), Error> {
 /// let device = nitrokey::connect()?;
 /// let device = match device.authenticate_user("123456") {
 ///     Ok(user) => {
@@ -90,12 +89,12 @@ impl fmt::Display for VolumeMode {
 ///
 /// ```no_run
 /// use nitrokey::{DeviceWrapper, Storage};
-/// # use nitrokey::CommandError;
+/// # use nitrokey::Error;
 ///
 /// fn perform_common_task(device: &DeviceWrapper) {}
 /// fn perform_storage_task(device: &Storage) {}
 ///
-/// # fn try_main() -> Result<(), CommandError> {
+/// # fn try_main() -> Result<(), Error> {
 /// let device = nitrokey::connect()?;
 /// perform_common_task(&device);
 /// match device {
@@ -128,12 +127,12 @@ pub enum DeviceWrapper {
 ///
 /// ```no_run
 /// use nitrokey::{Authenticate, User, Pro};
-/// # use nitrokey::CommandError;
+/// # use nitrokey::Error;
 ///
 /// fn perform_user_task(device: &User<Pro>) {}
 /// fn perform_other_task(device: &Pro) {}
 ///
-/// # fn try_main() -> Result<(), CommandError> {
+/// # fn try_main() -> Result<(), Error> {
 /// let device = nitrokey::Pro::connect()?;
 /// let device = match device.authenticate_user("123456") {
 ///     Ok(user) => {
@@ -155,7 +154,11 @@ pub enum DeviceWrapper {
 /// [`connect`]: fn.connect.html
 /// [`Pro::connect`]: #method.connect
 #[derive(Debug)]
-pub struct Pro {}
+pub struct Pro {
+    // make sure that users cannot directly instantiate this type
+    #[doc(hidden)]
+    marker: marker::PhantomData<()>,
+}
 
 /// A Nitrokey Storage device without user or admin authentication.
 ///
@@ -170,12 +173,12 @@ pub struct Pro {}
 ///
 /// ```no_run
 /// use nitrokey::{Authenticate, User, Storage};
-/// # use nitrokey::CommandError;
+/// # use nitrokey::Error;
 ///
 /// fn perform_user_task(device: &User<Storage>) {}
 /// fn perform_other_task(device: &Storage) {}
 ///
-/// # fn try_main() -> Result<(), CommandError> {
+/// # fn try_main() -> Result<(), Error> {
 /// let device = nitrokey::Storage::connect()?;
 /// let device = match device.authenticate_user("123456") {
 ///     Ok(user) => {
@@ -197,7 +200,11 @@ pub struct Pro {}
 /// [`connect`]: fn.connect.html
 /// [`Storage::connect`]: #method.connect
 #[derive(Debug)]
-pub struct Storage {}
+pub struct Storage {
+    // make sure that users cannot directly instantiate this type
+    #[doc(hidden)]
+    marker: marker::PhantomData<()>,
+}
 
 /// The status of a volume on a Nitrokey Storage device.
 #[derive(Debug)]
@@ -225,13 +232,26 @@ pub struct SdCardData {
     pub manufacturer: u8,
 }
 
-#[derive(Debug)]
-/// Production information for a Storage device.
-pub struct StorageProductionInfo {
+/// A firmware version for a Nitrokey device.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FirmwareVersion {
     /// The major firmware version, e. g. 0 in v0.40.
-    pub firmware_version_major: u8,
+    pub major: u8,
     /// The minor firmware version, e. g. 40 in v0.40.
-    pub firmware_version_minor: u8,
+    pub minor: u8,
+}
+
+impl fmt::Display for FirmwareVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "v{}.{}", self.major, self.minor)
+    }
+}
+
+/// Production information for a Storage device.
+#[derive(Debug)]
+pub struct StorageProductionInfo {
+    /// The firmware version.
+    pub firmware_version: FirmwareVersion,
     /// The internal firmware version.
     pub firmware_version_internal: u8,
     /// The serial number of the CPU.
@@ -249,10 +269,8 @@ pub struct StorageStatus {
     pub encrypted_volume: VolumeStatus,
     /// The status of the hidden volume.
     pub hidden_volume: VolumeStatus,
-    /// The major firmware version, e. g. 0 in v0.40.
-    pub firmware_version_major: u8,
-    /// The minor firmware version, e. g. 40 in v0.40.
-    pub firmware_version_minor: u8,
+    /// The firmware version.
+    pub firmware_version: FirmwareVersion,
     /// Indicates whether the firmware is locked.
     pub firmware_locked: bool,
     /// The serial number of the SD card in the Storage stick.
@@ -276,16 +294,16 @@ pub struct StorageStatus {
 ///
 /// This trait provides the commands that can be executed without authentication and that are
 /// present on all supported Nitrokey devices.
-pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
+pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// Returns the model of the connected Nitrokey device.
     ///
     /// # Example
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// println!("Connected to a Nitrokey {}", device.get_model());
     /// #    Ok(())
@@ -299,9 +317,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.get_serial_number() {
     ///     Ok(number) => println!("serial no: {}", number),
@@ -310,8 +328,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     /// #     Ok(())
     /// # }
     /// ```
-    fn get_serial_number(&self) -> Result<String, CommandError> {
-        unsafe { result_from_string(nitrokey_sys::NK_device_serial_number()) }
+    fn get_serial_number(&self) -> Result<String, Error> {
+        result_from_string(unsafe { nitrokey_sys::NK_device_serial_number() })
     }
 
     /// Returns the number of remaining authentication attempts for the user.  The total number of
@@ -321,9 +339,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let count = device.get_user_retry_count();
     /// println!("{} remaining authentication attempts (user)", count);
@@ -341,9 +359,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let count = device.get_admin_retry_count();
     /// println!("{} remaining authentication attempts (admin)", count);
@@ -360,9 +378,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// println!(
     ///     "Firmware version: {}.{}",
@@ -382,9 +400,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// println!(
     ///     "Firmware version: {}.{}",
@@ -403,9 +421,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let config = device.get_config()?;
     /// println!("numlock binding:          {:?}", config.numlock);
@@ -415,17 +433,15 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     /// #     Ok(())
     /// # }
     /// ```
-    fn get_config(&self) -> Result<Config, CommandError> {
-        unsafe {
-            let config_ptr = nitrokey_sys::NK_read_config();
-            if config_ptr.is_null() {
-                return Err(get_last_error());
-            }
-            let config_array_ptr = config_ptr as *const [u8; 5];
-            let raw_config = RawConfig::from(*config_array_ptr);
-            libc::free(config_ptr as *mut libc::c_void);
-            return Ok(raw_config.into());
+    fn get_config(&self) -> Result<Config, Error> {
+        let config_ptr = unsafe { nitrokey_sys::NK_read_config() };
+        if config_ptr.is_null() {
+            return Err(get_last_error());
         }
+        let config_array_ptr = config_ptr as *const [u8; 5];
+        let raw_config = unsafe { RawConfig::from(*config_array_ptr) };
+        unsafe { libc::free(config_ptr as *mut libc::c_void) };
+        Ok(raw_config.into())
     }
 
     /// Changes the administrator PIN.
@@ -439,9 +455,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.change_admin_pin("12345678", "12345679") {
     ///     Ok(()) => println!("Updated admin PIN."),
@@ -451,17 +467,14 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     /// # }
     /// ```
     ///
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    fn change_admin_pin(&self, current: &str, new: &str) -> Result<(), CommandError> {
+    fn change_admin_pin(&self, current: &str, new: &str) -> Result<(), Error> {
         let current_string = get_cstring(current)?;
         let new_string = get_cstring(new)?;
-        unsafe {
-            get_command_result(nitrokey_sys::NK_change_admin_PIN(
-                current_string.as_ptr(),
-                new_string.as_ptr(),
-            ))
-        }
+        get_command_result(unsafe {
+            nitrokey_sys::NK_change_admin_PIN(current_string.as_ptr(), new_string.as_ptr())
+        })
     }
 
     /// Changes the user PIN.
@@ -475,9 +488,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.change_user_pin("123456", "123457") {
     ///     Ok(()) => println!("Updated admin PIN."),
@@ -487,17 +500,14 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     /// # }
     /// ```
     ///
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    fn change_user_pin(&self, current: &str, new: &str) -> Result<(), CommandError> {
+    fn change_user_pin(&self, current: &str, new: &str) -> Result<(), Error> {
         let current_string = get_cstring(current)?;
         let new_string = get_cstring(new)?;
-        unsafe {
-            get_command_result(nitrokey_sys::NK_change_user_PIN(
-                current_string.as_ptr(),
-                new_string.as_ptr(),
-            ))
-        }
+        get_command_result(unsafe {
+            nitrokey_sys::NK_change_user_PIN(current_string.as_ptr(), new_string.as_ptr())
+        })
     }
 
     /// Unlocks the user PIN after three failed login attempts and sets it to the given value.
@@ -511,9 +521,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.unlock_user_pin("12345678", "123456") {
     ///     Ok(()) => println!("Unlocked user PIN."),
@@ -523,17 +533,17 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     /// # }
     /// ```
     ///
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    fn unlock_user_pin(&self, admin_pin: &str, user_pin: &str) -> Result<(), CommandError> {
+    fn unlock_user_pin(&self, admin_pin: &str, user_pin: &str) -> Result<(), Error> {
         let admin_pin_string = get_cstring(admin_pin)?;
         let user_pin_string = get_cstring(user_pin)?;
-        unsafe {
-            get_command_result(nitrokey_sys::NK_unlock_user_password(
+        get_command_result(unsafe {
+            nitrokey_sys::NK_unlock_user_password(
                 admin_pin_string.as_ptr(),
                 user_pin_string.as_ptr(),
-            ))
-        }
+            )
+        })
     }
 
     /// Locks the Nitrokey device.
@@ -545,9 +555,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.lock() {
     ///     Ok(()) => println!("Locked the Nitrokey device."),
@@ -556,8 +566,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     /// #     Ok(())
     /// # }
     /// ```
-    fn lock(&self) -> Result<(), CommandError> {
-        unsafe { get_command_result(nitrokey_sys::NK_lock_device()) }
+    fn lock(&self) -> Result<(), Error> {
+        get_command_result(unsafe { nitrokey_sys::NK_lock_device() })
     }
 
     /// Performs a factory reset on the Nitrokey device.
@@ -576,9 +586,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.factory_reset("12345678") {
     ///     Ok(()) => println!("Performed a factory reset."),
@@ -589,9 +599,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     /// ```
     ///
     /// [`build_aes_key`]: #method.build_aes_key
-    fn factory_reset(&self, admin_pin: &str) -> Result<(), CommandError> {
+    fn factory_reset(&self, admin_pin: &str) -> Result<(), Error> {
         let admin_pin_string = get_cstring(admin_pin)?;
-        unsafe { get_command_result(nitrokey_sys::NK_factory_reset(admin_pin_string.as_ptr())) }
+        get_command_result(unsafe { nitrokey_sys::NK_factory_reset(admin_pin_string.as_ptr()) })
     }
 
     /// Builds a new AES key on the Nitrokey.
@@ -610,9 +620,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::Device;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.build_aes_key("12345678") {
     ///     Ok(()) => println!("New AES keys have been built."),
@@ -623,9 +633,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
     /// ```
     ///
     /// [`factory_reset`]: #method.factory_reset
-    fn build_aes_key(&self, admin_pin: &str) -> Result<(), CommandError> {
+    fn build_aes_key(&self, admin_pin: &str) -> Result<(), Error> {
         let admin_pin_string = get_cstring(admin_pin)?;
-        unsafe { get_command_result(nitrokey_sys::NK_build_aes_key(admin_pin_string.as_ptr())) }
+        get_command_result(unsafe { nitrokey_sys::NK_build_aes_key(admin_pin_string.as_ptr()) })
     }
 }
 
@@ -634,7 +644,7 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
 ///
 /// # Errors
 ///
-/// - [`Undefined`][] if no Nitrokey device is connected
+/// - [`NotConnected`][] if no Nitrokey device is connected
 ///
 /// # Example
 ///
@@ -649,16 +659,15 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp {
 /// }
 /// ```
 ///
-/// [`Undefined`]: enum.CommandError.html#variant.Undefined
-pub fn connect() -> Result<DeviceWrapper, CommandError> {
-    unsafe {
-        match nitrokey_sys::NK_login_auto() {
-            1 => match get_connected_device() {
-                Some(wrapper) => Ok(wrapper),
-                None => Err(CommandError::Undefined),
-            },
-            _ => Err(CommandError::Undefined),
+/// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
+pub fn connect() -> Result<DeviceWrapper, Error> {
+    if unsafe { nitrokey_sys::NK_login_auto() } == 1 {
+        match get_connected_device() {
+            Some(wrapper) => Ok(wrapper),
+            None => Err(CommunicationError::NotConnected.into()),
         }
+    } else {
+        Err(CommunicationError::NotConnected.into())
     }
 }
 
@@ -666,7 +675,7 @@ pub fn connect() -> Result<DeviceWrapper, CommandError> {
 ///
 /// # Errors
 ///
-/// - [`Undefined`][] if no Nitrokey device of the given model is connected
+/// - [`NotConnected`][] if no Nitrokey device of the given model is connected
 ///
 /// # Example
 ///
@@ -682,29 +691,27 @@ pub fn connect() -> Result<DeviceWrapper, CommandError> {
 /// }
 /// ```
 ///
-/// [`Undefined`]: enum.CommandError.html#variant.Undefined
-pub fn connect_model(model: Model) -> Result<DeviceWrapper, CommandError> {
+/// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
+pub fn connect_model(model: Model) -> Result<DeviceWrapper, Error> {
     if connect_enum(model) {
         Ok(create_device_wrapper(model))
     } else {
-        Err(CommandError::Undefined)
+        Err(CommunicationError::NotConnected.into())
     }
 }
 
 fn get_connected_model() -> Option<Model> {
-    unsafe {
-        match nitrokey_sys::NK_get_device_model() {
-            nitrokey_sys::NK_device_model_NK_PRO => Some(Model::Pro),
-            nitrokey_sys::NK_device_model_NK_STORAGE => Some(Model::Storage),
-            _ => None,
-        }
+    match unsafe { nitrokey_sys::NK_get_device_model() } {
+        nitrokey_sys::NK_device_model_NK_PRO => Some(Model::Pro),
+        nitrokey_sys::NK_device_model_NK_STORAGE => Some(Model::Storage),
+        _ => None,
     }
 }
 
 fn create_device_wrapper(model: Model) -> DeviceWrapper {
     match model {
-        Model::Pro => DeviceWrapper::Pro(Pro {}),
-        Model::Storage => DeviceWrapper::Storage(Storage {}),
+        Model::Pro => Pro::new().into(),
+        Model::Storage => Storage::new().into(),
     }
 }
 
@@ -729,20 +736,32 @@ impl DeviceWrapper {
     }
 }
 
+impl From<Pro> for DeviceWrapper {
+    fn from(device: Pro) -> Self {
+        DeviceWrapper::Pro(device)
+    }
+}
+
+impl From<Storage> for DeviceWrapper {
+    fn from(device: Storage) -> Self {
+        DeviceWrapper::Storage(device)
+    }
+}
+
 impl GenerateOtp for DeviceWrapper {
-    fn get_hotp_slot_name(&self, slot: u8) -> Result<String, CommandError> {
+    fn get_hotp_slot_name(&self, slot: u8) -> Result<String, Error> {
         self.device().get_hotp_slot_name(slot)
     }
 
-    fn get_totp_slot_name(&self, slot: u8) -> Result<String, CommandError> {
+    fn get_totp_slot_name(&self, slot: u8) -> Result<String, Error> {
         self.device().get_totp_slot_name(slot)
     }
 
-    fn get_hotp_code(&self, slot: u8) -> Result<String, CommandError> {
+    fn get_hotp_code(&self, slot: u8) -> Result<String, Error> {
         self.device().get_hotp_code(slot)
     }
 
-    fn get_totp_code(&self, slot: u8) -> Result<String, CommandError> {
+    fn get_totp_code(&self, slot: u8) -> Result<String, Error> {
         self.device().get_totp_code(slot)
     }
 }
@@ -761,7 +780,7 @@ impl Pro {
     ///
     /// # Errors
     ///
-    /// - [`Undefined`][] if no Nitrokey device of the given model is connected
+    /// - [`NotConnected`][] if no Nitrokey device of the given model is connected
     ///
     /// # Example
     ///
@@ -776,12 +795,19 @@ impl Pro {
     /// }
     /// ```
     ///
-    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
-    pub fn connect() -> Result<Pro, CommandError> {
+    /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
+    pub fn connect() -> Result<Pro, Error> {
         // TODO: maybe Option instead of Result?
-        match connect_enum(Model::Pro) {
-            true => Ok(Pro {}),
-            false => Err(CommandError::Undefined),
+        if connect_enum(Model::Pro) {
+            Ok(Pro::new())
+        } else {
+            Err(CommunicationError::NotConnected.into())
+        }
+    }
+
+    fn new() -> Pro {
+        Pro {
+            marker: marker::PhantomData,
         }
     }
 }
@@ -807,7 +833,7 @@ impl Storage {
     ///
     /// # Errors
     ///
-    /// - [`Undefined`][] if no Nitrokey device of the given model is connected
+    /// - [`NotConnected`][] if no Nitrokey device of the given model is connected
     ///
     /// # Example
     ///
@@ -822,12 +848,19 @@ impl Storage {
     /// }
     /// ```
     ///
-    /// [`Undefined`]: enum.CommandError.html#variant.Undefined
-    pub fn connect() -> Result<Storage, CommandError> {
+    /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
+    pub fn connect() -> Result<Storage, Error> {
         // TODO: maybe Option instead of Result?
-        match connect_enum(Model::Storage) {
-            true => Ok(Storage {}),
-            false => Err(CommandError::Undefined),
+        if connect_enum(Model::Storage) {
+            Ok(Storage::new())
+        } else {
+            Err(CommunicationError::NotConnected.into())
+        }
+    }
+
+    fn new() -> Storage {
+        Storage {
+            marker: marker::PhantomData,
         }
     }
 
@@ -845,9 +878,9 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// match device.change_update_pin("12345678", "87654321") {
     ///     Ok(()) => println!("Updated update PIN."),
@@ -857,17 +890,14 @@ impl Storage {
     /// # }
     /// ```
     ///
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    pub fn change_update_pin(&self, current: &str, new: &str) -> Result<(), CommandError> {
+    pub fn change_update_pin(&self, current: &str, new: &str) -> Result<(), Error> {
         let current_string = get_cstring(current)?;
         let new_string = get_cstring(new)?;
-        unsafe {
-            get_command_result(nitrokey_sys::NK_change_update_password(
-                current_string.as_ptr(),
-                new_string.as_ptr(),
-            ))
-        }
+        get_command_result(unsafe {
+            nitrokey_sys::NK_change_update_password(current_string.as_ptr(), new_string.as_ptr())
+        })
     }
 
     /// Enables the firmware update mode.
@@ -885,9 +915,9 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// match device.enable_firmware_update("12345678") {
     ///     Ok(()) => println!("Nitrokey entered update mode."),
@@ -897,15 +927,13 @@ impl Storage {
     /// # }
     /// ```
     ///
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    pub fn enable_firmware_update(&self, update_pin: &str) -> Result<(), CommandError> {
+    pub fn enable_firmware_update(&self, update_pin: &str) -> Result<(), Error> {
         let update_pin_string = get_cstring(update_pin)?;
-        unsafe {
-            get_command_result(nitrokey_sys::NK_enable_firmware_update(
-                update_pin_string.as_ptr(),
-            ))
-        }
+        get_command_result(unsafe {
+            nitrokey_sys::NK_enable_firmware_update(update_pin_string.as_ptr())
+        })
     }
 
     /// Enables the encrypted storage volume.
@@ -921,9 +949,9 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// match device.enable_encrypted_volume("123456") {
     ///     Ok(()) => println!("Enabled the encrypted volume."),
@@ -933,11 +961,11 @@ impl Storage {
     /// # }
     /// ```
     ///
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    pub fn enable_encrypted_volume(&self, user_pin: &str) -> Result<(), CommandError> {
+    pub fn enable_encrypted_volume(&self, user_pin: &str) -> Result<(), Error> {
         let user_pin = get_cstring(user_pin)?;
-        unsafe { get_command_result(nitrokey_sys::NK_unlock_encrypted_volume(user_pin.as_ptr())) }
+        get_command_result(unsafe { nitrokey_sys::NK_unlock_encrypted_volume(user_pin.as_ptr()) })
     }
 
     /// Disables the encrypted storage volume.
@@ -948,11 +976,11 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
     /// fn use_volume() {}
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// match device.enable_encrypted_volume("123456") {
     ///     Ok(()) => {
@@ -970,8 +998,8 @@ impl Storage {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn disable_encrypted_volume(&self) -> Result<(), CommandError> {
-        unsafe { get_command_result(nitrokey_sys::NK_lock_encrypted_volume()) }
+    pub fn disable_encrypted_volume(&self) -> Result<(), Error> {
+        get_command_result(unsafe { nitrokey_sys::NK_lock_encrypted_volume() })
     }
 
     /// Enables a hidden storage volume.
@@ -996,9 +1024,9 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// device.enable_encrypted_volume("123445")?;
     /// match device.enable_hidden_volume("hidden-pw") {
@@ -1011,14 +1039,12 @@ impl Storage {
     ///
     /// [`enable_encrypted_volume`]: #method.enable_encrypted_volume
     /// [`AesDecryptionFailed`]: enum.CommandError.html#variant.AesDecryptionFailed
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
-    pub fn enable_hidden_volume(&self, volume_password: &str) -> Result<(), CommandError> {
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
+    pub fn enable_hidden_volume(&self, volume_password: &str) -> Result<(), Error> {
         let volume_password = get_cstring(volume_password)?;
-        unsafe {
-            get_command_result(nitrokey_sys::NK_unlock_hidden_volume(
-                volume_password.as_ptr(),
-            ))
-        }
+        get_command_result(unsafe {
+            nitrokey_sys::NK_unlock_hidden_volume(volume_password.as_ptr())
+        })
     }
 
     /// Disables a hidden storage volume.
@@ -1029,11 +1055,11 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
     /// fn use_volume() {}
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// device.enable_encrypted_volume("123445")?;
     /// match device.enable_hidden_volume("hidden-pw") {
@@ -1052,8 +1078,8 @@ impl Storage {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn disable_hidden_volume(&self) -> Result<(), CommandError> {
-        unsafe { get_command_result(nitrokey_sys::NK_lock_hidden_volume()) }
+    pub fn disable_hidden_volume(&self) -> Result<(), Error> {
+        get_command_result(unsafe { nitrokey_sys::NK_lock_hidden_volume() })
     }
 
     /// Creates a hidden volume.
@@ -1078,9 +1104,9 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// device.enable_encrypted_volume("123445")?;
     /// device.create_hidden_volume(0, 0, 100, "hidden-pw")?;
@@ -1089,23 +1115,18 @@ impl Storage {
     /// ```
     ///
     /// [`AesDecryptionFailed`]: enum.CommandError.html#variant.AesDecryptionFailed
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     pub fn create_hidden_volume(
         &self,
         slot: u8,
         start: u8,
         end: u8,
         password: &str,
-    ) -> Result<(), CommandError> {
+    ) -> Result<(), Error> {
         let password = get_cstring(password)?;
-        unsafe {
-            get_command_result(nitrokey_sys::NK_create_hidden_volume(
-                slot,
-                start,
-                end,
-                password.as_ptr(),
-            ))
-        }
+        get_command_result(unsafe {
+            nitrokey_sys::NK_create_hidden_volume(slot, start, end, password.as_ptr())
+        })
     }
 
     /// Sets the access mode of the unencrypted volume.
@@ -1122,10 +1143,10 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     /// use nitrokey::VolumeMode;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// match device.set_unencrypted_volume_mode("123456", VolumeMode::ReadWrite) {
     ///     Ok(()) => println!("Set the unencrypted volume to read-write mode."),
@@ -1135,13 +1156,13 @@ impl Storage {
     /// # }
     /// ```
     ///
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
     pub fn set_unencrypted_volume_mode(
         &self,
         admin_pin: &str,
         mode: VolumeMode,
-    ) -> Result<(), CommandError> {
+    ) -> Result<(), Error> {
         let admin_pin = get_cstring(admin_pin)?;
         let result = match mode {
             VolumeMode::ReadOnly => unsafe {
@@ -1159,11 +1180,11 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
     /// fn use_volume() {}
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// match device.get_status() {
     ///     Ok(status) => {
@@ -1174,7 +1195,7 @@ impl Storage {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_status(&self) -> Result<StorageStatus, CommandError> {
+    pub fn get_status(&self) -> Result<StorageStatus, Error> {
         let mut raw_status = nitrokey_sys::NK_storage_status {
             unencrypted_volume_read_only: false,
             unencrypted_volume_active: false,
@@ -1194,8 +1215,7 @@ impl Storage {
             stick_initialized: false,
         };
         let raw_result = unsafe { nitrokey_sys::NK_get_status_storage(&mut raw_status) };
-        let result = get_command_result(raw_result);
-        result.and(Ok(StorageStatus::from(raw_status)))
+        get_command_result(raw_result).map(|_| StorageStatus::from(raw_status))
     }
 
     /// Returns the production information for the connected storage device.
@@ -1203,11 +1223,11 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
     /// fn use_volume() {}
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// match device.get_production_info() {
     ///     Ok(data) => {
@@ -1219,7 +1239,7 @@ impl Storage {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_production_info(&self) -> Result<StorageProductionInfo, CommandError> {
+    pub fn get_production_info(&self) -> Result<StorageProductionInfo, Error> {
         let mut raw_data = nitrokey_sys::NK_storage_ProductionTest {
             FirmwareVersion_au8: [0, 2],
             FirmwareVersionInternal_u8: 0,
@@ -1236,8 +1256,7 @@ impl Storage {
             SD_Card_Manufacturer_u8: 0,
         };
         let raw_result = unsafe { nitrokey_sys::NK_get_storage_production_info(&mut raw_data) };
-        let result = get_command_result(raw_result);
-        result.and(Ok(StorageProductionInfo::from(raw_data)))
+        get_command_result(raw_result).map(|_| StorageProductionInfo::from(raw_data))
     }
 
     /// Clears the warning for a new SD card.
@@ -1254,9 +1273,9 @@ impl Storage {
     /// # Example
     ///
     /// ```no_run
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::Storage::connect()?;
     /// match device.clear_new_sd_card_warning("12345678") {
     ///     Ok(()) => println!("Cleared the new SD card warning."),
@@ -1266,9 +1285,9 @@ impl Storage {
     /// # }
     /// ```
     ///
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    pub fn clear_new_sd_card_warning(&self, admin_pin: &str) -> Result<(), CommandError> {
+    pub fn clear_new_sd_card_warning(&self, admin_pin: &str) -> Result<(), Error> {
         let admin_pin = get_cstring(admin_pin)?;
         get_command_result(unsafe {
             nitrokey_sys::NK_clear_new_sd_card_warning(admin_pin.as_ptr())
@@ -1276,7 +1295,7 @@ impl Storage {
     }
 
     /// Blinks the red and green LED alternatively and infinitely until the device is reconnected.
-    pub fn wink(&self) -> Result<(), CommandError> {
+    pub fn wink(&self) -> Result<(), Error> {
         get_command_result(unsafe { nitrokey_sys::NK_wink() })
     }
 
@@ -1294,9 +1313,9 @@ impl Storage {
     /// - [`InvalidString`][] if one of the provided passwords contains a null byte
     /// - [`WrongPassword`][] if the admin password is wrong
     ///
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    pub fn export_firmware(&self, admin_pin: &str) -> Result<(), CommandError> {
+    pub fn export_firmware(&self, admin_pin: &str) -> Result<(), Error> {
         let admin_pin_string = get_cstring(admin_pin)?;
         get_command_result(unsafe { nitrokey_sys::NK_export_firmware(admin_pin_string.as_ptr()) })
     }
@@ -1321,8 +1340,10 @@ impl GenerateOtp for Storage {}
 impl From<nitrokey_sys::NK_storage_ProductionTest> for StorageProductionInfo {
     fn from(data: nitrokey_sys::NK_storage_ProductionTest) -> Self {
         Self {
-            firmware_version_major: data.FirmwareVersion_au8[0],
-            firmware_version_minor: data.FirmwareVersion_au8[1],
+            firmware_version: FirmwareVersion {
+                major: data.FirmwareVersion_au8[0],
+                minor: data.FirmwareVersion_au8[1],
+            },
             firmware_version_internal: data.FirmwareVersionInternal_u8,
             serial_number_cpu: data.CPU_CardID_u32,
             sd_card: SdCardData {
@@ -1352,8 +1373,10 @@ impl From<nitrokey_sys::NK_storage_status> for StorageStatus {
                 read_only: status.hidden_volume_read_only,
                 active: status.hidden_volume_active,
             },
-            firmware_version_major: status.firmware_version_major,
-            firmware_version_minor: status.firmware_version_minor,
+            firmware_version: FirmwareVersion {
+                major: status.firmware_version_major,
+                minor: status.firmware_version_minor,
+            },
             firmware_locked: status.firmware_locked,
             serial_number_sd_card: status.serial_number_sd_card,
             serial_number_smart_card: status.serial_number_smart_card,

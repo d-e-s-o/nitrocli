@@ -1,8 +1,12 @@
+// Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
+// SPDX-License-Identifier: MIT
+
 use std::ffi::CString;
 
 use nitrokey_sys;
 
-use crate::util::{get_command_result, get_cstring, result_from_string, CommandError};
+use crate::error::Error;
+use crate::util::{get_command_result, get_cstring, result_from_string};
 
 /// Modes for one-time password generation.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -28,9 +32,9 @@ pub trait ConfigureOtp {
     ///
     /// ```no_run
     /// use nitrokey::{Authenticate, ConfigureOtp, OtpMode, OtpSlotData};
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), (CommandError)> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let slot_data = OtpSlotData::new(1, "test", "01234567890123456689", OtpMode::SixDigits);
     /// match device.authenticate_admin("12345678") {
@@ -46,10 +50,10 @@ pub trait ConfigureOtp {
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`NoName`]: enum.CommandError.html#variant.NoName
-    fn write_hotp_slot(&self, data: OtpSlotData, counter: u64) -> Result<(), CommandError>;
+    fn write_hotp_slot(&self, data: OtpSlotData, counter: u64) -> Result<(), Error>;
 
     /// Configure a TOTP slot with the given data and set the TOTP time window to the given value
     /// (default 30).
@@ -64,9 +68,9 @@ pub trait ConfigureOtp {
     ///
     /// ```no_run
     /// use nitrokey::{Authenticate, ConfigureOtp, OtpMode, OtpSlotData};
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), (CommandError)> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let slot_data = OtpSlotData::new(1, "test", "01234567890123456689", OtpMode::EightDigits);
     /// match device.authenticate_admin("12345678") {
@@ -82,10 +86,10 @@ pub trait ConfigureOtp {
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    /// [`InvalidString`]: enum.CommandError.html#variant.InvalidString
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`NoName`]: enum.CommandError.html#variant.NoName
-    fn write_totp_slot(&self, data: OtpSlotData, time_window: u16) -> Result<(), CommandError>;
+    fn write_totp_slot(&self, data: OtpSlotData, time_window: u16) -> Result<(), Error>;
 
     /// Erases an HOTP slot.
     ///
@@ -97,9 +101,9 @@ pub trait ConfigureOtp {
     ///
     /// ```no_run
     /// use nitrokey::{Authenticate, ConfigureOtp};
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), (CommandError)> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.authenticate_admin("12345678") {
     ///     Ok(admin) => {
@@ -114,8 +118,8 @@ pub trait ConfigureOtp {
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    fn erase_hotp_slot(&self, slot: u8) -> Result<(), CommandError>;
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
+    fn erase_hotp_slot(&self, slot: u8) -> Result<(), Error>;
 
     /// Erases a TOTP slot.
     ///
@@ -127,9 +131,9 @@ pub trait ConfigureOtp {
     ///
     /// ```no_run
     /// use nitrokey::{Authenticate, ConfigureOtp};
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), (CommandError)> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.authenticate_admin("12345678") {
     ///     Ok(admin) => {
@@ -144,8 +148,8 @@ pub trait ConfigureOtp {
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
-    fn erase_totp_slot(&self, slot: u8) -> Result<(), CommandError>;
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
+    fn erase_totp_slot(&self, slot: u8) -> Result<(), Error>;
 }
 
 /// Provides methods to generate OTP codes and to query OTP slots on a Nitrokey
@@ -164,9 +168,9 @@ pub trait GenerateOtp {
     /// ```no_run
     /// use std::time;
     /// use nitrokey::GenerateOtp;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let time = time::SystemTime::now().duration_since(time::UNIX_EPOCH);
     /// match time {
@@ -183,7 +187,7 @@ pub trait GenerateOtp {
     ///
     /// [`get_totp_code`]: #method.get_totp_code
     /// [`Timestamp`]: enum.CommandError.html#variant.Timestamp
-    fn set_time(&self, time: u64, force: bool) -> Result<(), CommandError> {
+    fn set_time(&self, time: u64, force: bool) -> Result<(), Error> {
         let result = if force {
             unsafe { nitrokey_sys::NK_totp_set_time(time) }
         } else {
@@ -202,23 +206,23 @@ pub trait GenerateOtp {
     /// # Example
     ///
     /// ```no_run
-    /// use nitrokey::{CommandError, GenerateOtp};
+    /// use nitrokey::{CommandError, Error, GenerateOtp};
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.get_hotp_slot_name(1) {
     ///     Ok(name) => println!("HOTP slot 1: {}", name),
-    ///     Err(CommandError::SlotNotProgrammed) => println!("HOTP slot 1 not programmed"),
+    ///     Err(Error::CommandError(CommandError::SlotNotProgrammed)) => println!("HOTP slot 1 not programmed"),
     ///     Err(err) => println!("Could not get slot name: {}", err),
     /// };
     /// #     Ok(())
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
-    fn get_hotp_slot_name(&self, slot: u8) -> Result<String, CommandError> {
-        unsafe { result_from_string(nitrokey_sys::NK_get_hotp_slot_name(slot)) }
+    fn get_hotp_slot_name(&self, slot: u8) -> Result<String, Error> {
+        result_from_string(unsafe { nitrokey_sys::NK_get_hotp_slot_name(slot) })
     }
 
     /// Returns the name of the given TOTP slot.
@@ -231,23 +235,23 @@ pub trait GenerateOtp {
     /// # Example
     ///
     /// ```no_run
-    /// use nitrokey::{CommandError, GenerateOtp};
+    /// use nitrokey::{CommandError, Error, GenerateOtp};
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.get_totp_slot_name(1) {
     ///     Ok(name) => println!("TOTP slot 1: {}", name),
-    ///     Err(CommandError::SlotNotProgrammed) => println!("TOTP slot 1 not programmed"),
+    ///     Err(Error::CommandError(CommandError::SlotNotProgrammed)) => println!("TOTP slot 1 not programmed"),
     ///     Err(err) => println!("Could not get slot name: {}", err),
     /// };
     /// #     Ok(())
     /// # }
     /// ```
     ///
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
-    fn get_totp_slot_name(&self, slot: u8) -> Result<String, CommandError> {
-        unsafe { result_from_string(nitrokey_sys::NK_get_totp_slot_name(slot)) }
+    fn get_totp_slot_name(&self, slot: u8) -> Result<String, Error> {
+        result_from_string(unsafe { nitrokey_sys::NK_get_totp_slot_name(slot) })
     }
 
     /// Generates an HOTP code on the given slot.  This operation may require user authorization,
@@ -263,9 +267,9 @@ pub trait GenerateOtp {
     ///
     /// ```no_run
     /// use nitrokey::GenerateOtp;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let code = device.get_hotp_code(1)?;
     /// println!("Generated HOTP code on slot 1: {}", code);
@@ -274,13 +278,11 @@ pub trait GenerateOtp {
     /// ```
     ///
     /// [`get_config`]: trait.Device.html#method.get_config
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`NotAuthorized`]: enum.CommandError.html#variant.NotAuthorized
     /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
-    fn get_hotp_code(&self, slot: u8) -> Result<String, CommandError> {
-        unsafe {
-            return result_from_string(nitrokey_sys::NK_get_hotp_code(slot));
-        }
+    fn get_hotp_code(&self, slot: u8) -> Result<String, Error> {
+        result_from_string(unsafe { nitrokey_sys::NK_get_hotp_code(slot) })
     }
 
     /// Generates a TOTP code on the given slot.  This operation may require user authorization,
@@ -300,9 +302,9 @@ pub trait GenerateOtp {
     /// ```no_run
     /// use std::time;
     /// use nitrokey::GenerateOtp;
-    /// # use nitrokey::CommandError;
+    /// # use nitrokey::Error;
     ///
-    /// # fn try_main() -> Result<(), CommandError> {
+    /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// let time = time::SystemTime::now().duration_since(time::UNIX_EPOCH);
     /// match time {
@@ -319,13 +321,11 @@ pub trait GenerateOtp {
     ///
     /// [`set_time`]: #method.set_time
     /// [`get_config`]: trait.Device.html#method.get_config
-    /// [`InvalidSlot`]: enum.CommandError.html#variant.InvalidSlot
+    /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`NotAuthorized`]: enum.CommandError.html#variant.NotAuthorized
     /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
-    fn get_totp_code(&self, slot: u8) -> Result<String, CommandError> {
-        unsafe {
-            return result_from_string(nitrokey_sys::NK_get_totp_code(slot, 0, 0, 0));
-        }
+    fn get_totp_code(&self, slot: u8) -> Result<String, Error> {
+        result_from_string(unsafe { nitrokey_sys::NK_get_totp_code(slot, 0, 0, 0) })
     }
 }
 
@@ -395,7 +395,7 @@ impl OtpSlotData {
 }
 
 impl RawOtpSlotData {
-    pub fn new(data: OtpSlotData) -> Result<RawOtpSlotData, CommandError> {
+    pub fn new(data: OtpSlotData) -> Result<RawOtpSlotData, Error> {
         let name = get_cstring(data.name)?;
         let secret = get_cstring(data.secret)?;
         let use_token_id = data.token_id.is_some();
