@@ -31,6 +31,13 @@ SPDX-License-Identifier: MIT
   - Return `Error::Utf8Error` if libnitrokey returns an invalid UTF-8 string.
 - Implement `From<(T: Device, Error)>` for `Error`.
 - Fix timing issues with the `totp_no_pin` and `totp_pin` test cases.
+- Always return a `Result` in functions that communicate with a device.
+- Combine `get_{major,minor}_firmware_version` into `get_firmware_version`.
+- Add `set_encrypted_volume_mode` to `Storage`.
+- Use mutability to represent changes to the device status:
+  - Implement `DerefMut` for `User<T>` and `Admin<T>`.
+  - Add `device_mut` method to `DeviceWrapper`.
+  - Require a mutable `Device` reference if a method changes the device state.
 
 # v0.3.4 (2019-01-20)
 - Fix authentication methods that assumed that `char` is signed.

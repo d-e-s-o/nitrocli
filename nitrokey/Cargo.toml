@@ -3,7 +3,7 @@
 
 [package]
 name = "nitrokey"
-version = "0.4.0-alpha.0"
+version = "0.4.0-alpha.2"
 authors = ["Robin Krahl <robin.krahl@ireas.org>"]
 edition = "2018"
 homepage = "https://code.ireas.org/nitrokey-rs/"
@@ -14,12 +14,13 @@ keywords = ["nitrokey", "otp"]
 categories = ["api-bindings"]
 readme = "README.md"
 license = "MIT"
+exclude = [".builds/*"]
 
 [dependencies]
 libc = "0.2"
-nitrokey-sys = "3.4"
+nitrokey-sys = "~3.4"
 rand_core = {version = "0.3", default-features = false, features = ["std"] }
 rand_os = {version = "0.1"}
 
 [dev-dependencies]
-nitrokey-test = {version = "0.2"}
+nitrokey-test = {version = "=0.2.0"}

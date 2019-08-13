@@ -38,8 +38,7 @@ supported by `nitrokey-rs`:
 - `NK_is_AES_supported`.  This method is no longer needed for Nitrokey devices
   with a recent firmware version.
 - `NK_set_unencrypted_volume_rorw_pin_type_user`,
-  `NK_set_unencrypted_read_only`, `NK_set_unencrypted_read_write`,
-  `NK_set_encrypted_read_only` and `NK_set_encrypted_read_write`.  These
+  `NK_set_unencrypted_read_only`, `NK_set_unencrypted_read_write`.  These
   methods are only relevant for older firmware versions (pre-v0.51).  As the
   Nitrokey Storage firmware can be updated easily, we do not support these
   outdated versions.

@@ -1,6 +1,6 @@
 Unreleased
 ----------
-- Bumped `nitrokey` dependency to `0.4.0-alpha.0`
+- Bumped `nitrokey` dependency to `0.4.0-alpha.2`
 
 
 0.3.0

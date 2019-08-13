@@ -77,7 +77,7 @@ dependencies = [
  "argparse 0.2.2",
  "base32 0.4.0",
  "libc 0.2.66",
- "nitrokey 0.4.0-alpha.0",
+ "nitrokey 0.4.0-alpha.2",
  "nitrokey-test 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nitrokey-test-state 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -85,7 +85,7 @@ dependencies = [
 
 [[package]]
 name = "nitrokey"
-version = "0.4.0-alpha.0"
+version = "0.4.0-alpha.2"
 dependencies = [
  "libc 0.2.66",
  "nitrokey-sys 3.4.3",

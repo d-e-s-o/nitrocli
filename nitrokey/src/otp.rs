@@ -38,13 +38,13 @@ pub trait ConfigureOtp {
     /// let device = nitrokey::connect()?;
     /// let slot_data = OtpSlotData::new(1, "test", "01234567890123456689", OtpMode::SixDigits);
     /// match device.authenticate_admin("12345678") {
-    ///     Ok(admin) => {
+    ///     Ok(mut admin) => {
     ///         match admin.write_hotp_slot(slot_data, 0) {
     ///             Ok(()) => println!("Successfully wrote slot."),
-    ///             Err(err) => println!("Could not write slot: {}", err),
+    ///             Err(err) => eprintln!("Could not write slot: {}", err),
     ///         }
     ///     },
-    ///     Err((_, err)) => println!("Could not authenticate as admin: {}", err),
+    ///     Err((_, err)) => eprintln!("Could not authenticate as admin: {}", err),
     /// }
     /// #     Ok(())
     /// # }
@@ -53,7 +53,7 @@ pub trait ConfigureOtp {
     /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`NoName`]: enum.CommandError.html#variant.NoName
-    fn write_hotp_slot(&self, data: OtpSlotData, counter: u64) -> Result<(), Error>;
+    fn write_hotp_slot(&mut self, data: OtpSlotData, counter: u64) -> Result<(), Error>;
 
     /// Configure a TOTP slot with the given data and set the TOTP time window to the given value
     /// (default 30).
@@ -74,13 +74,13 @@ pub trait ConfigureOtp {
     /// let device = nitrokey::connect()?;
     /// let slot_data = OtpSlotData::new(1, "test", "01234567890123456689", OtpMode::EightDigits);
     /// match device.authenticate_admin("12345678") {
-    ///     Ok(admin) => {
+    ///     Ok(mut admin) => {
     ///         match admin.write_totp_slot(slot_data, 30) {
     ///             Ok(()) => println!("Successfully wrote slot."),
-    ///             Err(err) => println!("Could not write slot: {}", err),
+    ///             Err(err) => eprintln!("Could not write slot: {}", err),
     ///         }
     ///     },
-    ///     Err((_, err)) => println!("Could not authenticate as admin: {}", err),
+    ///     Err((_, err)) => eprintln!("Could not authenticate as admin: {}", err),
     /// }
     /// #     Ok(())
     /// # }
@@ -89,7 +89,7 @@ pub trait ConfigureOtp {
     /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`NoName`]: enum.CommandError.html#variant.NoName
-    fn write_totp_slot(&self, data: OtpSlotData, time_window: u16) -> Result<(), Error>;
+    fn write_totp_slot(&mut self, data: OtpSlotData, time_window: u16) -> Result<(), Error>;
 
     /// Erases an HOTP slot.
     ///
@@ -106,20 +106,20 @@ pub trait ConfigureOtp {
     /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.authenticate_admin("12345678") {
-    ///     Ok(admin) => {
+    ///     Ok(mut admin) => {
     ///         match admin.erase_hotp_slot(1) {
     ///             Ok(()) => println!("Successfully erased slot."),
-    ///             Err(err) => println!("Could not erase slot: {}", err),
+    ///             Err(err) => eprintln!("Could not erase slot: {}", err),
     ///         }
     ///     },
-    ///     Err((_, err)) => println!("Could not authenticate as admin: {}", err),
+    ///     Err((_, err)) => eprintln!("Could not authenticate as admin: {}", err),
     /// }
     /// #     Ok(())
     /// # }
     /// ```
     ///
     /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
-    fn erase_hotp_slot(&self, slot: u8) -> Result<(), Error>;
+    fn erase_hotp_slot(&mut self, slot: u8) -> Result<(), Error>;
 
     /// Erases a TOTP slot.
     ///
@@ -136,20 +136,20 @@ pub trait ConfigureOtp {
     /// # fn try_main() -> Result<(), Error> {
     /// let device = nitrokey::connect()?;
     /// match device.authenticate_admin("12345678") {
-    ///     Ok(admin) => {
+    ///     Ok(mut admin) => {
     ///         match admin.erase_totp_slot(1) {
     ///             Ok(()) => println!("Successfully erased slot."),
-    ///             Err(err) => println!("Could not erase slot: {}", err),
+    ///             Err(err) => eprintln!("Could not erase slot: {}", err),
     ///         }
     ///     },
-    ///     Err((_, err)) => println!("Could not authenticate as admin: {}", err),
+    ///     Err((_, err)) => eprintln!("Could not authenticate as admin: {}", err),
     /// }
     /// #     Ok(())
     /// # }
     /// ```
     ///
     /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
-    fn erase_totp_slot(&self, slot: u8) -> Result<(), Error>;
+    fn erase_totp_slot(&mut self, slot: u8) -> Result<(), Error>;
 }
 
 /// Provides methods to generate OTP codes and to query OTP slots on a Nitrokey
@@ -171,11 +171,11 @@ pub trait GenerateOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut device = nitrokey::connect()?;
     /// let time = time::SystemTime::now().duration_since(time::UNIX_EPOCH);
     /// match time {
     ///     Ok(time) => device.set_time(time.as_secs(), false)?,
-    ///     Err(_) => println!("The system time is before the Unix epoch!"),
+    ///     Err(_) => eprintln!("The system time is before the Unix epoch!"),
     /// }
     /// #     Ok(())
     /// # }
@@ -187,7 +187,7 @@ pub trait GenerateOtp {
     ///
     /// [`get_totp_code`]: #method.get_totp_code
     /// [`Timestamp`]: enum.CommandError.html#variant.Timestamp
-    fn set_time(&self, time: u64, force: bool) -> Result<(), Error> {
+    fn set_time(&mut self, time: u64, force: bool) -> Result<(), Error> {
         let result = if force {
             unsafe { nitrokey_sys::NK_totp_set_time(time) }
         } else {
@@ -212,8 +212,8 @@ pub trait GenerateOtp {
     /// let device = nitrokey::connect()?;
     /// match device.get_hotp_slot_name(1) {
     ///     Ok(name) => println!("HOTP slot 1: {}", name),
-    ///     Err(Error::CommandError(CommandError::SlotNotProgrammed)) => println!("HOTP slot 1 not programmed"),
-    ///     Err(err) => println!("Could not get slot name: {}", err),
+    ///     Err(Error::CommandError(CommandError::SlotNotProgrammed)) => eprintln!("HOTP slot 1 not programmed"),
+    ///     Err(err) => eprintln!("Could not get slot name: {}", err),
     /// };
     /// #     Ok(())
     /// # }
@@ -241,8 +241,8 @@ pub trait GenerateOtp {
     /// let device = nitrokey::connect()?;
     /// match device.get_totp_slot_name(1) {
     ///     Ok(name) => println!("TOTP slot 1: {}", name),
-    ///     Err(Error::CommandError(CommandError::SlotNotProgrammed)) => println!("TOTP slot 1 not programmed"),
-    ///     Err(err) => println!("Could not get slot name: {}", err),
+    ///     Err(Error::CommandError(CommandError::SlotNotProgrammed)) => eprintln!("TOTP slot 1 not programmed"),
+    ///     Err(err) => eprintln!("Could not get slot name: {}", err),
     /// };
     /// #     Ok(())
     /// # }
@@ -270,7 +270,7 @@ pub trait GenerateOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut device = nitrokey::connect()?;
     /// let code = device.get_hotp_code(1)?;
     /// println!("Generated HOTP code on slot 1: {}", code);
     /// #     Ok(())
@@ -281,7 +281,7 @@ pub trait GenerateOtp {
     /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
     /// [`NotAuthorized`]: enum.CommandError.html#variant.NotAuthorized
     /// [`SlotNotProgrammed`]: enum.CommandError.html#variant.SlotNotProgrammed
-    fn get_hotp_code(&self, slot: u8) -> Result<String, Error> {
+    fn get_hotp_code(&mut self, slot: u8) -> Result<String, Error> {
         result_from_string(unsafe { nitrokey_sys::NK_get_hotp_code(slot) })
     }
 
@@ -305,7 +305,7 @@ pub trait GenerateOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut device = nitrokey::connect()?;
     /// let time = time::SystemTime::now().duration_since(time::UNIX_EPOCH);
     /// match time {
     ///     Ok(time) => {
@@ -313,7 +313,7 @@ pub trait GenerateOtp {
     ///         let code = device.get_totp_code(1)?;
     ///         println!("Generated TOTP code on slot 1: {}", code);
     ///     },
-    ///     Err(_) => println!("Timestamps before 1970-01-01 are not supported!"),
+    ///     Err(_) => eprintln!("Timestamps before 1970-01-01 are not supported!"),
     /// }
     /// #     Ok(())
     /// # }

@@ -29,12 +29,12 @@ fn unblock(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
     nitrokey::Error::CommandError(err) if err == nitrokey::CommandError::WrongPassword => (),
     _ => panic!("Unexpected error variant found: {:?}", err),
   }
-  assert!(device.get_user_retry_count() < 3);
+  assert!(device.get_user_retry_count()? < 3);
 
   let model = device.get_model();
   let _ = Nitrocli::with_dev(device).handle(&["pin", "unblock"])?;
   let device = nitrokey::connect_model(model)?;
-  assert_eq!(device.get_user_retry_count(), 3);
+  assert_eq!(device.get_user_retry_count()?, 3);
   Ok(())
 }
 
