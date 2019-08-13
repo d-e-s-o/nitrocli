@@ -47,13 +47,13 @@
 //! let device = nitrokey::connect()?;
 //! let slot_data = OtpSlotData::new(1, "test", "01234567890123456689", OtpMode::SixDigits);
 //! match device.authenticate_admin("12345678") {
-//!     Ok(admin) => {
+//!     Ok(mut admin) => {
 //!         match admin.write_hotp_slot(slot_data, 0) {
 //!             Ok(()) => println!("Successfully wrote slot."),
-//!             Err(err) => println!("Could not write slot: {}", err),
+//!             Err(err) => eprintln!("Could not write slot: {}", err),
 //!         }
 //!     },
-//!     Err((_, err)) => println!("Could not authenticate as admin: {}", err),
+//!     Err((_, err)) => eprintln!("Could not authenticate as admin: {}", err),
 //! }
 //! #     Ok(())
 //! # }
@@ -66,10 +66,10 @@
 //! # use nitrokey::Error;
 //!
 //! # fn try_main() -> Result<(), Error> {
-//! let device = nitrokey::connect()?;
+//! let mut device = nitrokey::connect()?;
 //! match device.get_hotp_code(1) {
 //!     Ok(code) => println!("Generated HOTP code: {}", code),
-//!     Err(err) => println!("Could not generate HOTP code: {}", err),
+//!     Err(err) => eprintln!("Could not generate HOTP code: {}", err),
 //! }
 //! #     Ok(())
 //! # }

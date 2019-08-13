@@ -7,7 +7,7 @@ Unreleased
 - Removed `storage status` subcommand
   - Moved its output into `status` command
 - Removed previously deprecated `--ascii` option from `otp set` command
-- Bumped `nitrokey` dependency to `0.4.0-alpha.0`
+- Bumped `nitrokey` dependency to `0.4.0-alpha.2`
 
 
 0.2.4

@@ -53,6 +53,10 @@ pub fn result_from_string(ptr: *const c_char) -> Result<String, Error> {
     }
 }
 
+pub fn result_or_error<T>(value: T) -> Result<T, Error> {
+    get_last_result().and(Ok(value))
+}
+
 pub fn get_command_result(value: c_int) -> Result<(), Error> {
     if value == 0 {
         Ok(())

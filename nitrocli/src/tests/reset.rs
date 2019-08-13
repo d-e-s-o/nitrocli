@@ -42,7 +42,7 @@ fn reset(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 
   // Check that the admin PIN has been reset.
   let device = nitrokey::connect_model(ncli.model().unwrap())?;
-  let device = device
+  let mut device = device
     .authenticate_admin(nitrokey::DEFAULT_ADMIN_PIN)
     .unwrap();
 

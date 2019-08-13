@@ -10,10 +10,9 @@ use std::{thread, time};
 use nitrokey::{
     Authenticate, CommandError, CommunicationError, Config, ConfigureOtp, Device, Error,
     GenerateOtp, GetPasswordSafe, LibraryError, OtpMode, OtpSlotData, Storage, VolumeMode,
+    DEFAULT_ADMIN_PIN, DEFAULT_USER_PIN,
 };
 use nitrokey_test::test as test_device;
-
-use crate::util::{ADMIN_PASSWORD, USER_PASSWORD};
 
 static ADMIN_NEW_PASSWORD: &str = "1234567890";
 static UPDATE_PIN: &str = "12345678";
@@ -55,9 +54,9 @@ fn connect_pro(device: Pro) {
     assert_eq!(device.get_model(), nitrokey::Model::Pro);
     drop(device);
 
-    assert!(nitrokey::connect().is_ok());
-    assert!(nitrokey::connect_model(nitrokey::Model::Pro).is_ok());
-    assert!(nitrokey::Pro::connect().is_ok());
+    assert_any_ok!(nitrokey::connect());
+    assert_any_ok!(nitrokey::connect_model(nitrokey::Model::Pro));
+    assert_any_ok!(nitrokey::Pro::connect());
 }
 
 #[test_device]
@@ -65,9 +64,9 @@ fn connect_storage(device: Storage) {
     assert_eq!(device.get_model(), nitrokey::Model::Storage);
     drop(device);
 
-    assert!(nitrokey::connect().is_ok());
-    assert!(nitrokey::connect_model(nitrokey::Model::Storage).is_ok());
-    assert!(nitrokey::Storage::connect().is_ok());
+    assert_any_ok!(nitrokey::connect());
+    assert_any_ok!(nitrokey::connect_model(nitrokey::Model::Storage));
+    assert_any_ok!(nitrokey::Storage::connect());
 }
 
 fn assert_empty_serial_number() {
@@ -87,36 +86,34 @@ fn disconnect(device: DeviceWrapper) {
 
 #[test_device]
 fn get_serial_number(device: DeviceWrapper) {
-    let result = device.get_serial_number();
-    assert!(result.is_ok());
-    let serial_number = result.unwrap();
+    let serial_number = unwrap_ok!(device.get_serial_number());
     assert!(serial_number.is_ascii());
     assert!(serial_number.chars().all(|c| c.is_ascii_hexdigit()));
 }
 #[test_device]
 fn get_firmware_version(device: Pro) {
-    assert_eq!(0, device.get_major_firmware_version());
-    let minor = device.get_minor_firmware_version();
-    assert!(minor > 0);
+    let version = unwrap_ok!(device.get_firmware_version());
+    assert_eq!(0, version.major);
+    assert!(version.minor > 0);
 }
 
 fn admin_retry<T: Authenticate + Device>(device: T, suffix: &str, count: u8) -> T {
-    let result = device.authenticate_admin(&(ADMIN_PASSWORD.to_owned() + suffix));
+    let result = device.authenticate_admin(&(DEFAULT_ADMIN_PIN.to_owned() + suffix));
     let device = match result {
         Ok(admin) => admin.device(),
         Err((device, _)) => device,
     };
-    assert_eq!(count, device.get_admin_retry_count());
+    assert_ok!(count, device.get_admin_retry_count());
     return device;
 }
 
 fn user_retry<T: Authenticate + Device>(device: T, suffix: &str, count: u8) -> T {
-    let result = device.authenticate_user(&(USER_PASSWORD.to_owned() + suffix));
+    let result = device.authenticate_user(&(DEFAULT_USER_PIN.to_owned() + suffix));
     let device = match result {
         Ok(admin) => admin.device(),
         Err((device, _)) => device,
     };
-    assert_eq!(count, device.get_user_retry_count());
+    assert_ok!(count, device.get_user_retry_count());
     return device;
 }
 
@@ -135,7 +132,7 @@ fn get_retry_count(device: DeviceWrapper) {
 
 #[test_device]
 fn config(device: DeviceWrapper) {
-    let admin = device.authenticate_admin(ADMIN_PASSWORD).unwrap();
+    let mut admin = unwrap_ok!(device.authenticate_admin(DEFAULT_ADMIN_PIN));
 
     let config = Config::new(None, None, None, true);
     assert_ok!((), admin.write_config(config));
@@ -155,53 +152,67 @@ fn config(device: DeviceWrapper) {
 
 #[test_device]
 fn change_user_pin(device: DeviceWrapper) {
-    let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
+    let device = device.authenticate_user(DEFAULT_USER_PIN).unwrap().device();
     let device = device.authenticate_user(USER_NEW_PASSWORD).unwrap_err().0;
 
-    assert_ok!((), device.change_user_pin(USER_PASSWORD, USER_NEW_PASSWORD));
+    let mut device = device;
+    assert_ok!(
+        (),
+        device.change_user_pin(DEFAULT_USER_PIN, USER_NEW_PASSWORD)
+    );
 
-    let device = device.authenticate_user(USER_PASSWORD).unwrap_err().0;
+    let device = device.authenticate_user(DEFAULT_USER_PIN).unwrap_err().0;
     let device = device
         .authenticate_user(USER_NEW_PASSWORD)
         .unwrap()
         .device();
 
-    let result = device.change_user_pin(USER_PASSWORD, USER_PASSWORD);
+    let mut device = device;
+    let result = device.change_user_pin(DEFAULT_USER_PIN, DEFAULT_USER_PIN);
     assert_cmd_err!(CommandError::WrongPassword, result);
 
-    assert_ok!((), device.change_user_pin(USER_NEW_PASSWORD, USER_PASSWORD));
+    assert_ok!(
+        (),
+        device.change_user_pin(USER_NEW_PASSWORD, DEFAULT_USER_PIN)
+    );
 
-    let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
+    let device = device.authenticate_user(DEFAULT_USER_PIN).unwrap().device();
     assert!(device.authenticate_user(USER_NEW_PASSWORD).is_err());
 }
 
 #[test_device]
 fn change_admin_pin(device: DeviceWrapper) {
-    let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
-    let device = device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap_err().0;
+    let device = device
+        .authenticate_admin(DEFAULT_ADMIN_PIN)
+        .unwrap()
+        .device();
+    let mut device = device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap_err().0;
 
     assert_ok!(
         (),
-        device.change_admin_pin(ADMIN_PASSWORD, ADMIN_NEW_PASSWORD)
+        device.change_admin_pin(DEFAULT_ADMIN_PIN, ADMIN_NEW_PASSWORD)
     );
 
-    let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap_err().0;
-    let device = device
+    let device = device.authenticate_admin(DEFAULT_ADMIN_PIN).unwrap_err().0;
+    let mut device = device
         .authenticate_admin(ADMIN_NEW_PASSWORD)
         .unwrap()
         .device();
 
     assert_cmd_err!(
         CommandError::WrongPassword,
-        device.change_admin_pin(ADMIN_PASSWORD, ADMIN_PASSWORD)
+        device.change_admin_pin(DEFAULT_ADMIN_PIN, DEFAULT_ADMIN_PIN)
     );
 
     assert_ok!(
         (),
-        device.change_admin_pin(ADMIN_NEW_PASSWORD, ADMIN_PASSWORD)
+        device.change_admin_pin(ADMIN_NEW_PASSWORD, DEFAULT_ADMIN_PIN)
     );
 
-    let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
+    let device = device
+        .authenticate_admin(DEFAULT_ADMIN_PIN)
+        .unwrap()
+        .device();
     device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap_err();
 }
 
@@ -222,63 +233,85 @@ where
 
 #[test_device]
 fn unlock_user_pin(device: DeviceWrapper) {
-    let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
-    assert_ok!((), device.unlock_user_pin(ADMIN_PASSWORD, USER_PASSWORD));
+    let mut device = device.authenticate_user(DEFAULT_USER_PIN).unwrap().device();
+    assert_ok!(
+        (),
+        device.unlock_user_pin(DEFAULT_ADMIN_PIN, DEFAULT_USER_PIN)
+    );
     assert_cmd_err!(
         CommandError::WrongPassword,
-        device.unlock_user_pin(USER_PASSWORD, USER_PASSWORD)
+        device.unlock_user_pin(DEFAULT_USER_PIN, DEFAULT_USER_PIN)
     );
 
     // block user PIN
-    let wrong_password = USER_PASSWORD.to_owned() + "foo";
+    let wrong_password = DEFAULT_USER_PIN.to_owned() + "foo";
     let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
     let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
     let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
-    let device = require_failed_user_login(device, USER_PASSWORD, CommandError::WrongPassword);
+    let mut device =
+        require_failed_user_login(device, DEFAULT_USER_PIN, CommandError::WrongPassword);
 
     // unblock with current PIN
     assert_cmd_err!(
         CommandError::WrongPassword,
-        device.unlock_user_pin(USER_PASSWORD, USER_PASSWORD)
+        device.unlock_user_pin(DEFAULT_USER_PIN, DEFAULT_USER_PIN)
     );
-    assert_ok!((), device.unlock_user_pin(ADMIN_PASSWORD, USER_PASSWORD));
-    let device = device.authenticate_user(USER_PASSWORD).unwrap().device();
+    assert_ok!(
+        (),
+        device.unlock_user_pin(DEFAULT_ADMIN_PIN, DEFAULT_USER_PIN)
+    );
+    let device = device.authenticate_user(DEFAULT_USER_PIN).unwrap().device();
 
     // block user PIN
     let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
     let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
     let device = require_failed_user_login(device, &wrong_password, CommandError::WrongPassword);
-    let device = require_failed_user_login(device, USER_PASSWORD, CommandError::WrongPassword);
+    let mut device =
+        require_failed_user_login(device, DEFAULT_USER_PIN, CommandError::WrongPassword);
 
     // unblock with new PIN
     assert_cmd_err!(
         CommandError::WrongPassword,
-        device.unlock_user_pin(USER_PASSWORD, USER_PASSWORD)
+        device.unlock_user_pin(DEFAULT_USER_PIN, DEFAULT_USER_PIN)
     );
     assert_ok!(
         (),
-        device.unlock_user_pin(ADMIN_PASSWORD, USER_NEW_PASSWORD)
+        device.unlock_user_pin(DEFAULT_ADMIN_PIN, USER_NEW_PASSWORD)
     );
 
     // reset user PIN
-    assert_ok!((), device.change_user_pin(USER_NEW_PASSWORD, USER_PASSWORD));
+    assert_ok!(
+        (),
+        device.change_user_pin(USER_NEW_PASSWORD, DEFAULT_USER_PIN)
+    );
+}
+
+fn assert_utf8_err_or_ne(left: &str, right: Result<String, Error>) {
+    match right {
+        Ok(s) => assert_ne!(left.to_string(), s),
+        Err(Error::Utf8Error(_)) => {}
+        Err(err) => panic!("Expected Utf8Error, got {}!", err),
+    }
 }
 
 #[test_device]
 fn factory_reset(device: DeviceWrapper) {
-    let admin = device.authenticate_admin(ADMIN_PASSWORD).unwrap();
+    let mut admin = unwrap_ok!(device.authenticate_admin(DEFAULT_ADMIN_PIN));
     let otp_data = OtpSlotData::new(1, "test", "0123468790", OtpMode::SixDigits);
     assert_ok!((), admin.write_totp_slot(otp_data, 30));
 
-    let device = admin.device();
-    let pws = device.get_password_safe(USER_PASSWORD).unwrap();
+    let mut device = admin.device();
+    let mut pws = unwrap_ok!(device.get_password_safe(DEFAULT_USER_PIN));
     assert_ok!((), pws.write_slot(0, "test", "testlogin", "testpw"));
     drop(pws);
 
-    assert_ok!((), device.change_user_pin(USER_PASSWORD, USER_NEW_PASSWORD));
     assert_ok!(
         (),
-        device.change_admin_pin(ADMIN_PASSWORD, ADMIN_NEW_PASSWORD)
+        device.change_user_pin(DEFAULT_USER_PIN, USER_NEW_PASSWORD)
+    );
+    assert_ok!(
+        (),
+        device.change_admin_pin(DEFAULT_ADMIN_PIN, ADMIN_NEW_PASSWORD)
     );
 
     assert_cmd_err!(
@@ -287,46 +320,55 @@ fn factory_reset(device: DeviceWrapper) {
     );
     assert_cmd_err!(
         CommandError::WrongPassword,
-        device.factory_reset(ADMIN_PASSWORD)
+        device.factory_reset(DEFAULT_ADMIN_PIN)
     );
     assert_ok!((), device.factory_reset(ADMIN_NEW_PASSWORD));
 
-    let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
+    let device = device
+        .authenticate_admin(DEFAULT_ADMIN_PIN)
+        .unwrap()
+        .device();
 
-    let user = device.authenticate_user(USER_PASSWORD).unwrap();
+    let user = unwrap_ok!(device.authenticate_user(DEFAULT_USER_PIN));
     assert_cmd_err!(CommandError::SlotNotProgrammed, user.get_totp_slot_name(1));
 
-    let device = user.device();
-    let pws = device.get_password_safe(USER_PASSWORD).unwrap();
-    assert_ne!("test".to_string(), pws.get_slot_name(0).unwrap());
-    assert_ne!("testlogin".to_string(), pws.get_slot_login(0).unwrap());
-    assert_ne!("testpw".to_string(), pws.get_slot_password(0).unwrap());
+    let mut device = user.device();
+    let pws = unwrap_ok!(device.get_password_safe(DEFAULT_USER_PIN));
+    assert_utf8_err_or_ne("test", pws.get_slot_name(0));
+    assert_utf8_err_or_ne("testlogin", pws.get_slot_login(0));
+    assert_utf8_err_or_ne("testpw", pws.get_slot_password(0));
+    drop(pws);
 
-    assert_ok!((), device.build_aes_key(ADMIN_PASSWORD));
+    assert_ok!((), device.build_aes_key(DEFAULT_ADMIN_PIN));
 }
 
 #[test_device]
 fn build_aes_key(device: DeviceWrapper) {
-    let pws = device.get_password_safe(USER_PASSWORD).unwrap();
+    let mut device = device;
+    let mut pws = unwrap_ok!(device.get_password_safe(DEFAULT_USER_PIN));
     assert_ok!((), pws.write_slot(0, "test", "testlogin", "testpw"));
     drop(pws);
 
     assert_cmd_err!(
         CommandError::WrongPassword,
-        device.build_aes_key(USER_PASSWORD)
+        device.build_aes_key(DEFAULT_USER_PIN)
     );
-    assert_ok!((), device.build_aes_key(ADMIN_PASSWORD));
+    assert_ok!((), device.build_aes_key(DEFAULT_ADMIN_PIN));
 
-    let device = device.authenticate_admin(ADMIN_PASSWORD).unwrap().device();
+    let mut device = device
+        .authenticate_admin(DEFAULT_ADMIN_PIN)
+        .unwrap()
+        .device();
 
-    let pws = device.get_password_safe(USER_PASSWORD).unwrap();
-    assert_ne!("test".to_string(), pws.get_slot_name(0).unwrap());
-    assert_ne!("testlogin".to_string(), pws.get_slot_login(0).unwrap());
-    assert_ne!("testpw".to_string(), pws.get_slot_password(0).unwrap());
+    let pws = unwrap_ok!(device.get_password_safe(DEFAULT_USER_PIN));
+    assert_utf8_err_or_ne("test", pws.get_slot_name(0));
+    assert_utf8_err_or_ne("testlogin", pws.get_slot_login(0));
+    assert_utf8_err_or_ne("testpw", pws.get_slot_password(0));
 }
 
 #[test_device]
 fn change_update_pin(device: Storage) {
+    let mut device = device;
     assert_cmd_err!(
         CommandError::WrongPassword,
         device.change_update_pin(UPDATE_NEW_PIN, UPDATE_PIN)
@@ -337,6 +379,7 @@ fn change_update_pin(device: Storage) {
 
 #[test_device]
 fn encrypted_volume(device: Storage) {
+    let mut device = device;
     assert_ok!((), device.lock());
 
     assert_eq!(1, count_nitrokey_block_devices());
@@ -347,7 +390,7 @@ fn encrypted_volume(device: Storage) {
         device.enable_encrypted_volume("123")
     );
     assert_eq!(1, count_nitrokey_block_devices());
-    assert_ok!((), device.enable_encrypted_volume(USER_PASSWORD));
+    assert_ok!((), device.enable_encrypted_volume(DEFAULT_USER_PIN));
     assert_eq!(2, count_nitrokey_block_devices());
     assert_ok!((), device.disable_encrypted_volume());
     assert_eq!(1, count_nitrokey_block_devices());
@@ -355,13 +398,14 @@ fn encrypted_volume(device: Storage) {
 
 #[test_device]
 fn hidden_volume(device: Storage) {
+    let mut device = device;
     assert_ok!((), device.lock());
 
     assert_eq!(1, count_nitrokey_block_devices());
     assert_ok!((), device.disable_hidden_volume());
     assert_eq!(1, count_nitrokey_block_devices());
 
-    assert_ok!((), device.enable_encrypted_volume(USER_PASSWORD));
+    assert_ok!((), device.enable_encrypted_volume(DEFAULT_USER_PIN));
     assert_eq!(2, count_nitrokey_block_devices());
 
     // TODO: why this error code?
@@ -390,51 +434,85 @@ fn hidden_volume(device: Storage) {
 
 #[test_device]
 fn lock(device: Storage) {
-    assert_ok!((), device.enable_encrypted_volume(USER_PASSWORD));
+    let mut device = device;
+    assert_ok!((), device.enable_encrypted_volume(DEFAULT_USER_PIN));
     assert_ok!((), device.lock());
     assert_eq!(1, count_nitrokey_block_devices());
 }
 
 #[test_device]
+fn set_encrypted_volume_mode(device: Storage) {
+    // This test case does not check the device status as the command only works with firmware
+    // version 0.49.  For later versions, it does not do anything and always returns Ok(()).
+    let mut device = device;
+
+    assert_ok!(
+        (),
+        device.set_encrypted_volume_mode(DEFAULT_ADMIN_PIN, VolumeMode::ReadOnly)
+    );
+
+    // TODO: re-enable once the password is checked in the firmware
+    // assert_cmd_err!(
+    //     CommandError::WrongPassword,
+    //     device.set_encrypted_volume_mode(DEFAULT_USER_PIN, VolumeMode::ReadOnly)
+    // );
+
+    assert_ok!(
+        (),
+        device.set_encrypted_volume_mode(DEFAULT_ADMIN_PIN, VolumeMode::ReadOnly)
+    );
+    assert_ok!(
+        (),
+        device.set_encrypted_volume_mode(DEFAULT_ADMIN_PIN, VolumeMode::ReadWrite)
+    );
+    assert_ok!(
+        (),
+        device.set_encrypted_volume_mode(DEFAULT_ADMIN_PIN, VolumeMode::ReadOnly)
+    );
+}
+
+#[test_device]
 fn set_unencrypted_volume_mode(device: Storage) {
     fn assert_mode(device: &Storage, mode: VolumeMode) {
-        let status = device.get_status();
-        assert!(status.is_ok());
+        let status = unwrap_ok!(device.get_status());
         assert_eq!(
-            status.unwrap().unencrypted_volume.read_only,
+            status.unencrypted_volume.read_only,
             mode == VolumeMode::ReadOnly
         );
     }
 
-    fn assert_success(device: &Storage, mode: VolumeMode) {
-        assert_ok!((), device.set_unencrypted_volume_mode(ADMIN_PASSWORD, mode));
+    fn assert_success(device: &mut Storage, mode: VolumeMode) {
+        assert_ok!(
+            (),
+            device.set_unencrypted_volume_mode(DEFAULT_ADMIN_PIN, mode)
+        );
         assert_mode(&device, mode);
     }
 
-    assert_success(&device, VolumeMode::ReadOnly);
+    let mut device = device;
+    assert_success(&mut device, VolumeMode::ReadOnly);
 
     assert_cmd_err!(
         CommandError::WrongPassword,
-        device.set_unencrypted_volume_mode(USER_PASSWORD, VolumeMode::ReadOnly)
+        device.set_unencrypted_volume_mode(DEFAULT_USER_PIN, VolumeMode::ReadOnly)
     );
     assert_mode(&device, VolumeMode::ReadOnly);
 
-    assert_success(&device, VolumeMode::ReadWrite);
-    assert_success(&device, VolumeMode::ReadWrite);
-    assert_success(&device, VolumeMode::ReadOnly);
+    assert_success(&mut device, VolumeMode::ReadWrite);
+    assert_success(&mut device, VolumeMode::ReadWrite);
+    assert_success(&mut device, VolumeMode::ReadOnly);
 }
 
 #[test_device]
 fn get_storage_status(device: Storage) {
-    let status = device.get_status().unwrap();
-
+    let status = unwrap_ok!(device.get_status());
     assert!(status.serial_number_sd_card > 0);
     assert!(status.serial_number_smart_card > 0);
 }
 
 #[test_device]
 fn get_production_info(device: Storage) {
-    let info = device.get_production_info().unwrap();
+    let info = unwrap_ok!(device.get_production_info());
     assert_eq!(0, info.firmware_version.major);
     assert!(info.firmware_version.minor != 0);
     assert!(info.serial_number_cpu != 0);
@@ -447,43 +525,45 @@ fn get_production_info(device: Storage) {
     assert!(info.sd_card.oem != 0);
     assert!(info.sd_card.manufacturer != 0);
 
-    let status = device.get_status().unwrap();
+    let status = unwrap_ok!(device.get_status());
     assert_eq!(status.firmware_version, info.firmware_version);
     assert_eq!(status.serial_number_sd_card, info.sd_card.serial_number);
 }
 
 #[test_device]
 fn clear_new_sd_card_warning(device: Storage) {
-    assert_ok!((), device.factory_reset(ADMIN_PASSWORD));
+    let mut device = device;
+    assert_ok!((), device.factory_reset(DEFAULT_ADMIN_PIN));
     thread::sleep(time::Duration::from_secs(3));
-    assert_ok!((), device.build_aes_key(ADMIN_PASSWORD));
+    assert_ok!((), device.build_aes_key(DEFAULT_ADMIN_PIN));
 
     // We have to perform an SD card operation to reset the new_sd_card_found field
     assert_ok!((), device.lock());
 
-    let status = device.get_status().unwrap();
+    let status = unwrap_ok!(device.get_status());
     assert!(status.new_sd_card_found);
 
-    assert_ok!((), device.clear_new_sd_card_warning(ADMIN_PASSWORD));
+    assert_ok!((), device.clear_new_sd_card_warning(DEFAULT_ADMIN_PIN));
 
-    let status = device.get_status().unwrap();
+    let status = unwrap_ok!(device.get_status());
     assert!(!status.new_sd_card_found);
 }
 
 #[test_device]
 fn export_firmware(device: Storage) {
+    let mut device = device;
     assert_cmd_err!(
         CommandError::WrongPassword,
         device.export_firmware("someadminpn")
     );
-    assert_ok!((), device.export_firmware(ADMIN_PASSWORD));
+    assert_ok!((), device.export_firmware(DEFAULT_ADMIN_PIN));
     assert_ok!(
         (),
-        device.set_unencrypted_volume_mode(ADMIN_PASSWORD, VolumeMode::ReadWrite)
+        device.set_unencrypted_volume_mode(DEFAULT_ADMIN_PIN, VolumeMode::ReadWrite)
     );
-    assert_ok!((), device.export_firmware(ADMIN_PASSWORD));
+    assert_ok!((), device.export_firmware(DEFAULT_ADMIN_PIN));
     assert_ok!(
         (),
-        device.set_unencrypted_volume_mode(ADMIN_PASSWORD, VolumeMode::ReadOnly)
+        device.set_unencrypted_volume_mode(DEFAULT_ADMIN_PIN, VolumeMode::ReadOnly)
     );
 }

@@ -101,7 +101,7 @@ fn with_password_safe<F>(ctx: &mut args::ExecCtx<'_>, mut op: F) -> Result<()>
 where
   F: FnMut(&mut args::ExecCtx<'_>, nitrokey::PasswordSafe<'_>) -> Result<()>,
 {
-  with_device(ctx, |ctx, device| {
+  with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
     try_with_pin_and_data(
       ctx,
@@ -333,15 +333,14 @@ fn print_status(
     r#"Status:
   model:             {model}
   serial number:     0x{id}
-  firmware version:  {fwv0}.{fwv1}
+  firmware version:  {fwv}
   user retry count:  {urc}
   admin retry count: {arc}"#,
     model = model,
     id = serial_number,
-    fwv0 = device.get_major_firmware_version(),
-    fwv1 = device.get_minor_firmware_version(),
-    urc = device.get_user_retry_count(),
-    arc = device.get_admin_retry_count(),
+    fwv = device.get_firmware_version()?,
+    urc = device.get_user_retry_count()?,
+    arc = device.get_admin_retry_count()?,
   )?;
 
   if let nitrokey::DeviceWrapper::Storage(device) = device {
@@ -368,7 +367,7 @@ pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 
 /// Perform a factory reset.
 pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
-  with_device(ctx, |ctx, device| {
+  with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
 
     // To force the user to enter the admin PIN before performing a
@@ -395,7 +394,7 @@ pub fn unencrypted_set(
   ctx: &mut args::ExecCtx<'_>,
   mode: args::UnencryptedVolumeMode,
 ) -> Result<()> {
-  with_storage_device(ctx, |ctx, device| {
+  with_storage_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
     let mode = match mode {
       args::UnencryptedVolumeMode::ReadWrite => nitrokey::VolumeMode::ReadWrite,
@@ -417,7 +416,7 @@ pub fn unencrypted_set(
 
 /// Open the encrypted volume on the Nitrokey.
 pub fn encrypted_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
-  with_storage_device(ctx, |ctx, device| {
+  with_storage_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
 
     // We may forcefully close a hidden volume, if active, so be sure to
@@ -432,7 +431,7 @@ pub fn encrypted_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 
 /// Close the previously opened encrypted volume.
 pub fn encrypted_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
-  with_storage_device(ctx, |_ctx, device| {
+  with_storage_device(ctx, |_ctx, mut device| {
     // Flush all filesystem caches to disk. We are mostly interested in
     // making sure that the encrypted volume on the Nitrokey we are
     // about to close is not closed while not all data was written to
@@ -447,7 +446,7 @@ pub fn encrypted_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 
 /// Create a hidden volume.
 pub fn hidden_create(ctx: &mut args::ExecCtx<'_>, slot: u8, start: u8, end: u8) -> Result<()> {
-  with_storage_device(ctx, |ctx, device| {
+  with_storage_device(ctx, |ctx, mut device| {
     let pwd_entry = pinentry::PwdEntry::from(&device)?;
     let pwd = if let Some(pwd) = &ctx.password {
       pwd
@@ -466,7 +465,7 @@ pub fn hidden_create(ctx: &mut args::ExecCtx<'_>, slot: u8, start: u8, end: u8) 
 
 /// Open a hidden volume.
 pub fn hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
-  with_storage_device(ctx, |ctx, device| {
+  with_storage_device(ctx, |ctx, mut device| {
     let pwd_entry = pinentry::PwdEntry::from(&device)?;
     let pwd = if let Some(pwd) = &ctx.password {
       pwd
@@ -489,7 +488,7 @@ pub fn hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 
 /// Close a previously opened hidden volume.
 pub fn hidden_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
-  with_storage_device(ctx, |_ctx, device| {
+  with_storage_device(ctx, |_ctx, mut device| {
     unsafe { sync() };
 
     device
@@ -537,7 +536,7 @@ pub fn config_set(
   user_password: Option<bool>,
 ) -> Result<()> {
   with_device(ctx, |ctx, device| {
-    let device = authenticate_admin(ctx, device)?;
+    let mut device = authenticate_admin(ctx, device)?;
     let config = device
       .get_config()
       .map_err(|err| get_error("Could not get configuration", err))?;
@@ -555,14 +554,17 @@ pub fn config_set(
 
 /// Lock the Nitrokey device.
 pub fn lock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
-  with_device(ctx, |_ctx, device| {
+  with_device(ctx, |_ctx, mut device| {
     device
       .lock()
       .map_err(|err| get_error("Could not lock the device", err))
   })
 }
 
-fn get_otp<T: GenerateOtp>(slot: u8, algorithm: args::OtpAlgorithm, device: &T) -> Result<String> {
+fn get_otp<T>(slot: u8, algorithm: args::OtpAlgorithm, device: &mut T) -> Result<String>
+where
+  T: GenerateOtp,
+{
   match algorithm {
     args::OtpAlgorithm::Hotp => device.get_hotp_code(slot),
     args::OtpAlgorithm::Totp => device.get_totp_code(slot),
@@ -584,7 +586,7 @@ pub fn otp_get(
   algorithm: args::OtpAlgorithm,
   time: Option<u64>,
 ) -> Result<()> {
-  with_device(ctx, |ctx, device| {
+  with_device(ctx, |ctx, mut device| {
     if algorithm == args::OtpAlgorithm::Totp {
       device
         .set_time(
@@ -600,10 +602,10 @@ pub fn otp_get(
       .get_config()
       .map_err(|err| get_error("Could not get device configuration", err))?;
     let otp = if config.user_password {
-      let user = authenticate_user(ctx, device)?;
-      get_otp(slot, algorithm, &user)
+      let mut user = authenticate_user(ctx, device)?;
+      get_otp(slot, algorithm, &mut user)
     } else {
-      get_otp(slot, algorithm, &device)
+      get_otp(slot, algorithm, &mut device)
     }?;
     println!(ctx, "{}", otp)?;
     Ok(())
@@ -657,7 +659,7 @@ pub fn otp_set(
       args::OtpSecretFormat::Hex => data.secret,
     };
     let data = nitrokey::OtpSlotData { secret, ..data };
-    let device = authenticate_admin(ctx, device)?;
+    let mut device = authenticate_admin(ctx, device)?;
     match algorithm {
       args::OtpAlgorithm::Hotp => device.write_hotp_slot(data, counter),
       args::OtpAlgorithm::Totp => device.write_totp_slot(data, time_window),
@@ -674,7 +676,7 @@ pub fn otp_clear(
   algorithm: args::OtpAlgorithm,
 ) -> Result<()> {
   with_device(ctx, |ctx, device| {
-    let device = authenticate_admin(ctx, device)?;
+    let mut device = authenticate_admin(ctx, device)?;
     match algorithm {
       args::OtpAlgorithm::Hotp => device.erase_hotp_slot(slot),
       args::OtpAlgorithm::Totp => device.erase_totp_slot(slot),
@@ -778,7 +780,7 @@ fn choose_pin(
 
 /// Change a PIN.
 pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Result<()> {
-  with_device(ctx, |ctx, device| {
+  with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
     let new_pin = choose_pin(ctx, &pin_entry, true)?;
 
@@ -801,7 +803,7 @@ pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Resu
 
 /// Unblock and reset the user PIN.
 pub fn pin_unblock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
-  with_device(ctx, |ctx, device| {
+  with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
     let user_pin = choose_pin(ctx, &pin_entry, false)?;
     let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
@@ -881,7 +883,7 @@ pub fn pws_set(
   login: &str,
   password: &str,
 ) -> Result<()> {
-  with_password_safe(ctx, |_ctx, pws| {
+  with_password_safe(ctx, |_ctx, mut pws| {
     pws
       .write_slot(slot, name, login, password)
       .map_err(|err| get_error("Could not write PWS slot", err))
@@ -890,7 +892,7 @@ pub fn pws_set(
 
 /// Clear a PWS slot.
 pub fn pws_clear(ctx: &mut args::ExecCtx<'_>, slot: u8) -> Result<()> {
-  with_password_safe(ctx, |_ctx, pws| {
+  with_password_safe(ctx, |_ctx, mut pws| {
     pws
       .erase_slot(slot)
       .map_err(|err| get_error("Could not clear PWS slot", err))

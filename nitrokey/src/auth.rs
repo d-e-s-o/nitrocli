@@ -1,7 +1,7 @@
 // Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
 // SPDX-License-Identifier: MIT
 
-use std::ops::Deref;
+use std::ops;
 use std::os::raw::c_char;
 use std::os::raw::c_int;
 
@@ -49,7 +49,7 @@ pub trait Authenticate {
     ///         user.device()
     ///     },
     ///     Err((device, err)) => {
-    ///         println!("Could not authenticate as user: {}", err);
+    ///         eprintln!("Could not authenticate as user: {}", err);
     ///         device
     ///     },
     /// };
@@ -95,7 +95,7 @@ pub trait Authenticate {
     ///         admin.device()
     ///     },
     ///     Err((device, err)) => {
-    ///         println!("Could not authenticate as admin: {}", err);
+    ///         eprintln!("Could not authenticate as admin: {}", err);
     ///         device
     ///     },
     /// };
@@ -211,7 +211,7 @@ impl<T: Device> User<T> {
     }
 }
 
-impl<T: Device> Deref for User<T> {
+impl<T: Device> ops::Deref for User<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -219,8 +219,14 @@ impl<T: Device> Deref for User<T> {
     }
 }
 
+impl<T: Device> ops::DerefMut for User<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.device
+    }
+}
+
 impl<T: Device> GenerateOtp for User<T> {
-    fn get_hotp_code(&self, slot: u8) -> Result<String, Error> {
+    fn get_hotp_code(&mut self, slot: u8) -> Result<String, Error> {
         result_from_string(unsafe {
             nitrokey_sys::NK_get_hotp_code_PIN(slot, self.temp_password_ptr())
         })
@@ -246,11 +252,17 @@ impl<T: Device> AuthenticatedDevice<T> for User<T> {
     }
 }
 
-impl<T: Device> Deref for Admin<T> {
+impl<T: Device> ops::Deref for Admin<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
         &self.device
+    }
+}
+
+impl<T: Device> ops::DerefMut for Admin<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.device
     }
 }
 
@@ -278,18 +290,18 @@ impl<T: Device> Admin<T> {
     /// let device = nitrokey::connect()?;
     /// let config = Config::new(None, None, None, false);
     /// match device.authenticate_admin("12345678") {
-    ///     Ok(admin) => {
+    ///     Ok(mut admin) => {
     ///         admin.write_config(config);
     ///         ()
     ///     },
-    ///     Err((_, err)) => println!("Could not authenticate as admin: {}", err),
+    ///     Err((_, err)) => eprintln!("Could not authenticate as admin: {}", err),
     /// };
     /// #     Ok(())
     /// # }
     /// ```
     ///
     /// [`InvalidSlot`]: enum.LibraryError.html#variant.InvalidSlot
-    pub fn write_config(&self, config: Config) -> Result<(), Error> {
+    pub fn write_config(&mut self, config: Config) -> Result<(), Error> {
         let raw_config = RawConfig::try_from(config)?;
         get_command_result(unsafe {
             nitrokey_sys::NK_write_config(
@@ -305,7 +317,7 @@ impl<T: Device> Admin<T> {
 }
 
 impl<T: Device> ConfigureOtp for Admin<T> {
-    fn write_hotp_slot(&self, data: OtpSlotData, counter: u64) -> Result<(), Error> {
+    fn write_hotp_slot(&mut self, data: OtpSlotData, counter: u64) -> Result<(), Error> {
         let raw_data = RawOtpSlotData::new(data)?;
         get_command_result(unsafe {
             nitrokey_sys::NK_write_hotp_slot(
@@ -322,7 +334,7 @@ impl<T: Device> ConfigureOtp for Admin<T> {
         })
     }
 
-    fn write_totp_slot(&self, data: OtpSlotData, time_window: u16) -> Result<(), Error> {
+    fn write_totp_slot(&mut self, data: OtpSlotData, time_window: u16) -> Result<(), Error> {
         let raw_data = RawOtpSlotData::new(data)?;
         get_command_result(unsafe {
             nitrokey_sys::NK_write_totp_slot(
@@ -339,13 +351,13 @@ impl<T: Device> ConfigureOtp for Admin<T> {
         })
     }
 
-    fn erase_hotp_slot(&self, slot: u8) -> Result<(), Error> {
+    fn erase_hotp_slot(&mut self, slot: u8) -> Result<(), Error> {
         get_command_result(unsafe {
             nitrokey_sys::NK_erase_hotp_slot(slot, self.temp_password_ptr())
         })
     }
 
-    fn erase_totp_slot(&self, slot: u8) -> Result<(), Error> {
+    fn erase_totp_slot(&mut self, slot: u8) -> Result<(), Error> {
         get_command_result(unsafe {
             nitrokey_sys::NK_erase_totp_slot(slot, self.temp_password_ptr())
         })
