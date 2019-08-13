@@ -29,6 +29,7 @@
 #include "libnitrokey/misc.h"
 #include <mutex>
 #include "libnitrokey/cxx_semantics.h"
+#include "libnitrokey/misc.h"
 #include <functional>
 #include <stick10_commands.h>
 
@@ -105,11 +106,10 @@ using nitrokey::misc::strcpyT;
       return true;
     }
 
-    std::vector<std::string> NitrokeyManager::list_devices(){
+    std::vector<DeviceInfo> NitrokeyManager::list_devices(){
         std::lock_guard<std::mutex> lock(mex_dev_com_manager);
 
-        auto p = make_shared<Stick20>();
-        return p->enumerate(); // make static
+        return Device::enumerate();
     }
 
     std::vector<std::string> NitrokeyManager::list_devices_by_cpuID(){
@@ -127,11 +127,13 @@ using nitrokey::misc::strcpyT;
 
         LOGD1("Enumerating devices");
         std::vector<std::string> res;
-        auto d = make_shared<Stick20>();
-        const auto v = d->enumerate();
+        const auto v = Device::enumerate();
         LOGD1("Discovering IDs");
-        for (auto & p: v){
-            d = make_shared<Stick20>();
+        for (auto & i: v){
+            if (i.m_deviceModel != DeviceModel::STORAGE)
+                continue;
+            auto p = i.m_path;
+            auto d = make_shared<Stick20>();
             LOGD1( std::string("Found: ") + p );
             d->set_path(p);
             try{
@@ -215,7 +217,26 @@ using nitrokey::misc::strcpyT;
             }
         }
 
-        auto p = make_shared<Stick20>();
+        auto info_ptr = hid_enumerate(NITROKEY_VID, 0);
+        auto first_info_ptr = info_ptr;
+        if (!info_ptr)
+          return false;
+
+        misc::Option<DeviceModel> model;
+        while (info_ptr && !model.has_value()) {
+            if (path == std::string(info_ptr->path)) {
+                model = product_id_to_model(info_ptr->product_id);
+            }
+            info_ptr = info_ptr->next;
+        }
+        hid_free_enumeration(first_info_ptr);
+
+        if (!model.has_value())
+            return false;
+
+        auto p = Device::create(model.value());
+        if (!p)
+            return false;
         p->set_path(path);
 
         if(!p->connect()) return false;
@@ -422,6 +443,7 @@ using nitrokey::misc::strcpyT;
       return "";
     }
 
+    bool NitrokeyManager::is_internal_hotp_slot_number(uint8_t slot_number) const { return slot_number < 0x20; }
     bool NitrokeyManager::is_valid_hotp_slot_number(uint8_t slot_number) const { return slot_number < 3; }
     bool NitrokeyManager::is_valid_totp_slot_number(uint8_t slot_number) const { return slot_number < 0x10-1; } //15
     uint8_t NitrokeyManager::get_internal_slot_number_for_totp(uint8_t slot_number) const { return (uint8_t) (0x20 + slot_number); }
@@ -885,16 +907,16 @@ using nitrokey::misc::strcpyT;
       //authorization command is supported for versions equal or below:
         auto m = std::unordered_map<DeviceModel , int, EnumClassHash>({
                                                {DeviceModel::PRO, 7},
-                                               {DeviceModel::STORAGE, 999},
+                                               {DeviceModel::STORAGE, 53},
          });
         return get_minor_firmware_version() <= m[device->get_device_model()];
     }
 
     bool NitrokeyManager::is_320_OTP_secret_supported(){
-      //authorization command is supported for versions equal or below:
+        // 320 bit OTP secret is supported by version bigger or equal to:
         auto m = std::unordered_map<DeviceModel , int, EnumClassHash>({
                                                {DeviceModel::PRO, 8},
-                                               {DeviceModel::STORAGE, 999},
+                                               {DeviceModel::STORAGE, 54},
          });
         return get_minor_firmware_version() >= m[device->get_device_model()];
     }
@@ -916,7 +938,7 @@ using nitrokey::misc::strcpyT;
       return false;
     }
 
-    int NitrokeyManager::get_minor_firmware_version(){
+    uint8_t NitrokeyManager::get_minor_firmware_version(){
       switch(device->get_device_model()){
         case DeviceModel::PRO:{
           auto status_p = GetStatus::CommandTransaction::run(device);
@@ -932,7 +954,7 @@ using nitrokey::misc::strcpyT;
       }
       return 0;
     }
-    int NitrokeyManager::get_major_firmware_version(){
+    uint8_t NitrokeyManager::get_major_firmware_version(){
       switch(device->get_device_model()){
         case DeviceModel::PRO:{
           auto status_p = GetStatus::CommandTransaction::run(device);
@@ -1099,11 +1121,31 @@ using nitrokey::misc::strcpyT;
     return get_TOTP_code(slot_number, 0, 0, 0, user_temporary_password);
   }
 
+  /**
+   * Returns ReadSlot structure, describing OTP slot configuration. Always return binary counter -
+   * does the necessary conversion, if needed, to unify the behavior across Pro and Storage.
+   * @private For internal use only
+   * @param slot_number which OTP slot to use (usual format)
+   * @return ReadSlot structure
+   */
   stick10::ReadSlot::ResponsePayload NitrokeyManager::get_OTP_slot_data(const uint8_t slot_number) {
     auto p = get_payload<stick10::ReadSlot>();
     p.slot_number = slot_number;
+    p.data_format = stick10::ReadSlot::CounterFormat::BINARY; // ignored for devices other than Storage v0.54+
     auto data = stick10::ReadSlot::CommandTransaction::run(device, p);
-    return data.data();
+
+    auto &payload = data.data();
+
+    // if fw <=v0.53 and asked binary - do the conversion from ASCII
+    if (device->get_device_model() == DeviceModel::STORAGE && get_minor_firmware_version() <= 53
+         && is_internal_hotp_slot_number(slot_number))
+    {
+      //convert counter from string to ull
+      auto counter_s = std::string(payload.slot_counter_s, payload.slot_counter_s + sizeof(payload.slot_counter_s));
+      payload.slot_counter = std::stoull(counter_s);
+    }
+
+    return payload;
   }
 
   stick10::ReadSlot::ResponsePayload NitrokeyManager::get_TOTP_slot_data(const uint8_t slot_number) {
@@ -1111,13 +1153,7 @@ using nitrokey::misc::strcpyT;
   }
 
   stick10::ReadSlot::ResponsePayload NitrokeyManager::get_HOTP_slot_data(const uint8_t slot_number) {
-    auto slot_data = get_OTP_slot_data(get_internal_slot_number_for_hotp(slot_number));
-    if (device->get_device_model() == DeviceModel::STORAGE){
-      //convert counter from string to ull
-      auto counter_s = std::string(slot_data.slot_counter_s, slot_data.slot_counter_s+sizeof(slot_data.slot_counter_s));
-      slot_data.slot_counter = std::stoull(counter_s);
-    }
-    return slot_data;
+    return get_OTP_slot_data(get_internal_slot_number_for_hotp(slot_number));
   }
 
   void NitrokeyManager::lock_encrypted_volume() {
@@ -1145,5 +1181,19 @@ using nitrokey::misc::strcpyT;
     auto data = stick20::ProductionTest::CommandTransaction::run(device);
     return data.data();
   };
+
+  void NitrokeyManager::enable_firmware_update_pro(const char *firmware_pin) {
+    auto p = get_payload<FirmwareUpdate>();
+    strcpyT(p.firmware_password, firmware_pin);
+    FirmwareUpdate::CommandTransaction::run(device, p);
+  }
+
+  void
+  NitrokeyManager::change_firmware_update_password_pro(const char *firmware_pin_current, const char *firmware_pin_new) {
+    auto p = get_payload<FirmwarePasswordChange>();
+    strcpyT(p.firmware_password_current, firmware_pin_current);
+    strcpyT(p.firmware_password_new, firmware_pin_new);
+    FirmwarePasswordChange::CommandTransaction::run(device, p);
+  }
 
 }

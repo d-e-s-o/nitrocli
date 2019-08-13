@@ -1,3 +1,29 @@
+# v3.5.0 (2019-07-04)
+- Mark deprecated functions using the `deprecated` attribute.
+- Update to libnitrokey 3.5, causing all following changes.
+- New constant `NK_PWS_SLOT_COUNT`.
+- New structures:
+  - `NK_device_info`
+  - `NK_status`
+  - `NK_SD_usage_data`
+  - `ReadSlot_t`
+- New functions:
+  - `NK_get_SD_usage_data`
+  - `NK_get_status`
+  - `NK_get_status_as_string`
+  - `NK_list_devices`
+  - `NK_free_device_info`
+  - `NK_connect_with_path`
+  - `NK_enable_firmware_update_pro`
+  - `NK_change_firmware_password_pro`
+  - `NK_read_HOTP_slot`
+- Deprecated functions:
+  - `NK_status`
+- Changed the return type for `NK_get_major_firmware_version` and
+  `NK_get_minor_firmware_version` to `u8`.
+- Changed `NK_get_progress_bar_value` to return -2 instead of 0 if an error
+  occurs.
+
 # v3.4.3 (2019-10-12)
 - Link directly against `libnitrokey` if the `USE_SYSTEM_LIBNITROKEY`
   environment variable is set.

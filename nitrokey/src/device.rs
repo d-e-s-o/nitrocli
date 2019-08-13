@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 use std::fmt;
-use std::marker;
 
 use libc;
 use nitrokey_sys;
@@ -54,7 +53,7 @@ impl fmt::Display for VolumeMode {
 
 /// A wrapper for a Nitrokey device of unknown type.
 ///
-/// Use the function [`connect`][] to obtain a wrapped instance.  The wrapper implements all traits
+/// Use the [`connect`][] method to obtain a wrapped instance.  The wrapper implements all traits
 /// that are shared between all Nitrokey devices so that the shared functionality can be used
 /// without knowing the type of the underlying device.  If you want to use functionality that is
 /// not available for all devices, you have to extract the device.
@@ -67,11 +66,12 @@ impl fmt::Display for VolumeMode {
 /// use nitrokey::{Authenticate, DeviceWrapper, User};
 /// # use nitrokey::Error;
 ///
-/// fn perform_user_task(device: &User<DeviceWrapper>) {}
+/// fn perform_user_task<'a>(device: &User<'a, DeviceWrapper<'a>>) {}
 /// fn perform_other_task(device: &DeviceWrapper) {}
 ///
 /// # fn try_main() -> Result<(), Error> {
-/// let device = nitrokey::connect()?;
+/// let mut manager = nitrokey::take()?;
+/// let device = manager.connect()?;
 /// let device = match device.authenticate_user("123456") {
 ///     Ok(user) => {
 ///         perform_user_task(&user);
@@ -97,7 +97,8 @@ impl fmt::Display for VolumeMode {
 /// fn perform_storage_task(device: &Storage) {}
 ///
 /// # fn try_main() -> Result<(), Error> {
-/// let device = nitrokey::connect()?;
+/// let mut manager = nitrokey::take()?;
+/// let device = manager.connect()?;
 /// perform_common_task(&device);
 /// match device {
 ///     DeviceWrapper::Storage(storage) => perform_storage_task(&storage),
@@ -107,21 +108,20 @@ impl fmt::Display for VolumeMode {
 /// # }
 /// ```
 ///
-/// [`connect`]: fn.connect.html
+/// [`connect`]: struct.Manager.html#method.connect
 #[derive(Debug)]
-pub enum DeviceWrapper {
+pub enum DeviceWrapper<'a> {
     /// A Nitrokey Storage device.
-    Storage(Storage),
+    Storage(Storage<'a>),
     /// A Nitrokey Pro device.
-    Pro(Pro),
+    Pro(Pro<'a>),
 }
 
 /// A Nitrokey Pro device without user or admin authentication.
 ///
-/// Use the global function [`connect`][] to obtain an instance wrapper or the method
-/// [`connect`][`Pro::connect`] to directly obtain an instance.  If you want to execute a command
-/// that requires user or admin authentication, use [`authenticate_admin`][] or
-/// [`authenticate_user`][].
+/// Use the [`connect`][] method to obtain an instance wrapper or the [`connect_pro`] method to
+/// directly obtain an instance.  If you want to execute a command that requires user or admin
+/// authentication, use [`authenticate_admin`][] or [`authenticate_user`][].
 ///
 /// # Examples
 ///
@@ -131,11 +131,12 @@ pub enum DeviceWrapper {
 /// use nitrokey::{Authenticate, User, Pro};
 /// # use nitrokey::Error;
 ///
-/// fn perform_user_task(device: &User<Pro>) {}
+/// fn perform_user_task<'a>(device: &User<'a, Pro<'a>>) {}
 /// fn perform_other_task(device: &Pro) {}
 ///
 /// # fn try_main() -> Result<(), Error> {
-/// let device = nitrokey::Pro::connect()?;
+/// let mut manager = nitrokey::take()?;
+/// let device = manager.connect_pro()?;
 /// let device = match device.authenticate_user("123456") {
 ///     Ok(user) => {
 ///         perform_user_task(&user);
@@ -153,21 +154,18 @@ pub enum DeviceWrapper {
 ///
 /// [`authenticate_admin`]: trait.Authenticate.html#method.authenticate_admin
 /// [`authenticate_user`]: trait.Authenticate.html#method.authenticate_user
-/// [`connect`]: fn.connect.html
-/// [`Pro::connect`]: #method.connect
+/// [`connect`]: struct.Manager.html#method.connect
+/// [`connect_pro`]: struct.Manager.html#method.connect_pro
 #[derive(Debug)]
-pub struct Pro {
-    // make sure that users cannot directly instantiate this type
-    #[doc(hidden)]
-    marker: marker::PhantomData<()>,
+pub struct Pro<'a> {
+    manager: Option<&'a mut crate::Manager>,
 }
 
 /// A Nitrokey Storage device without user or admin authentication.
 ///
-/// Use the global function [`connect`][] to obtain an instance wrapper or the method
-/// [`connect`][`Storage::connect`] to directly obtain an instance.  If you want to execute a
-/// command that requires user or admin authentication, use [`authenticate_admin`][] or
-/// [`authenticate_user`][].
+/// Use the [`connect`][] method to obtain an instance wrapper or the [`connect_storage`] method to
+/// directly obtain an instance.  If you want to execute a command that requires user or admin
+/// authentication, use [`authenticate_admin`][] or [`authenticate_user`][].
 ///
 /// # Examples
 ///
@@ -177,11 +175,12 @@ pub struct Pro {
 /// use nitrokey::{Authenticate, User, Storage};
 /// # use nitrokey::Error;
 ///
-/// fn perform_user_task(device: &User<Storage>) {}
+/// fn perform_user_task<'a>(device: &User<'a, Storage<'a>>) {}
 /// fn perform_other_task(device: &Storage) {}
 ///
 /// # fn try_main() -> Result<(), Error> {
-/// let device = nitrokey::Storage::connect()?;
+/// let mut manager = nitrokey::take()?;
+/// let device = manager.connect_storage()?;
 /// let device = match device.authenticate_user("123456") {
 ///     Ok(user) => {
 ///         perform_user_task(&user);
@@ -199,13 +198,11 @@ pub struct Pro {
 ///
 /// [`authenticate_admin`]: trait.Authenticate.html#method.authenticate_admin
 /// [`authenticate_user`]: trait.Authenticate.html#method.authenticate_user
-/// [`connect`]: fn.connect.html
-/// [`Storage::connect`]: #method.connect
+/// [`connect`]: struct.Manager.html#method.connect
+/// [`connect_storage`]: struct.Manager.html#method.connect_storage
 #[derive(Debug)]
-pub struct Storage {
-    // make sure that users cannot directly instantiate this type
-    #[doc(hidden)]
-    marker: marker::PhantomData<()>,
+pub struct Storage<'a> {
+    manager: Option<&'a mut crate::Manager>,
 }
 
 /// The status of a volume on a Nitrokey Storage device.
@@ -296,7 +293,32 @@ pub struct StorageStatus {
 ///
 /// This trait provides the commands that can be executed without authentication and that are
 /// present on all supported Nitrokey devices.
-pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
+pub trait Device<'a>: Authenticate<'a> + GetPasswordSafe<'a> + GenerateOtp + fmt::Debug {
+    /// Returns the [`Manager`][] instance that has been used to connect to this device.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nitrokey::{Device, DeviceWrapper};
+    ///
+    /// fn do_something(device: DeviceWrapper) {
+    ///     // reconnect to any device
+    ///     let manager = device.into_manager();
+    ///     let device = manager.connect();
+    ///     // do something with the device
+    ///     // ...
+    /// }
+    ///
+    /// # fn main() -> Result<(), nitrokey::Error> {
+    /// match nitrokey::take()?.connect() {
+    ///     Ok(device) => do_something(device),
+    ///     Err(err) => println!("Could not connect to a Nitrokey: {}", err),
+    /// }
+    /// #     Ok(())
+    /// # }
+    /// ```
+    fn into_manager(self) -> &'a mut crate::Manager;
+
     /// Returns the model of the connected Nitrokey device.
     ///
     /// # Example
@@ -306,7 +328,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// println!("Connected to a Nitrokey {}", device.get_model());
     /// #    Ok(())
     /// # }
@@ -322,7 +345,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// match device.get_serial_number() {
     ///     Ok(number) => println!("serial no: {}", number),
     ///     Err(err) => eprintln!("Could not get serial number: {}", err),
@@ -344,7 +368,9 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
+    /// let count = device.get_user_retry_count();
     /// match device.get_user_retry_count() {
     ///     Ok(count) => println!("{} remaining authentication attempts (user)", count),
     ///     Err(err) => eprintln!("Could not get user retry count: {}", err),
@@ -366,7 +392,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// let count = device.get_admin_retry_count();
     /// match device.get_admin_retry_count() {
     ///     Ok(count) => println!("{} remaining authentication attempts (admin)", count),
@@ -388,7 +415,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// match device.get_firmware_version() {
     ///     Ok(version) => println!("Firmware version: {}", version),
     ///     Err(err) => eprintln!("Could not access firmware version: {}", err),
@@ -399,14 +427,7 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     fn get_firmware_version(&self) -> Result<FirmwareVersion, Error> {
         let major = result_or_error(unsafe { nitrokey_sys::NK_get_major_firmware_version() })?;
         let minor = result_or_error(unsafe { nitrokey_sys::NK_get_minor_firmware_version() })?;
-        let max = i32::from(u8::max_value());
-        if major < 0 || minor < 0 || major > max || minor > max {
-            return Err(Error::UnexpectedError);
-        }
-        Ok(FirmwareVersion {
-            major: major as u8,
-            minor: minor as u8,
-        })
+        Ok(FirmwareVersion { major, minor })
     }
 
     /// Returns the current configuration of the Nitrokey device.
@@ -418,7 +439,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// let config = device.get_config()?;
     /// println!("numlock binding:          {:?}", config.numlock);
     /// println!("capslock binding:         {:?}", config.capslock);
@@ -452,7 +474,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// match device.change_admin_pin("12345678", "12345679") {
     ///     Ok(()) => println!("Updated admin PIN."),
     ///     Err(err) => eprintln!("Failed to update admin PIN: {}", err),
@@ -485,7 +508,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// match device.change_user_pin("123456", "123457") {
     ///     Ok(()) => println!("Updated admin PIN."),
     ///     Err(err) => eprintln!("Failed to update admin PIN: {}", err),
@@ -518,7 +542,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// match device.unlock_user_pin("12345678", "123456") {
     ///     Ok(()) => println!("Unlocked user PIN."),
     ///     Err(err) => eprintln!("Failed to unlock user PIN: {}", err),
@@ -552,7 +577,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// match device.lock() {
     ///     Ok(()) => println!("Locked the Nitrokey device."),
     ///     Err(err) => eprintln!("Could not lock the Nitrokey device: {}", err),
@@ -583,7 +609,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// match device.factory_reset("12345678") {
     ///     Ok(()) => println!("Performed a factory reset."),
     ///     Err(err) => eprintln!("Could not perform a factory reset: {}", err),
@@ -617,7 +644,8 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// match device.build_aes_key("12345678") {
     ///     Ok(()) => println!("New AES keys have been built."),
     ///     Err(err) => eprintln!("Could not build new AES keys: {}", err),
@@ -633,67 +661,6 @@ pub trait Device: Authenticate + GetPasswordSafe + GenerateOtp + fmt::Debug {
     }
 }
 
-/// Connects to a Nitrokey device.  This method can be used to connect to any connected device,
-/// both a Nitrokey Pro and a Nitrokey Storage.
-///
-/// # Errors
-///
-/// - [`NotConnected`][] if no Nitrokey device is connected
-///
-/// # Example
-///
-/// ```
-/// use nitrokey::DeviceWrapper;
-///
-/// fn do_something(device: DeviceWrapper) {}
-///
-/// match nitrokey::connect() {
-///     Ok(device) => do_something(device),
-///     Err(err) => eprintln!("Could not connect to a Nitrokey: {}", err),
-/// }
-/// ```
-///
-/// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
-pub fn connect() -> Result<DeviceWrapper, Error> {
-    if unsafe { nitrokey_sys::NK_login_auto() } == 1 {
-        match get_connected_device() {
-            Some(wrapper) => Ok(wrapper),
-            None => Err(CommunicationError::NotConnected.into()),
-        }
-    } else {
-        Err(CommunicationError::NotConnected.into())
-    }
-}
-
-/// Connects to a Nitrokey device of the given model.
-///
-/// # Errors
-///
-/// - [`NotConnected`][] if no Nitrokey device of the given model is connected
-///
-/// # Example
-///
-/// ```
-/// use nitrokey::DeviceWrapper;
-/// use nitrokey::Model;
-///
-/// fn do_something(device: DeviceWrapper) {}
-///
-/// match nitrokey::connect_model(Model::Pro) {
-///     Ok(device) => do_something(device),
-///     Err(err) => eprintln!("Could not connect to a Nitrokey Pro: {}", err),
-/// }
-/// ```
-///
-/// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
-pub fn connect_model(model: Model) -> Result<DeviceWrapper, Error> {
-    if connect_enum(model) {
-        Ok(create_device_wrapper(model))
-    } else {
-        Err(CommunicationError::NotConnected.into())
-    }
-}
-
 fn get_connected_model() -> Option<Model> {
     match unsafe { nitrokey_sys::NK_get_device_model() } {
         nitrokey_sys::NK_device_model_NK_PRO => Some(Model::Pro),
@@ -702,18 +669,26 @@ fn get_connected_model() -> Option<Model> {
     }
 }
 
-fn create_device_wrapper(model: Model) -> DeviceWrapper {
+pub(crate) fn create_device_wrapper(
+    manager: &mut crate::Manager,
+    model: Model,
+) -> DeviceWrapper<'_> {
     match model {
-        Model::Pro => Pro::new().into(),
-        Model::Storage => Storage::new().into(),
+        Model::Pro => Pro::new(manager).into(),
+        Model::Storage => Storage::new(manager).into(),
     }
 }
 
-fn get_connected_device() -> Option<DeviceWrapper> {
-    get_connected_model().map(create_device_wrapper)
+pub(crate) fn get_connected_device(
+    manager: &mut crate::Manager,
+) -> Result<DeviceWrapper<'_>, Error> {
+    match get_connected_model() {
+        Some(model) => Ok(create_device_wrapper(manager, model)),
+        None => Err(CommunicationError::NotConnected.into()),
+    }
 }
 
-fn connect_enum(model: Model) -> bool {
+pub(crate) fn connect_enum(model: Model) -> bool {
     let model = match model {
         Model::Storage => nitrokey_sys::NK_device_model_NK_STORAGE,
         Model::Pro => nitrokey_sys::NK_device_model_NK_PRO,
@@ -721,15 +696,15 @@ fn connect_enum(model: Model) -> bool {
     unsafe { nitrokey_sys::NK_login_enum(model) == 1 }
 }
 
-impl DeviceWrapper {
-    fn device(&self) -> &dyn Device {
+impl<'a> DeviceWrapper<'a> {
+    fn device(&self) -> &dyn Device<'a> {
         match *self {
             DeviceWrapper::Storage(ref storage) => storage,
             DeviceWrapper::Pro(ref pro) => pro,
         }
     }
 
-    fn device_mut(&mut self) -> &mut dyn Device {
+    fn device_mut(&mut self) -> &mut dyn Device<'a> {
         match *self {
             DeviceWrapper::Storage(ref mut storage) => storage,
             DeviceWrapper::Pro(ref mut pro) => pro,
@@ -737,19 +712,19 @@ impl DeviceWrapper {
     }
 }
 
-impl From<Pro> for DeviceWrapper {
-    fn from(device: Pro) -> Self {
+impl<'a> From<Pro<'a>> for DeviceWrapper<'a> {
+    fn from(device: Pro<'a>) -> Self {
         DeviceWrapper::Pro(device)
     }
 }
 
-impl From<Storage> for DeviceWrapper {
-    fn from(device: Storage) -> Self {
+impl<'a> From<Storage<'a>> for DeviceWrapper<'a> {
+    fn from(device: Storage<'a>) -> Self {
         DeviceWrapper::Storage(device)
     }
 }
 
-impl GenerateOtp for DeviceWrapper {
+impl<'a> GenerateOtp for DeviceWrapper<'a> {
     fn get_hotp_slot_name(&self, slot: u8) -> Result<String, Error> {
         self.device().get_hotp_slot_name(slot)
     }
@@ -767,7 +742,14 @@ impl GenerateOtp for DeviceWrapper {
     }
 }
 
-impl Device for DeviceWrapper {
+impl<'a> Device<'a> for DeviceWrapper<'a> {
+    fn into_manager(self) -> &'a mut crate::Manager {
+        match self {
+            DeviceWrapper::Pro(dev) => dev.into_manager(),
+            DeviceWrapper::Storage(dev) => dev.into_manager(),
+        }
+    }
+
     fn get_model(&self) -> Model {
         match *self {
             DeviceWrapper::Pro(_) => Model::Pro,
@@ -776,44 +758,15 @@ impl Device for DeviceWrapper {
     }
 }
 
-impl Pro {
-    /// Connects to a Nitrokey Pro.
-    ///
-    /// # Errors
-    ///
-    /// - [`NotConnected`][] if no Nitrokey device of the given model is connected
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use nitrokey::Pro;
-    ///
-    /// fn use_pro(device: Pro) {}
-    ///
-    /// match nitrokey::Pro::connect() {
-    ///     Ok(device) => use_pro(device),
-    ///     Err(err) => eprintln!("Could not connect to the Nitrokey Pro: {}", err),
-    /// }
-    /// ```
-    ///
-    /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
-    pub fn connect() -> Result<Pro, Error> {
-        // TODO: maybe Option instead of Result?
-        if connect_enum(Model::Pro) {
-            Ok(Pro::new())
-        } else {
-            Err(CommunicationError::NotConnected.into())
-        }
-    }
-
-    fn new() -> Pro {
+impl<'a> Pro<'a> {
+    pub(crate) fn new(manager: &'a mut crate::Manager) -> Pro<'a> {
         Pro {
-            marker: marker::PhantomData,
+            manager: Some(manager),
         }
     }
 }
 
-impl Drop for Pro {
+impl<'a> Drop for Pro<'a> {
     fn drop(&mut self) {
         unsafe {
             nitrokey_sys::NK_logout();
@@ -821,47 +774,22 @@ impl Drop for Pro {
     }
 }
 
-impl Device for Pro {
+impl<'a> Device<'a> for Pro<'a> {
+    fn into_manager(mut self) -> &'a mut crate::Manager {
+        self.manager.take().unwrap()
+    }
+
     fn get_model(&self) -> Model {
         Model::Pro
     }
 }
 
-impl GenerateOtp for Pro {}
+impl<'a> GenerateOtp for Pro<'a> {}
 
-impl Storage {
-    /// Connects to a Nitrokey Storage.
-    ///
-    /// # Errors
-    ///
-    /// - [`NotConnected`][] if no Nitrokey device of the given model is connected
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use nitrokey::Storage;
-    ///
-    /// fn use_storage(device: Storage) {}
-    ///
-    /// match nitrokey::Storage::connect() {
-    ///     Ok(device) => use_storage(device),
-    ///     Err(err) => eprintln!("Could not connect to the Nitrokey Storage: {}", err),
-    /// }
-    /// ```
-    ///
-    /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
-    pub fn connect() -> Result<Storage, Error> {
-        // TODO: maybe Option instead of Result?
-        if connect_enum(Model::Storage) {
-            Ok(Storage::new())
-        } else {
-            Err(CommunicationError::NotConnected.into())
-        }
-    }
-
-    fn new() -> Storage {
+impl<'a> Storage<'a> {
+    pub(crate) fn new(manager: &'a mut crate::Manager) -> Storage<'a> {
         Storage {
-            marker: marker::PhantomData,
+            manager: Some(manager),
         }
     }
 
@@ -882,7 +810,8 @@ impl Storage {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// match device.change_update_pin("12345678", "87654321") {
     ///     Ok(()) => println!("Updated update PIN."),
     ///     Err(err) => eprintln!("Failed to update update PIN: {}", err),
@@ -919,7 +848,8 @@ impl Storage {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// match device.enable_firmware_update("12345678") {
     ///     Ok(()) => println!("Nitrokey entered update mode."),
     ///     Err(err) => eprintln!("Could not enter update mode: {}", err),
@@ -953,7 +883,8 @@ impl Storage {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// match device.enable_encrypted_volume("123456") {
     ///     Ok(()) => println!("Enabled the encrypted volume."),
     ///     Err(err) => eprintln!("Could not enable the encrypted volume: {}", err),
@@ -982,7 +913,8 @@ impl Storage {
     /// fn use_volume() {}
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// match device.enable_encrypted_volume("123456") {
     ///     Ok(()) => {
     ///         println!("Enabled the encrypted volume.");
@@ -1028,7 +960,8 @@ impl Storage {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// device.enable_encrypted_volume("123445")?;
     /// match device.enable_hidden_volume("hidden-pw") {
     ///     Ok(()) => println!("Enabled a hidden volume."),
@@ -1061,7 +994,8 @@ impl Storage {
     /// fn use_volume() {}
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// device.enable_encrypted_volume("123445")?;
     /// match device.enable_hidden_volume("hidden-pw") {
     ///     Ok(()) => {
@@ -1108,7 +1042,8 @@ impl Storage {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// device.enable_encrypted_volume("123445")?;
     /// device.create_hidden_volume(0, 0, 100, "hidden-pw")?;
     /// #     Ok(())
@@ -1148,7 +1083,8 @@ impl Storage {
     /// use nitrokey::VolumeMode;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// match device.set_unencrypted_volume_mode("12345678", VolumeMode::ReadWrite) {
     ///     Ok(()) => println!("Set the unencrypted volume to read-write mode."),
     ///     Err(err) => eprintln!("Could not set the unencrypted volume to read-write mode: {}", err),
@@ -1193,7 +1129,8 @@ impl Storage {
     /// use nitrokey::VolumeMode;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// match device.set_encrypted_volume_mode("12345678", VolumeMode::ReadWrite) {
     ///     Ok(()) => println!("Set the encrypted volume to read-write mode."),
     ///     Err(err) => eprintln!("Could not set the encrypted volume to read-write mode: {}", err),
@@ -1231,7 +1168,8 @@ impl Storage {
     /// fn use_volume() {}
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect_storage()?;
     /// match device.get_status() {
     ///     Ok(status) => {
     ///         println!("SD card ID: {:#x}", status.serial_number_sd_card);
@@ -1274,7 +1212,8 @@ impl Storage {
     /// fn use_volume() {}
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect_storage()?;
     /// match device.get_production_info() {
     ///     Ok(data) => {
     ///         println!("SD card ID:   {:#x}", data.sd_card.serial_number);
@@ -1322,7 +1261,8 @@ impl Storage {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::Storage::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect_storage()?;
     /// match device.clear_new_sd_card_warning("12345678") {
     ///     Ok(()) => println!("Cleared the new SD card warning."),
     ///     Err(err) => eprintln!("Could not set the clear the new SD card warning: {}", err),
@@ -1367,7 +1307,7 @@ impl Storage {
     }
 }
 
-impl Drop for Storage {
+impl<'a> Drop for Storage<'a> {
     fn drop(&mut self) {
         unsafe {
             nitrokey_sys::NK_logout();
@@ -1375,13 +1315,17 @@ impl Drop for Storage {
     }
 }
 
-impl Device for Storage {
+impl<'a> Device<'a> for Storage<'a> {
+    fn into_manager(mut self) -> &'a mut crate::Manager {
+        self.manager.take().unwrap()
+    }
+
     fn get_model(&self) -> Model {
         Model::Storage
     }
 }
 
-impl GenerateOtp for Storage {}
+impl<'a> GenerateOtp for Storage<'a> {}
 
 impl From<nitrokey_sys::NK_storage_ProductionTest> for StorageProductionInfo {
     fn from(data: nitrokey_sys::NK_storage_ProductionTest) -> Self {

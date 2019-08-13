@@ -304,8 +304,13 @@ class GetHOTP : Command<CommandID::GET_CODE> {
 
 class ReadSlot : Command<CommandID::READ_SLOT> {
  public:
+  enum class CounterFormat {
+    ASCII = 0,
+    BINARY = 1,
+  };
   struct CommandPayload {
     uint8_t slot_number;
+    CounterFormat data_format; //Storage v0.54+ only: slot_counter value format: 0 - in ascii, 1 - binary
 
     bool isValid() const { return !(slot_number & 0xF0); }
 
@@ -881,6 +886,41 @@ class BuildAESKey : Command<CommandID::NEW_AES_KEY> {
       CommandTransaction;
 
 };
+
+class FirmwareUpdate : Command<CommandID::FIRMWARE_UPDATE> {
+public:
+  struct CommandPayload {
+    uint8_t firmware_password[20];
+    std::string dissect() const {
+      std::stringstream ss;
+      print_to_ss_volatile(firmware_password);
+      return ss.str();
+      }
+  } __packed;
+
+  typedef Transaction<command_id(), struct CommandPayload, struct EmptyPayload>
+    CommandTransaction;
+
+};
+
+class FirmwarePasswordChange : Command<CommandID::FIRMWARE_PASSWORD_CHANGE> {
+public:
+  struct CommandPayload {
+    uint8_t firmware_password_current[20];
+    uint8_t firmware_password_new[20];
+    std::string dissect() const {
+      std::stringstream ss;
+      print_to_ss_volatile(firmware_password_current);
+      print_to_ss_volatile(firmware_password_new);
+      return ss.str();
+    }
+  } __packed;
+
+  typedef Transaction<command_id(), struct CommandPayload, struct EmptyPayload>
+    CommandTransaction;
+
+};
+
 
 }
 }

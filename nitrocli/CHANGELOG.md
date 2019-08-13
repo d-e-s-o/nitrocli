@@ -1,6 +1,8 @@
 Unreleased
 ----------
-- Bumped `nitrokey` dependency to `0.4.0-alpha.2`
+- Bumped `nitrokey` dependency to `0.4.0-alpha.3`
+  - Bumped `nitrokey-sys` dependency to `3.5.0`
+  - Added `lazy_static` dependency in version `1.2.0`
 
 
 0.3.0

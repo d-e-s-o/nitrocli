@@ -36,9 +36,9 @@ enum TotpTimestampSize {
     U64,
 }
 
-fn make_admin_test_device<T>(device: T) -> Admin<T>
+fn make_admin_test_device<'a, T>(device: T) -> Admin<'a, T>
 where
-    T: Device,
+    T: Device<'a>,
     (T, nitrokey::Error): Debug,
 {
     unwrap_ok!(device.authenticate_admin(DEFAULT_ADMIN_PIN))

@@ -58,9 +58,9 @@ pub struct PinEntry {
 }
 
 impl PinEntry {
-  pub fn from<D>(pin_type: PinType, device: &D) -> crate::Result<Self>
+  pub fn from<'mgr, D>(pin_type: PinType, device: &D) -> crate::Result<Self>
   where
-    D: nitrokey::Device,
+    D: nitrokey::Device<'mgr>,
   {
     let model = device.get_model();
     let serial = device.get_serial_number()?;
@@ -131,9 +131,9 @@ pub struct PwdEntry {
 }
 
 impl PwdEntry {
-  pub fn from<D>(device: &D) -> crate::Result<Self>
+  pub fn from<'mgr, D>(device: &D) -> crate::Result<Self>
   where
-    D: nitrokey::Device,
+    D: nitrokey::Device<'mgr>,
   {
     let model = device.get_model();
     let serial = device.get_serial_number()?;

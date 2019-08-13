@@ -38,6 +38,16 @@ SPDX-License-Identifier: MIT
   - Implement `DerefMut` for `User<T>` and `Admin<T>`.
   - Add `device_mut` method to `DeviceWrapper`.
   - Require a mutable `Device` reference if a method changes the device state.
+- Update the `nitrokey-sys` dependency to version 3.5.0.
+- Update the `nitrokey-test` dependency to version 0.3 and add the
+  `nitrokey-test-state` dependency in version 0.1.0.
+- Refactor connection management:
+  - Add `ConcurrentAccessError` and `PoisonError` `Error` variants.
+  - Add the `Manager` struct that manages connections to Nitrokey devices.
+  - Remove `connect`, `connect_model`, `Pro::connect` and `Storage::connect`.
+  - Add the `into_manager` function to the `Device` trait.
+  - Add the `force_take` function that ignores a `PoisonError` when accessing
+    the manager instance.
 
 # v0.3.4 (2019-01-20)
 - Fix authentication methods that assumed that `char` is signed.
