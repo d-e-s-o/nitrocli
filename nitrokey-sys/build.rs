@@ -25,8 +25,8 @@ impl string::ToString for Version {
 
 const LIBNITROKEY_VERSION: Version = Version {
     major: 3,
-    minor: 4,
-    patch: Some(1),
+    minor: 5,
+    patch: None,
 };
 
 fn prepare_version_source(

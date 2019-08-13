@@ -19,26 +19,31 @@
 
 use super::*;
 
-#[test_device]
-fn hidden_create_open_close(device: nitrokey::Storage) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_dev(device);
+#[test_device(storage)]
+fn hidden_create_open_close(model: nitrokey::Model) -> crate::Result<()> {
+  let mut ncli = Nitrocli::with_model(model);
   let out = ncli.handle(&["hidden", "create", "0", "50", "100"])?;
   assert!(out.is_empty());
 
   let out = ncli.handle(&["hidden", "open"])?;
   assert!(out.is_empty());
 
-  let device = nitrokey::Storage::connect()?;
-  assert!(!device.get_status()?.encrypted_volume.active);
-  assert!(device.get_status()?.hidden_volume.active);
-  drop(device);
+  {
+    let mut manager = nitrokey::force_take()?;
+    let device = manager.connect_storage()?;
+    assert!(!device.get_status()?.encrypted_volume.active);
+    assert!(device.get_status()?.hidden_volume.active);
+  }
 
   let out = ncli.handle(&["hidden", "close"])?;
   assert!(out.is_empty());
 
-  let device = nitrokey::Storage::connect()?;
-  assert!(!device.get_status()?.encrypted_volume.active);
-  assert!(!device.get_status()?.hidden_volume.active);
+  {
+    let mut manager = nitrokey::force_take()?;
+    let device = manager.connect_storage()?;
+    assert!(!device.get_status()?.encrypted_volume.active);
+    assert!(!device.get_status()?.hidden_volume.active);
+  }
 
   Ok(())
 }

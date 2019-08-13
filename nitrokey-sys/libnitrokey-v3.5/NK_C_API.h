@@ -33,9 +33,66 @@
 #define NK_C_API
 #endif
 
+/**
+ * \file
+ *
+ * C API for libnitrokey
+ *
+ * \mainpage
+ *
+ * **libnitrokey** provides access to Nitrokey Pro and Nitrokey Storage devices.
+ * This documentation describes libnitrokey’s C API.  For a list of the
+ * available functions, see the NK_C_API.h file.
+ *
+ * \section getting_started Example
+ *
+ * \code{.c}
+ * #include <stdio.h>
+ * #include <stdlib.h>
+ * #include <libnitrokey/NK_C_API.h>
+ *
+ * int main(void)
+ * {
+ *         if (NK_login_auto() != 1) {
+ *                 fprintf(stderr, "No Nitrokey found.\n");
+ *                 return 1;
+ *         }
+ *
+ *         NK_device_model model = NK_get_device_model();
+ *         printf("Connected to ");
+ *         switch (model) {
+ *         case NK_PRO:
+ *                 printf("a Nitrokey Pro");
+ *                 break;
+ *         case NK_STORAGE:
+ *                 printf("a Nitrokey Storage");
+ *                 break;
+ *         default:
+ *                 printf("an unsupported Nitrokey");
+ *                 break;
+ *         }
+ *
+ *         char* serial_number = NK_device_serial_number();
+ *         if (serial_number)
+ *             printf(" with serial number %s\n", serial_number);
+ *         else
+ *             printf(" -- could not query serial number!\n");
+ *         free(serial_number);
+ *
+ *         NK_logout();
+ *         return 0;
+ * }
+ * \endcode
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+  /**
+   * The number of slots in the password safe.
+   */
+  extern const uint8_t NK_PWS_SLOT_COUNT;
 
   static const int MAXIMUM_STR_REPLY_LENGTH = 8192;
 
@@ -56,6 +113,70 @@ extern "C" {
              */
             NK_STORAGE = 2
         };
+
+        /**
+	 * The connection info for a Nitrokey device as a linked list.
+	 */
+	struct NK_device_info {
+		/**
+		 * The model of the Nitrokey device.
+		 */
+		enum NK_device_model model;
+		/**
+		 * The USB device path for NK_connect_with_path.
+		 */
+		char* path;
+		/**
+		 * The serial number.
+		 */
+		char* serial_number;
+		/**
+		 * The pointer to the next element of the linked list or null
+		 * if this is the last element in the list.
+		 */
+		struct NK_device_info* next;
+	};
+
+	/**
+	 * Stores the common device status for all Nitrokey devices.
+	 */
+	struct NK_status {
+		/**
+		 * The major firmware version, e. g. 0 in v0.40.
+		 */
+		uint8_t firmware_version_major;
+		/**
+		 * The minor firmware version, e. g. 40 in v0.40.
+		 */
+		uint8_t firmware_version_minor;
+		/**
+		 * The serial number of the smart card.
+		 */
+		uint32_t serial_number_smart_card;
+		/**
+		 * The HOTP slot to generate a password from if the numlock
+		 * key is pressed twice (slot 0-1, or any other value to
+		 * disable the function).
+		 */
+		uint8_t config_numlock;
+		/**
+		 * The HOTP slot to generate a password from if the capslock
+		 * key is pressed twice (slot 0-1, or any other value to
+		 * disable the function).
+		 */
+		uint8_t config_capslock;
+		/**
+		 * The HOTP slot to generate a password from if the scrolllock
+		 * key is pressed twice (slot 0-1, or any other value to
+		 * disable the function).
+		 */
+		uint8_t config_scrolllock;
+		/**
+		 * Indicates whether the user password is required to generate
+		 * an OTP value.
+		 */
+		bool otp_user_password;
+	};
 
 	/**
 	 * Stores the status of a Storage device.
@@ -127,6 +248,23 @@ extern "C" {
 		 */
 		bool stick_initialized;
         };
+
+	/**
+	 * Data about the usage of the SD card.
+	 */
+	struct NK_SD_usage_data {
+		/**
+		 * The minimum write level, as a percentage of the total card
+		 * size.
+		 */
+		uint8_t write_level_min;
+		/**
+		 * The maximum write level, as a percentage of the total card
+		 * size.
+		 */
+		uint8_t write_level_max;
+	};
+
 
    struct NK_storage_ProductionTest{
     uint8_t FirmwareVersion_au8[2];
@@ -215,10 +353,31 @@ extern "C" {
 	NK_C_API enum NK_device_model NK_get_device_model();
 
 	/**
+	 * Return the debug status string. Debug purposes.  This function is
+	 * deprecated in favor of NK_get_status_as_string.
+	 * @return string representation of the status or an empty string
+	 *         if the command failed
+	 */
+	DEPRECATED
+	NK_C_API char * NK_status();
+
+	/**
 	 * Return the debug status string. Debug purposes.
+	 * @return string representation of the status or an empty string
+	 *         if the command failed
+	 */
+	NK_C_API char * NK_get_status_as_string();
+
+	/**
+	 * Get the stick status common to all Nitrokey devices and return the
+	 * command processing error code.  If the code is zero, i. e. the
+	 * command was successful, the storage status is written to the output
+	 * pointer's target.  The output pointer must not be null.
+	 *
+	 * @param out the output pointer for the status
 	 * @return command processing error code
 	 */
-	NK_C_API char * NK_status();
+	NK_C_API int NK_get_status(struct NK_status* out);
 
 	/**
 	 * Return the device's serial number string in hex.
@@ -528,13 +687,13 @@ extern "C" {
 	 * Get device's major firmware version
 	 * @return major part of the version number (e.g. 0 from 0.48, 0 from 0.7 etc.)
 	 */
-	NK_C_API int NK_get_major_firmware_version();
+	NK_C_API uint8_t NK_get_major_firmware_version();
 
 	/**
 	 * Get device's minor firmware version
 	 * @return minor part of the version number (e.g. 7 from 0.7, 48 from 0.48 etc.)
 	 */
-	NK_C_API int NK_get_minor_firmware_version();
+	NK_C_API uint8_t NK_get_minor_firmware_version();
 
   /**
    * Function to determine unencrypted volume PIN type
@@ -737,6 +896,17 @@ extern "C" {
 	NK_C_API int NK_get_status_storage(struct NK_storage_status* out);
 
 	/**
+	 * Get SD card usage attributes. Usable during hidden volumes creation.
+	 * If the command was successful (return value 0), the usage data is
+	 * written to the output pointer’s target.  The output pointer must
+	 * not be null.
+	 * Storage only
+	 * @param out the output pointer for the usage data
+	 * @return command processing error code
+	 */
+	NK_C_API int NK_get_SD_usage_data(struct NK_SD_usage_data* out);
+
+	/**
 	 * Get SD card usage attributes as string.
 	 * Usable during hidden volumes creation.
 	 * Storage only
@@ -747,7 +917,8 @@ extern "C" {
 	/**
 	 * Get progress value of current long operation.
 	 * Storage only
-	 * @return int in range 0-100 or -1 if device is not busy
+	 * @return int in range 0-100 or -1 if device is not busy or -2 if an
+	 *         error occured
 	 */
 	NK_C_API int NK_get_progress_bar_value();
 
@@ -768,6 +939,19 @@ extern "C" {
  */
 	NK_C_API char* NK_list_devices_by_cpuID();
 
+	/**
+	 * Returns a linked list of all connected devices, or null if no devices
+	 * are connected or an error occured.  The linked list must be freed by
+	 * calling NK_free_device_info.
+	 * @return a linked list of all connected devices
+	 */
+	NK_C_API struct NK_device_info* NK_list_devices();
+
+	/**
+	 * Free a linked list returned by NK_list_devices.
+	 * @param the linked list to free or null
+	 */
+	NK_C_API void NK_free_device_info(struct NK_device_info* device_info);
 
 /**
  * Connects to the device with given ID. ID's list could be created with NK_list_devices_by_cpuID.
@@ -780,10 +964,48 @@ extern "C" {
 	NK_C_API int NK_connect_with_ID(const char* id);
 
 	/**
+	 * Connects to a device with the given path.  The path is a USB device
+	 * path as returned by hidapi.
+	 * @param path the device path
+	 * @return 1 on successful connection, 0 otherwise
+	 */
+        NK_C_API int NK_connect_with_path(const char* path);
+
+	/**
 	 * Blink red and green LED alternatively and infinitely (until device is reconnected).
 	 * @return command processing error code
 	 */
 	NK_C_API int NK_wink();
+
+
+	/**
+	 * Enable update mode on Nitrokey Pro.
+	 * Supported from v0.11.
+	 * @param update_password 20 bytes update password
+   * @return command processing error code
+	 */
+	NK_C_API int NK_enable_firmware_update_pro(const char* update_password);
+
+  /**
+   * Change update-mode password on Nitrokey Pro.
+   * Supported from v0.11.
+   * @param current_firmware_password 20 bytes update password
+   * @param new_firmware_password 20 bytes update password
+   * @return command processing error code
+   */
+  NK_C_API int NK_change_firmware_password_pro(const char *current_firmware_password, const char *new_firmware_password);
+
+
+// as in ReadSlot::ResponsePayload
+struct ReadSlot_t {
+  uint8_t slot_name[15];
+  uint8_t _slot_config;
+  uint8_t slot_token_id[13];
+  uint64_t slot_counter;
+};
+
+
+NK_C_API int NK_read_HOTP_slot(const uint8_t slot_num, struct ReadSlot_t* out);
 
 #ifdef __cplusplus
 }

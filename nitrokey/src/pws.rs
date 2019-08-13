@@ -43,7 +43,8 @@ pub const SLOT_COUNT: u8 = 16;
 /// }
 ///
 /// # fn try_main() -> Result<(), Error> {
-/// let mut device = nitrokey::connect()?;
+/// let mut manager = nitrokey::take()?;
+/// let mut device = manager.connect()?;
 /// let pws = device.get_password_safe("123456")?;
 /// use_password_safe(&pws);
 /// drop(pws);
@@ -57,8 +58,8 @@ pub const SLOT_COUNT: u8 = 16;
 /// [`lock`]: trait.Device.html#method.lock
 /// [`GetPasswordSafe`]: trait.GetPasswordSafe.html
 #[derive(Debug)]
-pub struct PasswordSafe<'a> {
-    _device: &'a dyn Device,
+pub struct PasswordSafe<'a, 'b> {
+    _device: &'a dyn Device<'b>,
 }
 
 /// Provides access to a [`PasswordSafe`][].
@@ -67,7 +68,7 @@ pub struct PasswordSafe<'a> {
 /// retrieved from it.
 ///
 /// [`PasswordSafe`]: struct.PasswordSafe.html
-pub trait GetPasswordSafe {
+pub trait GetPasswordSafe<'a> {
     /// Enables and returns the password safe.
     ///
     /// The underlying device must always live at least as long as a password safe retrieved from
@@ -98,7 +99,8 @@ pub trait GetPasswordSafe {
     /// fn use_password_safe(pws: &PasswordSafe) {}
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// match device.get_password_safe("123456") {
     ///     Ok(pws) => {
     ///         use_password_safe(&pws);
@@ -117,13 +119,13 @@ pub trait GetPasswordSafe {
     /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
     /// [`Unknown`]: enum.CommandError.html#variant.Unknown
     /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
-    fn get_password_safe(&mut self, user_pin: &str) -> Result<PasswordSafe<'_>, Error>;
+    fn get_password_safe(&mut self, user_pin: &str) -> Result<PasswordSafe<'_, 'a>, Error>;
 }
 
-fn get_password_safe<'a>(
-    device: &'a dyn Device,
+fn get_password_safe<'a, 'b>(
+    device: &'a dyn Device<'b>,
     user_pin: &str,
-) -> Result<PasswordSafe<'a>, Error> {
+) -> Result<PasswordSafe<'a, 'b>, Error> {
     let user_pin_string = get_cstring(user_pin)?;
     get_command_result(unsafe { nitrokey_sys::NK_enable_password_safe(user_pin_string.as_ptr()) })
         .map(|_| PasswordSafe { _device: device })
@@ -137,7 +139,7 @@ fn get_pws_result(s: String) -> Result<String, Error> {
     }
 }
 
-impl<'a> PasswordSafe<'a> {
+impl<'a, 'b> PasswordSafe<'a, 'b> {
     /// Returns the status of all password slots.
     ///
     /// The status indicates whether a slot is programmed or not.
@@ -149,7 +151,8 @@ impl<'a> PasswordSafe<'a> {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// let pws = device.get_password_safe("123456")?;
     /// pws.get_slot_status()?.iter().enumerate().for_each(|(slot, programmed)| {
     ///     let status = match *programmed {
@@ -194,7 +197,8 @@ impl<'a> PasswordSafe<'a> {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// match device.get_password_safe("123456") {
     ///     Ok(pws) => {
     ///         let name = pws.get_slot_name(0)?;
@@ -231,7 +235,8 @@ impl<'a> PasswordSafe<'a> {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// let pws = device.get_password_safe("123456")?;
     /// let name = pws.get_slot_name(0)?;
     /// let login = pws.get_slot_login(0)?;
@@ -264,7 +269,8 @@ impl<'a> PasswordSafe<'a> {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// let pws = device.get_password_safe("123456")?;
     /// let name = pws.get_slot_name(0)?;
     /// let login = pws.get_slot_login(0)?;
@@ -295,7 +301,8 @@ impl<'a> PasswordSafe<'a> {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// let pws = device.get_password_safe("123456")?;
     /// let name = pws.get_slot_name(0)?;
     /// let login = pws.get_slot_login(0)?;
@@ -341,7 +348,8 @@ impl<'a> PasswordSafe<'a> {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// let mut pws = device.get_password_safe("123456")?;
     /// match pws.erase_slot(0) {
     ///     Ok(()) => println!("Erased slot 0."),
@@ -357,27 +365,27 @@ impl<'a> PasswordSafe<'a> {
     }
 }
 
-impl<'a> Drop for PasswordSafe<'a> {
+impl<'a, 'b> Drop for PasswordSafe<'a, 'b> {
     fn drop(&mut self) {
         // TODO: disable the password safe -- NK_lock_device has side effects on the Nitrokey
         // Storage, see https://github.com/Nitrokey/nitrokey-storage-firmware/issues/65
     }
 }
 
-impl GetPasswordSafe for Pro {
-    fn get_password_safe(&mut self, user_pin: &str) -> Result<PasswordSafe<'_>, Error> {
+impl<'a> GetPasswordSafe<'a> for Pro<'a> {
+    fn get_password_safe(&mut self, user_pin: &str) -> Result<PasswordSafe<'_, 'a>, Error> {
         get_password_safe(self, user_pin)
     }
 }
 
-impl GetPasswordSafe for Storage {
-    fn get_password_safe(&mut self, user_pin: &str) -> Result<PasswordSafe<'_>, Error> {
+impl<'a> GetPasswordSafe<'a> for Storage<'a> {
+    fn get_password_safe(&mut self, user_pin: &str) -> Result<PasswordSafe<'_, 'a>, Error> {
         get_password_safe(self, user_pin)
     }
 }
 
-impl GetPasswordSafe for DeviceWrapper {
-    fn get_password_safe(&mut self, user_pin: &str) -> Result<PasswordSafe<'_>, Error> {
+impl<'a> GetPasswordSafe<'a> for DeviceWrapper<'a> {
+    fn get_password_safe(&mut self, user_pin: &str) -> Result<PasswordSafe<'_, 'a>, Error> {
         get_password_safe(self, user_pin)
     }
 }

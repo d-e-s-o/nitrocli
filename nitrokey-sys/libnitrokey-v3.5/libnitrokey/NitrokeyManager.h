@@ -80,7 +80,7 @@ char * strndup(const char* str, size_t maxlen);
         bool get_time(uint64_t time = 0);
         bool erase_totp_slot(uint8_t slot_number, const char *temporary_password);
         bool erase_hotp_slot(uint8_t slot_number, const char *temporary_password);
-        std::vector<std::string> list_devices();
+        std::vector<DeviceInfo> list_devices();
         std::vector<std::string> list_devices_by_cpuID();
 
         /**
@@ -215,7 +215,7 @@ char * strndup(const char* str, size_t maxlen);
 
       template <typename S, typename A, typename T>
         void authorize_packet(T &package, const char *admin_temporary_password, shared_ptr<Device> device);
-        int get_minor_firmware_version();
+        uint8_t get_minor_firmware_version();
 
         explicit NitrokeyManager();
         void set_log_function(std::function<void(std::string)> log_function);
@@ -278,7 +278,7 @@ char * strndup(const char* str, size_t maxlen);
        */
       void set_encrypted_volume_read_write(const char *admin_pin);
 
-      int get_major_firmware_version();
+      uint8_t get_major_firmware_version();
 
       bool is_smartcard_in_use();
 
@@ -295,6 +295,11 @@ char * strndup(const char* str, size_t maxlen);
       void wink();
 
       stick20::ProductionTest::ResponsePayload production_info();
+
+      void enable_firmware_update_pro(const char *firmware_pin);
+
+      void change_firmware_update_password_pro(const char *firmware_pin_current, const char *firmware_pin_new);
+      bool is_internal_hotp_slot_number(uint8_t slot_number) const;
     };
 }
 

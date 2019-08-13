@@ -36,31 +36,31 @@ fn not_found() {
   assert_eq!(res.unwrap_str_err(), "Nitrokey device not found");
 }
 
-#[test_device]
-fn output_pro(device: nitrokey::Pro) -> crate::Result<()> {
+#[test_device(pro)]
+fn output_pro(model: nitrokey::Model) -> crate::Result<()> {
   let re = regex::Regex::new(
     r#"^Status:
   model:             Pro
   serial number:     0x[[:xdigit:]]{8}
-  firmware version:  \d+\.\d+
+  firmware version:  v\d+\.\d+
   user retry count:  [0-3]
   admin retry count: [0-3]
 $"#,
   )
   .unwrap();
 
-  let out = Nitrocli::with_dev(device).handle(&["status"])?;
+  let out = Nitrocli::with_model(model).handle(&["status"])?;
   assert!(re.is_match(&out), out);
   Ok(())
 }
 
-#[test_device]
-fn output_storage(device: nitrokey::Storage) -> crate::Result<()> {
+#[test_device(storage)]
+fn output_storage(model: nitrokey::Model) -> crate::Result<()> {
   let re = regex::Regex::new(
     r#"^Status:
   model:             Storage
   serial number:     0x[[:xdigit:]]{8}
-  firmware version:  \d+\.\d+
+  firmware version:  v\d+\.\d+
   user retry count:  [0-3]
   admin retry count: [0-3]
   Storage:
@@ -75,7 +75,7 @@ $"#,
   )
   .unwrap();
 
-  let out = Nitrocli::with_dev(device).handle(&["status"])?;
+  let out = Nitrocli::with_model(model).handle(&["status"])?;
   assert!(re.is_match(&out), out);
   Ok(())
 }

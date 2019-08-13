@@ -20,7 +20,7 @@
 use super::*;
 
 #[test_device]
-fn get(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+fn get(model: nitrokey::Model) -> crate::Result<()> {
   let re = regex::Regex::new(
     r#"^Config:
   numlock binding:          (not set|\d+)
@@ -31,14 +31,14 @@ $"#,
   )
   .unwrap();
 
-  let out = Nitrocli::with_dev(device).handle(&["config", "get"])?;
+  let out = Nitrocli::with_model(model).handle(&["config", "get"])?;
   assert!(re.is_match(&out), out);
   Ok(())
 }
 
 #[test_device]
-fn set_wrong_usage(device: nitrokey::DeviceWrapper) {
-  let res = Nitrocli::with_dev(device).handle(&["config", "set", "--numlock", "2", "-N"]);
+fn set_wrong_usage(model: nitrokey::Model) {
+  let res = Nitrocli::with_model(model).handle(&["config", "set", "--numlock", "2", "-N"]);
   assert_eq!(
     res.unwrap_str_err(),
     "--numlock and --no-numlock are mutually exclusive"
@@ -46,8 +46,8 @@ fn set_wrong_usage(device: nitrokey::DeviceWrapper) {
 }
 
 #[test_device]
-fn set_get(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_dev(device);
+fn set_get(model: nitrokey::Model) -> crate::Result<()> {
+  let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["config", "set", "-s", "1", "-c", "0", "-N"])?;
 
   let re = regex::Regex::new(

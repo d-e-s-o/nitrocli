@@ -3,7 +3,7 @@
 
 [package]
 name = "nitrokey"
-version = "0.4.0-alpha.2"
+version = "0.4.0-alpha.3"
 authors = ["Robin Krahl <robin.krahl@ireas.org>"]
 edition = "2018"
 homepage = "https://code.ireas.org/nitrokey-rs/"
@@ -17,10 +17,12 @@ license = "MIT"
 exclude = [".builds/*"]
 
 [dependencies]
+lazy_static = "1.2.0"
 libc = "0.2"
-nitrokey-sys = "~3.4"
+nitrokey-sys = "3.5"
 rand_core = {version = "0.3", default-features = false, features = ["std"] }
 rand_os = {version = "0.1"}
 
 [dev-dependencies]
-nitrokey-test = {version = "=0.2.0"}
+nitrokey-test = "0.3"
+nitrokey-test-state = "0.1.0"

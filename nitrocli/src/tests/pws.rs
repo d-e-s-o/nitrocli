@@ -20,8 +20,8 @@
 use super::*;
 
 #[test_device]
-fn set_invalid_slot(device: nitrokey::DeviceWrapper) {
-  let res = Nitrocli::with_dev(device).handle(&["pws", "set", "100", "name", "login", "1234"]);
+fn set_invalid_slot(model: nitrokey::Model) {
+  let res = Nitrocli::with_model(model).handle(&["pws", "set", "100", "name", "login", "1234"]);
 
   assert_eq!(
     res.unwrap_lib_err(),
@@ -33,14 +33,14 @@ fn set_invalid_slot(device: nitrokey::DeviceWrapper) {
 }
 
 #[test_device]
-fn status(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+fn status(model: nitrokey::Model) -> crate::Result<()> {
   let re = regex::Regex::new(
     r#"^slot\tname
 (\d+\t.+\n)+$"#,
   )
   .unwrap();
 
-  let mut ncli = Nitrocli::with_dev(device);
+  let mut ncli = Nitrocli::with_model(model);
   // Make sure that we have at least something to display by ensuring
   // that there are there is one slot programmed.
   let _ = ncli.handle(&["pws", "set", "0", "the-name", "the-login", "123456"])?;
@@ -51,12 +51,12 @@ fn status(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_get(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+fn set_get(model: nitrokey::Model) -> crate::Result<()> {
   const NAME: &str = "dropbox";
   const LOGIN: &str = "d-e-s-o";
   const PASSWORD: &str = "my-secret-password";
 
-  let mut ncli = Nitrocli::with_dev(device);
+  let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["pws", "set", "1", &NAME, &LOGIN, &PASSWORD])?;
 
   let out = ncli.handle(&["pws", "get", "1", "--quiet", "--name"])?;
@@ -83,12 +83,12 @@ fn set_get(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_reset_get(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+fn set_reset_get(model: nitrokey::Model) -> crate::Result<()> {
   const NAME: &str = "some/svc";
   const LOGIN: &str = "a\\user";
   const PASSWORD: &str = "!@&-)*(&+%^@";
 
-  let mut ncli = Nitrocli::with_dev(device);
+  let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["pws", "set", "2", &NAME, &LOGIN, &PASSWORD])?;
 
   let out = ncli.handle(&["reset"])?;
@@ -106,8 +106,8 @@ fn set_reset_get(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 }
 
 #[test_device]
-fn clear(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_dev(device);
+fn clear(model: nitrokey::Model) -> crate::Result<()> {
+  let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["pws", "set", "10", "clear-test", "some-login", "abcdef"])?;
   let _ = ncli.handle(&["pws", "clear", "10"])?;
   let res = ncli.handle(&["pws", "get", "10"]);

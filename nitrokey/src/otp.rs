@@ -35,7 +35,8 @@ pub trait ConfigureOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// let slot_data = OtpSlotData::new(1, "test", "01234567890123456689", OtpMode::SixDigits);
     /// match device.authenticate_admin("12345678") {
     ///     Ok(mut admin) => {
@@ -71,7 +72,8 @@ pub trait ConfigureOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// let slot_data = OtpSlotData::new(1, "test", "01234567890123456689", OtpMode::EightDigits);
     /// match device.authenticate_admin("12345678") {
     ///     Ok(mut admin) => {
@@ -104,7 +106,8 @@ pub trait ConfigureOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// match device.authenticate_admin("12345678") {
     ///     Ok(mut admin) => {
     ///         match admin.erase_hotp_slot(1) {
@@ -134,7 +137,8 @@ pub trait ConfigureOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// match device.authenticate_admin("12345678") {
     ///     Ok(mut admin) => {
     ///         match admin.erase_totp_slot(1) {
@@ -171,7 +175,8 @@ pub trait GenerateOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// let time = time::SystemTime::now().duration_since(time::UNIX_EPOCH);
     /// match time {
     ///     Ok(time) => device.set_time(time.as_secs(), false)?,
@@ -209,7 +214,8 @@ pub trait GenerateOtp {
     /// use nitrokey::{CommandError, Error, GenerateOtp};
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// match device.get_hotp_slot_name(1) {
     ///     Ok(name) => println!("HOTP slot 1: {}", name),
     ///     Err(Error::CommandError(CommandError::SlotNotProgrammed)) => eprintln!("HOTP slot 1 not programmed"),
@@ -238,7 +244,8 @@ pub trait GenerateOtp {
     /// use nitrokey::{CommandError, Error, GenerateOtp};
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let device = manager.connect()?;
     /// match device.get_totp_slot_name(1) {
     ///     Ok(name) => println!("TOTP slot 1: {}", name),
     ///     Err(Error::CommandError(CommandError::SlotNotProgrammed)) => eprintln!("TOTP slot 1 not programmed"),
@@ -270,7 +277,8 @@ pub trait GenerateOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// let code = device.get_hotp_code(1)?;
     /// println!("Generated HOTP code on slot 1: {}", code);
     /// #     Ok(())
@@ -305,7 +313,8 @@ pub trait GenerateOtp {
     /// # use nitrokey::Error;
     ///
     /// # fn try_main() -> Result<(), Error> {
-    /// let mut device = nitrokey::connect()?;
+    /// let mut manager = nitrokey::take()?;
+    /// let mut device = manager.connect()?;
     /// let time = time::SystemTime::now().duration_since(time::UNIX_EPOCH);
     /// match time {
     ///     Ok(time) => {

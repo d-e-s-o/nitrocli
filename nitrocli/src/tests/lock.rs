@@ -19,24 +19,25 @@
 
 use super::*;
 
-#[test_device]
-fn lock_pro(device: nitrokey::Pro) -> crate::Result<()> {
+#[test_device(pro)]
+fn lock_pro(model: nitrokey::Model) -> crate::Result<()> {
   // We can't really test much more here than just success of the command.
-  let out = Nitrocli::with_dev(device).handle(&["lock"])?;
+  let out = Nitrocli::with_model(model).handle(&["lock"])?;
   assert!(out.is_empty());
 
   Ok(())
 }
 
-#[test_device]
-fn lock_storage(device: nitrokey::Storage) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_dev(device);
+#[test_device(storage)]
+fn lock_storage(model: nitrokey::Model) -> crate::Result<()> {
+  let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["encrypted", "open"])?;
 
   let out = ncli.handle(&["lock"])?;
   assert!(out.is_empty());
 
-  let device = nitrokey::Storage::connect()?;
+  let mut manager = nitrokey::force_take()?;
+  let device = manager.connect_storage()?;
   assert!(!device.get_status()?.encrypted_volume.active);
 
   Ok(())

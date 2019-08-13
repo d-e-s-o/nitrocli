@@ -33,40 +33,39 @@ fn count_nitrokey_block_devices() -> usize {
 
 #[test_device]
 fn connect_no_device() {
-    assert_cmu_err!(CommunicationError::NotConnected, nitrokey::connect());
+    let mut manager = unwrap_ok!(nitrokey::take());
+
+    assert_cmu_err!(CommunicationError::NotConnected, manager.connect());
     assert_cmu_err!(
         CommunicationError::NotConnected,
-        nitrokey::connect_model(nitrokey::Model::Pro)
+        manager.connect_model(nitrokey::Model::Pro)
     );
     assert_cmu_err!(
         CommunicationError::NotConnected,
-        nitrokey::connect_model(nitrokey::Model::Storage)
+        manager.connect_model(nitrokey::Model::Storage)
     );
-    assert_cmu_err!(CommunicationError::NotConnected, nitrokey::Pro::connect());
-    assert_cmu_err!(
-        CommunicationError::NotConnected,
-        nitrokey::Storage::connect()
-    );
+    assert_cmu_err!(CommunicationError::NotConnected, manager.connect_pro());
+    assert_cmu_err!(CommunicationError::NotConnected, manager.connect_storage());
 }
 
 #[test_device]
 fn connect_pro(device: Pro) {
     assert_eq!(device.get_model(), nitrokey::Model::Pro);
-    drop(device);
 
-    assert_any_ok!(nitrokey::connect());
-    assert_any_ok!(nitrokey::connect_model(nitrokey::Model::Pro));
-    assert_any_ok!(nitrokey::Pro::connect());
+    let manager = device.into_manager();
+    assert_any_ok!(manager.connect());
+    assert_any_ok!(manager.connect_model(nitrokey::Model::Pro));
+    assert_any_ok!(manager.connect_pro());
 }
 
 #[test_device]
 fn connect_storage(device: Storage) {
     assert_eq!(device.get_model(), nitrokey::Model::Storage);
-    drop(device);
 
-    assert_any_ok!(nitrokey::connect());
-    assert_any_ok!(nitrokey::connect_model(nitrokey::Model::Storage));
-    assert_any_ok!(nitrokey::Storage::connect());
+    let manager = device.into_manager();
+    assert_any_ok!(manager.connect());
+    assert_any_ok!(manager.connect_model(nitrokey::Model::Storage));
+    assert_any_ok!(manager.connect_storage());
 }
 
 fn assert_empty_serial_number() {
@@ -97,7 +96,10 @@ fn get_firmware_version(device: Pro) {
     assert!(version.minor > 0);
 }
 
-fn admin_retry<T: Authenticate + Device>(device: T, suffix: &str, count: u8) -> T {
+fn admin_retry<'a, T>(device: T, suffix: &str, count: u8) -> T
+where
+    T: Authenticate<'a> + Device<'a> + 'a,
+{
     let result = device.authenticate_admin(&(DEFAULT_ADMIN_PIN.to_owned() + suffix));
     let device = match result {
         Ok(admin) => admin.device(),
@@ -107,7 +109,10 @@ fn admin_retry<T: Authenticate + Device>(device: T, suffix: &str, count: u8) -> 
     return device;
 }
 
-fn user_retry<T: Authenticate + Device>(device: T, suffix: &str, count: u8) -> T {
+fn user_retry<'a, T>(device: T, suffix: &str, count: u8) -> T
+where
+    T: Authenticate<'a> + Device<'a> + 'a,
+{
     let result = device.authenticate_user(&(DEFAULT_USER_PIN.to_owned() + suffix));
     let device = match result {
         Ok(admin) => admin.device(),
@@ -216,10 +221,10 @@ fn change_admin_pin(device: DeviceWrapper) {
     device.authenticate_admin(ADMIN_NEW_PASSWORD).unwrap_err();
 }
 
-fn require_failed_user_login<D>(device: D, password: &str, error: CommandError) -> D
+fn require_failed_user_login<'a, D>(device: D, password: &str, error: CommandError) -> D
 where
-    D: Device + Authenticate,
-    nitrokey::User<D>: std::fmt::Debug,
+    D: Device<'a> + Authenticate<'a> + 'a,
+    nitrokey::User<'a, D>: std::fmt::Debug,
 {
     let result = device.authenticate_user(password);
     assert!(result.is_err());
@@ -339,6 +344,7 @@ fn factory_reset(device: DeviceWrapper) {
     assert_utf8_err_or_ne("testpw", pws.get_slot_password(0));
     drop(pws);
 
+    assert_ok!(3, device.get_user_retry_count());
     assert_ok!((), device.build_aes_key(DEFAULT_ADMIN_PIN));
 }
 

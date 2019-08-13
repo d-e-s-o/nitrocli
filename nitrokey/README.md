@@ -28,13 +28,6 @@ supported by `nitrokey-rs`:
 
 - `NK_get_device_model`.  We know which model we connected to, so we can
   provide this information without calling `libnitrokey`.
-- `NK_get_time`.  This method is useless as it will always cause a timestamp
-  error on the device (see [pull request #114][] for `libnitrokey` for details).
-- `NK_get_status`.  This method only provides a string representation of
-  data that can be accessed by other methods (firmware version, serial number,
-  configuration).
-- `NK_get_status_storage_as_string`.  This method only provides an incomplete
-  string representation of the data returned by `NK_get_status_storage`.
 - `NK_is_AES_supported`.  This method is no longer needed for Nitrokey devices
   with a recent firmware version.
 - `NK_set_unencrypted_volume_rorw_pin_type_user`,
@@ -42,6 +35,11 @@ supported by `nitrokey-rs`:
   methods are only relevant for older firmware versions (pre-v0.51).  As the
   Nitrokey Storage firmware can be updated easily, we do not support these
   outdated versions.
+- `NK_totp_get_time`, `NK_status`.  These functions are deprecated.
+- `NK_read_HOTP_slot`.  This function is only available for HOTP slots, not for
+  TOTP.  We will support it once both types are supported by `libnitrokey`.
+- All `*_as_string` functions that return string representations of data
+  returned by other functions.
 
 ## Tests
 
@@ -82,7 +80,6 @@ under the [LGPL-3.0][].
 [`libnitrokey`]: https://github.com/nitrokey/libnitrokey
 [`nitrokey-test`]: https://github.com/d-e-s-o/nitrokey-test
 [nitrokey-rs-dev@ireas.org]: mailto:nitrokey-rs-dev@ireas.org
-[pull request #114]: https://github.com/Nitrokey/libnitrokey/pull/114
 [MIT license]: https://opensource.org/licenses/MIT
 [LGPL-3.0]: https://opensource.org/licenses/lgpl-3.0.html
 [reuse]: https://reuse.software/practices/2.0/

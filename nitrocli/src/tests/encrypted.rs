@@ -19,8 +19,8 @@
 
 use super::*;
 
-#[test_device]
-fn status_open_close(device: nitrokey::Storage) -> crate::Result<()> {
+#[test_device(storage)]
+fn status_open_close(model: nitrokey::Model) -> crate::Result<()> {
   fn make_re(open: Option<bool>) -> regex::Regex {
     let encrypted = match open {
       Some(open) => {
@@ -44,7 +44,7 @@ $"#,
     regex::Regex::new(&re).unwrap()
   }
 
-  let mut ncli = Nitrocli::with_dev(device);
+  let mut ncli = Nitrocli::with_model(model);
   let out = ncli.handle(&["status"])?;
   assert!(make_re(None).is_match(&out), out);
 
@@ -59,32 +59,37 @@ $"#,
   Ok(())
 }
 
-#[test_device]
-fn encrypted_open_on_pro(device: nitrokey::Pro) {
-  let res = Nitrocli::with_dev(device).handle(&["encrypted", "open"]);
+#[test_device(pro)]
+fn encrypted_open_on_pro(model: nitrokey::Model) {
+  let res = Nitrocli::with_model(model).handle(&["encrypted", "open"]);
   assert_eq!(
     res.unwrap_str_err(),
     "This command is only available on the Nitrokey Storage",
   );
 }
 
-#[test_device]
-fn encrypted_open_close(device: nitrokey::Storage) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_dev(device);
+#[test_device(storage)]
+fn encrypted_open_close(model: nitrokey::Model) -> crate::Result<()> {
+  let mut ncli = Nitrocli::with_model(model);
   let out = ncli.handle(&["encrypted", "open"])?;
   assert!(out.is_empty());
 
-  let device = nitrokey::Storage::connect()?;
-  assert!(device.get_status()?.encrypted_volume.active);
-  assert!(!device.get_status()?.hidden_volume.active);
-  drop(device);
+  {
+    let mut manager = nitrokey::force_take()?;
+    let device = manager.connect_storage()?;
+    assert!(device.get_status()?.encrypted_volume.active);
+    assert!(!device.get_status()?.hidden_volume.active);
+  }
 
   let out = ncli.handle(&["encrypted", "close"])?;
   assert!(out.is_empty());
 
-  let device = nitrokey::Storage::connect()?;
-  assert!(!device.get_status()?.encrypted_volume.active);
-  assert!(!device.get_status()?.hidden_volume.active);
+  {
+    let mut manager = nitrokey::force_take()?;
+    let device = manager.connect_storage()?;
+    assert!(!device.get_status()?.encrypted_volume.active);
+    assert!(!device.get_status()?.hidden_volume.active);
+  }
 
   Ok(())
 }

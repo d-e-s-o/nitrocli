@@ -5,6 +5,7 @@ use std::error;
 use std::fmt;
 use std::os::raw;
 use std::str;
+use std::sync;
 
 use crate::device;
 
@@ -13,11 +14,15 @@ use crate::device;
 pub enum Error {
     /// An error reported by the Nitrokey device in the response packet.
     CommandError(CommandError),
-    /// A device communication.
+    /// A device communication error.
     CommunicationError(CommunicationError),
+    /// An error occurred due to concurrent access to the Nitrokey device.
+    ConcurrentAccessError,
     /// A library usage error.
     LibraryError(LibraryError),
-    /// An error that occured during random number generation.
+    /// An error that occurred due to a poisoned lock.
+    PoisonError(sync::PoisonError<sync::MutexGuard<'static, crate::Manager>>),
+    /// An error that occurred during random number generation.
     RandError(Box<dyn error::Error>),
     /// An error that is caused by an unexpected value returned by libnitrokey.
     UnexpectedError,
@@ -65,7 +70,22 @@ impl From<str::Utf8Error> for Error {
     }
 }
 
-impl<T: device::Device> From<(T, Error)> for Error {
+impl From<sync::PoisonError<sync::MutexGuard<'static, crate::Manager>>> for Error {
+    fn from(error: sync::PoisonError<sync::MutexGuard<'static, crate::Manager>>) -> Self {
+        Error::PoisonError(error)
+    }
+}
+
+impl From<sync::TryLockError<sync::MutexGuard<'static, crate::Manager>>> for Error {
+    fn from(error: sync::TryLockError<sync::MutexGuard<'static, crate::Manager>>) -> Self {
+        match error {
+            sync::TryLockError::Poisoned(err) => err.into(),
+            sync::TryLockError::WouldBlock => Error::ConcurrentAccessError,
+        }
+    }
+}
+
+impl<'a, T: device::Device<'a>> From<(T, Error)> for Error {
     fn from((_, err): (T, Error)) -> Self {
         err
     }
@@ -76,7 +96,9 @@ impl error::Error for Error {
         match *self {
             Error::CommandError(ref err) => Some(err),
             Error::CommunicationError(ref err) => Some(err),
+            Error::ConcurrentAccessError => None,
             Error::LibraryError(ref err) => Some(err),
+            Error::PoisonError(ref err) => Some(err),
             Error::RandError(ref err) => Some(err.as_ref()),
             Error::UnexpectedError => None,
             Error::UnknownError(_) => None,
@@ -90,7 +112,9 @@ impl fmt::Display for Error {
         match *self {
             Error::CommandError(ref err) => write!(f, "Command error: {}", err),
             Error::CommunicationError(ref err) => write!(f, "Communication error: {}", err),
+            Error::ConcurrentAccessError => write!(f, "Internal error: concurrent access"),
             Error::LibraryError(ref err) => write!(f, "Library error: {}", err),
+            Error::PoisonError(_) => write!(f, "Internal error: poisoned lock"),
             Error::RandError(ref err) => write!(f, "RNG error: {}", err),
             Error::UnexpectedError => write!(f, "An unexpected error occurred"),
             Error::UnknownError(ref err) => write!(f, "Unknown error: {}", err),

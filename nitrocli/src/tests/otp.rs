@@ -20,8 +20,8 @@
 use super::*;
 
 #[test_device]
-fn set_invalid_slot_raw(device: nitrokey::DeviceWrapper) {
-  let (rc, out, err) = Nitrocli::with_dev(device).run(&["otp", "set", "100", "name", "1234"]);
+fn set_invalid_slot_raw(model: nitrokey::Model) {
+  let (rc, out, err) = Nitrocli::with_model(model).run(&["otp", "set", "100", "name", "1234"]);
 
   assert_ne!(rc, 0);
   assert_eq!(out, b"");
@@ -29,8 +29,8 @@ fn set_invalid_slot_raw(device: nitrokey::DeviceWrapper) {
 }
 
 #[test_device]
-fn set_invalid_slot(device: nitrokey::DeviceWrapper) {
-  let res = Nitrocli::with_dev(device).handle(&["otp", "set", "100", "name", "1234"]);
+fn set_invalid_slot(model: nitrokey::Model) {
+  let res = Nitrocli::with_model(model).handle(&["otp", "set", "100", "name", "1234"]);
 
   assert_eq!(
     res.unwrap_lib_err(),
@@ -42,14 +42,14 @@ fn set_invalid_slot(device: nitrokey::DeviceWrapper) {
 }
 
 #[test_device]
-fn status(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+fn status(model: nitrokey::Model) -> crate::Result<()> {
   let re = regex::Regex::new(
     r#"^alg\tslot\tname
 ((totp|hotp)\t\d+\t.+\n)+$"#,
   )
   .unwrap();
 
-  let mut ncli = Nitrocli::with_dev(device);
+  let mut ncli = Nitrocli::with_model(model);
   // Make sure that we have at least something to display by ensuring
   // that there is one slot programmed.
   let _ = ncli.handle(&["otp", "set", "0", "the-name", "123456"])?;
@@ -60,14 +60,14 @@ fn status(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_get_hotp(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+fn set_get_hotp(model: nitrokey::Model) -> crate::Result<()> {
   // Secret and expected HOTP values as per RFC 4226: Appendix D -- HOTP
   // Algorithm: Test Values.
   const SECRET: &str = "12345678901234567890";
   const OTP1: &str = concat!(755224, "\n");
   const OTP2: &str = concat!(287082, "\n");
 
-  let mut ncli = Nitrocli::with_dev(device);
+  let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&[
     "otp", "set", "-a", "hotp", "-f", "ascii", "1", "name", &SECRET,
   ])?;
@@ -81,14 +81,14 @@ fn set_get_hotp(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_get_totp(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+fn set_get_totp(model: nitrokey::Model) -> crate::Result<()> {
   // Secret and expected TOTP values as per RFC 6238: Appendix B --
   // Test Vectors.
   const SECRET: &str = "12345678901234567890";
   const TIME: &str = stringify!(1111111111);
   const OTP: &str = concat!(14050471, "\n");
 
-  let mut ncli = Nitrocli::with_dev(device);
+  let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["otp", "set", "-d", "8", "-f", "ascii", "2", "name", &SECRET])?;
 
   let out = ncli.handle(&["otp", "get", "-t", TIME, "2"])?;
@@ -97,8 +97,8 @@ fn set_get_totp(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 }
 
 #[test_device]
-fn clear(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_dev(device);
+fn clear(model: nitrokey::Model) -> crate::Result<()> {
+  let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["otp", "set", "3", "hotp-test", "abcdef"])?;
   let _ = ncli.handle(&["otp", "clear", "3"])?;
   let res = ncli.handle(&["otp", "get", "3"]);

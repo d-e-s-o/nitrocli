@@ -32,9 +32,9 @@ fn get_slot_name_direct(slot: u8) -> Result<String, Error> {
     }
 }
 
-fn get_pws<T>(device: &mut T) -> PasswordSafe
+fn get_pws<'a, T>(device: &mut T) -> PasswordSafe<'_, 'a>
 where
-    T: Device,
+    T: Device<'a>,
 {
     unwrap_ok!(device.get_password_safe(DEFAULT_USER_PIN))
 }

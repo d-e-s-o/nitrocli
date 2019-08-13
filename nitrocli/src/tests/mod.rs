@@ -97,21 +97,18 @@ impl Nitrocli {
     }
   }
 
-  pub fn with_dev<D>(device: D) -> Self
+  pub fn with_model<M>(model: M) -> Self
   where
-    D: nitrokey::Device,
+    M: Into<nitrokey::Model>,
   {
-    let result = Self {
-      model: Some(device.get_model()),
+    Self {
+      model: Some(model.into()),
       admin_pin: Some(nitrokey::DEFAULT_ADMIN_PIN.into()),
       user_pin: Some(nitrokey::DEFAULT_USER_PIN.into()),
       new_admin_pin: None,
       new_user_pin: None,
       password: Some("1234567".into()),
-    };
-
-    drop(device);
-    result
+    }
   }
 
   pub fn admin_pin(&mut self, pin: impl Into<ffi::OsString>) {

@@ -27,7 +27,8 @@
 #include "libnitrokey/LibraryException.h"
 #include "libnitrokey/cxx_semantics.h"
 #include "libnitrokey/stick20_commands.h"
-#include "version.h"
+#include "libnitrokey/device_proto.h"
+#include "libnitrokey/version.h"
 
 #ifdef _MSC_VER
 #ifdef _WIN32
@@ -44,6 +45,7 @@ char * strndup(const char* str, size_t maxlen) {
 
 using namespace nitrokey;
 
+const uint8_t NK_PWS_SLOT_COUNT = PWS_SLOT_COUNT;
 static uint8_t NK_last_command_status = 0;
 static const int max_string_field_length = 100;
 
@@ -250,6 +252,10 @@ extern "C" {
 
 
 	NK_C_API char * NK_status() {
+		return NK_get_status_as_string();
+	}
+
+	NK_C_API char * NK_get_status_as_string() {
 		auto m = NitrokeyManager::instance();
 		return get_with_string_result([&]() {
 			string && s = m->get_status_as_string();
@@ -257,6 +263,30 @@ extern "C" {
 			clear_string(s);
 			return rs;
 		});
+	}
+
+	NK_C_API int NK_get_status(struct NK_status* out) {
+		if (out == nullptr) {
+			return -1;
+		}
+		auto m = NitrokeyManager::instance();
+		auto result = get_with_status([&]() {
+			return m->get_status();
+		}, proto::stick10::GetStatus::ResponsePayload());
+		auto error_code = std::get<0>(result);
+		if (error_code != 0) {
+			return error_code;
+		}
+
+		auto status = std::get<1>(result);
+		out->firmware_version_major = status.firmware_version_st.major;
+		out->firmware_version_minor = status.firmware_version_st.minor;
+		out->serial_number_smart_card = status.card_serial_u32;
+		out->config_numlock = status.numlock;
+		out->config_capslock = status.capslock;
+		out->config_scrolllock = status.scrolllock;
+		out->otp_user_password = status.enable_user_password != 0;
+		return 0;
 	}
 
 	NK_C_API char * NK_device_serial_number() {
@@ -687,6 +717,23 @@ extern "C" {
 		return 0;
   }
 
+	NK_C_API int NK_get_SD_usage_data(struct NK_SD_usage_data* out) {
+		if (out == nullptr)
+			return -1;
+		auto m = NitrokeyManager::instance();
+		auto result = get_with_status([&]() {
+			return m->get_SD_usage_data();
+		}, std::make_pair<uint8_t, uint8_t>(0, 0));
+		auto error_code = std::get<0>(result);
+		if (error_code != 0)
+			return error_code;
+
+		auto data = std::get<1>(result);
+		out->write_level_min = std::get<0>(data);
+		out->write_level_max = std::get<1>(data);
+
+		return 0;
+	}
 
 NK_C_API char* NK_get_SD_usage_data_as_string() {
 		auto m = NitrokeyManager::instance();
@@ -697,19 +744,19 @@ NK_C_API char* NK_get_SD_usage_data_as_string() {
 
 	NK_C_API int NK_get_progress_bar_value() {
 		auto m = NitrokeyManager::instance();
-		return get_with_result([&]() {
+		return std::get<1>(get_with_status([&]() {
 			return m->get_progress_bar_value();
-		});
+		}, -2));
 	}
 
-	NK_C_API int NK_get_major_firmware_version() {
+	NK_C_API uint8_t NK_get_major_firmware_version() {
 		auto m = NitrokeyManager::instance();
 		return get_with_result([&]() {
 			return m->get_major_firmware_version();
 		});
 	}
 
-  NK_C_API int NK_get_minor_firmware_version() {
+  NK_C_API uint8_t NK_get_minor_firmware_version() {
 		auto m = NitrokeyManager::instance();
 		return get_with_result([&]() {
 			return m->get_minor_firmware_version();
@@ -736,6 +783,66 @@ NK_C_API char* NK_get_SD_usage_data_as_string() {
 		});
 	}
 
+	bool copy_device_info(const DeviceInfo& source, NK_device_info* target) {
+		switch (source.m_deviceModel) {
+		case DeviceModel::PRO:
+			target->model = NK_PRO;
+			break;
+		case DeviceModel::STORAGE:
+			target->model = NK_STORAGE;
+			break;
+		default:
+			return false;
+		}
+
+		target->path = strndup(source.m_path.c_str(), MAXIMUM_STR_REPLY_LENGTH);
+		target->serial_number = strndup(source.m_serialNumber.c_str(), MAXIMUM_STR_REPLY_LENGTH);
+		target->next = nullptr;
+
+		return target->path && target->serial_number;
+	}
+
+	NK_C_API struct NK_device_info* NK_list_devices() {
+		auto nm = NitrokeyManager::instance();
+		return get_with_result([&]() -> NK_device_info* {
+			auto v = nm->list_devices();
+			if (v.empty())
+				return nullptr;
+
+			auto result = new NK_device_info();
+			auto ptr = result;
+			auto first = v.begin();
+			if (!copy_device_info(*first, ptr)) {
+				NK_free_device_info(result);
+				return nullptr;
+			}
+			v.erase(first);
+
+			for (auto& info : v) {
+				ptr->next = new NK_device_info();
+				ptr = ptr->next;
+
+				if (!copy_device_info(info, ptr)) {
+					NK_free_device_info(result);
+					return nullptr;
+				}
+			}
+			return result;
+		});
+	}
+
+	NK_C_API void NK_free_device_info(struct NK_device_info* device_info) {
+		if (!device_info)
+			return;
+
+		if (device_info->next)
+			NK_free_device_info(device_info->next);
+
+		free(device_info->path);
+		free(device_info->serial_number);
+		delete device_info;
+	}
+
 	NK_C_API int NK_connect_with_ID(const char* id) {
 		auto m = NitrokeyManager::instance();
 		return get_with_result([&]() {
@@ -743,12 +850,60 @@ NK_C_API char* NK_get_SD_usage_data_as_string() {
 		});
 	}
 
+	NK_C_API int NK_connect_with_path(const char* path) {
+		auto m = NitrokeyManager::instance();
+		return get_with_result([&]() {
+			return m->connect_with_path(path) ? 1 : 0;
+		});
+	 }
+
+
 	NK_C_API int NK_wink() {
 		auto m = NitrokeyManager::instance();
 		return get_without_result([&]() {
 			return m->wink();
 		});
 	}
+
+  NK_C_API int NK_enable_firmware_update_pro(const char* update_password){
+    auto m = NitrokeyManager::instance();
+    return get_without_result([&]() {
+      m->enable_firmware_update_pro(update_password);
+  });
+}
+
+  NK_C_API int NK_change_firmware_password_pro(const char *current_firmware_password, const char *new_firmware_password) {
+    auto m = NitrokeyManager::instance();
+    return get_without_result([&]() {
+      m->change_firmware_update_password_pro(current_firmware_password,
+                                             new_firmware_password);
+    });
+  }
+
+
+  NK_C_API int NK_read_HOTP_slot(const uint8_t slot_num, struct ReadSlot_t* out){
+  if (out == nullptr)
+    return -1;
+  auto m = NitrokeyManager::instance();
+  auto result = get_with_status([&]() {
+    return m->get_HOTP_slot_data(slot_num);
+  }, stick10::ReadSlot::ResponsePayload() );
+  auto error_code = std::get<0>(result);
+  if (error_code != 0) {
+    return error_code;
+  }
+#define a(x) out->x = read_slot.x
+  stick10::ReadSlot::ResponsePayload read_slot = std::get<1>(result);
+  a(_slot_config);
+  a(slot_counter);
+#undef a
+#define m(x) memmove(out->x, read_slot.x, sizeof(read_slot.x))
+  m(slot_name);
+  m(slot_token_id);
+#undef m
+  return 0;
+}
+
 
 #ifdef __cplusplus
 }

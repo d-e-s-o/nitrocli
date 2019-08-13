@@ -60,16 +60,19 @@ fn set_log_level(ctx: &mut args::ExecCtx<'_>) {
 /// Connect to any Nitrokey device and do something with it.
 fn with_device<F>(ctx: &mut args::ExecCtx<'_>, op: F) -> Result<()>
 where
-  F: FnOnce(&mut args::ExecCtx<'_>, nitrokey::DeviceWrapper) -> Result<()>,
+  F: FnOnce(&mut args::ExecCtx<'_>, nitrokey::DeviceWrapper<'_>) -> Result<()>,
 {
+  let mut manager = nitrokey::take()?;
   set_log_level(ctx);
 
   let device = match ctx.model {
-    Some(model) => nitrokey::connect_model(model.into()).map_err(|_| {
+    Some(model) => manager.connect_model(model.into()).map_err(|_| {
       let error = format!("Nitrokey {} device not found", model.as_user_facing_str());
       Error::Error(error)
     })?,
-    None => nitrokey::connect().map_err(|_| Error::from("Nitrokey device not found"))?,
+    None => manager
+      .connect()
+      .map_err(|_| Error::from("Nitrokey device not found"))?,
   };
 
   op(ctx, device)
@@ -78,8 +81,9 @@ where
 /// Connect to a Nitrokey Storage device and do something with it.
 fn with_storage_device<F>(ctx: &mut args::ExecCtx<'_>, op: F) -> Result<()>
 where
-  F: FnOnce(&mut args::ExecCtx<'_>, nitrokey::Storage) -> Result<()>,
+  F: FnOnce(&mut args::ExecCtx<'_>, nitrokey::Storage<'_>) -> Result<()>,
 {
+  let mut manager = nitrokey::take()?;
   set_log_level(ctx);
 
   if let Some(model) = ctx.model {
@@ -90,8 +94,9 @@ where
     }
   }
 
-  let device =
-    nitrokey::Storage::connect().map_err(|_| Error::from("Nitrokey Storage device not found"))?;
+  let device = manager
+    .connect_storage()
+    .map_err(|_| Error::from("Nitrokey Storage device not found"))?;
   op(ctx, device)
 }
 
@@ -99,7 +104,7 @@ where
 /// do something with it.
 fn with_password_safe<F>(ctx: &mut args::ExecCtx<'_>, mut op: F) -> Result<()>
 where
-  F: FnMut(&mut args::ExecCtx<'_>, nitrokey::PasswordSafe<'_>) -> Result<()>,
+  F: FnMut(&mut args::ExecCtx<'_>, nitrokey::PasswordSafe<'_, '_>) -> Result<()>,
 {
   with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
@@ -123,7 +128,7 @@ where
 /// Authenticate the given device using the given PIN type and operation.
 ///
 /// If an error occurs, the error message `msg` is used.
-fn authenticate<D, A, F>(
+fn authenticate<'mgr, D, A, F>(
   ctx: &mut args::ExecCtx<'_>,
   device: D,
   pin_type: pinentry::PinType,
@@ -131,7 +136,7 @@ fn authenticate<D, A, F>(
   op: F,
 ) -> Result<A>
 where
-  D: Device,
+  D: Device<'mgr>,
   F: FnMut(&mut args::ExecCtx<'_>, D, &str) -> result::Result<A, (D, nitrokey::Error)>,
 {
   let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
@@ -140,9 +145,12 @@ where
 }
 
 /// Authenticate the given device with the user PIN.
-fn authenticate_user<T>(ctx: &mut args::ExecCtx<'_>, device: T) -> Result<nitrokey::User<T>>
+fn authenticate_user<'mgr, T>(
+  ctx: &mut args::ExecCtx<'_>,
+  device: T,
+) -> Result<nitrokey::User<'mgr, T>>
 where
-  T: Device,
+  T: Device<'mgr>,
 {
   authenticate(
     ctx,
@@ -154,9 +162,12 @@ where
 }
 
 /// Authenticate the given device with the admin PIN.
-fn authenticate_admin<T>(ctx: &mut args::ExecCtx<'_>, device: T) -> Result<nitrokey::Admin<T>>
+fn authenticate_admin<'mgr, T>(
+  ctx: &mut args::ExecCtx<'_>,
+  device: T,
+) -> Result<nitrokey::Admin<'mgr, T>>
 where
-  T: Device,
+  T: Device<'mgr>,
 {
   authenticate(
     ctx,
@@ -322,7 +333,7 @@ fn print_storage_status(
 fn print_status(
   ctx: &mut args::ExecCtx<'_>,
   model: &'static str,
-  device: &nitrokey::DeviceWrapper,
+  device: &nitrokey::DeviceWrapper<'_>,
 ) -> Result<()> {
   let serial_number = device
     .get_serial_number()
@@ -689,7 +700,7 @@ pub fn otp_clear(
 fn print_otp_status(
   ctx: &mut args::ExecCtx<'_>,
   algorithm: args::OtpAlgorithm,
-  device: &nitrokey::DeviceWrapper,
+  device: &nitrokey::DeviceWrapper<'_>,
   all: bool,
 ) -> Result<()> {
   let mut slot: u8 = 0;
@@ -832,7 +843,7 @@ fn print_pws_data(
   Ok(())
 }
 
-fn check_slot(pws: &nitrokey::PasswordSafe<'_>, slot: u8) -> Result<()> {
+fn check_slot(pws: &nitrokey::PasswordSafe<'_, '_>, slot: u8) -> Result<()> {
   if slot >= nitrokey::SLOT_COUNT {
     return Err(nitrokey::Error::from(nitrokey::LibraryError::InvalidSlot).into());
   }
@@ -901,7 +912,7 @@ pub fn pws_clear(ctx: &mut args::ExecCtx<'_>, slot: u8) -> Result<()> {
 
 fn print_pws_slot(
   ctx: &mut args::ExecCtx<'_>,
-  pws: &nitrokey::PasswordSafe<'_>,
+  pws: &nitrokey::PasswordSafe<'_, '_>,
   slot: usize,
   programmed: bool,
 ) -> Result<()> {

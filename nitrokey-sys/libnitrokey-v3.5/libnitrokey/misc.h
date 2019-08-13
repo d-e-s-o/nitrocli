@@ -29,11 +29,36 @@
 #include "log.h"
 #include "LibraryException.h"
 #include <sstream>
+#include <stdexcept>
 #include <iomanip>
 
 
 namespace nitrokey {
 namespace misc {
+
+/**
+ * Simple replacement for std::optional (C++17).
+ */
+template<typename T>
+class Option {
+public:
+    Option() : m_hasValue(false), m_value() {}
+    Option(T value) : m_hasValue(true), m_value(value) {}
+
+    bool has_value() const {
+        return m_hasValue;
+    }
+    T value() const {
+        if (!m_hasValue) {
+            throw std::logic_error("Called Option::value without value");
+        }
+        return m_value;
+    }
+
+private:
+    bool m_hasValue;
+    T m_value;
+};
 
     template<typename T>
     std::string toHex(T value){
@@ -42,7 +67,8 @@ namespace misc {
       oss << std::hex << std::setw(sizeof(value)*2) << std::setfill('0') << value;
       return oss.str();
     }
-
+    
+#define FIELD_WIDTH_MAX   (100)
   /**
    * Copies string from pointer to fixed size C-style array. Src needs to be a valid C-string - eg. ended with '\0'.
    * Throws when source is bigger than destination.
@@ -57,12 +83,13 @@ namespace misc {
 //            throw EmptySourceStringException(slot_number);
             return;
         const size_t s_dest = sizeof dest;
-        LOG(std::string("strcpyT sizes dest src ")
-                                       +std::to_string(s_dest)+ " "
-                                       +std::to_string(strlen(src))+ " "
-            ,nitrokey::log::Loglevel::DEBUG_L2);
-        if (strlen(src) > s_dest){
-            throw TooLongStringException(strlen(src), s_dest, src);
+    const size_t src_strlen = strnlen(src, FIELD_WIDTH_MAX);
+    LOG(std::string("strcpyT sizes dest src ")
+        + std::to_string(s_dest) + " "
+        + std::to_string(src_strlen) + " "
+            , nitrokey::log::Loglevel::DEBUG_L2);
+        if (src_strlen > s_dest){
+            throw TooLongStringException(src_strlen, s_dest, src);
         }
         strncpy((char*) &dest, src, s_dest);
     }
