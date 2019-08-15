@@ -7,6 +7,7 @@ Unreleased
 - Removed `storage status` subcommand
   - Moved its output into `status` command
 - Removed previously deprecated `--ascii` option from `otp set` command
+- Bumped `libc` dependency to `0.2.62`
 
 
 0.2.4

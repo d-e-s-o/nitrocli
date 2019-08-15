@@ -225,6 +225,12 @@ fn test_apple(target: &str) {
         }
     });
 
+    cfg.skip_roundtrip(move |s| match s {
+        // FIXME: TODO
+        "utsname" | "statfs" | "dirent" | "utmpx" => true,
+        _ => false,
+    });
+
     cfg.generate("../src/lib.rs", "main.rs");
 }
 
@@ -363,6 +369,11 @@ fn test_openbsd(target: &str) {
         (struct_ == "siginfo_t" && field == "si_addr")
     });
 
+    cfg.skip_roundtrip(move |s| match s {
+        "dirent" | "utsname" | "utmp" => true,
+        _ => false,
+    });
+
     cfg.generate("../src/lib.rs", "main.rs");
 }
 
@@ -465,6 +476,11 @@ fn test_windows(target: &str) {
 
             _ => false,
         }
+    });
+
+    cfg.skip_roundtrip(move |s| match s {
+        "dirent" | "statfs" | "utsname" | "utmpx" => true,
+        _ => false,
     });
 
     cfg.generate("../src/lib.rs", "main.rs");
@@ -1082,11 +1098,6 @@ fn test_dragonflybsd(target: &str) {
             | "PORT_SOURCE_SIGNAL"
             | "PTHREAD_STACK_MIN" => true,
 
-            // These change all the time from release to release of linux
-            // distros, let's just not bother trying to verify them. They
-            // shouldn't be used in code anyway...
-            "AF_MAX" | "PF_MAX" => true,
-
             _ => false,
         }
     });
@@ -1426,6 +1437,13 @@ fn test_android(target: &str) {
                                            field == "ssi_arch"))
     });
 
+    let bit64 = target.contains("64");
+    cfg.skip_roundtrip(move |s| match s {
+        "utsname" | "dirent" | "dirent64" => true,
+        "utmp" if bit64 => true,
+        _ => false,
+    });
+
     cfg.generate("../src/lib.rs", "main.rs");
 
     test_linux_like_apis(target);
@@ -1437,10 +1455,12 @@ fn test_freebsd(target: &str) {
 
     let freebsd_ver = which_freebsd();
 
-    if let Some(12) = freebsd_ver {
-        // If the host is FreeBSD 12, run FreeBSD 12 tests
-        cfg.cfg("freebsd12", None);
-    }
+    match freebsd_ver {
+        Some(11) => cfg.cfg("freebsd11", None),
+        Some(12) => cfg.cfg("freebsd12", None),
+        Some(13) => cfg.cfg("freebsd13", None),
+        _ => &mut cfg,
+    };
 
     // Required for `getline`:
     cfg.define("_WITH_GETLINE", None);
@@ -1568,7 +1588,7 @@ fn test_freebsd(target: &str) {
             | "IP_RECVORIGDSTADDR"
             | "IPV6_ORIGDSTADDR"
             | "IPV6_RECVORIGDSTADDR"
-                if Some(12) != freebsd_ver =>
+                if Some(11) == freebsd_ver =>
             {
                 true
             }
@@ -1582,8 +1602,7 @@ fn test_freebsd(target: &str) {
             // These constants were removed in FreeBSD 11 (svn r262489),
             // and they've never had any legitimate use outside of the
             // base system anyway.
-            "CTL_MAXID" | "KERN_MAXID" | "HW_MAXID" | "NET_MAXID"
-            | "USER_MAXID" => true,
+            "CTL_MAXID" | "KERN_MAXID" | "HW_MAXID" | "USER_MAXID" => true,
 
             _ => false,
         }
@@ -1626,6 +1645,11 @@ fn test_freebsd(target: &str) {
         // FIXME: `sa_sigaction` has type `sighandler_t` but that type is
         // incorrect, see: https://github.com/rust-lang/libc/issues/1359
         (struct_ == "sigaction" && field == "sa_sigaction")
+    });
+
+    cfg.skip_roundtrip(move |s| match s {
+        "dirent" | "statfs" | "utsname" | "utmpx" => true,
+        _ => false,
     });
 
     cfg.generate("../src/lib.rs", "main.rs");
@@ -1832,6 +1856,15 @@ fn test_emscripten(target: &str) {
                                            field == "ssi_arch"))
     });
 
+    cfg.skip_roundtrip(move |s| match s {
+        "pthread_mutexattr_t"
+        | "utsname"
+        | "dirent"
+        | "dirent64"
+        | "sysinfo" => true,
+        _ => false,
+    });
+
     // FIXME: test linux like
     cfg.generate("../src/lib.rs", "main.rs");
 }
@@ -1859,8 +1892,11 @@ fn test_linux(target: &str) {
     let x86_32 = target.contains("i686");
     let x32 = target.contains("x32");
     let mips = target.contains("mips");
-    let mips32_musl = mips && !target.contains("64") && musl;
+    let mips32 = mips && !target.contains("64");
+    let mips64 = mips && target.contains("64");
+    let mips32_musl = mips32 && musl;
     let sparc64 = target.contains("sparc64");
+    let s390x = target.contains("s390x");
 
     let mut cfg = ctest::TestGenerator::new();
     cfg.define("_GNU_SOURCE", None);
@@ -2000,6 +2036,7 @@ fn test_linux(target: &str) {
         "linux/rtnetlink.h",
         "linux/seccomp.h",
         "linux/sockios.h",
+        "linux/vm_sockets.h",
         "sys/auxv.h",
     }
 
@@ -2096,6 +2133,12 @@ fn test_linux(target: &str) {
 
             // FIXME: musl version using by mips build jobs 1.0.15 is ancient:
             "ifmap" | "ifreq" | "ifconf" if mips32_musl => true,
+
+            // FIXME: remove once Ubuntu 20.04 LTS is released, somewhere in 2020.
+            // ucontext_t added a new field as of glibc 2.28; our struct definition is
+            // conservative and omits the field, but that means the size doesn't match for newer
+            // glibcs (see https://github.com/rust-lang/libc/issues/1410)
+            "ucontext_t" if gnu => true,
 
             _ => false,
         }
@@ -2246,6 +2289,49 @@ fn test_linux(target: &str) {
                                            field == "ssi_arch"))
     });
 
+    cfg.skip_roundtrip(move |s| match s {
+        // FIXME: TODO
+        "_libc_fpstate" | "user_fpregs_struct" if x86_64 => true,
+        "utsname"
+        | "statx"
+        | "dirent"
+        | "dirent64"
+        | "utmpx"
+        | "user"
+        | "user_fpxregs_struct" => true,
+        "sysinfo" if musl => true,
+        "ucontext_t" if x86_64 && musl => true,
+        "sockaddr_un" | "sembuf" | "ff_constant_effect"
+            if mips32 && (gnu || musl) =>
+        {
+            true
+        }
+        "ipv6_mreq"
+        | "sockaddr_in6"
+        | "sockaddr_ll"
+        | "in_pktinfo"
+        | "arpreq"
+        | "arpreq_old"
+        | "sockaddr_un"
+        | "ff_constant_effect"
+        | "ff_ramp_effect"
+        | "ff_condition_effect"
+        | "Elf32_Ehdr"
+        | "Elf32_Chdr"
+        | "ucred"
+        | "in6_pktinfo"
+        | "sockaddr_nl"
+        | "termios"
+        | "nlmsgerr"
+            if (mips64 || sparc64) && gnu =>
+        {
+            true
+        }
+        "mcontext_t" if s390x => true,
+
+        _ => false,
+    });
+
     cfg.generate("../src/lib.rs", "main.rs");
 
     test_linux_like_apis(target);
@@ -2388,6 +2474,7 @@ fn which_freebsd() -> Option<i32> {
     match &stdout {
         s if s.starts_with("11") => Some(11),
         s if s.starts_with("12") => Some(12),
+        s if s.starts_with("13") => Some(13),
         _ => None,
     }
 }

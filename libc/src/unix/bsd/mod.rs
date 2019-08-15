@@ -233,7 +233,12 @@ pub const LC_TIME: ::c_int = 5;
 pub const LC_MESSAGES: ::c_int = 6;
 
 pub const FIOCLEX: ::c_ulong = 0x20006601;
+pub const FIONCLEX: ::c_ulong = 0x20006602;
+pub const FIONREAD: ::c_ulong = 0x4004667f;
 pub const FIONBIO: ::c_ulong = 0x8004667e;
+pub const FIOASYNC: ::c_ulong = 0x8004667d;
+pub const FIOSETOWN: ::c_ulong = 0x8004667c;
+pub const FIOGETOWN: ::c_ulong = 0x4004667b;
 
 pub const PATH_MAX: ::c_int = 1024;
 
@@ -531,7 +536,7 @@ extern {
     #[cfg_attr(target_os = "macos", link_name = "glob$INODE64")]
     #[cfg_attr(target_os = "netbsd", link_name = "__glob30")]
     #[cfg_attr(
-        all(target_os = "freebsd", not(freebsd12)),
+        all(target_os = "freebsd", freebsd11),
         link_name = "glob@FBSD_1.0"
     )]
     pub fn glob(pattern: *const ::c_char,
@@ -541,7 +546,7 @@ extern {
                 pglob: *mut ::glob_t) -> ::c_int;
     #[cfg_attr(target_os = "netbsd", link_name = "__globfree30")]
     #[cfg_attr(
-        all(target_os = "freebsd", not(freebsd12)),
+        all(target_os = "freebsd", freebsd11),
         link_name = "globfree@FBSD_1.0"
     )]
     pub fn globfree(pglob: *mut ::glob_t);

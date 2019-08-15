@@ -21,6 +21,16 @@ impl ::Clone for timezone {
     fn clone(&self) -> timezone { *self }
 }
 
+impl siginfo_t {
+    pub unsafe fn si_addr(&self) -> *mut ::c_void {
+        self.si_addr
+    }
+
+    pub unsafe fn si_value(&self) -> ::sigval {
+        self.si_value
+    }
+}
+
 s! {
     pub struct in_addr {
         pub s_addr: ::in_addr_t,
@@ -68,7 +78,9 @@ s! {
         pub si_uid: ::uid_t,
         pub si_status: ::c_int,
         pub si_addr: *mut ::c_void,
-        _pad: [::c_int; 12],
+        pub si_value: ::sigval,
+        _pad1: ::c_long,
+        _pad2: [::c_int; 7],
     }
 
     pub struct sigaction {
@@ -997,6 +1009,10 @@ pub const SLIPDISC: ::c_int = 0x4;
 pub const PPPDISC: ::c_int = 0x5;
 pub const NETGRAPHDISC: ::c_int = 0x6;
 
+pub const FIODTYPE: ::c_ulong = 0x4004667a;
+pub const FIOGETLBA: ::c_ulong = 0x40046679;
+pub const FIODGNAME: ::c_ulong = 0x80106678;
+
 pub const B0: speed_t = 0;
 pub const B50: speed_t = 50;
 pub const B75: speed_t = 75;
@@ -1136,7 +1152,7 @@ extern {
     pub fn getutxline(ut: *const utmpx) -> *mut utmpx;
     pub fn initgroups(name: *const ::c_char, basegid: ::gid_t) -> ::c_int;
     #[cfg_attr(
-        all(target_os = "freebsd", not(freebsd12)),
+        all(target_os = "freebsd", freebsd11),
         link_name = "kevent@FBSD_1.0"
     )]
     pub fn kevent(kq: ::c_int,
@@ -1155,7 +1171,7 @@ extern {
     pub fn mkfifoat(dirfd: ::c_int, pathname: *const ::c_char,
                     mode: ::mode_t) -> ::c_int;
     #[cfg_attr(
-        all(target_os = "freebsd", not(freebsd12)),
+        all(target_os = "freebsd", freebsd11),
         link_name = "mknodat@FBSD_1.1"
     )]
     pub fn mknodat(dirfd: ::c_int, pathname: *const ::c_char,
