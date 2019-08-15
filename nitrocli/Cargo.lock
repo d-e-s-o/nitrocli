@@ -23,7 +23,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "cc"
-version = "1.0.37"
+version = "1.0.40"
 
 [[package]]
 name = "cfg-if"
@@ -97,7 +97,7 @@ dependencies = [
 name = "nitrokey-sys"
 version = "3.5.0"
 dependencies = [
- "cc 1.0.37",
+ "cc 1.0.40",
 ]
 
 [[package]]

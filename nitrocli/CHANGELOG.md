@@ -11,6 +11,7 @@ Unreleased
   - Bumped `nitrokey-sys` dependency to `3.5.0`
   - Added `lazy_static` dependency in version `1.2.0`
 - Bumped `libc` dependency to `0.2.62`
+- Bumped `cc` dependency to `1.0.40`
 
 
 0.2.4
