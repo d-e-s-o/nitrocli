@@ -21,6 +21,7 @@
     feature = "rustc-dep-of-std",
     feature(cfg_target_vendor, link_cfg, no_core)
 )]
+#![cfg_attr(libc_thread_local, feature(thread_local))]
 // Enable extra lints:
 #![cfg_attr(feature = "extra_traits", deny(missing_debug_implementations))]
 #![deny(missing_copy_implementations, safe_packed_borrows)]
@@ -113,6 +114,12 @@ cfg_if! {
 
         mod switch;
         pub use switch::*;
+    } else if #[cfg(target_os = "vxworks")] {
+        mod fixed_width_ints;
+        pub use fixed_width_ints::*;
+
+        mod vxworks;
+        pub use vxworks::*;
     } else if #[cfg(unix)] {
         mod fixed_width_ints;
         pub use fixed_width_ints::*;

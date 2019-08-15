@@ -1,4 +1,4 @@
-[![Travis-CI Status]][Travis-CI] [![Appveyor Status]][Appveyor] [![Cirrus-CI Status]][Cirrus-CI] [![Latest Version]][crates.io] [![Documentation]][docs.rs] ![License]
+[![Azure Status]][Azure] [![Cirrus-CI Status]][Cirrus-CI] [![Latest Version]][crates.io] [![Documentation]][docs.rs] ![License]
 
 libc - Raw FFI bindings to platforms' system libraries
 ====
@@ -56,7 +56,7 @@ newer Rust features are only available on newer Rust toolchains:
 [Platform-specific documentation (master branch)][docs.master].
 
 See
-[`ci/build.sh`](https://github.com/rust-lang/libc/blob/master/libc-test/build.rs)
+[`ci/build.sh`](https://github.com/rust-lang/libc/blob/master/ci/build.sh)
 for the platforms on which `libc` is guaranteed to build for each Rust
 toolchain. The test-matrix at [Travis-CI], [Appveyor], and [Cirrus-CI] show the
 platforms in which `libc` tests are run.
@@ -91,10 +91,8 @@ Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in `libc` by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
 
-[Travis-CI]: https://travis-ci.com/rust-lang/libc
-[Travis-CI Status]: https://travis-ci.com/rust-lang/libc.svg?branch=master
-[Appveyor]: https://ci.appveyor.com/project/rust-lang-libs/libc
-[Appveyor Status]: https://ci.appveyor.com/api/projects/status/github/rust-lang/libc?svg=true
+[Azure Status]: https://dev.azure.com/rust-lang2/libc/_apis/build/status/rust-lang.libc?branchName=master
+[Azure]: https://dev.azure.com/rust-lang2/libc/_build/latest?definitionId=1&branchName=master
 [Cirrus-CI]: https://cirrus-ci.com/github/rust-lang/libc
 [Cirrus-CI Status]: https://api.cirrus-ci.com/github/rust-lang/libc.svg
 [crates.io]: https://crates.io/crates/libc

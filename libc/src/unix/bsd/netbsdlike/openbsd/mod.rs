@@ -308,6 +308,21 @@ s! {
     }
 }
 
+impl siginfo_t {
+    pub unsafe fn si_value(&self) -> ::sigval {
+        #[repr(C)]
+        struct siginfo_timer {
+            _si_signo: ::c_int,
+            _si_errno: ::c_int,
+            _si_code: ::c_int,
+            _pid: ::pid_t,
+            _uid: ::uid_t,
+            value: ::sigval,
+        }
+        (*(self as *const siginfo_t as *const siginfo_timer)).value
+    }
+}
+
 s_no_extra_traits! {
     pub struct dirent {
         pub d_fileno: ::ino_t,
@@ -834,22 +849,6 @@ pub const AF_BLUETOOTH: ::c_int = 32;
 pub const AF_MPLS: ::c_int = 33;
 pub const pseudo_AF_PFLOW: ::c_int = 34;
 pub const pseudo_AF_PIPEX: ::c_int = 35;
-#[doc(hidden)]
-#[deprecated(
-    since = "0.2.55",
-    note = "If you are using this report to: \
-            https://github.com/rust-lang/libc/issues/665"
-)]
-pub const AF_MAX: ::c_int = 36;
-
-#[doc(hidden)]
-#[allow(deprecated)]
-#[deprecated(
-    since = "0.2.55",
-    note = "If you are using this report to: \
-            https://github.com/rust-lang/libc/issues/665"
-)]
-pub const NET_MAXID: ::c_int = AF_MAX;
 pub const NET_RT_DUMP: ::c_int = 1;
 pub const NET_RT_FLAGS: ::c_int = 2;
 pub const NET_RT_IFLIST: ::c_int = 3;
@@ -872,14 +871,6 @@ pub const PF_BLUETOOTH: ::c_int = AF_BLUETOOTH;
 pub const PF_MPLS: ::c_int = AF_MPLS;
 pub const PF_PFLOW: ::c_int = pseudo_AF_PFLOW;
 pub const PF_PIPEX: ::c_int = pseudo_AF_PIPEX;
-#[doc(hidden)]
-#[allow(deprecated)]
-#[deprecated(
-    since = "0.2.55",
-    note = "If you are using this report to: \
-            https://github.com/rust-lang/libc/issues/665"
-)]
-pub const PF_MAX: ::c_int = AF_MAX;
 
 pub const SCM_TIMESTAMP: ::c_int = 0x04;
 
@@ -1192,7 +1183,8 @@ pub const KERN_CONSBUF: ::c_int = 83;
 pub const KERN_AUDIO: ::c_int = 84;
 pub const KERN_CPUSTATS: ::c_int = 85;
 pub const KERN_PFSTATUS: ::c_int = 86;
-pub const KERN_MAXID: ::c_int = 87;
+pub const KERN_TIMEOUT_STATS: ::c_int = 87;
+pub const KERN_MAXID: ::c_int = 88;
 
 pub const KERN_PROC_ALL: ::c_int = 0;
 pub const KERN_PROC_PID: ::c_int = 1;

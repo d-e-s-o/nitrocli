@@ -46,18 +46,6 @@ s! {
         pub ip6: *mut ::in6_addr,
     }
 
-    pub struct sigevent {
-        pub sigev_notify: ::c_int,
-        pub sigev_signo: ::c_int,
-        pub sigev_value: ::sigval,
-        //The rest of the structure is actually a union.  We expose only
-        //sigev_notify_thread_id because it's the most useful union member.
-        pub sigev_notify_thread_id: ::lwpid_t,
-        #[cfg(target_pointer_width = "64")]
-        __unused1: ::c_int,
-        __unused2: [::c_long; 7]
-    }
-
     pub struct statvfs {
         pub f_bavail: ::fsblkcnt_t,
         pub f_bfree: ::fsblkcnt_t,
@@ -150,6 +138,18 @@ s_no_extra_traits! {
         pub mq_msgsize: ::c_long,
         pub mq_curmsgs: ::c_long,
         __reserved: [::c_long; 4]
+    }
+
+    pub struct sigevent {
+        pub sigev_notify: ::c_int,
+        pub sigev_signo: ::c_int,
+        pub sigev_value: ::sigval,
+        //The rest of the structure is actually a union.  We expose only
+        //sigev_notify_thread_id because it's the most useful union member.
+        pub sigev_notify_thread_id: ::lwpid_t,
+        #[cfg(target_pointer_width = "64")]
+        __unused1: ::c_int,
+        __unused2: [::c_long; 7]
     }
 }
 
@@ -274,6 +274,36 @@ cfg_if! {
                 self.mq_curmsgs.hash(state);
             }
         }
+
+        impl PartialEq for sigevent {
+            fn eq(&self, other: &sigevent) -> bool {
+                self.sigev_notify == other.sigev_notify
+                    && self.sigev_signo == other.sigev_signo
+                    && self.sigev_value == other.sigev_value
+                    && self.sigev_notify_thread_id
+                        == other.sigev_notify_thread_id
+            }
+        }
+        impl Eq for sigevent {}
+        impl ::fmt::Debug for sigevent {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("sigevent")
+                    .field("sigev_notify", &self.sigev_notify)
+                    .field("sigev_signo", &self.sigev_signo)
+                    .field("sigev_value", &self.sigev_value)
+                    .field("sigev_notify_thread_id",
+                           &self.sigev_notify_thread_id)
+                    .finish()
+            }
+        }
+        impl ::hash::Hash for sigevent {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.sigev_notify.hash(state);
+                self.sigev_signo.hash(state);
+                self.sigev_value.hash(state);
+                self.sigev_notify_thread_id.hash(state);
+            }
+        }
     }
 }
 
@@ -303,7 +333,6 @@ pub const ENOTCAPABLE: ::c_int = 93;
 pub const ECAPMODE: ::c_int = 94;
 pub const ENOTRECOVERABLE: ::c_int = 95;
 pub const EOWNERDEAD: ::c_int = 96;
-pub const ELAST: ::c_int = 96;
 pub const RLIMIT_NPTS: ::c_int = 11;
 pub const RLIMIT_SWAP: ::c_int = 12;
 pub const RLIMIT_KQUEUES: ::c_int = 13;
@@ -540,14 +569,6 @@ pub const TIOCSIG: ::c_uint = 0x2004745f;
 pub const TIOCM_DCD: ::c_int = 0x40;
 pub const H4DISC: ::c_int = 0x7;
 
-pub const FIONCLEX: ::c_ulong = 0x20006602;
-pub const FIONREAD: ::c_ulong = 0x4004667f;
-pub const FIOASYNC: ::c_ulong = 0x8004667d;
-pub const FIOSETOWN: ::c_ulong = 0x8004667c;
-pub const FIOGETOWN: ::c_ulong = 0x4004667b;
-pub const FIODTYPE: ::c_ulong = 0x4004667a;
-pub const FIOGETLBA: ::c_ulong = 0x40046679;
-pub const FIODGNAME: ::c_ulong = 0x80106678;
 pub const FIONWRITE: ::c_ulong = 0x40046677;
 pub const FIONSPACE: ::c_ulong = 0x40046676;
 pub const FIOSEEKDATA: ::c_ulong = 0xc0086661;
@@ -624,13 +645,6 @@ pub const AF_BLUETOOTH: ::c_int = 36;
 pub const AF_IEEE80211: ::c_int = 37;
 pub const AF_INET_SDP: ::c_int = 40;
 pub const AF_INET6_SDP: ::c_int = 42;
-#[doc(hidden)]
-#[deprecated(
-    since = "0.2.55",
-    note = "If you are using this report to: \
-            https://github.com/rust-lang/libc/issues/665"
-)]
-pub const AF_MAX: ::c_int = 42;
 
 // https://github.com/freebsd/freebsd/blob/master/sys/net/if.h#L140
 pub const IFF_UP: ::c_int = 0x1; // (n) interface is up
@@ -937,14 +951,6 @@ pub const PF_BLUETOOTH: ::c_int = AF_BLUETOOTH;
 pub const PF_IEEE80211: ::c_int = AF_IEEE80211;
 pub const PF_INET_SDP: ::c_int = AF_INET_SDP;
 pub const PF_INET6_SDP: ::c_int = AF_INET6_SDP;
-#[doc(hidden)]
-#[deprecated(
-    since = "0.2.55",
-    note = "If you are using this report to: \
-            https://github.com/rust-lang/libc/issues/665"
-)]
-#[allow(deprecated)]
-pub const PF_MAX: ::c_int = AF_MAX;
 
 pub const NET_RT_DUMP: ::c_int = 1;
 pub const NET_RT_FLAGS: ::c_int = 2;
@@ -979,10 +985,6 @@ pub const SHM_ANON: *mut ::c_char = 1 as *mut ::c_char;
 // FreeBSD base system.  And with the exception of CTL_P1003_1B_MAXID,
 // they were all removed in svn r262489.  They remain here for backwards
 // compatibility only, and are scheduled to be removed in libc 1.0.0.
-#[doc(hidden)]
-#[deprecated(since="0.2.54",note="Removed in FreeBSD 11")]
-#[allow(deprecated)]
-pub const NET_MAXID: ::c_int = AF_MAX;
 #[doc(hidden)]
 #[deprecated(since="0.2.54",note="Removed in FreeBSD 11")]
 pub const CTL_MAXID: ::c_int = 10;
@@ -1329,9 +1331,14 @@ cfg_if! {
     if #[cfg(freebsd12)] {
         mod freebsd12;
         pub use self::freebsd12::*;
-    } else {
+    } else if #[cfg(freebsd13)] {
+        mod freebsd12;
+        pub use self::freebsd12::*;
+    } else if #[cfg(freebsd11)] {
         mod freebsd11;
         pub use self::freebsd11::*;
+    } else {
+        // Unknown freebsd version
     }
 }
 
