@@ -286,7 +286,10 @@ fn unencrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {}", subcommand));
+  subargs.insert(
+    0,
+    format!("nitrocli {} {}", Command::Unencrypted, subcommand),
+  );
   subcommand.execute(ctx, subargs)
 }
 
@@ -331,7 +334,7 @@ fn encrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {}", subcommand));
+  subargs.insert(0, format!("nitrocli {} {}", Command::Encrypted, subcommand));
   subcommand.execute(ctx, subargs)
 }
 

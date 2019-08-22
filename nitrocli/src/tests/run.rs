@@ -31,19 +31,56 @@ fn no_command_or_option() {
 }
 
 #[test]
-fn help_option() {
-  fn test(opt: &'static str) {
-    let (rc, out, err) = Nitrocli::new().run(&[opt]);
+fn help_options() {
+  fn test_run(args: &[&str], help: &str) {
+    let mut all = args.to_vec();
+    all.push(help);
+
+    let (rc, out, err) = Nitrocli::new().run(&all);
 
     assert_eq!(rc, 0);
     assert_eq!(err, b"");
 
     let s = String::from_utf8_lossy(&out).into_owned();
-    assert!(s.starts_with("Usage:\n"), s);
+    let expected = format!("Usage:\n  nitrocli {}", args.join(" "));
+    assert!(s.starts_with(&expected), s);
   }
 
-  test("--help");
-  test("-h")
+  fn test(args: &[&str]) {
+    test_run(args, "--help");
+    test_run(args, "-h");
+  }
+
+  test(&[]);
+  test(&["config"]);
+  test(&["config", "get"]);
+  test(&["config", "set"]);
+  test(&["encrypted"]);
+  test(&["encrypted", "open"]);
+  test(&["encrypted", "close"]);
+  test(&["hidden"]);
+  test(&["hidden", "close"]);
+  test(&["hidden", "create"]);
+  test(&["hidden", "open"]);
+  test(&["lock"]);
+  test(&["otp"]);
+  test(&["otp", "clear"]);
+  test(&["otp", "get"]);
+  test(&["otp", "set"]);
+  test(&["otp", "status"]);
+  test(&["pin"]);
+  test(&["pin", "clear"]);
+  test(&["pin", "set"]);
+  test(&["pin", "unblock"]);
+  test(&["pws"]);
+  test(&["pws", "clear"]);
+  test(&["pws", "get"]);
+  test(&["pws", "set"]);
+  test(&["pws", "status"]);
+  test(&["reset"]);
+  test(&["status"]);
+  test(&["unencrypted"]);
+  test(&["unencrypted", "set"]);
 }
 
 #[test]
