@@ -136,7 +136,7 @@ impl Nitrocli {
     }
   }
 
-  fn do_run<F, R>(&mut self, args: &[&'static str], f: F) -> (R, Vec<u8>, Vec<u8>)
+  fn do_run<F, R>(&mut self, args: &[&str], f: F) -> (R, Vec<u8>, Vec<u8>)
   where
     F: FnOnce(&mut crate::RunCtx<'_>, Vec<String>) -> R,
   {
@@ -166,12 +166,12 @@ impl Nitrocli {
   }
 
   /// Run `nitrocli`'s `run` function.
-  pub fn run(&mut self, args: &[&'static str]) -> (i32, Vec<u8>, Vec<u8>) {
+  pub fn run(&mut self, args: &[&str]) -> (i32, Vec<u8>, Vec<u8>) {
     self.do_run(args, |c, a| crate::run(c, a))
   }
 
   /// Run `nitrocli`'s `handle_arguments` function.
-  pub fn handle(&mut self, args: &[&'static str]) -> crate::Result<String> {
+  pub fn handle(&mut self, args: &[&str]) -> crate::Result<String> {
     let (res, out, _) = self.do_run(args, |c, a| crate::args::handle_arguments(c, a));
     res.map(|_| String::from_utf8_lossy(&out).into_owned())
   }
