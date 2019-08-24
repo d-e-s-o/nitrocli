@@ -288,7 +288,12 @@ fn unencrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("nitrocli {} {}", Command::Unencrypted, subcommand),
+    format!(
+      "{} {} {}",
+      crate::NITROCLI,
+      Command::Unencrypted,
+      subcommand,
+    ),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -334,7 +339,10 @@ fn encrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {} {}", Command::Encrypted, subcommand));
+  subargs.insert(
+    0,
+    format!("{} {} {}", crate::NITROCLI, Command::Encrypted, subcommand),
+  );
   subcommand.execute(ctx, subargs)
 }
 
@@ -382,7 +390,10 @@ fn hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {} {}", Command::Hidden, subcommand));
+  subargs.insert(
+    0,
+    format!("{} {} {}", crate::NITROCLI, Command::Hidden, subcommand),
+  );
   subcommand.execute(ctx, subargs)
 }
 
@@ -450,7 +461,10 @@ fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {} {}", Command::Config, subcommand));
+  subargs.insert(
+    0,
+    format!("{} {} {}", crate::NITROCLI, Command::Config, subcommand),
+  );
   subcommand.execute(ctx, subargs)
 }
 
@@ -559,7 +573,10 @@ fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {} {}", Command::Otp, subcommand));
+  subargs.insert(
+    0,
+    format!("{} {} {}", crate::NITROCLI, Command::Otp, subcommand),
+  );
   subcommand.execute(ctx, subargs)
 }
 
@@ -727,7 +744,10 @@ fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {} {}", Command::Pin, subcommand));
+  subargs.insert(
+    0,
+    format!("{} {} {}", crate::NITROCLI, Command::Pin, subcommand),
+  );
   subcommand.execute(ctx, subargs)
 }
 
@@ -784,7 +804,10 @@ fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(0, format!("nitrocli {} {}", Command::Pws, subcommand));
+  subargs.insert(
+    0,
+    format!("{} {} {}", crate::NITROCLI, Command::Pws, subcommand),
+  );
   subcommand.execute(ctx, subargs)
 }
 
@@ -937,14 +960,14 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
   let result = parse(&mut stdio_buf, parser, args);
 
   if version {
-    println!(ctx, "nitrocli {}", env!("CARGO_PKG_VERSION"))?;
+    println!(ctx, "{} {}", crate::NITROCLI, env!("CARGO_PKG_VERSION"))?;
     Ok(())
   } else {
     stdout_buf.flush()?;
     stderr_buf.flush()?;
 
     result?;
-    subargs.insert(0, format!("nitrocli {}", command));
+    subargs.insert(0, format!("{} {}", crate::NITROCLI, command));
 
     let mut ctx = ExecCtx {
       model,
