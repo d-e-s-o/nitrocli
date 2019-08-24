@@ -262,6 +262,7 @@ where
   // cause gpg-connect-agent to exit with a non-zero error code, we have
   // to evaluate the output to determine success/failure.
   let output = process::Command::new("gpg-connect-agent")
+    .env_clear()
     .arg(command)
     .arg("/bye")
     .output()
@@ -329,6 +330,7 @@ where
   if let Some(cache_id) = entry.cache_id() {
     let command = format!("CLEAR_PASSPHRASE {}", cache_id);
     let output = process::Command::new("gpg-connect-agent")
+      .env_clear()
       .arg(command)
       .arg("/bye")
       .output()?;
