@@ -21,7 +21,10 @@ use super::*;
 
 #[test_device]
 fn set_invalid_slot(model: nitrokey::Model) {
-  let res = Nitrocli::with_model(model).handle(&["pws", "set", "100", "name", "login", "1234"]);
+  let res = Nitrocli::make()
+    .model(model)
+    .build()
+    .handle(&["pws", "set", "100", "name", "login", "1234"]);
 
   assert_eq!(
     res.unwrap_lib_err(),
@@ -40,7 +43,7 @@ fn status(model: nitrokey::Model) -> crate::Result<()> {
   )
   .unwrap();
 
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::make().model(model).build();
   // Make sure that we have at least something to display by ensuring
   // that there are there is one slot programmed.
   let _ = ncli.handle(&["pws", "set", "0", "the-name", "the-login", "123456"])?;
@@ -56,7 +59,7 @@ fn set_get(model: nitrokey::Model) -> crate::Result<()> {
   const LOGIN: &str = "d-e-s-o";
   const PASSWORD: &str = "my-secret-password";
 
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::make().model(model).build();
   let _ = ncli.handle(&["pws", "set", "1", &NAME, &LOGIN, &PASSWORD])?;
 
   let out = ncli.handle(&["pws", "get", "1", "--quiet", "--name"])?;
@@ -88,7 +91,7 @@ fn set_reset_get(model: nitrokey::Model) -> crate::Result<()> {
   const LOGIN: &str = "a\\user";
   const PASSWORD: &str = "!@&-)*(&+%^@";
 
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::make().model(model).build();
   let _ = ncli.handle(&["pws", "set", "2", &NAME, &LOGIN, &PASSWORD])?;
 
   let out = ncli.handle(&["reset"])?;
@@ -107,7 +110,7 @@ fn set_reset_get(model: nitrokey::Model) -> crate::Result<()> {
 
 #[test_device]
 fn clear(model: nitrokey::Model) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::make().model(model).build();
   let _ = ncli.handle(&["pws", "set", "10", "clear-test", "some-login", "abcdef"])?;
   let _ = ncli.handle(&["pws", "clear", "10"])?;
   let res = ncli.handle(&["pws", "get", "10"]);

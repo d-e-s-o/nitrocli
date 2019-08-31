@@ -35,7 +35,10 @@ fn unblock(model: nitrokey::Model) -> crate::Result<()> {
     assert!(device.get_user_retry_count()? < 3);
   }
 
-  let _ = Nitrocli::with_model(model).handle(&["pin", "unblock"])?;
+  let _ = Nitrocli::make()
+    .model(model)
+    .build()
+    .handle(&["pin", "unblock"])?;
 
   {
     let mut manager = nitrokey::force_take()?;
@@ -47,7 +50,7 @@ fn unblock(model: nitrokey::Model) -> crate::Result<()> {
 
 #[test_device]
 fn set_user(model: nitrokey::Model) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::make().model(model).build();
   // Set a new user PIN.
   ncli.new_user_pin("new-pin");
   let out = ncli.handle(&["pin", "set", "user"])?;

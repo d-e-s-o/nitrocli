@@ -76,6 +76,30 @@ where
   }
 }
 
+struct Builder(Nitrocli);
+
+impl Builder {
+  /// Set the model to use.
+  fn model(mut self, model: nitrokey::Model) -> Self {
+    self.0.model = Some(model);
+    self
+  }
+
+  /// Set the password to use for certain operations.
+  fn password<P>(mut self, password: P) -> Self
+  where
+    P: Into<ffi::OsString>,
+  {
+    self.0.password = Some(password.into());
+    self
+  }
+
+  /// Build the final `Nitrocli` object.
+  fn build(self) -> Nitrocli {
+    self.0
+  }
+}
+
 struct Nitrocli {
   model: Option<nitrokey::Model>,
   admin_pin: Option<ffi::OsString>,
@@ -97,18 +121,8 @@ impl Nitrocli {
     }
   }
 
-  pub fn with_model<M>(model: M) -> Self
-  where
-    M: Into<nitrokey::Model>,
-  {
-    Self {
-      model: Some(model.into()),
-      admin_pin: Some(nitrokey::DEFAULT_ADMIN_PIN.into()),
-      user_pin: Some(nitrokey::DEFAULT_USER_PIN.into()),
-      new_admin_pin: None,
-      new_user_pin: None,
-      password: Some("1234567".into()),
-    }
+  pub fn make() -> Builder {
+    Builder(Self::new())
   }
 
   pub fn admin_pin(&mut self, pin: impl Into<ffi::OsString>) {

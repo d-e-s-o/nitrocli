@@ -31,14 +31,23 @@ $"#,
   )
   .unwrap();
 
-  let out = Nitrocli::with_model(model).handle(&["config", "get"])?;
+  let out = Nitrocli::make()
+    .model(model)
+    .build()
+    .handle(&["config", "get"])?;
+
   assert!(re.is_match(&out), out);
   Ok(())
 }
 
 #[test_device]
 fn set_wrong_usage(model: nitrokey::Model) {
-  let res = Nitrocli::with_model(model).handle(&["config", "set", "--numlock", "2", "-N"]);
+  let res =
+    Nitrocli::make()
+      .model(model)
+      .build()
+      .handle(&["config", "set", "--numlock", "2", "-N"]);
+
   assert_eq!(
     res.unwrap_str_err(),
     "--numlock and --no-numlock are mutually exclusive"
@@ -47,7 +56,7 @@ fn set_wrong_usage(model: nitrokey::Model) {
 
 #[test_device]
 fn set_get(model: nitrokey::Model) -> crate::Result<()> {
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::make().model(model).build();
   let _ = ncli.handle(&["config", "set", "-s", "1", "-c", "0", "-N"])?;
 
   let re = regex::Regex::new(

@@ -25,7 +25,7 @@ use super::*;
 #[test_device]
 fn reset(model: nitrokey::Model) -> crate::Result<()> {
   let new_admin_pin = "87654321";
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::make().model(model).build();
 
   // Change the admin PIN.
   ncli.new_admin_pin(new_admin_pin);

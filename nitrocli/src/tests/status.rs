@@ -49,7 +49,7 @@ $"#,
   )
   .unwrap();
 
-  let out = Nitrocli::with_model(model).handle(&["status"])?;
+  let out = Nitrocli::make().model(model).build().handle(&["status"])?;
   assert!(re.is_match(&out), out);
   Ok(())
 }
@@ -75,7 +75,7 @@ $"#,
   )
   .unwrap();
 
-  let out = Nitrocli::with_model(model).handle(&["status"])?;
+  let out = Nitrocli::make().model(model).build().handle(&["status"])?;
   assert!(re.is_match(&out), out);
   Ok(())
 }
