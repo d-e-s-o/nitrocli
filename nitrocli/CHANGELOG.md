@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Bumped required Rust version to `1.32`
+
+
 0.3.0
 -----
 - Added `unencrypted` command with `set` subcommand for changing the

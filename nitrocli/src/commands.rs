@@ -938,11 +938,7 @@ pub fn pws_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
       .get_slot_status()
       .map_err(|err| get_error("Could not read PWS slot status", err))?;
     println!(ctx, "slot\tname")?;
-    for (i, &value) in slots
-      .into_iter()
-      .enumerate()
-      .filter(|(_, &value)| all || value)
-    {
+    for (i, &value) in slots.iter().enumerate().filter(|(_, &value)| all || value) {
       print_pws_slot(ctx, &pws, i, value)?;
     }
     Ok(())

@@ -153,10 +153,10 @@ impl Nitrocli {
     F: FnOnce(&mut crate::RunCtx<'_>, Vec<String>) -> R,
   {
     let args = ["nitrocli"]
-      .into_iter()
+      .iter()
       .cloned()
       .chain(self.model.map(Self::model_to_arg))
-      .chain(args.into_iter().cloned())
+      .chain(args.iter().cloned())
       .map(ToOwned::to_owned)
       .collect();
 
