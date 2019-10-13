@@ -19,6 +19,8 @@
 
 use super::*;
 
+use crate::args;
+
 #[test_device]
 fn set_invalid_slot_raw(device: nitrokey::DeviceWrapper) {
   let (rc, out, err) = Nitrocli::with_dev(device).run(&["otp", "set", "100", "name", "1234"]);
@@ -93,6 +95,20 @@ fn set_get_totp(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
 
   let out = ncli.handle(&["otp", "get", "-t", TIME, "2"])?;
   assert_eq!(out, OTP);
+  Ok(())
+}
+
+#[test_device]
+fn set_totp_uneven_chars(device: nitrokey::DeviceWrapper) -> crate::Result<()> {
+  let secrets = [
+    (args::OtpSecretFormat::Hex, "123"),
+    (args::OtpSecretFormat::Base32, "FBILDWWGA2"),
+  ];
+
+  let mut ncli = Nitrocli::with_dev(device);
+  for (format, secret) in &secrets {
+    let _ = ncli.handle(&["otp", "set", "-f", format.as_ref(), "3", "foobar", &secret])?;
+  }
   Ok(())
 }
 
