@@ -624,10 +624,11 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut digits = OtpMode::SixDigits;
   let mut counter: u64 = 0;
   let mut time_window: u16 = 30;
-  let mut secret_format: Option<OtpSecretFormat> = None;
+  let mut secret_format = OtpSecretFormat::Hex;
   let fmt_help = format!(
-    "The format of the secret ({})",
-    fmt_enum!(OtpSecretFormat::all_variants())
+    "The format of the secret ({}, default: {})",
+    fmt_enum!(OtpSecretFormat::all_variants()),
+    secret_format,
   );
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Configures a one-time password slot");
@@ -665,14 +666,11 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
     argparse::Store,
     "The time window for TOTP (default: 30)",
   );
-  let _ = parser.refer(&mut secret_format).add_option(
-    &["-f", "--format"],
-    argparse::StoreOption,
-    &fmt_help,
-  );
+  let _ =
+    parser
+      .refer(&mut secret_format)
+      .add_option(&["-f", "--format"], argparse::Store, &fmt_help);
   parse(ctx, parser, args)?;
-
-  let secret_format = secret_format.unwrap_or(OtpSecretFormat::Hex);
 
   let data = nitrokey::OtpSlotData {
     number: slot,
