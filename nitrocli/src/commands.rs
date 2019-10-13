@@ -616,7 +616,7 @@ pub fn otp_get(
 fn format_bytes(bytes: &[u8]) -> String {
   bytes
     .iter()
-    .map(|c| format!("{:x}", c))
+    .map(|c| format!("{:02x}", c))
     .collect::<Vec<_>>()
     .join("")
 }
@@ -955,5 +955,12 @@ mod tests {
   fn prepare_secret_non_ascii() {
     let result = prepare_ascii_secret("Österreich");
     assert!(result.is_err());
+  }
+
+  #[test]
+  fn hex_string() {
+    assert_eq!(format_bytes(&[b' ']), "20");
+    assert_eq!(format_bytes(&[b' ', b' ']), "2020");
+    assert_eq!(format_bytes(&[b'\n', b'\n']), "0a0a");
   }
 }
