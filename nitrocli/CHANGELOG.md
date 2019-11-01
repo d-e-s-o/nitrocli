@@ -9,7 +9,7 @@ Unreleased
 - Removed previously deprecated `--ascii` option from `otp set` command
 - Fixed wrong hexadecimal conversion used in `otp set` command
 - Bumped `libc` dependency to `0.2.66`
-- Bumped `cc` dependency to `1.0.40`
+- Bumped `cc` dependency to `1.0.48`
 
 
 0.2.4

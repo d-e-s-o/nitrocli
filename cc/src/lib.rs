@@ -35,15 +35,13 @@
 //! Cargo will also set this environment variable when executed with the `-jN` flag.
 //!
 //! If `NUM_JOBS` is not set, the `RAYON_NUM_THREADS` environment variable can
-//! also specify the build paralellism.
+//! also specify the build parallelism.
 //!
 //! # Examples
 //!
 //! Use the `Build` struct to compile `src/foo.c`:
 //!
 //! ```no_run
-//! extern crate cc;
-//!
 //! fn main() {
 //!     cc::Build::new()
 //!         .file("src/foo.c")
@@ -57,9 +55,6 @@
 #![cfg_attr(test, deny(warnings))]
 #![allow(deprecated)]
 #![deny(missing_docs)]
-
-#[cfg(feature = "parallel")]
-extern crate rayon;
 
 use std::collections::HashMap;
 use std::env;
@@ -99,6 +94,8 @@ pub struct Build {
     flags: Vec<String>,
     flags_supported: Vec<String>,
     known_flag_support_status: Arc<Mutex<HashMap<String, bool>>>,
+    ar_flags: Vec<String>,
+    no_default_flags: bool,
     files: Vec<PathBuf>,
     cpp: bool,
     cpp_link_stdlib: Option<Option<String>>,
@@ -109,6 +106,7 @@ pub struct Build {
     out_dir: Option<PathBuf>,
     opt_level: Option<String>,
     debug: Option<bool>,
+    force_frame_pointer: Option<bool>,
     env: Vec<(OsString, OsString)>,
     compiler: Option<PathBuf>,
     archiver: Option<PathBuf>,
@@ -213,8 +211,17 @@ impl ToolFamily {
             }
             ToolFamily::Gnu | ToolFamily::Clang => {
                 cmd.push_cc_arg("-g".into());
+            }
+        }
+    }
+
+    /// What the flag to force frame pointers.
+    fn add_force_frame_pointer(&self, cmd: &mut Tool) {
+        match *self {
+            ToolFamily::Gnu | ToolFamily::Clang => {
                 cmd.push_cc_arg("-fno-omit-frame-pointer".into());
             }
+            _ => (),
         }
     }
 
@@ -277,6 +284,8 @@ impl Build {
             flags: Vec::new(),
             flags_supported: Vec::new(),
             known_flag_support_status: Arc::new(Mutex::new(HashMap::new())),
+            ar_flags: Vec::new(),
+            no_default_flags: false,
             files: Vec::new(),
             shared_flag: None,
             static_flag: None,
@@ -289,6 +298,7 @@ impl Build {
             out_dir: None,
             opt_level: None,
             debug: None,
+            force_frame_pointer: None,
             env: Vec::new(),
             compiler: None,
             archiver: None,
@@ -358,6 +368,23 @@ impl Build {
     /// ```
     pub fn flag(&mut self, flag: &str) -> &mut Build {
         self.flags.push(flag.to_string());
+        self
+    }
+
+    /// Add an arbitrary flag to the invocation of the compiler
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// cc::Build::new()
+    ///     .file("src/foo.c")
+    ///     .file("src/bar.c")
+    ///     .ar_flag("/NODEFAULTLIB:libc.dll")
+    ///     .compile("foo");
+    /// ```
+
+    pub fn ar_flag(&mut self, flag: &str) -> &mut Build {
+        self.ar_flags.push(flag.to_string());
         self
     }
 
@@ -494,6 +521,17 @@ impl Build {
     /// ```
     pub fn static_flag(&mut self, static_flag: bool) -> &mut Build {
         self.static_flag = Some(static_flag);
+        self
+    }
+
+    /// Disables the generation of default compiler flags. The default compiler
+    /// flags may cause conflicts in some cross compiling scenarios.
+    ///
+    /// Setting the `CRATE_CC_NO_DEFAULTS` environment variable has the same
+    /// effect as setting this to `true`. The presence of the environment
+    /// variable and the value of `no_default_flags` will be OR'd together.
+    pub fn no_default_flags(&mut self, no_default_flags: bool) -> &mut Build {
+        self.no_default_flags = no_default_flags;
         self
     }
 
@@ -750,6 +788,17 @@ impl Build {
         self
     }
 
+    /// Configures whether the compiler will emit instructions to store
+    /// frame pointers during codegen.
+    ///
+    /// This option is automatically enabled when debug information is emitted.
+    /// Otherwise the target platform compiler's default will be used.
+    /// You can use this option to force a specific setting.
+    pub fn force_frame_pointer(&mut self, force: bool) -> &mut Build {
+        self.force_frame_pointer = Some(force);
+        self
+    }
+
     /// Configures the output directory where all object files and static
     /// libraries will be located.
     ///
@@ -931,22 +980,150 @@ impl Build {
     }
 
     #[cfg(feature = "parallel")]
-    fn compile_objects(&self, objs: &[Object]) -> Result<(), Error> {
-        use self::rayon::prelude::*;
+    fn compile_objects<'me>(&'me self, objs: &[Object]) -> Result<(), Error> {
+        use std::sync::atomic::{AtomicBool, Ordering::SeqCst};
+        use std::sync::Once;
 
-        if let Some(amt) = self.getenv("NUM_JOBS") {
-            if let Ok(amt) = amt.parse() {
-                let _ = rayon::ThreadPoolBuilder::new()
-                    .num_threads(amt)
-                    .build_global();
+        // Limit our parallelism globally with a jobserver. Start off by
+        // releasing our own token for this process so we can have a bit of an
+        // easier to write loop below. If this fails, though, then we're likely
+        // on Windows with the main implicit token, so we just have a bit extra
+        // parallelism for a bit and don't reacquire later.
+        let server = jobserver();
+        let reacquire = server.release_raw().is_ok();
+
+        // When compiling objects in parallel we do a few dirty tricks to speed
+        // things up:
+        //
+        // * First is that we use the `jobserver` crate to limit the parallelism
+        //   of this build script. The `jobserver` crate will use a jobserver
+        //   configured by Cargo for build scripts to ensure that parallelism is
+        //   coordinated across C compilations and Rust compilations. Before we
+        //   compile anything we make sure to wait until we acquire a token.
+        //
+        //   Note that this jobserver is cached globally so we only used one per
+        //   process and only worry about creating it once.
+        //
+        // * Next we use a raw `thread::spawn` per thread to actually compile
+        //   objects in parallel. We only actually spawn a thread after we've
+        //   acquired a token to perform some work
+        //
+        // * Finally though we want to keep the dependencies of this crate
+        //   pretty light, so we avoid using a safe abstraction like `rayon` and
+        //   instead rely on some bits of `unsafe` code. We know that this stack
+        //   frame persists while everything is compiling so we use all the
+        //   stack-allocated objects without cloning/reallocating. We use a
+        //   transmute to `State` with a `'static` lifetime to persist
+        //   everything we need across the boundary, and the join-on-drop
+        //   semantics of `JoinOnDrop` should ensure that our stack frame is
+        //   alive while threads are alive.
+        //
+        // With all that in mind we compile all objects in a loop here, after we
+        // acquire the appropriate tokens, Once all objects have been compiled
+        // we join on all the threads and propagate the results of compilation.
+        //
+        // Note that as a slight optimization we try to break out as soon as
+        // possible as soon as any compilation fails to ensure that errors get
+        // out to the user as fast as possible.
+        let error = AtomicBool::new(false);
+        let mut threads = Vec::new();
+        for obj in objs {
+            if error.load(SeqCst) {
+                break;
+            }
+            let token = server.acquire()?;
+            let state = State {
+                build: self,
+                obj,
+                error: &error,
+            };
+            let state = unsafe { std::mem::transmute::<State, State<'static>>(state) };
+            let thread = thread::spawn(|| {
+                let state: State<'me> = state; // erase the `'static` lifetime
+                let result = state.build.compile_object(state.obj);
+                if result.is_err() {
+                    state.error.store(true, SeqCst);
+                }
+                drop(token); // make sure our jobserver token is released after the compile
+                return result;
+            });
+            threads.push(JoinOnDrop(Some(thread)));
+        }
+
+        for mut thread in threads {
+            if let Some(thread) = thread.0.take() {
+                thread.join().expect("thread should not panic")?;
             }
         }
 
-        // Check for any errors and return the first one found.
-        objs.par_iter()
-            .with_max_len(1)
-            .map(|obj| self.compile_object(obj))
-            .collect()
+        // Reacquire our process's token before we proceed, which we released
+        // before entering the loop above.
+        if reacquire {
+            server.acquire_raw()?;
+        }
+
+        return Ok(());
+
+        /// Shared state from the parent thread to the child thread. This
+        /// package of pointers is temporarily transmuted to a `'static`
+        /// lifetime to cross the thread boundary and then once the thread is
+        /// running we erase the `'static` to go back to an anonymous lifetime.
+        struct State<'a> {
+            build: &'a Build,
+            obj: &'a Object,
+            error: &'a AtomicBool,
+        }
+
+        /// Returns a suitable `jobserver::Client` used to coordinate
+        /// parallelism between build scripts.
+        fn jobserver() -> &'static jobserver::Client {
+            static INIT: Once = Once::new();
+            static mut JOBSERVER: Option<jobserver::Client> = None;
+
+            fn _assert_sync<T: Sync>() {}
+            _assert_sync::<jobserver::Client>();
+
+            unsafe {
+                INIT.call_once(|| {
+                    let server = default_jobserver();
+                    JOBSERVER = Some(server);
+                });
+                JOBSERVER.as_ref().unwrap()
+            }
+        }
+
+        unsafe fn default_jobserver() -> jobserver::Client {
+            // Try to use the environmental jobserver which Cargo typically
+            // initializes for us...
+            if let Some(client) = jobserver::Client::from_env() {
+                return client;
+            }
+
+            // ... but if that fails for whatever reason fall back to the number
+            // of cpus on the system or the `NUM_JOBS` env var.
+            let mut parallelism = num_cpus::get();
+            if let Ok(amt) = env::var("NUM_JOBS") {
+                if let Ok(amt) = amt.parse() {
+                    parallelism = amt;
+                }
+            }
+
+            // If we create our own jobserver then be sure to reserve one token
+            // for ourselves.
+            let client = jobserver::Client::new(parallelism).expect("failed to create jobserver");
+            client.acquire_raw().expect("failed to acquire initial");
+            return client;
+        }
+
+        struct JoinOnDrop(Option<thread::JoinHandle<Result<(), Error>>>);
+
+        impl Drop for JoinOnDrop {
+            fn drop(&mut self) {
+                if let Some(thread) = self.0.take() {
+                    drop(thread.join());
+                }
+            }
+        }
     }
 
     #[cfg(not(feature = "parallel"))]
@@ -1073,11 +1250,10 @@ impl Build {
         let mut cmd = self.get_base_compiler()?;
         let envflags = self.envflags(if self.cpp { "CXXFLAGS" } else { "CFLAGS" });
 
-        // Disable default flag generation via environment variable or when
-        // certain cross compiling arguments are set
-        let use_defaults = self.getenv("CRATE_CC_NO_DEFAULTS").is_none();
+        // Disable default flag generation via `no_default_flags` or environment variable
+        let no_defaults = self.no_default_flags || self.getenv("CRATE_CC_NO_DEFAULTS").is_some();
 
-        if use_defaults {
+        if !no_defaults {
             self.add_default_flags(&mut cmd, &target, &opt_level)?;
         } else {
             println!("Info: default compiler flags are disabled");
@@ -1213,12 +1389,22 @@ impl Build {
             family.add_debug_flags(cmd);
         }
 
+        if self.get_force_frame_pointer() {
+            let family = cmd.family;
+            family.add_force_frame_pointer(cmd);
+        }
+
         // Target flags
         match cmd.family {
             ToolFamily::Clang => {
                 cmd.args.push(format!("--target={}", target).into());
             }
             ToolFamily::Msvc { clang_cl } => {
+                // This is an undocumented flag from MSVC but helps with making
+                // builds more reproducible by avoiding putting timestamps into
+                // files.
+                cmd.args.push("-Brepro".into());
+
                 if clang_cl {
                     if target.contains("x86_64") {
                         cmd.args.push("-m64".into());
@@ -1402,9 +1588,11 @@ impl Build {
                     if let Some(arch) = parts.next() {
                         let arch = &arch[5..];
                         cmd.args.push(("-march=rv".to_owned() + arch).into());
-                        // ABI is always soft-float right now, update this when this is no longer the
-                        // case:
-                        if arch.starts_with("64") {
+                        if target.contains("linux") && arch.starts_with("64") {
+                            cmd.args.push("-mabi=lp64d".into());
+                        } else if target.contains("linux") && arch.starts_with("32") {
+                            cmd.args.push("-mabi=ilp32d".into());
+                        } else if arch.starts_with("64") {
                             cmd.args.push("-mabi=lp64".into());
                         } else {
                             cmd.args.push("-mabi=ilp32".into());
@@ -1501,6 +1689,9 @@ impl Build {
             let mut out = OsString::from("-out:");
             out.push(dst);
             cmd.arg(out).arg("-nologo");
+            for flag in self.ar_flags.iter() {
+                cmd.arg(flag);
+            }
 
             // Similar to https://github.com/rust-lang/rust/pull/47507
             // and https://github.com/rust-lang/rust/pull/48548
@@ -1563,6 +1754,33 @@ impl Build {
             };
         } else {
             let (mut ar, cmd) = self.get_ar()?;
+
+            // Set an environment variable to tell the OSX archiver to ensure
+            // that all dates listed in the archive are zero, improving
+            // determinism of builds. AFAIK there's not really official
+            // documentation of this but there's a lot of references to it if
+            // you search google.
+            //
+            // You can reproduce this locally on a mac with:
+            //
+            //      $ touch foo.c
+            //      $ cc -c foo.c -o foo.o
+            //
+            //      # Notice that these two checksums are different
+            //      $ ar crus libfoo1.a foo.o && sleep 2 && ar crus libfoo2.a foo.o
+            //      $ md5sum libfoo*.a
+            //
+            //      # Notice that these two checksums are the same
+            //      $ export ZERO_AR_DATE=1
+            //      $ ar crus libfoo1.a foo.o && sleep 2 && touch foo.o && ar crus libfoo2.a foo.o
+            //      $ md5sum libfoo*.a
+            //
+            // In any case if this doesn't end up getting read, it shouldn't
+            // cause that many issues!
+            ar.env("ZERO_AR_DATE", "1");
+            for flag in self.ar_flags.iter() {
+                ar.arg(flag);
+            }
             run(
                 ar.arg("crs").arg(dst).args(&objects).args(&self.objects),
                 &cmd,
@@ -1687,13 +1905,19 @@ impl Build {
 
         let tool_opt: Option<Tool> = self
             .env_tool(env)
-            .map(|(tool, cc, args)| {
+            .map(|(tool, wrapper, args)| {
+                // find the driver mode, if any
+                const DRIVER_MODE: &str = "--driver-mode=";
+                let driver_mode = args
+                    .iter()
+                    .find(|a| a.starts_with(DRIVER_MODE))
+                    .map(|a| &a[DRIVER_MODE.len()..]);
                 // chop off leading/trailing whitespace to work around
                 // semi-buggy build scripts which are shared in
                 // makefiles/configure scripts (where spaces are far more
                 // lenient)
-                let mut t = Tool::new(PathBuf::from(tool.trim()));
-                if let Some(cc) = cc {
+                let mut t = Tool::with_clang_driver(PathBuf::from(tool.trim()), driver_mode);
+                if let Some(cc) = wrapper {
                     t.cc_wrapper_path = Some(PathBuf::from(cc));
                 }
                 for arg in args {
@@ -1846,7 +2070,7 @@ impl Build {
                 Err(_) => "nvcc".into(),
                 Ok(nvcc) => nvcc,
             };
-            let mut nvcc_tool = Tool::with_features(PathBuf::from(nvcc), self.cuda);
+            let mut nvcc_tool = Tool::with_features(PathBuf::from(nvcc), None, self.cuda);
             nvcc_tool
                 .args
                 .push(format!("-ccbin={}", tool.path.display()).into());
@@ -2062,6 +2286,10 @@ impl Build {
         })
     }
 
+    fn get_force_frame_pointer(&self) -> bool {
+        self.force_frame_pointer.unwrap_or_else(|| self.get_debug())
+    }
+
     fn get_out_dir(&self) -> Result<PathBuf, Error> {
         match self.out_dir.clone() {
             Some(p) => Ok(p),
@@ -2109,11 +2337,15 @@ impl Default for Build {
 }
 
 impl Tool {
-    fn new(path: PathBuf) -> Tool {
-        Tool::with_features(path, false)
+    fn new(path: PathBuf) -> Self {
+        Tool::with_features(path, None, false)
     }
 
-    fn with_features(path: PathBuf, cuda: bool) -> Tool {
+    fn with_clang_driver(path: PathBuf, clang_driver: Option<&str>) -> Self {
+        Self::with_features(path, clang_driver, false)
+    }
+
+    fn with_features(path: PathBuf, clang_driver: Option<&str>, cuda: bool) -> Self {
         // Try to detect family of the tool from its name, falling back to Gnu.
         let family = if let Some(fname) = path.file_name().and_then(|p| p.to_str()) {
             if fname.contains("clang-cl") {
@@ -2125,13 +2357,17 @@ impl Tool {
             {
                 ToolFamily::Msvc { clang_cl: false }
             } else if fname.contains("clang") {
-                ToolFamily::Clang
+                match clang_driver {
+                    Some("cl") => ToolFamily::Msvc { clang_cl: true },
+                    _ => ToolFamily::Clang,
+                }
             } else {
                 ToolFamily::Gnu
             }
         } else {
             ToolFamily::Gnu
         };
+
         Tool {
             path: path,
             cc_wrapper_path: None,
