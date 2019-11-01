@@ -2,6 +2,8 @@
 
 # Checks that libc builds properly for all supported targets on a particular
 # Rust version:
+# The FILTER environment variable can be used to select which target(s) to build.
+# For example: set FILTER to vxworks to select the targets that has vxworks in name
 
 set -ex
 
@@ -13,7 +15,7 @@ RUST=${TOOLCHAIN}
 echo "Testing Rust ${RUST} on ${OS}"
 
 if [ "${TOOLCHAIN}" = "nightly" ] ; then
-    cargo +nightly install cargo-xbuild -Z install-upgrade
+    cargo +nightly install cargo-xbuild
     rustup component add rust-src
 fi
 
@@ -65,6 +67,13 @@ test_target() {
     cargo "+${RUST}" "${BUILD_CMD}" -vv $opt --no-default-features --target "${TARGET}" \
           --features extra_traits
 
+    # Test the 'const-extern-fn' feature on nightly
+    if [ "${RUST}" = "nightly" ]; then
+        cargo "+${RUST}" "${BUILD_CMD}" -vv $opt --no-default-features --target "${TARGET}" \
+          --features const-extern-fn
+    fi
+
+
     # Also test that it builds with `extra_traits` and default features:
     if [ "$NO_STD" != "1" ]; then
         cargo "+${RUST}" "${BUILD_CMD}" -vv $opt --target "${TARGET}" \
@@ -89,7 +98,6 @@ mips-unknown-linux-gnu \
 mips-unknown-linux-musl \
 mips64-unknown-linux-gnuabi64 \
 mips64el-unknown-linux-gnuabi64 \
-mipsel-unknown-linux-gnu \
 mipsel-unknown-linux-gnu \
 mipsel-unknown-linux-musl \
 powerpc-unknown-linux-gnu \
@@ -176,7 +184,9 @@ case "${OS}" in
 esac
 
 for TARGET in $TARGETS; do
-    test_target build "$TARGET"
+    if echo "$TARGET"|grep -q "$FILTER";then
+        test_target build "$TARGET"
+    fi
 done
 
 # FIXME: https://github.com/rust-lang/rust/issues/58564
@@ -204,10 +214,13 @@ i686-unknown-netbsd \
 i686-unknown-openbsd \
 mips-unknown-linux-uclibc \
 mipsel-unknown-linux-uclibc \
+mips64-unknown-linux-muslabi64 \
+mips64el-unknown-linux-muslabi64 \
 nvptx64-nvidia-cuda \
 powerpc-unknown-linux-gnuspe \
 powerpc-unknown-netbsd \
 powerpc64-unknown-freebsd \
+riscv64gc-unknown-linux-gnu \
 riscv32imac-unknown-none-elf \
 riscv32imc-unknown-none-elf \
 sparc64-unknown-netbsd \
@@ -224,7 +237,7 @@ x86_64-unknown-haiku \
 x86_64-unknown-hermit \
 x86_64-unknown-l4re-uclibc \
 x86_64-unknown-openbsd \
-armv7-wrs-vxworks \
+armv7-wrs-vxworks-eabihf \
 aarch64-wrs-vxworks \
 i686-wrs-vxworks \
 x86_64-wrs-vxworks \
@@ -235,7 +248,9 @@ powerpc64-wrs-vxworks \
 
 if [ "${RUST}" = "nightly" ] && [ "${OS}" = "linux" ]; then
     for TARGET in $RUST_LINUX_NO_CORE_TARGETS; do
-        test_target xbuild "$TARGET" 1
+        if echo "$TARGET"|grep -q "$FILTER";then
+            test_target xbuild "$TARGET" 1
+        fi
     done
 
     # Nintendo switch

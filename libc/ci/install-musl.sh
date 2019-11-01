@@ -5,7 +5,7 @@
 
 set -ex
 
-MUSL_VERSION=1.1.22
+MUSL_VERSION=1.1.24
 MUSL="musl-${MUSL_VERSION}"
 
 # Download, configure, build, and install musl:
@@ -44,6 +44,20 @@ case ${1} in
         musl_arch=x86_64
         kernel_arch=x86_64
         ./configure --prefix="/musl-${musl_arch}"
+        make install -j4
+        ;;
+    mips64)
+        musl_arch=mips64
+        kernel_arch=mips
+        CC=mips64-linux-gnuabi64-gcc CFLAGS="-march=mips64r2 -mabi=64" \
+          ./configure --prefix="/musl-${musl_arch}" --enable-wrapper=yes
+        make install -j4
+        ;;
+    mips64el)
+        musl_arch=mips64el
+        kernel_arch=mips
+        CC=mips64el-linux-gnuabi64-gcc CFLAGS="-march=mips64r2 -mabi=64" \
+          ./configure --prefix="/musl-${musl_arch}" --enable-wrapper=yes
         make install -j4
         ;;
     *)

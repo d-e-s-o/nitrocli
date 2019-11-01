@@ -19,13 +19,13 @@ if ! rustc --version | grep -E "nightly" ; then
 fi
 
 rustup component add rust-src
-cargo +nightly install cargo-xbuild -Z install-upgrade
+cargo +nightly install cargo-xbuild
 
 # List all targets that do currently build successfully:
 # shellcheck disable=SC1003
 grep '[\d|\w|-]* \\' ci/build.sh > targets
 sed -i.bak 's/ \\//g' targets
-grep '^[_a-zA-Z0-9-]*$' targets > tmp && mv tmp targets
+grep '^[_a-zA-Z0-9-]*$' targets | sort > tmp && mv tmp targets
 
 # Create a markdown list of supported platforms in $PLATFORM_SUPPORT
 rm $PLATFORM_SUPPORT || true
