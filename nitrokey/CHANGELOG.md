@@ -1,3 +1,6 @@
+# v0.3.5 (2019-12-16)
+- Update the nitrokey-sys dependency version specification to ~3.4.
+
 # v0.3.4 (2019-01-20)
 - Fix authentication methods that assumed that `char` is signed.
 

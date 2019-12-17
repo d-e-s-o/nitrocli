@@ -4,7 +4,7 @@ packages:
   - hidapi
   - gcc
 sources:
-  - https://git.sr.ht/~ireas/nitrokey-rs
+  - https://git.ireas.org/nitrokey-rs
 tasks:
   - build: |
       cd nitrokey-rs
@@ -15,7 +15,3 @@ tasks:
   - format: |
       cd nitrokey-rs
       cargo fmt -- --check
-triggers:
-  - action: email
-    condition: failure
-    to: nitrokey-rs-dev <nitrokey-rs-dev@ireas.org>

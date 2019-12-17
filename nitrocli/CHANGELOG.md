@@ -8,6 +8,7 @@ Unreleased
   - Moved its output into `status` command
 - Removed previously deprecated `--ascii` option from `otp set` command
 - Fixed wrong hexadecimal conversion used in `otp set` command
+- Bumped `nitrokey` dependency to `0.3.5`
 - Bumped `libc` dependency to `0.2.66`
 - Bumped `cc` dependency to `1.0.48`
 
