@@ -29,7 +29,7 @@ readme = "README.md"
 categories = ["command-line-utilities", "authentication", "cryptography", "hardware-support"]
 keywords = ["nitrokey", "nitrokey-storage", "nitrokey-pro", "cli", "usb"]
 description = """
-A command line tool for interacting with the Nitrokey Storage device.
+A command line tool for interacting with Nitrokey devices.
 """
 exclude = ["ci/*", "rustfmt.toml"]
 
