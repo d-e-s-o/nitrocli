@@ -122,6 +122,9 @@ Known Problems
 - `nitrocli` cannot connect to a Nitrokey device that is currently being
   accessed by `nitrokey-app` ([upstream issue][libnitrokey#32]). To
   prevent this problem, quit `nitrokey-app` before using `nitrocli`.
+- Applications using the Nitrokey device (such as `nitrocli` or
+  `nitrokey-app`) cannot easily share access with an instance of GnuPG
+  running shortly afterwards ([upstream issue][libnitrokey#137]).
 
 
 Contributing
@@ -161,3 +164,4 @@ the full text of the license.
 [nitrocli-ubuntu]: https://packages.ubuntu.com/disco/nitrocli
 [gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
 [libnitrokey#32]: https://github.com/Nitrokey/libnitrokey/issues/32
+[libnitrokey#137]: https://github.com/Nitrokey/libnitrokey/issues/137

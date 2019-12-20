@@ -1,5 +1,6 @@
 Unreleased
 ----------
+- Added note about interaction with GnuPG to `README` file
 - Bumped `nitrokey` dependency to `0.4.0-alpha.3`
   - Bumped `nitrokey-sys` dependency to `3.5.0`
   - Added `lazy_static` dependency in version `1.2.0`
