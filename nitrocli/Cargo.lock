@@ -54,7 +54,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lazy_static"
-version = "1.2.0"
+version = "1.4.0"
 
 [[package]]
 name = "libc"
@@ -86,7 +86,7 @@ dependencies = [
 name = "nitrokey"
 version = "0.4.0-alpha.3"
 dependencies = [
- "lazy_static 1.2.0",
+ "lazy_static 1.4.0",
  "libc 0.2.66",
  "nitrokey-sys 3.5.0",
  "rand_core 0.3.0",
@@ -190,7 +190,7 @@ name = "thread_local"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "lazy_static 1.2.0",
+ "lazy_static 1.4.0",
 ]
 
 [[package]]
