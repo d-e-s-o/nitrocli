@@ -1,7 +1,7 @@
 // commands.rs
 
 // *************************************************************************
-// * Copyright (C) 2018-2019 Daniel Mueller (deso@posteo.net)              *
+// * Copyright (C) 2018-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -949,11 +949,7 @@ pub fn pws_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
       .get_slot_status()
       .map_err(|err| get_error("Could not read PWS slot status", err))?;
     println!(ctx, "slot\tname")?;
-    for (i, &value) in slots
-      .into_iter()
-      .enumerate()
-      .filter(|(_, &value)| all || value)
-    {
+    for (i, &value) in slots.iter().enumerate().filter(|(_, &value)| all || value) {
       print_pws_slot(ctx, &pws, i, value)?;
     }
     Ok(())

@@ -1,7 +1,7 @@
 // pinentry.rs
 
 // *************************************************************************
-// * Copyright (C) 2017-2019 Daniel Mueller (deso@posteo.net)              *
+// * Copyright (C) 2017-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -357,7 +357,7 @@ mod tests {
     let response = "ERR ".to_string() + error + "\n";
     let expected = error;
 
-    let error = parse_pinentry_pin(response.to_string());
+    let error = parse_pinentry_pin(response);
 
     if let Error::Error(ref e) = error.err().unwrap() {
       assert_eq!(e, &expected);

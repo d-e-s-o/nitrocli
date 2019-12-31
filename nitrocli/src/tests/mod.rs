@@ -1,7 +1,7 @@
 // mod.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -139,10 +139,10 @@ impl Nitrocli {
     F: FnOnce(&mut crate::RunCtx<'_>, Vec<String>) -> R,
   {
     let args = ["nitrocli"]
-      .into_iter()
+      .iter()
       .cloned()
       .chain(self.model.map(Self::model_to_arg))
-      .chain(args.into_iter().cloned())
+      .chain(args.iter().cloned())
       .map(ToOwned::to_owned)
       .collect();
 
