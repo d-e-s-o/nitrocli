@@ -1,9 +1,11 @@
 Unreleased
 ----------
 - Added note about interaction with GnuPG to `README` file
-- Bumped `nitrokey` dependency to `0.4.0-alpha.3`
+- Bumped `nitrokey` dependency to `0.4.0`
   - Bumped `nitrokey-sys` dependency to `3.5.0`
   - Added `lazy_static` dependency in version `1.4.0`
+  - Added `cfg-if` dependency in version `0.1.10`
+  - Added `getrandom` dependency in version `0.1.13`
 
 
 0.3.0

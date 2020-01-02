@@ -1,7 +1,7 @@
 # Cargo.toml
 
 #/***************************************************************************
-# *   Copyright (C) 2017-2019 Daniel Mueller (deso@posteo.net)              *
+# *   Copyright (C) 2017-2020 Daniel Mueller (deso@posteo.net)              *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU General Public License as published by  *
@@ -53,7 +53,7 @@ path = "../base32"
 version = "0.2"
 
 [dependencies.nitrokey]
-version = "0.4.0-alpha.3"
+version = "0.4.0"
 
 [dev-dependencies.nitrokey-test]
 version = "0.3.1"
@@ -68,9 +68,10 @@ version = "1"
 argparse = { path = "../argparse" }
 base32 = { path = "../base32" }
 cc = { path = "../cc" }
+cfg-if = { path = "../cfg-if" }
+getrandom = { path = "../getrandom" }
 libc = { path = "../libc" }
 nitrokey = { path = "../nitrokey" }
 nitrokey-sys = { path = "../nitrokey-sys" }
 lazy_static = { path = "../lazy-static" }
 rand_core = { path = "../rand/rand_core" }
-rand_os = { path = "../rand/rand_os" }

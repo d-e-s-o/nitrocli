@@ -1,6 +1,6 @@
 <!---
 Copyright (C) 2019 Robin Krahl <robin.krahl@ireas.org>
-SPDX-License-Identifier: MIT
+SPDX-License-Identifier: CC0-1.0
 -->
 
 # nitrokey-rs
@@ -55,13 +55,17 @@ Note that the tests assume that the device’s passwords are the factory default
 (admin PIN `12345678`, user PIN `123456`, update password `12345678`) and that
 an AES key has been built.  Some tests will overwrite the data stored on the
 Nitrokey device or perform a factory reset.  Never execute the tests if you
-unless yout want to destroy all data on all connected Nitrokey devices!
+don’t want to destroy all data on any connected Nitrokey device!
 
 ## Acknowledgments
 
-Thanks to Nitrokey UG for providing a Nitrokey Storage to support the
+Thanks to Nitrokey UG for providing two Nitrokey devices to support the
 development of this crate.  Thanks to Daniel Mueller for contributions to
 `nitrokey-rs` and for the `nitrokey-test` crate.
+
+## Minimum Supported Rust Version
+
+This crate supports Rust 1.34.2 or later.
 
 ## Contact
 
@@ -70,16 +74,19 @@ mail to [nitrokey-rs-dev@ireas.org][].
 
 ## License
 
-This project is licensed under the [MIT License][].  `libnitrokey` is licensed
-under the [LGPL-3.0][].
+This project is licensed under the [MIT][] license.  The documentation and
+configuration files contained in this repository are licensed under the
+[Creative Commons Zero][CC0] license.  You can find a copy of the license texts
+in the `LICENSES` directory.  `libnitrokey` is licensed under the [LGPL-3.0][].
 
-`nitrokey-rs` complies with [version 2.0 of the REUSE practices][reuse].
+`nitrokey-rs` complies with [version 3.0 of the REUSE specification][reuse].
 
 [Documentation]: https://docs.rs/nitrokey
 [Nitrokey udev rules]: https://www.nitrokey.com/documentation/frequently-asked-questions-faq#openpgp-card-not-available
 [`libnitrokey`]: https://github.com/nitrokey/libnitrokey
 [`nitrokey-test`]: https://github.com/d-e-s-o/nitrokey-test
 [nitrokey-rs-dev@ireas.org]: mailto:nitrokey-rs-dev@ireas.org
-[MIT license]: https://opensource.org/licenses/MIT
+[MIT]: https://opensource.org/licenses/MIT
+[CC0]: https://creativecommons.org/publicdomain/zero/1.0/
 [LGPL-3.0]: https://opensource.org/licenses/lgpl-3.0.html
-[reuse]: https://reuse.software/practices/2.0/
+[reuse]: https://reuse.software/practices/3.0/

@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#[cfg(feature="serde1")] use serde::{Serialize, Deserialize};
 use rand_core::impls::fill_bytes_via_next;
 use rand_core::le::read_u64_into;
 use rand_core::{SeedableRng, RngCore, Error};
@@ -19,6 +20,7 @@ use rand_core::{SeedableRng, RngCore, Error};
 /// reference source code](http://xoshiro.di.unimi.it/xoshiro256starstar.c) by
 /// David Blackman and Sebastiano Vigna.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature="serde1", derive(Serialize, Deserialize))]
 pub struct Xoshiro256StarStar {
     s: [u64; 4],
 }
@@ -30,10 +32,7 @@ impl Xoshiro256StarStar {
     /// parallel computations.
     ///
     /// ```
-    /// # extern crate rand;
-    /// # extern crate rand_xoshiro;
-    /// # fn main() {
-    /// use rand::SeedableRng;
+    /// use rand_xoshiro::rand_core::SeedableRng;
     /// use rand_xoshiro::Xoshiro256StarStar;
     ///
     /// let rng1 = Xoshiro256StarStar::seed_from_u64(0);
@@ -41,7 +40,6 @@ impl Xoshiro256StarStar {
     /// rng2.jump();
     /// let mut rng3 = rng2.clone();
     /// rng3.jump();
-    /// # }
     /// ```
     pub fn jump(&mut self) {
         impl_jump!(u64, self, [

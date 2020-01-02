@@ -1,9 +1,9 @@
 <!---
-Copyright (C) 2019 Robin Krahl <robin.krahl@ireas.org>
-SPDX-License-Identifier: MIT
+Copyright (C) 2019-2020 Robin Krahl <robin.krahl@ireas.org>
+SPDX-License-Identifier: CC0-1.0
 -->
 
-# Unreleased
+# v0.4.0 (2020-01-02)
 - Remove the `test-pro` and `test-storage` features.
 - Implement `Display` for `Version`.
 - Introduce `DEFAULT_ADMIN_PIN` and `DEFAULT_USER_PIN` constants.
@@ -38,9 +38,12 @@ SPDX-License-Identifier: MIT
   - Implement `DerefMut` for `User<T>` and `Admin<T>`.
   - Add `device_mut` method to `DeviceWrapper`.
   - Require a mutable `Device` reference if a method changes the device state.
-- Update the `nitrokey-sys` dependency to version 3.5.0.
-- Update the `nitrokey-test` dependency to version 0.3 and add the
-  `nitrokey-test-state` dependency in version 0.1.0.
+- Update dependencies:
+  - `nitrokey-sys` to 3.5
+  - `nitrokey-test` to 0.3
+  - `rand_core` to 0.5
+  - `rand_os` to 0.2
+- Add `nitrokey-test-state` dependency in version 0.1.
 - Refactor connection management:
   - Add `ConcurrentAccessError` and `PoisonError` `Error` variants.
   - Add the `Manager` struct that manages connections to Nitrokey devices.
@@ -48,6 +51,10 @@ SPDX-License-Identifier: MIT
   - Add the `into_manager` function to the `Device` trait.
   - Add the `force_take` function that ignores a `PoisonError` when accessing
     the manager instance.
+- Internally refactor the `device` module into submodules.
+
+# v0.3.5 (2019-12-16)
+- Update the nitrokey-sys dependency version specification to ~3.4.
 
 # v0.3.4 (2019-01-20)
 - Fix authentication methods that assumed that `char` is signed.

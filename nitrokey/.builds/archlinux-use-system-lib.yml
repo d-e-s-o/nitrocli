@@ -1,5 +1,5 @@
 # Copyright (C) 2019 Robin Krahl <robin.krahl@ireas.org>
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: CC0-1.0
 image: archlinux
 packages:
   - rust
@@ -9,9 +9,17 @@ environment:
 sources:
   - https://git.ireas.org/nitrokey-rs
 tasks:
+  - version: |
+      rustc -V
   - build: |
       cd nitrokey-rs
       cargo build --release
   - test: |
       cd nitrokey-rs
       cargo test
+  - format: |
+      cd nitrokey-rs
+      cargo fmt -- --check
+  - clippy: |
+      cd nitrokey-rs
+      cargo clippy -- -D warnings

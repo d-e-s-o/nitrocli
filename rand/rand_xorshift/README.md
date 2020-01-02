@@ -6,7 +6,7 @@
 [![Book](https://img.shields.io/badge/book-master-yellow.svg)](https://rust-random.github.io/book/)
 [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://rust-random.github.io/rand/rand_xorshift)
 [![API](https://docs.rs/rand_xorshift/badge.svg)](https://docs.rs/rand_xorshift)
-[![Minimum rustc version](https://img.shields.io/badge/rustc-1.22+-lightgray.svg)](https://github.com/rust-random/rand#rust-version-requirements)
+[![Minimum rustc version](https://img.shields.io/badge/rustc-1.32+-lightgray.svg)](https://github.com/rust-random/rand#rust-version-requirements)
 
 Implements the Xorshift random number generator.
 
@@ -22,7 +22,7 @@ Links:
 
 -   [API documentation (master)](https://rust-random.github.io/rand/rand_xorshift)
 -   [API documentation (docs.rs)](https://docs.rs/rand_xorshift)
--   [Changelog](CHANGELOG.md)
+-   [Changelog](https://github.com/rust-random/rand/blob/master/rand_xorshift/CHANGELOG.md)
 
 [rand]: https://crates.io/crates/rand
 

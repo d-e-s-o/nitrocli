@@ -11,9 +11,10 @@
 
 use core::{fmt, slice};
 use core::num::Wrapping as w;
+#[cfg(feature="serde1")] use serde::{Serialize, Deserialize};
 use rand_core::{RngCore, SeedableRng, Error, le};
 use rand_core::block::{BlockRngCore, BlockRng64};
-use isaac_array::IsaacArray;
+use crate::isaac_array::IsaacArray;
 
 #[allow(non_camel_case_types)]
 type w64 = w<u64>;
@@ -40,8 +41,8 @@ const RAND_SIZE: usize = 1 << RAND_SIZE_LEN;
 /// In spite of being designed with cryptographic security in mind, ISAAC hasn't
 /// been stringently cryptanalyzed and thus cryptographers do not not
 /// consensually trust it to be secure. When looking for a secure RNG, prefer
-/// [`Hc128Rng`] instead, which, like ISAAC, is an array-based RNG and one of
-/// the stream-ciphers selected the by eSTREAM contest.
+/// `Hc128Rng` from the [`rand_hc`] crate instead, which, like ISAAC, is an
+/// array-based RNG and one of the stream-ciphers selected the by eSTREAM
 ///
 /// ## Overview of the ISAAC-64 algorithm:
 /// (in pseudo-code)
@@ -75,29 +76,30 @@ const RAND_SIZE: usize = 1 << RAND_SIZE_LEN;
 /// [^1]: Bob Jenkins, [*ISAAC and RC4*](
 ///       http://burtleburtle.net/bob/rand/isaac.html)
 ///
-/// [`IsaacRng`]: ../isaac/struct.IsaacRng.html
-/// [`Hc128Rng`]: ../../rand_hc/struct.Hc128Rng.html
-/// [`BlockRng64`]: ../../rand_core/block/struct.BlockRng64.html
-/// [`RngCore`]: ../../rand_core/trait.RngCore.html
+/// [`IsaacRng`]: crate::isaac::IsaacRng
+/// [`rand_hc`]: https://docs.rs/rand_hc
+/// [`BlockRng64`]: rand_core::block::BlockRng64
 #[derive(Clone, Debug)]
 #[cfg_attr(feature="serde1", derive(Serialize, Deserialize))]
 pub struct Isaac64Rng(BlockRng64<Isaac64Core>);
 
 impl RngCore for Isaac64Rng {
-    #[inline(always)]
+    #[inline]
     fn next_u32(&mut self) -> u32 {
         self.0.next_u32()
     }
 
-    #[inline(always)]
+    #[inline]
     fn next_u64(&mut self) -> u64 {
         self.0.next_u64()
     }
 
+    #[inline]
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         self.0.fill_bytes(dest)
     }
 
+    #[inline]
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
         self.0.try_fill_bytes(dest)
     }
@@ -106,6 +108,7 @@ impl RngCore for Isaac64Rng {
 impl SeedableRng for Isaac64Rng {
     type Seed = <Isaac64Core as SeedableRng>::Seed;
 
+    #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
         Isaac64Rng(BlockRng64::<Isaac64Core>::from_seed(seed))
     }
@@ -113,22 +116,14 @@ impl SeedableRng for Isaac64Rng {
     /// Create an ISAAC random number generator using an `u64` as seed.
     /// If `seed == 0` this will produce the same stream of random numbers as
     /// the reference implementation when used unseeded.
+    #[inline]
     fn seed_from_u64(seed: u64) -> Self {
         Isaac64Rng(BlockRng64::<Isaac64Core>::seed_from_u64(seed))
     }
 
+    #[inline]
     fn from_rng<S: RngCore>(rng: S) -> Result<Self, Error> {
         BlockRng64::<Isaac64Core>::from_rng(rng).map(|rng| Isaac64Rng(rng))
-    }
-}
-
-impl Isaac64Rng {
-    /// Create an ISAAC-64 random number generator using an `u64` as seed.
-    /// If `seed == 0` this will produce the same stream of random numbers as
-    /// the reference implementation when used unseeded.
-    #[deprecated(since="0.6.0", note="use SeedableRng::seed_from_u64 instead")]
-    pub fn new_from_u64(seed: u64) -> Self {
-        Self::seed_from_u64(seed)
     }
 }
 
@@ -155,10 +150,10 @@ impl BlockRngCore for Isaac64Core {
     type Results = IsaacArray<Self::Item>;
 
     /// Refills the output buffer, `results`. See also the pseudocode desciption
-    /// of the algorithm in the [`Isaac64Rng`] documentation.
+    /// of the algorithm in the `Isaac64Rng` documentation.
     ///
     /// Optimisations used (similar to the reference implementation):
-    /// 
+    ///
     /// - The loop is unrolled 4 times, once for every constant of mix().
     /// - The contents of the main loop are moved to a function `rngstep`, to
     ///   reduce code duplication.
@@ -173,8 +168,6 @@ impl BlockRngCore for Isaac64Core {
     ///   from `results` in reverse. We read them in the normal direction, to
     ///   make `fill_bytes` a memcopy. To maintain compatibility we fill in
     ///   reverse.
-    /// 
-    /// [`Isaac64Rng`]: struct.Isaac64Rng.html
     fn generate(&mut self, results: &mut IsaacArray<Self::Item>) {
         self.c += w(1);
         // abbreviations
@@ -274,14 +267,6 @@ impl Isaac64Core {
 
         Self { mem, a: w(0), b: w(0), c: w(0) }
     }
-
-    /// Create an ISAAC-64 random number generator using an `u64` as seed.
-    /// If `seed == 0` this will produce the same stream of random numbers as
-    /// the reference implementation when used unseeded.
-    #[deprecated(since="0.6.0", note="use SeedableRng::seed_from_u64 instead")]
-    pub fn new_from_u64(seed: u64) -> Self {
-        Self::seed_from_u64(seed)
-    }
 }
 
 impl SeedableRng for Isaac64Core {
@@ -297,7 +282,7 @@ impl SeedableRng for Isaac64Core {
         }
         Self::init(seed_extended, 2)
     }
-    
+
     fn seed_from_u64(seed: u64) -> Self {
         let mut key = [w(0); RAND_SIZE];
         key[0] = w(seed);

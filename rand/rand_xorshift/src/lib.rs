@@ -17,14 +17,10 @@
 
 #![no_std]
 
-pub extern crate rand_core;
-
-#[cfg(feature="serde1")] extern crate serde;
-#[cfg(feature="serde1")] #[macro_use] extern crate serde_derive;
-
 use core::num::Wrapping as w;
-use core::{fmt, slice};
+use core::fmt;
 use rand_core::{RngCore, SeedableRng, Error, impls, le};
+#[cfg(feature="serde1")] use serde::{Serialize, Deserialize};
 
 /// An Xorshift random number generator.
 ///
@@ -75,7 +71,8 @@ impl RngCore for XorShiftRng {
     }
 
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
-        Ok(self.fill_bytes(dest))
+        self.fill_bytes(dest);
+        Ok(())
     }
 }
 
@@ -102,22 +99,19 @@ impl SeedableRng for XorShiftRng {
     }
 
     fn from_rng<R: RngCore>(mut rng: R) -> Result<Self, Error> {
-        let mut seed_u32 = [0u32; 4];
+        let mut b = [0u8; 16];
         loop {
-            unsafe {
-                let ptr = seed_u32.as_mut_ptr() as *mut u8;
-
-                let slice = slice::from_raw_parts_mut(ptr, 4 * 4);
-                rng.try_fill_bytes(slice)?;
+            rng.try_fill_bytes(&mut b[..])?;
+            if !b.iter().all(|&x| x == 0) {
+                break;
             }
-            if !seed_u32.iter().all(|&x| x == 0) { break; }
         }
 
         Ok(XorShiftRng {
-            x: w(seed_u32[0]),
-            y: w(seed_u32[1]),
-            z: w(seed_u32[2]),
-            w: w(seed_u32[3]),
+            x: w(u32::from_le_bytes([b[0], b[1], b[2], b[3]])),
+            y: w(u32::from_le_bytes([b[4], b[5], b[6], b[7]])),
+            z: w(u32::from_le_bytes([b[8], b[9], b[10], b[11]])),
+            w: w(u32::from_le_bytes([b[12], b[13], b[14], b[15]])),
         })
     }
 }

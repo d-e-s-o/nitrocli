@@ -6,7 +6,7 @@
 [[![Book](https://img.shields.io/badge/book-master-yellow.svg)](https://rust-random.github.io/book/)
 [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://rust-random.github.io/rand/rand_pcg)
 [![API](https://docs.rs/rand_pcg/badge.svg)](https://docs.rs/rand_pcg)
-[![Minimum rustc version](https://img.shields.io/badge/rustc-1.22+-lightgray.svg)](https://github.com/rust-random/rand#rust-version-requirements)
+[![Minimum rustc version](https://img.shields.io/badge/rustc-1.32+-lightgray.svg)](https://github.com/rust-random/rand#rust-version-requirements)
 
 Implements a selection of PCG random number generators.
 
@@ -24,23 +24,15 @@ Links:
 
 -   [API documentation (master)](https://rust-random.github.io/rand/rand_pcg)
 -   [API documentation (docs.rs)](https://docs.rs/rand_pcg)
--   [Changelog](CHANGELOG.md)
+-   [Changelog](https://github.com/rust-random/rand/blob/master/rand_pcg/CHANGELOG.md)
 
 
 ## Crate Features
 
-`rand_pcg` is `no_std` compatible. It does not require any functionality
-outside of the `core` lib, thus there are no features to configure.
+`rand_pcg` is `no_std` compatible by default.
 
 The `serde1` feature includes implementations of `Serialize` and `Deserialize`
-for the included RNGs. NOTE: to use binary serialisation with any of the 64-bit
-output (128-bit internal) RNGs, you must add the following dependency, since the
-`i128` feature is not current enabled by default (this should be fixed soon):
-
-```
-bincode = { version = "1", features = ["i128"] }
-```
-
+for the included RNGs.
 
 ## License
 

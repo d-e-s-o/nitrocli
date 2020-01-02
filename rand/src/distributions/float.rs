@@ -9,9 +9,9 @@
 //! Basic floating-point number distributions
 
 use core::mem;
-use Rng;
-use distributions::{Distribution, Standard};
-use distributions::utils::FloatSIMDUtils;
+use crate::Rng;
+use crate::distributions::{Distribution, Standard};
+use crate::distributions::utils::FloatSIMDUtils;
 #[cfg(feature="simd_support")]
 use packed_simd::*;
 
@@ -36,9 +36,9 @@ use packed_simd::*;
 /// println!("f32 from (0, 1): {}", val);
 /// ```
 ///
-/// [`Standard`]: struct.Standard.html
-/// [`Open01`]: struct.Open01.html
-/// [`Uniform`]: uniform/struct.Uniform.html
+/// [`Standard`]: crate::distributions::Standard
+/// [`Open01`]: crate::distributions::Open01
+/// [`Uniform`]: crate::distributions::uniform::Uniform
 #[derive(Clone, Copy, Debug)]
 pub struct OpenClosed01;
 
@@ -62,14 +62,16 @@ pub struct OpenClosed01;
 /// println!("f32 from (0, 1): {}", val);
 /// ```
 ///
-/// [`Standard`]: struct.Standard.html
-/// [`OpenClosed01`]: struct.OpenClosed01.html
-/// [`Uniform`]: uniform/struct.Uniform.html
+/// [`Standard`]: crate::distributions::Standard
+/// [`OpenClosed01`]: crate::distributions::OpenClosed01
+/// [`Uniform`]: crate::distributions::uniform::Uniform
 #[derive(Clone, Copy, Debug)]
 pub struct Open01;
 
 
-pub(crate) trait IntoFloat {
+// This trait is needed by both this lib and rand_distr hence is a hidden export
+#[doc(hidden)]
+pub trait IntoFloat {
     type F;
 
     /// Helper method to combine the fraction and a contant exponent into a
@@ -93,9 +95,7 @@ macro_rules! float_impls {
                 // The exponent is encoded using an offset-binary representation
                 let exponent_bits: $u_scalar =
                     (($exponent_bias + exponent) as $u_scalar) << $fraction_bits;
-                // TODO: use from_bits when min compiler > 1.25 (see #545)
-                // $ty::from_bits(self | exponent_bits)
-                unsafe{ mem::transmute(self | exponent_bits) }
+                $ty::from_bits(self | exponent_bits)
             }
         }
 
@@ -168,9 +168,9 @@ float_impls! { f64x8, u64x8, f64, u64, 52, 1023 }
 
 #[cfg(test)]
 mod tests {
-    use Rng;
-    use distributions::{Open01, OpenClosed01};
-    use rngs::mock::StepRng;
+    use crate::Rng;
+    use crate::distributions::{Open01, OpenClosed01};
+    use crate::rngs::mock::StepRng;
     #[cfg(feature="simd_support")]
     use packed_simd::*;
 

@@ -44,12 +44,12 @@ where
     unwrap_ok!(device.authenticate_admin(DEFAULT_ADMIN_PIN))
 }
 
-fn configure_hotp(admin: &mut ConfigureOtp, counter: u8) {
+fn configure_hotp(admin: &mut dyn ConfigureOtp, counter: u8) {
     let slot_data = OtpSlotData::new(1, "test-hotp", HOTP_SECRET, OtpMode::SixDigits);
     assert_ok!((), admin.write_hotp_slot(slot_data, counter.into()));
 }
 
-fn check_hotp_codes(device: &mut GenerateOtp, offset: u8) {
+fn check_hotp_codes(device: &mut dyn GenerateOtp, offset: u8) {
     HOTP_CODES.iter().enumerate().for_each(|(i, code)| {
         if i >= offset as usize {
             assert_ok!(code.to_string(), device.get_hotp_code(1));
@@ -146,13 +146,13 @@ fn hotp_erase(device: DeviceWrapper) {
     assert_ok!("test2".to_string(), device.get_hotp_slot_name(2));
 }
 
-fn configure_totp(admin: &mut ConfigureOtp, factor: u64) {
+fn configure_totp(admin: &mut dyn ConfigureOtp, factor: u64) {
     let slot_data = OtpSlotData::new(1, "test-totp", TOTP_SECRET, OtpMode::EightDigits);
     let time_window = 30u64.checked_mul(factor).unwrap();
     assert_ok!((), admin.write_totp_slot(slot_data, time_window as u16));
 }
 
-fn check_totp_codes(device: &mut GenerateOtp, factor: u64, timestamp_size: TotpTimestampSize) {
+fn check_totp_codes(device: &mut dyn GenerateOtp, factor: u64, timestamp_size: TotpTimestampSize) {
     for (base_time, codes) in TOTP_CODES {
         let time = base_time.checked_mul(factor).unwrap();
         let is_u64 = time > u32::max_value() as u64;

@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use byteorder::{ByteOrder, LittleEndian};
+#[cfg(feature="serde1")] use serde::{Serialize, Deserialize};
 use rand_core;
 use rand_core::le::read_u32_into;
 use rand_core::impls::{fill_bytes_via_next, next_u64_via_u32};
@@ -23,6 +23,7 @@ use rand_core::{RngCore, SeedableRng};
 /// David Blackman and Sebastiano Vigna.
 #[allow(missing_copy_implementations)]
 #[derive(Debug, Clone)]
+#[cfg_attr(feature="serde1", derive(Serialize, Deserialize))]
 pub struct Xoroshiro64Star {
     s0: u32,
     s1: u32,
@@ -71,9 +72,7 @@ impl SeedableRng for Xoroshiro64Star {
 
     /// Seed a `Xoroshiro64Star` from a `u64` using `SplitMix64`.
     fn seed_from_u64(seed: u64) -> Xoroshiro64Star {
-        let mut s = [0; 8];
-        LittleEndian::write_u64(&mut s, seed);
-        Xoroshiro64Star::from_seed(s)
+        from_splitmix!(seed)
     }
 }
 
@@ -93,5 +92,11 @@ mod tests {
         for &e in &expected {
             assert_eq!(rng.next_u32(), e);
         }
+    }
+
+    #[test]
+    fn zero_seed() {
+        let mut rng = Xoroshiro64Star::seed_from_u64(0);
+        assert_ne!(rng.next_u64(), 0);
     }
 }

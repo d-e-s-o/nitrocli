@@ -1,6 +1,7 @@
 // Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
 // SPDX-License-Identifier: MIT
 
+use std::convert::TryFrom as _;
 use std::marker;
 use std::ops;
 use std::os::raw::c_char;

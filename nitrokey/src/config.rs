@@ -1,6 +1,8 @@
 // Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
 // SPDX-License-Identifier: MIT
 
+use std::convert;
+
 use crate::error::{Error, LibraryError};
 
 /// The configuration for a Nitrokey.
@@ -68,8 +70,10 @@ impl Config {
     }
 }
 
-impl RawConfig {
-    pub fn try_from(config: Config) -> Result<RawConfig, Error> {
+impl convert::TryFrom<Config> for RawConfig {
+    type Error = Error;
+
+    fn try_from(config: Config) -> Result<RawConfig, Error> {
         Ok(RawConfig {
             numlock: option_to_config_otp_slot(config.numlock)?,
             capslock: option_to_config_otp_slot(config.capslock)?,

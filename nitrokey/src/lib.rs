@@ -243,14 +243,12 @@ impl Manager {
     ///
     /// fn do_something(device: DeviceWrapper) {}
     ///
-    /// # fn main() -> Result<(), nitrokey::Error> {
     /// let mut manager = nitrokey::take()?;
     /// match manager.connect() {
     ///     Ok(device) => do_something(device),
     ///     Err(err) => println!("Could not connect to a Nitrokey: {}", err),
     /// }
-    /// #     Ok(())
-    /// # }
+    /// # Ok::<(), nitrokey::Error>(())
     /// ```
     ///
     /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
@@ -276,13 +274,11 @@ impl Manager {
     ///
     /// fn do_something(device: DeviceWrapper) {}
     ///
-    /// # fn main() -> Result<(), nitrokey::Error> {
     /// match nitrokey::take()?.connect_model(Model::Pro) {
     ///     Ok(device) => do_something(device),
     ///     Err(err) => println!("Could not connect to a Nitrokey Pro: {}", err),
     /// }
-    /// #     Ok(())
-    /// # }
+    /// # Ok::<(), nitrokey::Error>(())
     /// ```
     ///
     /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
@@ -307,13 +303,11 @@ impl Manager {
     ///
     /// fn use_pro(device: Pro) {}
     ///
-    /// # fn main() -> Result<(), nitrokey::Error> {
     /// match nitrokey::take()?.connect_pro() {
     ///     Ok(device) => use_pro(device),
     ///     Err(err) => println!("Could not connect to the Nitrokey Pro: {}", err),
     /// }
-    /// #     Ok(())
-    /// # }
+    /// # Ok::<(), nitrokey::Error>(())
     /// ```
     ///
     /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
@@ -338,13 +332,11 @@ impl Manager {
     ///
     /// fn use_storage(device: Storage) {}
     ///
-    /// # fn main() -> Result<(), nitrokey::Error> {
     /// match nitrokey::take()?.connect_storage() {
     ///     Ok(device) => use_storage(device),
     ///     Err(err) => println!("Could not connect to the Nitrokey Storage: {}", err),
     /// }
-    /// #     Ok(())
-    /// # }
+    /// # Ok::<(), nitrokey::Error>(())
     /// ```
     ///
     /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
@@ -453,11 +445,9 @@ pub fn set_log_level(level: LogLevel) {
 /// # Example
 ///
 /// ```
-/// # fn main() -> Result<(), nitrokey::Error> {
 /// let version = nitrokey::get_library_version()?;
 /// println!("Using libnitrokey {}", version.git);
-/// #    Ok(())
-/// # }
+/// # Ok::<(), nitrokey::Error>(())
 /// ```
 ///
 /// [`Utf8Error`]: enum.Error.html#variant.Utf8Error

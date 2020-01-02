@@ -6,13 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use byteorder::{ByteOrder, LittleEndian};
+#[cfg(feature="serde1")] use serde::{Serialize, Deserialize};
 use rand_core;
 use rand_core::le::read_u32_into;
 use rand_core::impls::{fill_bytes_via_next, next_u64_via_u32};
 use rand_core::{RngCore, SeedableRng};
 
-/// A Xoroshiro64** random number generator.
+/// A xoroshiro64** random number generator.
 ///
 /// The xoshiro64** algorithm is not suitable for cryptographic purposes, but
 /// is very fast and has excellent statistical properties.
@@ -22,6 +22,7 @@ use rand_core::{RngCore, SeedableRng};
 /// David Blackman and Sebastiano Vigna.
 #[allow(missing_copy_implementations)]
 #[derive(Debug, Clone)]
+#[cfg_attr(feature="serde1", derive(Serialize, Deserialize))]
 pub struct Xoroshiro64StarStar {
     s0: u32,
     s1: u32,
@@ -68,11 +69,9 @@ impl SeedableRng for Xoroshiro64StarStar {
         }
     }
 
-    /// Seed a `Xoroshiro64StarStar` from a `u64`.
+    /// Seed a `Xoroshiro64StarStar` from a `u64` using `SplitMix64`.
     fn seed_from_u64(seed: u64) -> Xoroshiro64StarStar {
-        let mut s = [0; 8];
-        LittleEndian::write_u64(&mut s, seed);
-        Xoroshiro64StarStar::from_seed(s)
+        from_splitmix!(seed)
     }
 }
 
@@ -92,5 +91,11 @@ mod tests {
         for &e in &expected {
             assert_eq!(rng.next_u32(), e);
         }
+    }
+
+    #[test]
+    fn zero_seed() {
+        let mut rng = Xoroshiro64StarStar::seed_from_u64(0);
+        assert_ne!(rng.next_u64(), 0);
     }
 }

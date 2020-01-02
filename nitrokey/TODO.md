@@ -1,6 +1,6 @@
 <!---
 Copyright (C) 2019 Robin Krahl <robin.krahl@ireas.org>
-SPDX-License-Identifier: MIT
+SPDX-License-Identifier: CC0-1.0
 -->
 
 - Add support for the currently unsupported commands:

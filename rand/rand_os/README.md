@@ -6,23 +6,25 @@
 [![Book](https://img.shields.io/badge/book-master-yellow.svg)](https://rust-random.github.io/book/)
 [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://rust-random.github.io/rand/rand_os)
 [![API](https://docs.rs/rand_os/badge.svg)](https://docs.rs/rand_os)
-[![Minimum rustc version](https://img.shields.io/badge/rustc-1.22+-lightgray.svg)](https://github.com/rust-random/rand#rust-version-requirements)
+[![Minimum rustc version](https://img.shields.io/badge/rustc-1.32+-lightgray.svg)](https://github.com/rust-random/rand#rust-version-requirements)
 
 A random number generator that retrieves randomness straight from the
 operating system.
 
-This crate depends on [rand_core](https://crates.io/crates/rand_core) and is
-part of the [Rand project](https://github.com/rust-random/rand).
+**This crate is deprecated:** `OsRng` is available in `rand_core` since version 0.5.1.
 
-This crate aims to support all of Rust's `std` platforms with a system-provided
-entropy source. Unlike other Rand crates, this crate does not support `no_std`
-(handling this gracefully is a current discussion topic).
+This crate provides `OsRng` as a shim around
+[getrandom](https://crates.io/crates/getrandom)
+implementing `RngCore` from [rand_core](https://crates.io/crates/rand_core).
+
+Note: the `rand` crate provides an equivalent `OsRng`; the two implementations
+are equivalent, though distinct types.
 
 Links:
 
 -   [API documentation (master)](https://rust-random.github.io/rand/rand_os)
 -   [API documentation (docs.rs)](https://docs.rs/rand_os)
--   [Changelog](CHANGELOG.md)
+-   [Changelog](https://github.com/rust-random/rand/blob/master/rand_os/CHANGELOG.md)
 
 ## License
 

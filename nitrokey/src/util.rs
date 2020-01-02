@@ -5,8 +5,7 @@ use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int};
 
 use libc::{c_void, free};
-use rand_core::RngCore;
-use rand_os::OsRng;
+use rand_core::{OsRng, RngCore};
 
 use crate::error::{Error, LibraryError};
 
@@ -77,9 +76,8 @@ pub fn get_last_error() -> Error {
 }
 
 pub fn generate_password(length: usize) -> Result<Vec<u8>, Error> {
-    let mut rng = OsRng::new().map_err(|err| Error::RandError(Box::new(err)))?;
     let mut data = vec![0u8; length];
-    rng.fill_bytes(&mut data[..]);
+    OsRng.fill_bytes(&mut data[..]);
     Ok(data)
 }
 

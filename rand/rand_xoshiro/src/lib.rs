@@ -55,28 +55,15 @@
 //!
 //! [xoshiro]: http://xoshiro.di.unimi.it/
 //! [low linear complexity]: http://xoshiro.di.unimi.it/lowcomp.php
-//! [`Xoshiro256StarStar`]: ./struct.Xoshiro256StarStar.html
-//! [`Xoshiro256Plus`]: ./struct.Xoshiro256Plus.html
-//! [`Xoroshiro128StarStar`]: ./struct.Xoroshiro128StarStar.html
-//! [`Xoroshiro128Plus`]: ./struct.Xoroshiro128Plus.html
-//! [`Xoshiro512StarStar`]: ./struct.Xoshiro512StarStar.html
-//! [`Xoshiro512Plus`]: ./struct.Xoshiro512Plus.html
-//! [`SplitMix64`]: ./struct.SplitMix64.html
-//! [`Xoshiro128StarStar`]: ./struct.Xoshiro128StarStar.html
-//! [`Xoshiro128Plus`]: ./struct.Xoshiro128Plus.html
-//! [`Xoroshiro64StarStar`]: ./struct.Xoroshiro64StarStar.html
-//! [`Xoroshiro64Star`]: ./struct.Xoroshiro64Star.html
 
 #![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk.png",
        html_favicon_url = "https://www.rust-lang.org/favicon.ico",
-       html_root_url = "https://docs.rs/rand_xoshiro/0.1.0")]
+       html_root_url = "https://docs.rs/rand_xoshiro/0.3.1")]
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
-#![cfg_attr(feature = "cargo-clippy", allow(unreadable_literal))]
+#![allow(clippy::unreadable_literal)]
 #![no_std]
-extern crate byteorder;
-pub extern crate rand_core;
 
 #[macro_use]
 mod common;
@@ -92,6 +79,7 @@ mod xoroshiro128starstar;
 mod xoroshiro64starstar;
 mod xoroshiro64star;
 
+pub use rand_core;
 pub use splitmix64::SplitMix64;
 pub use xoshiro128starstar::Xoshiro128StarStar;
 pub use xoshiro128plus::Xoshiro128Plus;
