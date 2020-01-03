@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.3.1
+-----
 - Added note about interaction with GnuPG to `README` file
 - Bumped `nitrokey` dependency to `0.4.0`
   - Bumped `nitrokey-sys` dependency to `3.5.0`
