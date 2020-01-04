@@ -38,8 +38,8 @@ Debian
    described in the `README.rst` file.)
 5. Inspect the generated package by running `dpkg-deb --info` and `dpkg-deb
    --contents` on it.
-6. If you have push access to the repository, update the `TODO.rst` file to
-   indicate that `nitrocli` can be updated.
+6. If you have push access to the repository, create the
+   `src/nitrocli/debian/RFS` file to indicate that `nitrocli` can be updated.
 7. Add and commit your changes.  If you have push access, push them.
    Otherwise create a merge request and indicate that `nitrocli` is ready for
    upload in its description.
@@ -47,12 +47,18 @@ Debian
 For more information, see the [Teams/RustPackaging][] page in the Debian Wiki
 and the [README.rst file][] in the debcargo-conf repository.
 
+For detailed information on the status of the Debian package, check the [Debian
+Package Tracker][].
+
 Ubuntu
 ------
 
 The `nitrocli` package for Ubuntu is automatically generated from the Debian
-package.
+package.  For detailed information on the status of the Ubuntu package, check
+[Launchpad][].
 
 [Arch User Repository]: https://wiki.archlinux.org/index.php/Arch_User_Repository
 [Teams/RustPackaging]: https://wiki.debian.org/Teams/RustPackaging
 [README.rst file]: https://salsa.debian.org/rust-team/debcargo-conf/blob/master/README.rst
+[Debian Package Tracker]: https://tracker.debian.org/pkg/rust-nitrocli
+[Launchpad]: https://launchpad.net/ubuntu/+source/rust-nitrocli
