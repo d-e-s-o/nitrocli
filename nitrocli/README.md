@@ -159,9 +159,9 @@ the full text of the license.
 [nitrokey-storage]: https://shop.nitrokey.com/shop/product/nitrokey-storage-2-16gb-23
 [nitrocli-arch]: https://aur.archlinux.org/packages/nitrocli
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
-[nitrocli-debian]: https://packages.debian.org/buster/nitrocli
+[nitrocli-debian]: https://packages.debian.org/stable/nitrocli
 [nitrocli-gentoo]: https://packages.gentoo.org/packages/app-crypt/nitrocli
-[nitrocli-ubuntu]: https://packages.ubuntu.com/disco/nitrocli
+[nitrocli-ubuntu]: https://packages.ubuntu.com/search?keywords=nitrocli
 [gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
 [libnitrokey#32]: https://github.com/Nitrokey/libnitrokey/issues/32
 [libnitrokey#137]: https://github.com/Nitrokey/libnitrokey/issues/137
