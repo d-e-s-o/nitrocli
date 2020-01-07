@@ -128,7 +128,7 @@ impl From<DeviceModel> for nitrokey::Model {
 
 /// A top-level command for nitrocli.
 #[allow(unused_doc_comments)]
-Enum! {Command, [
+Command! {Command, [
   Config => ("config", config),
   Encrypted => ("encrypted", encrypted),
   Hidden => ("hidden", hidden),
@@ -141,7 +141,7 @@ Enum! {Command, [
   Unencrypted => ("unencrypted", unencrypted),
 ]}
 
-Enum! {ConfigCommand, [
+Command! {ConfigCommand, [
   Get => ("get", config_get),
   Set => ("set", config_set),
 ]}
@@ -181,7 +181,7 @@ impl<T> ConfigOption<T> {
   }
 }
 
-Enum! {OtpCommand, [
+Command! {OtpCommand, [
   Clear => ("clear", otp_clear),
   Get => ("get", otp_get),
   Set => ("set", otp_set),
@@ -213,13 +213,13 @@ Enum! {OtpSecretFormat, [
   Hex => "hex",
 ]}
 
-Enum! {PinCommand, [
+Command! {PinCommand, [
   Clear => ("clear", pin_clear),
   Set => ("set", pin_set),
   Unblock => ("unblock", pin_unblock),
 ]}
 
-Enum! {PwsCommand, [
+Command! {PwsCommand, [
   Clear => ("clear", pws_clear),
   Get => ("get", pws_get),
   Set => ("set", pws_set),
@@ -257,7 +257,7 @@ fn reset(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   commands::reset(ctx)
 }
 
-Enum! {UnencryptedCommand, [
+Command! {UnencryptedCommand, [
   Set => ("set", unencrypted_set),
 ]}
 
@@ -314,7 +314,7 @@ fn unencrypted_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   commands::unencrypted_set(ctx, mode)
 }
 
-Enum! {EncryptedCommand, [
+Command! {EncryptedCommand, [
   Close => ("close", encrypted_close),
   Open => ("open", encrypted_open),
 ]}
@@ -364,7 +364,7 @@ fn encrypted_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   commands::encrypted_close(ctx)
 }
 
-Enum! {HiddenCommand, [
+Command! {HiddenCommand, [
   Close => ("close", hidden_close),
   Create => ("create", hidden_create),
   Open => ("open", hidden_open),
