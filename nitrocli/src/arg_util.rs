@@ -76,6 +76,8 @@ macro_rules! Command {
         }
       }
     }
+
+    impl_default!($name => $( $name::$var(::std::default::Default::default()) , )*);
   };
   ( $name:ident, [ $( $var:ident => ($str:expr, $exec:expr), ) *] ) => {
     #[derive(Debug, PartialEq)]
@@ -128,6 +130,8 @@ macro_rules! Command {
         }
       }
     }
+
+    impl_default!($name => $( $name::$var , )*);
   };
 }
 
@@ -194,6 +198,19 @@ macro_rules! Enum {
              )
            )
         }
+      }
+    }
+
+    impl_default!($name => $( $name::$var , )*);
+
+  };
+}
+
+macro_rules! impl_default {
+  ( $name:ident => $def:expr , $( $other:expr , ) *) => {
+    impl ::std::default::Default for $name {
+      fn default() -> Self {
+        $def
       }
     }
   };
