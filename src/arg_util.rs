@@ -80,7 +80,7 @@ macro_rules! Command {
     impl_default!($name => $( $name::$var(::std::default::Default::default()) , )*);
   };
   ( $name:ident, [ $( $var:ident => ($str:expr, $exec:expr), ) *] ) => {
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, ::structopt::StructOpt)]
     pub enum $name {
       $(
         $var,
