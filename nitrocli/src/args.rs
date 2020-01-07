@@ -533,8 +533,7 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
     }
     Err(err) => {
       if err.use_stderr() {
-        eprintln!(ctx, "{}", err.message)?;
-        Err(Error::ArgparseError(1))
+        Err(err.into())
       } else {
         println!(ctx, "{}", err.message)?;
         Ok(())
