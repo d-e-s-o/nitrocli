@@ -25,6 +25,58 @@ macro_rules! count {
 }
 
 macro_rules! Command {
+  ( $name:ident, [ $( $var:ident($inner:ident) => ($str:expr, $exec:expr), ) *] ) => {
+    #[derive(Debug, PartialEq, structopt::StructOpt)]
+    pub enum $name {
+      $(
+        $var($inner),
+      )*
+    }
+
+    impl ::std::convert::AsRef<str> for $name {
+      fn as_ref(&self) -> &'static str {
+        match *self {
+          $(
+            $name::$var(_) => $str,
+          )*
+        }
+      }
+    }
+
+    impl ::std::fmt::Display for $name {
+      fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        write!(f, "{}", self.as_ref())
+      }
+    }
+
+    impl ::std::str::FromStr for $name {
+      type Err = &'static str;
+
+      fn from_str(s: &str) -> ::std::result::Result<Self, Self::Err> {
+        match s {
+          $(
+            $str => Ok($name::$var(::std::default::Default::default())),
+          )*
+          _ => Err("[error]"),
+        }
+      }
+    }
+
+    #[allow(unused_qualifications)]
+    impl $name {
+      fn execute(
+        self,
+        ctx: &mut crate::args::ExecCtx<'_>,
+        args: ::std::vec::Vec<::std::string::String>,
+      ) -> crate::Result<()> {
+        match self {
+          $(
+            $name::$var(_) => $exec(ctx, args),
+          )*
+        }
+      }
+    }
+  };
   ( $name:ident, [ $( $var:ident => ($str:expr, $exec:expr), ) *] ) => {
     #[derive(Debug, PartialEq)]
     pub enum $name {
