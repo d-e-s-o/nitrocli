@@ -86,7 +86,6 @@ use crate::error::Error;
 
 type Result<T> = result::Result<T, Error>;
 
-const NITROCLI: &str = "nitrocli";
 const NITROCLI_ADMIN_PIN: &str = "NITROCLI_ADMIN_PIN";
 const NITROCLI_USER_PIN: &str = "NITROCLI_USER_PIN";
 const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";

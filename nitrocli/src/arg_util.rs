@@ -33,35 +33,6 @@ macro_rules! Command {
       )*
     }
 
-    impl ::std::convert::AsRef<str> for $name {
-      fn as_ref(&self) -> &'static str {
-        match *self {
-          $(
-            $name::$var(_) => $str,
-          )*
-        }
-      }
-    }
-
-    impl ::std::fmt::Display for $name {
-      fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        write!(f, "{}", self.as_ref())
-      }
-    }
-
-    impl ::std::str::FromStr for $name {
-      type Err = &'static str;
-
-      fn from_str(s: &str) -> ::std::result::Result<Self, Self::Err> {
-        match s {
-          $(
-            $str => Ok($name::$var(::std::default::Default::default())),
-          )*
-          _ => Err("[error]"),
-        }
-      }
-    }
-
     #[allow(unused_qualifications)]
     impl $name {
       fn execute(
@@ -75,62 +46,6 @@ macro_rules! Command {
         }
       }
     }
-
-    impl_default!($name => $( $name::$var(::std::default::Default::default()) , )*);
-  };
-  ( $name:ident, [ $( $var:ident => ($str:expr, $exec:expr), ) *] ) => {
-    #[derive(Debug, PartialEq, ::structopt::StructOpt)]
-    pub enum $name {
-      $(
-        $var,
-      )*
-    }
-
-    impl ::std::convert::AsRef<str> for $name {
-      fn as_ref(&self) -> &'static str {
-        match *self {
-          $(
-            $name::$var => $str,
-          )*
-        }
-      }
-    }
-
-    impl ::std::fmt::Display for $name {
-      fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        write!(f, "{}", self.as_ref())
-      }
-    }
-
-    impl ::std::str::FromStr for $name {
-      type Err = &'static str;
-
-      fn from_str(s: &str) -> ::std::result::Result<Self, Self::Err> {
-        match s {
-          $(
-            $str => Ok($name::$var),
-          )*
-          _ => Err("[error]"),
-        }
-      }
-    }
-
-    #[allow(unused_qualifications)]
-    impl $name {
-      fn execute(
-        self,
-        ctx: &mut crate::args::ExecCtx<'_>,
-        args: ::std::vec::Vec<::std::string::String>,
-      ) -> crate::Result<()> {
-        match self {
-          $(
-            $name::$var => $exec(ctx, args),
-          )*
-        }
-      }
-    }
-
-    impl_default!($name => $( $name::$var , )*);
   };
 }
 
@@ -199,37 +114,7 @@ macro_rules! Enum {
         }
       }
     }
-
-    impl_default!($name => $( $name::$var , )*);
-
   };
-}
-
-macro_rules! impl_default {
-  ( $name:ident => $def:expr , $( $other:expr , ) *) => {
-    impl ::std::default::Default for $name {
-      fn default() -> Self {
-        $def
-      }
-    }
-  };
-}
-
-/// A macro for formatting the variants of an enum (as created by the
-/// Enum!{} macro) ready to be used in a help text. The supplied `fmt`
-/// needs to contain the named parameter `{variants}`, which will be
-/// replaced with a generated version of the enum's variants.
-macro_rules! fmt_enum {
-  ( $enm:ident ) => {{
-    fmt_enum!($enm.all())
-  }};
-  ( $all:expr ) => {{
-    $all
-      .iter()
-      .map(::std::convert::AsRef::as_ref)
-      .collect::<::std::vec::Vec<_>>()
-      .join("|")
-  }};
 }
 
 #[cfg(test)]
