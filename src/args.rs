@@ -490,34 +490,13 @@ Command! {PwsCommand, [
   Status(PwsStatusArgs) => ("status", pws_status),
 ]}
 
-fn parse(
-  ctx: &mut impl Stdio,
-  parser: argparse::ArgumentParser<'_>,
-  args: Vec<String>,
-) -> Result<()> {
-  let (stdout, stderr) = ctx.stdio();
-  let result = parser
-    .parse(args, stdout, stderr)
-    .map_err(Error::ArgparseError);
-  drop(parser);
-  result
-}
-
 /// Inquire the status of the Nitrokey.
-fn status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Prints the status of the connected Nitrokey device");
-  parse(ctx, parser, args)?;
-
+fn status(ctx: &mut ExecCtx<'_>, _args: StatusArgs) -> Result<()> {
   commands::status(ctx)
 }
 
 /// Perform a factory reset.
-fn reset(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Performs a factory reset");
-  parse(ctx, parser, args)?;
-
+fn reset(ctx: &mut ExecCtx<'_>, _args: ResetArgs) -> Result<()> {
   commands::reset(ctx)
 }
 
@@ -531,46 +510,13 @@ Enum! {UnencryptedVolumeMode, [
 ]}
 
 /// Execute an unencrypted subcommand.
-fn unencrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = UnencryptedCommand::Set(Default::default());
-  let help = "".to_string();
-  let mut subargs = vec![];
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Interacts with the device's unencrypted volume");
-  let _ =
-    parser
-      .refer(&mut subcommand)
-      .required()
-      .add_argument("subcommand", argparse::Store, &help);
-  let _ = parser.refer(&mut subargs).add_argument(
-    "arguments",
-    argparse::List,
-    "The arguments for the subcommand",
-  );
-  parser.stop_on_first_argument(true);
-  parse(ctx, parser, args)?;
-
-  subargs.insert(
-    0,
-    format!("{} {} {}", crate::NITROCLI, "unencrypted", subcommand,),
-  );
-  subcommand.execute(ctx, subargs)
+fn unencrypted(ctx: &mut ExecCtx<'_>, args: UnencryptedArgs) -> Result<()> {
+  args.subcmd.execute(ctx)
 }
 
 /// Change the configuration of the unencrypted volume.
-fn unencrypted_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut mode = UnencryptedVolumeMode::ReadWrite;
-  let help = format!("The mode to change to ({})", fmt_enum!(mode));
-  let mut parser = argparse::ArgumentParser::new();
-  parser
-    .set_description("Changes the configuration of the unencrypted volume on a Nitrokey Storage");
-  let _ = parser
-    .refer(&mut mode)
-    .required()
-    .add_argument("type", argparse::Store, &help);
-  parse(ctx, parser, args)?;
-
-  commands::unencrypted_set(ctx, mode)
+fn unencrypted_set(ctx: &mut ExecCtx<'_>, args: UnencryptedSetArgs) -> Result<()> {
+  commands::unencrypted_set(ctx, args.mode)
 }
 
 Command! {EncryptedCommand, [
@@ -579,47 +525,17 @@ Command! {EncryptedCommand, [
 ]}
 
 /// Execute an encrypted subcommand.
-fn encrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = EncryptedCommand::Open(Default::default());
-  let help = "".to_string();
-  let mut subargs = vec![];
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Interacts with the device's encrypted volume");
-  let _ =
-    parser
-      .refer(&mut subcommand)
-      .required()
-      .add_argument("subcommand", argparse::Store, &help);
-  let _ = parser.refer(&mut subargs).add_argument(
-    "arguments",
-    argparse::List,
-    "The arguments for the subcommand",
-  );
-  parser.stop_on_first_argument(true);
-  parse(ctx, parser, args)?;
-
-  subargs.insert(
-    0,
-    format!("{} {} {}", crate::NITROCLI, "encrypted", subcommand),
-  );
-  subcommand.execute(ctx, subargs)
+fn encrypted(ctx: &mut ExecCtx<'_>, args: EncryptedArgs) -> Result<()> {
+  args.subcmd.execute(ctx)
 }
 
 /// Open the encrypted volume on the Nitrokey.
-fn encrypted_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Opens the encrypted volume on a Nitrokey Storage");
-  parse(ctx, parser, args)?;
-
+fn encrypted_open(ctx: &mut ExecCtx<'_>, _args: EncryptedOpenArgs) -> Result<()> {
   commands::encrypted_open(ctx)
 }
 
 /// Close the previously opened encrypted volume.
-fn encrypted_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Closes the encrypted volume on a Nitrokey Storage");
-  parse(ctx, parser, args)?;
-
+fn encrypted_close(ctx: &mut ExecCtx<'_>, _args: EncryptedCloseArgs) -> Result<()> {
   commands::encrypted_close(ctx)
 }
 
@@ -630,172 +546,40 @@ Command! {HiddenCommand, [
 ]}
 
 /// Execute a hidden subcommand.
-fn hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = HiddenCommand::Open(Default::default());
-  let help = "".to_string();
-  let mut subargs = vec![];
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Interacts with the device's hidden volume");
-  let _ =
-    parser
-      .refer(&mut subcommand)
-      .required()
-      .add_argument("subcommand", argparse::Store, &help);
-  let _ = parser.refer(&mut subargs).add_argument(
-    "arguments",
-    argparse::List,
-    "The arguments for the subcommand",
-  );
-  parser.stop_on_first_argument(true);
-  parse(ctx, parser, args)?;
-
-  subargs.insert(
-    0,
-    format!("{} {} {}", crate::NITROCLI, "hidden", subcommand),
-  );
-  subcommand.execute(ctx, subargs)
+fn hidden(ctx: &mut ExecCtx<'_>, args: HiddenArgs) -> Result<()> {
+  args.subcmd.execute(ctx)
 }
 
-fn hidden_create(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut slot: u8 = 0;
-  let mut start: u8 = 0;
-  let mut end: u8 = 0;
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Creates a hidden volume on a Nitrokey Storage");
-  let _ = parser.refer(&mut slot).required().add_argument(
-    "slot",
-    argparse::Store,
-    "The hidden volume slot to use",
-  );
-  let _ = parser.refer(&mut start).required().add_argument(
-    "start",
-    argparse::Store,
-    "The start location of the hidden volume as percentage of the \
-     encrypted volume's size (0-99)",
-  );
-  let _ = parser.refer(&mut end).required().add_argument(
-    "end",
-    argparse::Store,
-    "The end location of the hidden volume as percentage of the \
-     encrypted volume's size (1-100)",
-  );
-  parse(ctx, parser, args)?;
-
-  commands::hidden_create(ctx, slot, start, end)
+fn hidden_create(ctx: &mut ExecCtx<'_>, args: HiddenCreateArgs) -> Result<()> {
+  commands::hidden_create(ctx, args.slot, args.start, args.end)
 }
 
-fn hidden_open(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Opens a hidden volume on a Nitrokey Storage");
-  parse(ctx, parser, args)?;
-
+fn hidden_open(ctx: &mut ExecCtx<'_>, _args: HiddenOpenArgs) -> Result<()> {
   commands::hidden_open(ctx)
 }
 
-fn hidden_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Closes the hidden volume on a Nitrokey Storage");
-  parse(ctx, parser, args)?;
-
+fn hidden_close(ctx: &mut ExecCtx<'_>, _args: HiddenCloseArgs) -> Result<()> {
   commands::hidden_close(ctx)
 }
 
 /// Execute a config subcommand.
-fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = ConfigCommand::Get(Default::default());
-  let help = "".to_string();
-  let mut subargs = vec![];
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Reads or writes the device configuration");
-  let _ =
-    parser
-      .refer(&mut subcommand)
-      .required()
-      .add_argument("subcommand", argparse::Store, &help);
-  let _ = parser.refer(&mut subargs).add_argument(
-    "arguments",
-    argparse::List,
-    "The arguments for the subcommand",
-  );
-  parser.stop_on_first_argument(true);
-  parse(ctx, parser, args)?;
-
-  subargs.insert(
-    0,
-    format!("{} {} {}", crate::NITROCLI, "config", subcommand),
-  );
-  subcommand.execute(ctx, subargs)
+fn config(ctx: &mut ExecCtx<'_>, args: ConfigArgs) -> Result<()> {
+  args.subcmd.execute(ctx)
 }
 
 /// Read the Nitrokey configuration.
-fn config_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Prints the Nitrokey configuration");
-  parse(ctx, parser, args)?;
-
+fn config_get(ctx: &mut ExecCtx<'_>, _args: ConfigGetArgs) -> Result<()> {
   commands::config_get(ctx)
 }
 
 /// Write the Nitrokey configuration.
-fn config_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut numlock = None;
-  let mut no_numlock = false;
-  let mut capslock = None;
-  let mut no_capslock = false;
-  let mut scrollock = None;
-  let mut no_scrollock = false;
-  let mut otp_pin = false;
-  let mut no_otp_pin = false;
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Changes the Nitrokey configuration");
-  let _ = parser.refer(&mut numlock).add_option(
-    &["-n", "--numlock"],
-    argparse::StoreOption,
-    "Set the numlock option to the given HOTP slot",
-  );
-  let _ = parser.refer(&mut no_numlock).add_option(
-    &["-N", "--no-numlock"],
-    argparse::StoreTrue,
-    "Unset the numlock option",
-  );
-  let _ = parser.refer(&mut capslock).add_option(
-    &["-c", "--capslock"],
-    argparse::StoreOption,
-    "Set the capslock option to the given HOTP slot",
-  );
-  let _ = parser.refer(&mut no_capslock).add_option(
-    &["-C", "--no-capslock"],
-    argparse::StoreTrue,
-    "Unset the capslock option",
-  );
-  let _ = parser.refer(&mut scrollock).add_option(
-    &["-s", "--scrollock"],
-    argparse::StoreOption,
-    "Set the scrollock option to the given HOTP slot",
-  );
-  let _ = parser.refer(&mut no_scrollock).add_option(
-    &["-S", "--no-scrollock"],
-    argparse::StoreTrue,
-    "Unset the scrollock option",
-  );
-  let _ = parser.refer(&mut otp_pin).add_option(
-    &["-o", "--otp-pin"],
-    argparse::StoreTrue,
-    "Require the user PIN to generate one-time passwords",
-  );
-  let _ = parser.refer(&mut no_otp_pin).add_option(
-    &["-O", "--no-otp-pin"],
-    argparse::StoreTrue,
-    "Allow one-time password generation without PIN",
-  );
-  parse(ctx, parser, args)?;
-
-  let numlock = ConfigOption::try_from(no_numlock, numlock, "numlock")?;
-  let capslock = ConfigOption::try_from(no_capslock, capslock, "capslock")?;
-  let scrollock = ConfigOption::try_from(no_scrollock, scrollock, "scrollock")?;
-  let otp_pin = if otp_pin {
+fn config_set(ctx: &mut ExecCtx<'_>, args: ConfigSetArgs) -> Result<()> {
+  let numlock = ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")?;
+  let capslock = ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")?;
+  let scrollock = ConfigOption::try_from(args.no_scrollock, args.scrollock, "scrollock")?;
+  let otp_pin = if args.otp_pin {
     Some(true)
-  } else if no_otp_pin {
+  } else if args.no_otp_pin {
     Some(false)
   } else {
     None
@@ -804,431 +588,129 @@ fn config_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 }
 
 /// Lock the Nitrokey.
-fn lock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Locks the connected Nitrokey device");
-  parse(ctx, parser, args)?;
-
+fn lock(ctx: &mut ExecCtx<'_>, _args: LockArgs) -> Result<()> {
   commands::lock(ctx)
 }
 
 /// Execute an OTP subcommand.
-fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = OtpCommand::Get(Default::default());
-  let help = "".to_string();
-  let mut subargs = vec![];
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Accesses one-time passwords");
-  let _ =
-    parser
-      .refer(&mut subcommand)
-      .required()
-      .add_argument("subcommand", argparse::Store, &help);
-  let _ = parser.refer(&mut subargs).add_argument(
-    "arguments",
-    argparse::List,
-    "The arguments for the subcommand",
-  );
-  parser.stop_on_first_argument(true);
-  parse(ctx, parser, args)?;
-
-  subargs.insert(0, format!("{} {} {}", crate::NITROCLI, "otp", subcommand));
-  subcommand.execute(ctx, subargs)
+fn otp(ctx: &mut ExecCtx<'_>, args: OtpArgs) -> Result<()> {
+  args.subcmd.execute(ctx)
 }
 
 /// Generate a one-time password on the Nitrokey device.
-fn otp_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut slot: u8 = 0;
-  let mut algorithm = OtpAlgorithm::Totp;
-  let help = format!(
-    "The OTP algorithm to use ({}, default: {})",
-    fmt_enum!(algorithm),
-    algorithm
-  );
-  let mut time: Option<u64> = None;
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Generates a one-time password");
-  let _ =
-    parser
-      .refer(&mut slot)
-      .required()
-      .add_argument("slot", argparse::Store, "The OTP slot to use");
-  let _ = parser
-    .refer(&mut algorithm)
-    .add_option(&["-a", "--algorithm"], argparse::Store, &help);
-  let _ = parser.refer(&mut time).add_option(
-    &["-t", "--time"],
-    argparse::StoreOption,
-    "The time to use for TOTP generation (Unix timestamp, default: system time)",
-  );
-  parse(ctx, parser, args)?;
-
-  commands::otp_get(ctx, slot, algorithm, time)
+fn otp_get(ctx: &mut ExecCtx<'_>, args: OtpGetArgs) -> Result<()> {
+  commands::otp_get(ctx, args.slot, args.algorithm, args.time)
 }
 
 /// Configure a one-time password slot on the Nitrokey device.
-pub fn otp_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut slot: u8 = 0;
-  let mut algorithm = OtpAlgorithm::Totp;
-  let algo_help = format!(
-    "The OTP algorithm to use ({}, default: {})",
-    fmt_enum!(algorithm),
-    algorithm
-  );
-  let mut name = "".to_owned();
-  let mut secret = "".to_owned();
-  let mut digits = OtpMode::SixDigits;
-  let mut counter: u64 = 0;
-  let mut time_window: u16 = 30;
-  let mut secret_format = OtpSecretFormat::Hex;
-  let fmt_help = format!(
-    "The format of the secret ({}, default: {})",
-    fmt_enum!(OtpSecretFormat::all_variants()),
-    secret_format,
-  );
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Configures a one-time password slot");
-  let _ =
-    parser
-      .refer(&mut slot)
-      .required()
-      .add_argument("slot", argparse::Store, "The OTP slot to use");
-  let _ =
-    parser
-      .refer(&mut algorithm)
-      .add_option(&["-a", "--algorithm"], argparse::Store, &algo_help);
-  let _ = parser.refer(&mut name).required().add_argument(
-    "name",
-    argparse::Store,
-    "The name of the slot",
-  );
-  let _ = parser.refer(&mut secret).required().add_argument(
-    "secret",
-    argparse::Store,
-    "The secret to store on the slot as a hexadecimal string (unless overwritten by --format)",
-  );
-  let _ = parser.refer(&mut digits).add_option(
-    &["-d", "--digits"],
-    argparse::Store,
-    "The number of digits to use for the one-time password (6 or 8, default: 6)",
-  );
-  let _ = parser.refer(&mut counter).add_option(
-    &["-c", "--counter"],
-    argparse::Store,
-    "The counter value for HOTP (default: 0)",
-  );
-  let _ = parser.refer(&mut time_window).add_option(
-    &["-t", "--time-window"],
-    argparse::Store,
-    "The time window for TOTP (default: 30)",
-  );
-  let _ =
-    parser
-      .refer(&mut secret_format)
-      .add_option(&["-f", "--format"], argparse::Store, &fmt_help);
-  parse(ctx, parser, args)?;
-
+pub fn otp_set(ctx: &mut ExecCtx<'_>, args: OtpSetArgs) -> Result<()> {
   let data = nitrokey::OtpSlotData {
-    number: slot,
-    name,
-    secret,
-    mode: nitrokey::OtpMode::from(digits),
+    number: args.slot,
+    name: args.name,
+    secret: args.secret,
+    mode: args.digits.into(),
     use_enter: false,
     token_id: None,
   };
-  commands::otp_set(ctx, data, algorithm, counter, time_window, secret_format)
+  commands::otp_set(
+    ctx,
+    data,
+    args.algorithm,
+    args.counter,
+    args.time_window,
+    args.format,
+  )
 }
 
 /// Clear an OTP slot.
-fn otp_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut slot: u8 = 0;
-  let mut algorithm = OtpAlgorithm::Totp;
-  let help = format!(
-    "The OTP algorithm to use ({}, default: {})",
-    fmt_enum!(algorithm),
-    algorithm
-  );
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Clears a one-time password slot");
-  let _ = parser.refer(&mut slot).required().add_argument(
-    "slot",
-    argparse::Store,
-    "The OTP slot to clear",
-  );
-  let _ = parser
-    .refer(&mut algorithm)
-    .add_option(&["-a", "--algorithm"], argparse::Store, &help);
-  parse(ctx, parser, args)?;
-
-  commands::otp_clear(ctx, slot, algorithm)
+fn otp_clear(ctx: &mut ExecCtx<'_>, args: OtpClearArgs) -> Result<()> {
+  commands::otp_clear(ctx, args.slot, args.algorithm)
 }
 
 /// Print the status of the OTP slots.
-fn otp_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut all = false;
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Prints the status of the OTP slots");
-  let _ = parser.refer(&mut all).add_option(
-    &["-a", "--all"],
-    argparse::StoreTrue,
-    "Show slots that are not programmed",
-  );
-  parse(ctx, parser, args)?;
-
-  commands::otp_status(ctx, all)
+fn otp_status(ctx: &mut ExecCtx<'_>, args: OtpStatusArgs) -> Result<()> {
+  commands::otp_status(ctx, args.all)
 }
 
 /// Execute a PIN subcommand.
-fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = PinCommand::Clear(Default::default());
-  let help = "".to_string();
-  let mut subargs = vec![];
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Manages the Nitrokey PINs");
-  let _ =
-    parser
-      .refer(&mut subcommand)
-      .required()
-      .add_argument("subcommand", argparse::Store, &help);
-  let _ = parser.refer(&mut subargs).add_argument(
-    "arguments",
-    argparse::List,
-    "The arguments for the subcommand",
-  );
-  parser.stop_on_first_argument(true);
-  parse(ctx, parser, args)?;
-
-  subargs.insert(0, format!("{} {} {}", crate::NITROCLI, "pin", subcommand));
-  subcommand.execute(ctx, subargs)
+fn pin(ctx: &mut ExecCtx<'_>, args: PinArgs) -> Result<()> {
+  args.subcmd.execute(ctx)
 }
 
 /// Clear the PIN as cached by various other commands.
-fn pin_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Clears the cached PINs");
-  parse(ctx, parser, args)?;
-
+fn pin_clear(ctx: &mut ExecCtx<'_>, _args: PinClearArgs) -> Result<()> {
   commands::pin_clear(ctx)
 }
 
 /// Change a PIN.
-fn pin_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut pintype = pinentry::PinType::User;
-  let help = format!("The PIN type to change ({})", fmt_enum!(pintype));
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Changes a PIN");
-  let _ = parser
-    .refer(&mut pintype)
-    .required()
-    .add_argument("type", argparse::Store, &help);
-  parse(ctx, parser, args)?;
-
-  commands::pin_set(ctx, pintype)
+fn pin_set(ctx: &mut ExecCtx<'_>, args: PinSetArgs) -> Result<()> {
+  commands::pin_set(ctx, args.pintype)
 }
 
 /// Unblock and reset the user PIN.
-fn pin_unblock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Unblocks and resets the user PIN");
-  parse(ctx, parser, args)?;
-
+fn pin_unblock(ctx: &mut ExecCtx<'_>, _args: PinUnblockArgs) -> Result<()> {
   commands::pin_unblock(ctx)
 }
 
 /// Execute a PWS subcommand.
-fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = PwsCommand::Get(Default::default());
-  let mut subargs = vec![];
-  let help = "".to_string();
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Accesses the password safe");
-  let _ =
-    parser
-      .refer(&mut subcommand)
-      .required()
-      .add_argument("subcommand", argparse::Store, &help);
-  let _ = parser.refer(&mut subargs).add_argument(
-    "arguments",
-    argparse::List,
-    "The arguments for the subcommand",
-  );
-  parser.stop_on_first_argument(true);
-  parse(ctx, parser, args)?;
-
-  subargs.insert(0, format!("{} {} {}", crate::NITROCLI, "pws", subcommand));
-  subcommand.execute(ctx, subargs)
+fn pws(ctx: &mut ExecCtx<'_>, args: PwsArgs) -> Result<()> {
+  args.subcmd.execute(ctx)
 }
 
 /// Access a slot of the password safe on the Nitrokey.
-fn pws_get(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut slot: u8 = 0;
-  let mut name = false;
-  let mut login = false;
-  let mut password = false;
-  let mut quiet = false;
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Reads a password safe slot");
-  let _ = parser.refer(&mut slot).required().add_argument(
-    "slot",
-    argparse::Store,
-    "The PWS slot to read",
-  );
-  let _ = parser.refer(&mut name).add_option(
-    &["-n", "--name"],
-    argparse::StoreTrue,
-    "Show the name stored on the slot",
-  );
-  let _ = parser.refer(&mut login).add_option(
-    &["-l", "--login"],
-    argparse::StoreTrue,
-    "Show the login stored on the slot",
-  );
-  let _ = parser.refer(&mut password).add_option(
-    &["-p", "--password"],
-    argparse::StoreTrue,
-    "Show the password stored on the slot",
-  );
-  let _ = parser.refer(&mut quiet).add_option(
-    &["-q", "--quiet"],
-    argparse::StoreTrue,
-    "Print the stored data without description",
-  );
-  parse(ctx, parser, args)?;
-
-  commands::pws_get(ctx, slot, name, login, password, quiet)
+fn pws_get(ctx: &mut ExecCtx<'_>, args: PwsGetArgs) -> Result<()> {
+  commands::pws_get(
+    ctx,
+    args.slot,
+    args.name,
+    args.login,
+    args.password,
+    args.quiet,
+  )
 }
 
 /// Set a slot of the password safe on the Nitrokey.
-fn pws_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut slot: u8 = 0;
-  let mut name = String::new();
-  let mut login = String::new();
-  let mut password = String::new();
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Writes a password safe slot");
-  let _ = parser.refer(&mut slot).required().add_argument(
-    "slot",
-    argparse::Store,
-    "The PWS slot to write",
-  );
-  let _ = parser.refer(&mut name).required().add_argument(
-    "name",
-    argparse::Store,
-    "The name to store on the slot",
-  );
-  let _ = parser.refer(&mut login).required().add_argument(
-    "login",
-    argparse::Store,
-    "The login to store on the slot",
-  );
-  let _ = parser.refer(&mut password).required().add_argument(
-    "password",
-    argparse::Store,
-    "The password to store on the slot",
-  );
-  parse(ctx, parser, args)?;
-
-  commands::pws_set(ctx, slot, &name, &login, &password)
+fn pws_set(ctx: &mut ExecCtx<'_>, args: PwsSetArgs) -> Result<()> {
+  commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password)
 }
 
 /// Clear a PWS slot.
-fn pws_clear(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut slot: u8 = 0;
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Clears a password safe slot");
-  let _ = parser.refer(&mut slot).required().add_argument(
-    "slot",
-    argparse::Store,
-    "The PWS slot to clear",
-  );
-  parse(ctx, parser, args)?;
-
-  commands::pws_clear(ctx, slot)
+fn pws_clear(ctx: &mut ExecCtx<'_>, args: PwsClearArgs) -> Result<()> {
+  commands::pws_clear(ctx, args.slot)
 }
 
 /// Print the status of the PWS slots.
-fn pws_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut all = false;
-  let mut parser = argparse::ArgumentParser::new();
-  parser.set_description("Prints the status of the PWS slots");
-  let _ = parser.refer(&mut all).add_option(
-    &["-a", "--all"],
-    argparse::StoreTrue,
-    "Show slots that are not programmed",
-  );
-  parse(ctx, parser, args)?;
-
-  commands::pws_status(ctx, all)
+fn pws_status(ctx: &mut ExecCtx<'_>, args: PwsStatusArgs) -> Result<()> {
+  commands::pws_status(ctx, args.all)
 }
 
 /// Parse the command-line arguments and execute the selected command.
 pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
-  use std::io::Write;
+  use structopt::StructOpt;
 
-  let mut version = false;
-  let mut model: Option<DeviceModel> = None;
-  let model_help = format!(
-    "Select the device model to connect to ({})",
-    fmt_enum!(DeviceModel::all_variants())
-  );
-  let mut verbosity = 0;
-  let mut command = Command::Status(Default::default());
-  let cmd_help = "".to_string();
-  let mut subargs = vec![];
-  let mut parser = argparse::ArgumentParser::new();
-  let _ = parser.refer(&mut version).add_option(
-    &["-V", "--version"],
-    argparse::StoreTrue,
-    "Print version information and exit",
-  );
-  let _ = parser.refer(&mut verbosity).add_option(
-    &["-v", "--verbose"],
-    argparse::IncrBy::<u64>(1),
-    "Increase the log level (can be supplied multiple times)",
-  );
-  let _ =
-    parser
-      .refer(&mut model)
-      .add_option(&["-m", "--model"], argparse::StoreOption, &model_help);
-  parser.set_description("Provides access to a Nitrokey device");
-  let _ = parser
-    .refer(&mut command)
-    .required()
-    .add_argument("command", argparse::Store, &cmd_help);
-  let _ = parser.refer(&mut subargs).add_argument(
-    "arguments",
-    argparse::List,
-    "The arguments for the command",
-  );
-  parser.stop_on_first_argument(true);
-
-  let mut stdout_buf = BufWriter::new(ctx.stdout);
-  let mut stderr_buf = BufWriter::new(ctx.stderr);
-  let mut stdio_buf = (&mut stdout_buf, &mut stderr_buf);
-  let result = parse(&mut stdio_buf, parser, args);
-
-  if version {
-    println!(ctx, "{} {}", crate::NITROCLI, env!("CARGO_PKG_VERSION"))?;
-    Ok(())
-  } else {
-    stdout_buf.flush()?;
-    stderr_buf.flush()?;
-
-    result?;
-    subargs.insert(0, format!("{} {}", crate::NITROCLI, command));
-
-    let mut ctx = ExecCtx {
-      model,
-      stdout: ctx.stdout,
-      stderr: ctx.stderr,
-      admin_pin: ctx.admin_pin.take(),
-      user_pin: ctx.user_pin.take(),
-      new_admin_pin: ctx.new_admin_pin.take(),
-      new_user_pin: ctx.new_user_pin.take(),
-      password: ctx.password.take(),
-      no_cache: ctx.no_cache,
-      verbosity,
-    };
-    command.execute(&mut ctx, subargs)
+  match Args::from_iter_safe(args.iter()) {
+    Ok(args) => {
+      let mut ctx = ExecCtx {
+        model: args.model,
+        stdout: ctx.stdout,
+        stderr: ctx.stderr,
+        admin_pin: ctx.admin_pin.take(),
+        user_pin: ctx.user_pin.take(),
+        new_admin_pin: ctx.new_admin_pin.take(),
+        new_user_pin: ctx.new_user_pin.take(),
+        password: ctx.password.take(),
+        no_cache: ctx.no_cache,
+        verbosity: args.verbose.into(),
+      };
+      args.cmd.execute(&mut ctx)
+    }
+    Err(err) => {
+      if err.use_stderr() {
+        Err(err.into())
+      } else {
+        println!(ctx, "{}", err.message)?;
+        Ok(())
+      }
+    }
   }
 }

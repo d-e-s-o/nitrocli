@@ -121,18 +121,10 @@ pub(crate) struct RunCtx<'io> {
 fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
   match args::handle_arguments(ctx, args) {
     Ok(()) => 0,
-    Err(err) => match err {
-      Error::ArgparseError(err) => match err {
-        // argparse printed the help message
-        0 => 0,
-        // argparse printed an error message
-        _ => 1,
-      },
-      _ => {
-        let _ = eprintln!(ctx, "{}", err);
-        1
-      }
-    },
+    Err(err) => {
+      let _ = eprintln!(ctx, "{}", err);
+      1
+    }
   }
 }
 

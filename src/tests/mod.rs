@@ -50,6 +50,13 @@ where
 {
   fn unwrap_str_err(self) -> String {
     match self.unwrap_err() {
+      crate::Error::ClapError(err) => {
+        if err.use_stderr() {
+          err.message
+        } else {
+          String::new()
+        }
+      }
       crate::Error::Error(err) => err,
       err => panic!("Unexpected error variant found: {:?}", err),
     }

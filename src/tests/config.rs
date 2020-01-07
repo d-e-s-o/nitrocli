@@ -1,7 +1,7 @@
 // config.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -39,9 +39,10 @@ $"#,
 #[test_device]
 fn set_wrong_usage(model: nitrokey::Model) {
   let res = Nitrocli::with_model(model).handle(&["config", "set", "--numlock", "2", "-N"]);
-  assert_eq!(
-    res.unwrap_str_err(),
-    "--numlock and --no-numlock are mutually exclusive"
+  let err = res.unwrap_str_err();
+  assert!(
+    err.contains("The argument '--numlock <numlock>' cannot be used with '--no-numlock'"),
+    err,
   );
 }
 

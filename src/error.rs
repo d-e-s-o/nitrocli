@@ -1,7 +1,7 @@
 // error.rs
 
 // *************************************************************************
-// * Copyright (C) 2017-2019 Daniel Mueller (deso@posteo.net)              *
+// * Copyright (C) 2017-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -22,6 +22,8 @@ use std::io;
 use std::str;
 use std::string;
 
+use structopt::clap;
+
 /// A trait used to simplify error handling in conjunction with the
 /// try_with_* functions we use for repeatedly asking the user for a
 /// secret.
@@ -40,7 +42,7 @@ where
 
 #[derive(Debug)]
 pub enum Error {
-  ArgparseError(i32),
+  ClapError(clap::Error),
   IoError(io::Error),
   NitrokeyError(Option<&'static str>, nitrokey::Error),
   Utf8Error(str::Utf8Error),
@@ -59,6 +61,12 @@ impl TryInto<nitrokey::Error> for Error {
 impl From<&str> for Error {
   fn from(s: &str) -> Error {
     Error::Error(s.to_string())
+  }
+}
+
+impl From<clap::Error> for Error {
+  fn from(e: clap::Error) -> Error {
+    Error::ClapError(e)
   }
 }
 
@@ -89,7 +97,7 @@ impl From<string::FromUtf8Error> for Error {
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
-      Error::ArgparseError(_) => write!(f, "Could not parse arguments"),
+      Error::ClapError(ref e) => write!(f, "{}", e),
       Error::NitrokeyError(ref ctx, ref e) => {
         if let Some(ctx) = ctx {
           write!(f, "{}: ", ctx)?;
