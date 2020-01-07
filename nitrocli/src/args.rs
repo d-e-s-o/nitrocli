@@ -111,16 +111,16 @@ impl From<DeviceModel> for nitrokey::Model {
 /// A top-level command for nitrocli.
 #[allow(unused_doc_comments)]
 Command! {Command, [
-  Config(ConfigArgs) => ("config", config),
-  Encrypted(EncryptedArgs) => ("encrypted", encrypted),
-  Hidden(HiddenArgs) => ("hidden", hidden),
-  Lock(LockArgs) => ("lock", lock),
-  Otp(OtpArgs) => ("otp", otp),
-  Pin(PinArgs) => ("pin", pin),
-  Pws(PwsArgs) => ("pws", pws),
-  Reset(ResetArgs) => ("reset", reset),
-  Status(StatusArgs) => ("status", status),
-  Unencrypted(UnencryptedArgs) => ("unencrypted", unencrypted),
+  Config(ConfigArgs) => config,
+  Encrypted(EncryptedArgs) => encrypted,
+  Hidden(HiddenArgs) => hidden,
+  Lock(LockArgs) => lock,
+  Otp(OtpArgs) => otp,
+  Pin(PinArgs) => pin,
+  Pws(PwsArgs) => pws,
+  Reset(ResetArgs) => reset,
+  Status(StatusArgs) => status,
+  Unencrypted(UnencryptedArgs) => unencrypted,
 ]}
 
 /// Reads or writes the device configuration
@@ -374,8 +374,8 @@ pub struct UnencryptedSetArgs {
 }
 
 Command! {ConfigCommand, [
-  Get(ConfigGetArgs) => ("get", config_get),
-  Set(ConfigSetArgs) => ("set", config_set),
+  Get(ConfigGetArgs) => config_get,
+  Set(ConfigSetArgs) => config_set,
 ]}
 
 #[derive(Clone, Copy, Debug)]
@@ -414,10 +414,10 @@ impl<T> ConfigOption<T> {
 }
 
 Command! {OtpCommand, [
-  Clear(OtpClearArgs) => ("clear", otp_clear),
-  Get(OtpGetArgs) => ("get", otp_get),
-  Set(OtpSetArgs) => ("set", otp_set),
-  Status(OtpStatusArgs) => ("status", otp_status),
+  Clear(OtpClearArgs) => otp_clear,
+  Get(OtpGetArgs) => otp_get,
+  Set(OtpSetArgs) => otp_set,
+  Status(OtpStatusArgs) => otp_status,
 ]}
 
 Enum! {OtpAlgorithm, [
@@ -446,16 +446,16 @@ Enum! {OtpSecretFormat, [
 ]}
 
 Command! {PinCommand, [
-  Clear(PinClearArgs) => ("clear", pin_clear),
-  Set(PinSetArgs) => ("set", pin_set),
-  Unblock(PinUnblockArgs) => ("unblock", pin_unblock),
+  Clear(PinClearArgs) => pin_clear,
+  Set(PinSetArgs) => pin_set,
+  Unblock(PinUnblockArgs) => pin_unblock,
 ]}
 
 Command! {PwsCommand, [
-  Clear(PwsClearArgs) => ("clear", pws_clear),
-  Get(PwsGetArgs) => ("get", pws_get),
-  Set(PwsSetArgs) => ("set", pws_set),
-  Status(PwsStatusArgs) => ("status", pws_status),
+  Clear(PwsClearArgs) => pws_clear,
+  Get(PwsGetArgs) => pws_get,
+  Set(PwsSetArgs) => pws_set,
+  Status(PwsStatusArgs) => pws_status,
 ]}
 
 /// Inquire the status of the Nitrokey.
@@ -469,7 +469,7 @@ fn reset(ctx: &mut ExecCtx<'_>, _args: ResetArgs) -> Result<()> {
 }
 
 Command! {UnencryptedCommand, [
-  Set(UnencryptedSetArgs) => ("set", unencrypted_set),
+  Set(UnencryptedSetArgs) => unencrypted_set,
 ]}
 
 Enum! {UnencryptedVolumeMode, [
@@ -488,8 +488,8 @@ fn unencrypted_set(ctx: &mut ExecCtx<'_>, args: UnencryptedSetArgs) -> Result<()
 }
 
 Command! {EncryptedCommand, [
-  Close(EncryptedCloseArgs) => ("close", encrypted_close),
-  Open(EncryptedOpenArgs) => ("open", encrypted_open),
+  Close(EncryptedCloseArgs) => encrypted_close,
+  Open(EncryptedOpenArgs) => encrypted_open,
 ]}
 
 /// Execute an encrypted subcommand.
@@ -508,9 +508,9 @@ fn encrypted_close(ctx: &mut ExecCtx<'_>, _args: EncryptedCloseArgs) -> Result<(
 }
 
 Command! {HiddenCommand, [
-  Close(HiddenCloseArgs) => ("close", hidden_close),
-  Create(HiddenCreateArgs) => ("create", hidden_create),
-  Open(HiddenOpenArgs) => ("open", hidden_open),
+  Close(HiddenCloseArgs) => hidden_close,
+  Create(HiddenCreateArgs) => hidden_create,
+  Open(HiddenOpenArgs) => hidden_open,
 ]}
 
 /// Execute a hidden subcommand.

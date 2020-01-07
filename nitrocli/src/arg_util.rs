@@ -25,7 +25,7 @@ macro_rules! count {
 }
 
 macro_rules! Command {
-  ( $name:ident, [ $( $var:ident($inner:ident) => ($str:expr, $exec:expr), ) *] ) => {
+  ( $name:ident, [ $( $var:ident($inner:ident) => $exec:expr, ) *] ) => {
     #[derive(Debug, PartialEq, structopt::StructOpt)]
     pub enum $name {
       $(
