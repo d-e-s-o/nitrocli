@@ -1,0 +1,9 @@
+[package]
+name = "const_fn_test"
+version = "0.0.0"
+authors = ["Taiki Endo <te316e89@gmail.com>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+const_fn = { path = "../const_fn" }

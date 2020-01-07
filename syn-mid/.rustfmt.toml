@@ -1,0 +1,4 @@
+# Set the default settings again to always apply the proper formatting without being affected by the editor settings.
+# https://github.com/rust-lang/rls/issues/501#issuecomment-333717736
+edition = "2018"
+tab_spaces = 4

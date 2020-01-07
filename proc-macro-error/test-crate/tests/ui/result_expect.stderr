@@ -1,0 +1,5 @@
+error: Result::expect_or_abort() test: error
+ --> $DIR/result_expect.rs:4:10
+  |
+4 | make_fn!(result_expect);
+  |          ^^^^^^^^^^^^^

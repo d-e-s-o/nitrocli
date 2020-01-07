@@ -1,0 +1,20 @@
+[package]
+name = "test-crate"
+version = "0.0.0"
+authors = ["CreepySkeleton <creepy-skeleton@yandex.ru>"]
+edition = "2018"
+publish = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro-error = { path = "../proc-macro-error"}
+quote = "1"
+proc-macro2 = "1"
+syn = {version = "1", default-features = false }
+
+[dev-dependencies]
+trybuild = "1.0"
+rustversion = "1.0"
+toml = "=0.5.2" # DO NOT BUMP

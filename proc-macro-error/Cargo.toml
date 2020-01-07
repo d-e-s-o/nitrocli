@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "proc-macro-error",
+    "proc-macro-error-attr",
+    "test-crate",
+]

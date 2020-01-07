@@ -1,0 +1,21 @@
+[package]
+name = "rustversion"
+version = "1.0.1"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+description = "Conditional compilation according to rustc compiler version"
+repository = "https://github.com/dtolnay/rustversion"
+documentation = "https://docs.rs/rustversion"
+readme = "README.md"
+
+[lib]
+proc-macro = true
+
+[badges]
+travis-ci = { repository = "dtolnay/rustversion" }
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "1.0.1", features = ["full"] }

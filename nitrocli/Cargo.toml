@@ -55,6 +55,10 @@ version = "0.2"
 [dependencies.nitrokey]
 version = "0.4.0"
 
+[dependencies.structopt]
+version = "0.3.7"
+default-features = false
+
 [dev-dependencies.nitrokey-test]
 version = "0.3.1"
 
@@ -67,11 +71,27 @@ version = "1"
 [patch.crates-io]
 argparse = { path = "../argparse" }
 base32 = { path = "../base32" }
+bitflags = { path = "../bitflags" }
 cc = { path = "../cc" }
 cfg-if = { path = "../cfg-if" }
+clap = { path = "../clap" }
 getrandom = { path = "../getrandom" }
+heck = { path = "../heck" }
+lazy_static = { path = "../lazy-static" }
 libc = { path = "../libc" }
 nitrokey = { path = "../nitrokey" }
 nitrokey-sys = { path = "../nitrokey-sys" }
-lazy_static = { path = "../lazy-static" }
+proc-macro-error = { path = "../proc-macro-error/proc-macro-error" }
+proc-macro-error-attr = { path = "../proc-macro-error/proc-macro-error-attr" }
+proc-macro2 = { path = "../proc-macro2" }
+quote = { path = "../quote" }
 rand_core = { path = "../rand/rand_core" }
+rustversion = { path = "../rustversion" }
+structopt = { path = "../structopt" }
+structopt-derive = { path = "../structopt/structopt-derive" }
+syn = { path = "../syn" }
+syn-mid = { path = "../syn-mid" }
+textwrap = { path = "../textwrap" }
+unicode-segmentation = { path = "../unicode-segmentation" }
+unicode-width = { path = "../unicode-width" }
+unicode-xid = { path = "../unicode-xid" }

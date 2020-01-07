@@ -1,0 +1,5 @@
+error: Option::expect_or_abort() test
+ --> $DIR/option_expect.rs:4:1
+  |
+4 | make_fn!(option_expect);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^ in this macro invocation
