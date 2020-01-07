@@ -147,19 +147,6 @@ macro_rules! fmt_enum {
   }};
 }
 
-/// A macro for generating the help text for a command/subcommand. The
-/// argument is the variable representing the command (which in turn is
-/// an enum).
-/// Note that the name of this variable is embedded into the help text!
-macro_rules! cmd_help {
-  ( $cmd:ident ) => {
-    format!(
-      concat!("The ", stringify!($cmd), " to execute ({})"),
-      fmt_enum!($cmd)
-    )
-  };
-}
-
 #[cfg(test)]
 mod tests {
   Enum! {Command, [

@@ -269,7 +269,7 @@ Enum! {UnencryptedVolumeMode, [
 /// Execute an unencrypted subcommand.
 fn unencrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = UnencryptedCommand::Set;
-  let help = cmd_help!(subcommand);
+  let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Interacts with the device's unencrypted volume");
@@ -288,12 +288,7 @@ fn unencrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!(
-      "{} {} {}",
-      crate::NITROCLI,
-      Command::Unencrypted,
-      subcommand,
-    ),
+    format!("{} {} {}", crate::NITROCLI, "unencrypted", subcommand,),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -322,7 +317,7 @@ Command! {EncryptedCommand, [
 /// Execute an encrypted subcommand.
 fn encrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = EncryptedCommand::Open;
-  let help = cmd_help!(subcommand);
+  let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Interacts with the device's encrypted volume");
@@ -341,7 +336,7 @@ fn encrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("{} {} {}", crate::NITROCLI, Command::Encrypted, subcommand),
+    format!("{} {} {}", crate::NITROCLI, "encrypted", subcommand),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -373,7 +368,7 @@ Command! {HiddenCommand, [
 /// Execute a hidden subcommand.
 fn hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = HiddenCommand::Open;
-  let help = cmd_help!(subcommand);
+  let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Interacts with the device's hidden volume");
@@ -392,7 +387,7 @@ fn hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("{} {} {}", crate::NITROCLI, Command::Hidden, subcommand),
+    format!("{} {} {}", crate::NITROCLI, "hidden", subcommand),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -444,7 +439,7 @@ fn hidden_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 /// Execute a config subcommand.
 fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = ConfigCommand::Get;
-  let help = cmd_help!(subcommand);
+  let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Reads or writes the device configuration");
@@ -463,7 +458,7 @@ fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
   subargs.insert(
     0,
-    format!("{} {} {}", crate::NITROCLI, Command::Config, subcommand),
+    format!("{} {} {}", crate::NITROCLI, "config", subcommand),
   );
   subcommand.execute(ctx, subargs)
 }
@@ -556,7 +551,7 @@ fn lock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 /// Execute an OTP subcommand.
 fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = OtpCommand::Get;
-  let help = cmd_help!(subcommand);
+  let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Accesses one-time passwords");
@@ -573,10 +568,7 @@ fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(
-    0,
-    format!("{} {} {}", crate::NITROCLI, Command::Otp, subcommand),
-  );
+  subargs.insert(0, format!("{} {} {}", crate::NITROCLI, "otp", subcommand));
   subcommand.execute(ctx, subargs)
 }
 
@@ -725,7 +717,7 @@ fn otp_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 /// Execute a PIN subcommand.
 fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = PinCommand::Clear;
-  let help = cmd_help!(subcommand);
+  let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Manages the Nitrokey PINs");
@@ -742,10 +734,7 @@ fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(
-    0,
-    format!("{} {} {}", crate::NITROCLI, Command::Pin, subcommand),
-  );
+  subargs.insert(0, format!("{} {} {}", crate::NITROCLI, "pin", subcommand));
   subcommand.execute(ctx, subargs)
 }
 
@@ -786,7 +775,7 @@ fn pin_unblock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   let mut subcommand = PwsCommand::Get;
   let mut subargs = vec![];
-  let help = cmd_help!(subcommand);
+  let help = "".to_string();
   let mut parser = argparse::ArgumentParser::new();
   parser.set_description("Accesses the password safe");
   let _ =
@@ -802,10 +791,7 @@ fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
   parser.stop_on_first_argument(true);
   parse(ctx, parser, args)?;
 
-  subargs.insert(
-    0,
-    format!("{} {} {}", crate::NITROCLI, Command::Pws, subcommand),
-  );
+  subargs.insert(0, format!("{} {} {}", crate::NITROCLI, "pws", subcommand));
   subcommand.execute(ctx, subargs)
 }
 
@@ -923,7 +909,7 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
   );
   let mut verbosity = 0;
   let mut command = Command::Status;
-  let cmd_help = cmd_help!(command);
+  let cmd_help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
   let _ = parser.refer(&mut version).add_option(
