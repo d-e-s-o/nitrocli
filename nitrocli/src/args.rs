@@ -77,7 +77,7 @@ pub struct Args {
   #[structopt(short, long, parse(from_occurrences))]
   verbose: u8,
   /// Selects the device model to connect to
-  #[structopt(short, long)]
+  #[structopt(short, long, possible_values = &DeviceModel::all_str())]
   model: Option<DeviceModel>,
   #[structopt(subcommand)]
   cmd: Command,
@@ -219,7 +219,7 @@ pub struct OtpArgs {
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct OtpClearArgs {
   /// The OTP algorithm to use
-  #[structopt(short, long, default_value = "totp")]
+  #[structopt(short, long, default_value = "totp", possible_values = &OtpAlgorithm::all_str())]
   algorithm: OtpAlgorithm,
   /// The OTP slot to clear
   slot: u8,
@@ -229,7 +229,7 @@ pub struct OtpClearArgs {
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct OtpGetArgs {
   /// The OTP algorithm to use
-  #[structopt(short, long, default_value = "totp")]
+  #[structopt(short, long, default_value = "totp", possible_values = &OtpAlgorithm::all_str())]
   algorithm: OtpAlgorithm,
   /// The time to use for TOTP generation (Unix timestamp) [default: system time]
   #[structopt(short, long)]
@@ -242,10 +242,10 @@ pub struct OtpGetArgs {
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct OtpSetArgs {
   /// The OTP algorithm to use
-  #[structopt(short, long, default_value = "totp")]
+  #[structopt(short, long, default_value = "totp", possible_values = &OtpAlgorithm::all_str())]
   algorithm: OtpAlgorithm,
   /// The number of digits to use for the one-time password
-  #[structopt(short, long, default_value = "6")]
+  #[structopt(short, long, default_value = "6", possible_values = &OtpMode::all_str())]
   digits: OtpMode,
   /// The counter value for HOTP
   #[structopt(short, long, default_value = "0")]
@@ -288,7 +288,7 @@ pub struct PinClearArgs {}
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PinSetArgs {
   /// The PIN type to change
-  #[structopt(name = "type")]
+  #[structopt(name = "type", possible_values = &pinentry::PinType::all_str())]
   pintype: pinentry::PinType,
 }
 
@@ -369,7 +369,7 @@ pub struct UnencryptedArgs {
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct UnencryptedSetArgs {
   /// The mode to change to
-  #[structopt(name = "type")]
+  #[structopt(name = "type", possible_values = &UnencryptedVolumeMode::all_str())]
   mode: UnencryptedVolumeMode,
 }
 
