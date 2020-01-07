@@ -111,16 +111,16 @@ impl From<DeviceModel> for nitrokey::Model {
 /// A top-level command for nitrocli.
 #[allow(unused_doc_comments)]
 Command! {Command, [
-  Config(ConfigArgs) => config,
-  Encrypted(EncryptedArgs) => encrypted,
-  Hidden(HiddenArgs) => hidden,
-  Lock(LockArgs) => lock,
-  Otp(OtpArgs) => otp,
-  Pin(PinArgs) => pin,
-  Pws(PwsArgs) => pws,
-  Reset(ResetArgs) => reset,
-  Status(StatusArgs) => status,
-  Unencrypted(UnencryptedArgs) => unencrypted,
+  Config(ConfigArgs) => |ctx, args: ConfigArgs| args.subcmd.execute(ctx),
+  Encrypted(EncryptedArgs) => |ctx, args: EncryptedArgs| args.subcmd.execute(ctx),
+  Hidden(HiddenArgs) => |ctx, args: HiddenArgs| args.subcmd.execute(ctx),
+  Lock(LockArgs) => |ctx, _| commands::lock(ctx),
+  Otp(OtpArgs) => |ctx, args: OtpArgs| args.subcmd.execute(ctx),
+  Pin(PinArgs) => |ctx, args: PinArgs| args.subcmd.execute(ctx),
+  Pws(PwsArgs) => |ctx, args: PwsArgs| args.subcmd.execute(ctx),
+  Reset(ResetArgs) => |ctx, _| commands::reset(ctx),
+  Status(StatusArgs) => |ctx, _| commands::status(ctx),
+  Unencrypted(UnencryptedArgs) => |ctx, args: UnencryptedArgs| args.subcmd.execute(ctx),
 ]}
 
 /// Reads or writes the device configuration
@@ -374,7 +374,7 @@ pub struct UnencryptedSetArgs {
 }
 
 Command! {ConfigCommand, [
-  Get(ConfigGetArgs) => config_get,
+  Get(ConfigGetArgs) => |ctx, _| commands::config_get(ctx),
   Set(ConfigSetArgs) => config_set,
 ]}
 
@@ -414,10 +414,10 @@ impl<T> ConfigOption<T> {
 }
 
 Command! {OtpCommand, [
-  Clear(OtpClearArgs) => otp_clear,
-  Get(OtpGetArgs) => otp_get,
+  Clear(OtpClearArgs) => |ctx, args: OtpClearArgs| commands::otp_clear(ctx, args.slot, args.algorithm),
+  Get(OtpGetArgs) => |ctx, args: OtpGetArgs| commands::otp_get(ctx, args.slot, args.algorithm, args.time),
   Set(OtpSetArgs) => otp_set,
-  Status(OtpStatusArgs) => otp_status,
+  Status(OtpStatusArgs) => |ctx, args: OtpStatusArgs| commands::otp_status(ctx, args.all),
 ]}
 
 Enum! {OtpAlgorithm, [
@@ -446,30 +446,20 @@ Enum! {OtpSecretFormat, [
 ]}
 
 Command! {PinCommand, [
-  Clear(PinClearArgs) => pin_clear,
-  Set(PinSetArgs) => pin_set,
-  Unblock(PinUnblockArgs) => pin_unblock,
+  Clear(PinClearArgs) => |ctx, _| commands::pin_clear(ctx),
+  Set(PinSetArgs) => |ctx, args: PinSetArgs| commands::pin_set(ctx, args.pintype),
+  Unblock(PinUnblockArgs) => |ctx, _| commands::pin_unblock(ctx),
 ]}
 
 Command! {PwsCommand, [
-  Clear(PwsClearArgs) => pws_clear,
-  Get(PwsGetArgs) => pws_get,
-  Set(PwsSetArgs) => pws_set,
-  Status(PwsStatusArgs) => pws_status,
+  Clear(PwsClearArgs) => |ctx, args: PwsClearArgs| commands::pws_clear(ctx, args.slot),
+  Get(PwsGetArgs) => |ctx, args: PwsGetArgs| commands::pws_get(ctx, args.slot, args.name, args.login, args.password, args.quiet),
+  Set(PwsSetArgs) => |ctx, args: PwsSetArgs| commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password),
+  Status(PwsStatusArgs) => |ctx, args: PwsStatusArgs| commands::pws_status(ctx, args.all),
 ]}
 
-/// Inquire the status of the Nitrokey.
-fn status(ctx: &mut ExecCtx<'_>, _args: StatusArgs) -> Result<()> {
-  commands::status(ctx)
-}
-
-/// Perform a factory reset.
-fn reset(ctx: &mut ExecCtx<'_>, _args: ResetArgs) -> Result<()> {
-  commands::reset(ctx)
-}
-
 Command! {UnencryptedCommand, [
-  Set(UnencryptedSetArgs) => unencrypted_set,
+  Set(UnencryptedSetArgs) => |ctx, args: UnencryptedSetArgs| commands::unencrypted_set(ctx, args.mode),
 ]}
 
 Enum! {UnencryptedVolumeMode, [
@@ -477,70 +467,17 @@ Enum! {UnencryptedVolumeMode, [
   ReadOnly => "read-only",
 ]}
 
-/// Execute an unencrypted subcommand.
-fn unencrypted(ctx: &mut ExecCtx<'_>, args: UnencryptedArgs) -> Result<()> {
-  args.subcmd.execute(ctx)
-}
-
-/// Change the configuration of the unencrypted volume.
-fn unencrypted_set(ctx: &mut ExecCtx<'_>, args: UnencryptedSetArgs) -> Result<()> {
-  commands::unencrypted_set(ctx, args.mode)
-}
-
 Command! {EncryptedCommand, [
-  Close(EncryptedCloseArgs) => encrypted_close,
-  Open(EncryptedOpenArgs) => encrypted_open,
+  Close(EncryptedCloseArgs) => |ctx, _| commands::encrypted_close(ctx),
+  Open(EncryptedOpenArgs) => |ctx, _| commands::encrypted_open(ctx),
 ]}
-
-/// Execute an encrypted subcommand.
-fn encrypted(ctx: &mut ExecCtx<'_>, args: EncryptedArgs) -> Result<()> {
-  args.subcmd.execute(ctx)
-}
-
-/// Open the encrypted volume on the Nitrokey.
-fn encrypted_open(ctx: &mut ExecCtx<'_>, _args: EncryptedOpenArgs) -> Result<()> {
-  commands::encrypted_open(ctx)
-}
-
-/// Close the previously opened encrypted volume.
-fn encrypted_close(ctx: &mut ExecCtx<'_>, _args: EncryptedCloseArgs) -> Result<()> {
-  commands::encrypted_close(ctx)
-}
 
 Command! {HiddenCommand, [
-  Close(HiddenCloseArgs) => hidden_close,
-  Create(HiddenCreateArgs) => hidden_create,
-  Open(HiddenOpenArgs) => hidden_open,
+  Close(HiddenCloseArgs) => |ctx, _| commands::hidden_close(ctx),
+  Create(HiddenCreateArgs) => |ctx, args: HiddenCreateArgs| commands::hidden_create(ctx, args.slot, args.start, args.end),
+  Open(HiddenOpenArgs) => |ctx, _| commands::hidden_open(ctx),
 ]}
 
-/// Execute a hidden subcommand.
-fn hidden(ctx: &mut ExecCtx<'_>, args: HiddenArgs) -> Result<()> {
-  args.subcmd.execute(ctx)
-}
-
-fn hidden_create(ctx: &mut ExecCtx<'_>, args: HiddenCreateArgs) -> Result<()> {
-  commands::hidden_create(ctx, args.slot, args.start, args.end)
-}
-
-fn hidden_open(ctx: &mut ExecCtx<'_>, _args: HiddenOpenArgs) -> Result<()> {
-  commands::hidden_open(ctx)
-}
-
-fn hidden_close(ctx: &mut ExecCtx<'_>, _args: HiddenCloseArgs) -> Result<()> {
-  commands::hidden_close(ctx)
-}
-
-/// Execute a config subcommand.
-fn config(ctx: &mut ExecCtx<'_>, args: ConfigArgs) -> Result<()> {
-  args.subcmd.execute(ctx)
-}
-
-/// Read the Nitrokey configuration.
-fn config_get(ctx: &mut ExecCtx<'_>, _args: ConfigGetArgs) -> Result<()> {
-  commands::config_get(ctx)
-}
-
-/// Write the Nitrokey configuration.
 fn config_set(ctx: &mut ExecCtx<'_>, args: ConfigSetArgs) -> Result<()> {
   let numlock = ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")?;
   let capslock = ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")?;
@@ -555,23 +492,7 @@ fn config_set(ctx: &mut ExecCtx<'_>, args: ConfigSetArgs) -> Result<()> {
   commands::config_set(ctx, numlock, capslock, scrollock, otp_pin)
 }
 
-/// Lock the Nitrokey.
-fn lock(ctx: &mut ExecCtx<'_>, _args: LockArgs) -> Result<()> {
-  commands::lock(ctx)
-}
-
-/// Execute an OTP subcommand.
-fn otp(ctx: &mut ExecCtx<'_>, args: OtpArgs) -> Result<()> {
-  args.subcmd.execute(ctx)
-}
-
-/// Generate a one-time password on the Nitrokey device.
-fn otp_get(ctx: &mut ExecCtx<'_>, args: OtpGetArgs) -> Result<()> {
-  commands::otp_get(ctx, args.slot, args.algorithm, args.time)
-}
-
-/// Configure a one-time password slot on the Nitrokey device.
-pub fn otp_set(ctx: &mut ExecCtx<'_>, args: OtpSetArgs) -> Result<()> {
+fn otp_set(ctx: &mut ExecCtx<'_>, args: OtpSetArgs) -> Result<()> {
   let data = nitrokey::OtpSlotData {
     number: args.slot,
     name: args.name,
@@ -588,68 +509,6 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, args: OtpSetArgs) -> Result<()> {
     args.time_window,
     args.format,
   )
-}
-
-/// Clear an OTP slot.
-fn otp_clear(ctx: &mut ExecCtx<'_>, args: OtpClearArgs) -> Result<()> {
-  commands::otp_clear(ctx, args.slot, args.algorithm)
-}
-
-/// Print the status of the OTP slots.
-fn otp_status(ctx: &mut ExecCtx<'_>, args: OtpStatusArgs) -> Result<()> {
-  commands::otp_status(ctx, args.all)
-}
-
-/// Execute a PIN subcommand.
-fn pin(ctx: &mut ExecCtx<'_>, args: PinArgs) -> Result<()> {
-  args.subcmd.execute(ctx)
-}
-
-/// Clear the PIN as cached by various other commands.
-fn pin_clear(ctx: &mut ExecCtx<'_>, _args: PinClearArgs) -> Result<()> {
-  commands::pin_clear(ctx)
-}
-
-/// Change a PIN.
-fn pin_set(ctx: &mut ExecCtx<'_>, args: PinSetArgs) -> Result<()> {
-  commands::pin_set(ctx, args.pintype)
-}
-
-/// Unblock and reset the user PIN.
-fn pin_unblock(ctx: &mut ExecCtx<'_>, _args: PinUnblockArgs) -> Result<()> {
-  commands::pin_unblock(ctx)
-}
-
-/// Execute a PWS subcommand.
-fn pws(ctx: &mut ExecCtx<'_>, args: PwsArgs) -> Result<()> {
-  args.subcmd.execute(ctx)
-}
-
-/// Access a slot of the password safe on the Nitrokey.
-fn pws_get(ctx: &mut ExecCtx<'_>, args: PwsGetArgs) -> Result<()> {
-  commands::pws_get(
-    ctx,
-    args.slot,
-    args.name,
-    args.login,
-    args.password,
-    args.quiet,
-  )
-}
-
-/// Set a slot of the password safe on the Nitrokey.
-fn pws_set(ctx: &mut ExecCtx<'_>, args: PwsSetArgs) -> Result<()> {
-  commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password)
-}
-
-/// Clear a PWS slot.
-fn pws_clear(ctx: &mut ExecCtx<'_>, args: PwsClearArgs) -> Result<()> {
-  commands::pws_clear(ctx, args.slot)
-}
-
-/// Print the status of the PWS slots.
-fn pws_status(ctx: &mut ExecCtx<'_>, args: PwsStatusArgs) -> Result<()> {
-  commands::pws_status(ctx, args.all)
 }
 
 /// Parse the command-line arguments and execute the selected command.
