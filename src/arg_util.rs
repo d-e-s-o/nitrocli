@@ -107,14 +107,23 @@ macro_rules! enum_int {
     }
 
     impl ::std::str::FromStr for $name {
-      type Err = ();
+      type Err = ::std::string::String;
 
       fn from_str(s: &str) -> ::std::result::Result<Self, Self::Err> {
         match s {
           $(
             $str => Ok($name::$var),
           )*
-          _ => Err(()),
+          _ => Err(
+            format!(
+              "expected one of {}",
+              $name::all_variants()
+                .iter()
+                .map(::std::convert::AsRef::as_ref)
+                .collect::<::std::vec::Vec<_>>()
+                .join(", "),
+             )
+           )
         }
       }
     }
