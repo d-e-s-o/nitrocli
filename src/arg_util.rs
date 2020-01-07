@@ -1,7 +1,7 @@
 // arg_util.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -24,13 +24,16 @@ macro_rules! count {
   }
 }
 
-/// A macro for generating an enum with a set of simple (i.e., no
-/// parameters) variants and their textual representations.
-// TODO: Right now we hard code the derives we create. We may want to
-//       make this set configurable.
-macro_rules! Enum {
+macro_rules! Command {
   ( $name:ident, [ $( $var:ident => ($str:expr, $exec:expr), ) *] ) => {
-    Enum! {$name, [
+    #[derive(Debug, PartialEq)]
+    pub enum $name {
+      $(
+        $var,
+      )*
+    }
+
+    enum_int! {$name, [
       $( $var => $str, )*
     ]}
 
@@ -49,6 +52,13 @@ macro_rules! Enum {
       }
     }
   };
+}
+
+/// A macro for generating an enum with a set of simple (i.e., no
+/// parameters) variants and their textual representations.
+// TODO: Right now we hard code the derives we create. We may want to
+//       make this set configurable.
+macro_rules! Enum {
   ( $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum $name {
@@ -57,6 +67,14 @@ macro_rules! Enum {
       )*
     }
 
+    enum_int! {$name, [
+      $( $var => $str, )*
+    ]}
+  };
+}
+
+macro_rules! enum_int {
+  ( $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
     impl $name {
       #[allow(unused)]
       pub fn all(&self) -> [$name; count!($($var),*) ] {
