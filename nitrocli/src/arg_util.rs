@@ -33,9 +33,34 @@ macro_rules! Command {
       )*
     }
 
-    enum_int! {$name, [
-      $( $var => $str, )*
-    ]}
+    impl ::std::convert::AsRef<str> for $name {
+      fn as_ref(&self) -> &'static str {
+        match *self {
+          $(
+            $name::$var => $str,
+          )*
+        }
+      }
+    }
+
+    impl ::std::fmt::Display for $name {
+      fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        write!(f, "{}", self.as_ref())
+      }
+    }
+
+    impl ::std::str::FromStr for $name {
+      type Err = &'static str;
+
+      fn from_str(s: &str) -> ::std::result::Result<Self, Self::Err> {
+        match s {
+          $(
+            $str => Ok($name::$var),
+          )*
+          _ => Err("[error]"),
+        }
+      }
+    }
 
     #[allow(unused_qualifications)]
     impl $name {
