@@ -42,9 +42,6 @@ lto = true
 codegen-units = 1
 incremental = false
 
-[dependencies.argparse]
-version = "0.2.2"
-
 [dependencies.base32]
 version = "0.4.0"
 
