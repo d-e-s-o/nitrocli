@@ -29,38 +29,6 @@ use crate::RunCtx;
 
 type Result<T> = result::Result<T, Error>;
 
-/// Wraps a writer and buffers its output.
-///
-/// This implementation is similar to `io::BufWriter`, but:
-/// - The inner writer is only written to if `flush` is called.
-/// - The buffer may grow infinitely large.
-struct BufWriter<'w, W: io::Write + ?Sized> {
-  buf: Vec<u8>,
-  inner: &'w mut W,
-}
-
-impl<'w, W: io::Write + ?Sized> BufWriter<'w, W> {
-  pub fn new(inner: &'w mut W) -> Self {
-    BufWriter {
-      buf: Vec::with_capacity(128),
-      inner,
-    }
-  }
-}
-
-impl<'w, W: io::Write + ?Sized> io::Write for BufWriter<'w, W> {
-  fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-    self.buf.extend_from_slice(buf);
-    Ok(buf.len())
-  }
-
-  fn flush(&mut self) -> io::Result<()> {
-    self.inner.write_all(&self.buf)?;
-    self.buf.clear();
-    self.inner.flush()
-  }
-}
-
 trait Stdio {
   fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write);
 }
@@ -156,18 +124,18 @@ Command! {Command, [
 ]}
 
 /// Reads or writes the device configuration
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct ConfigArgs {
   #[structopt(subcommand)]
   subcmd: ConfigCommand,
 }
 
 /// Prints the Nitrokey configuration
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct ConfigGetArgs {}
 
 /// Changes the Nitrokey configuration
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct ConfigSetArgs {
   /// Sets the numlock option to the given HOTP slot
   #[structopt(short = "n", long)]
@@ -196,33 +164,33 @@ pub struct ConfigSetArgs {
 }
 
 /// Interacts with the device's encrypted volume
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct EncryptedArgs {
   #[structopt(subcommand)]
   subcmd: EncryptedCommand,
 }
 
 /// Closes the encrypted volume on a Nitrokey Storage
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct EncryptedCloseArgs {}
 
 /// Opens the encrypted volume on a Nitrokey Storage
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct EncryptedOpenArgs {}
 
 /// Interacts with the device's hidden volume
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct HiddenArgs {
   #[structopt(subcommand)]
   subcmd: HiddenCommand,
 }
 
 /// Closes the hidden volume on a Nitrokey Storage
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct HiddenCloseArgs {}
 
 /// Creates a hidden volume on a Nitrokey Storage
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct HiddenCreateArgs {
   /// The hidden volume slot to use
   slot: u8,
@@ -233,22 +201,22 @@ pub struct HiddenCreateArgs {
 }
 
 /// Opens the hidden volume on a Nitrokey Storage
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct HiddenOpenArgs {}
 
 /// Locks the connected Nitrokey device
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct LockArgs {}
 
 /// Accesses one-time passwords
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct OtpArgs {
   #[structopt(subcommand)]
   subcmd: OtpCommand,
 }
 
 /// Clears a one-time password slot
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct OtpClearArgs {
   /// The OTP algorithm to use
   #[structopt(short, long, default_value = "totp")]
@@ -258,7 +226,7 @@ pub struct OtpClearArgs {
 }
 
 /// Generates a one-time password
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct OtpGetArgs {
   /// The OTP algorithm to use
   #[structopt(short, long, default_value = "totp")]
@@ -271,7 +239,7 @@ pub struct OtpGetArgs {
 }
 
 /// Configures a one-time password slot
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct OtpSetArgs {
   /// The OTP algorithm to use
   #[structopt(short, long, default_value = "totp")]
@@ -298,7 +266,7 @@ pub struct OtpSetArgs {
 }
 
 /// Prints the status of the one-time password slots
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct OtpStatusArgs {
   /// Shows slots that are not programmed
   #[structopt(short, long)]
@@ -306,18 +274,18 @@ pub struct OtpStatusArgs {
 }
 
 /// Manages the Nitrokey PINs
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PinArgs {
   #[structopt(subcommand)]
   subcmd: PinCommand,
 }
 
 /// Clears the cached PINs
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PinClearArgs {}
 
 /// Changes a PIN
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PinSetArgs {
   /// The PIN type to change
   #[structopt(name = "type")]
@@ -325,25 +293,25 @@ pub struct PinSetArgs {
 }
 
 /// Unblocks and resets the user PIN
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PinUnblockArgs {}
 
 /// Accesses the password safe
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PwsArgs {
   #[structopt(subcommand)]
   subcmd: PwsCommand,
 }
 
 /// Clears a password safe slot
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PwsClearArgs {
   /// The PWS slot to clear
   slot: u8,
 }
 
 /// Reads a password safe slot
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PwsGetArgs {
   /// Shows the name stored on the slot
   #[structopt(short, long)]
@@ -362,7 +330,7 @@ pub struct PwsGetArgs {
 }
 
 /// Writes a password safe slot
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PwsSetArgs {
   /// The PWS slot to write
   slot: u8,
@@ -375,7 +343,7 @@ pub struct PwsSetArgs {
 }
 
 /// Prints the status of the password safe slots
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PwsStatusArgs {
   /// Shows slots that are not programmed
   #[structopt(short, long)]
@@ -383,22 +351,22 @@ pub struct PwsStatusArgs {
 }
 
 /// Performs a factory reset
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct ResetArgs {}
 
 /// Prints the status of the connected Nitrokey device
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct StatusArgs {}
 
 /// Interacts with the device's unencrypted volume
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct UnencryptedArgs {
   #[structopt(subcommand)]
   subcmd: UnencryptedCommand,
 }
 
 /// Changes the configuration of the unencrypted volume on a Nitrokey Storage
-#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct UnencryptedSetArgs {
   /// The mode to change to
   #[structopt(name = "type")]
