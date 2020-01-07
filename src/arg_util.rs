@@ -83,6 +83,15 @@ macro_rules! enum_int {
           )*
         ]
       }
+
+      #[allow(unused)]
+      pub fn all_str() -> [&'static str; count!($($var),*)] {
+        [
+          $(
+            $str,
+          )*
+        ]
+      }
     }
 
     impl ::std::convert::AsRef<str> for $name {
@@ -112,11 +121,7 @@ macro_rules! enum_int {
           _ => Err(
             format!(
               "expected one of {}",
-              $name::all_variants()
-                .iter()
-                .map(::std::convert::AsRef::as_ref)
-                .collect::<::std::vec::Vec<_>>()
-                .join(", "),
+              $name::all_str().join(", "),
              )
            )
         }
