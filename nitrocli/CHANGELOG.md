@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Reworked argument handling:
+  - Added `structopt` dependency in version `0.3.7`
+
 0.3.1
 -----
 - Added note about interaction with GnuPG to `README` file

@@ -55,6 +55,10 @@ version = "0.2"
 [dependencies.nitrokey]
 version = "0.4.0"
 
+[dependencies.structopt]
+version = "0.3.7"
+default-features = false
+
 [dev-dependencies.nitrokey-test]
 version = "0.3.1"
 
