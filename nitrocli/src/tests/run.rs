@@ -27,7 +27,8 @@ fn no_command_or_option() {
   assert_eq!(out, b"");
 
   let s = String::from_utf8_lossy(&err).into_owned();
-  assert!(s.starts_with("Usage:\n"), s);
+  assert!(s.starts_with("nitrocli"), s);
+  assert!(s.contains("USAGE:\n"), s);
 }
 
 #[test]
@@ -42,8 +43,10 @@ fn help_options() {
     assert_eq!(err, b"");
 
     let s = String::from_utf8_lossy(&out).into_owned();
-    let expected = format!("Usage:\n  nitrocli {}", args.join(" "));
-    assert!(s.starts_with(&expected), s);
+    let mut args = args.to_vec();
+    args.insert(0, "nitrocli");
+    assert!(s.starts_with(&args.join("-")), s);
+    assert!(s.contains("USAGE:\n"), s);
   }
 
   fn test(args: &[&str]) {
@@ -84,7 +87,11 @@ fn help_options() {
 }
 
 #[test]
+#[ignore]
 fn version_option() {
+  // clap sends the version output directly to stdout: https://github.com/clap-rs/clap/issues/1390
+  // Therefore we ignore this test for the time being.
+
   fn test(re: &regex::Regex, opt: &'static str) {
     let (rc, out, err) = Nitrocli::new().run(&[opt]);
 
