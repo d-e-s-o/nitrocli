@@ -9,10 +9,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "argparse"
-version = "0.2.2"
-
-[[package]]
 name = "base32"
 version = "0.4.0"
 
@@ -73,7 +69,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "nitrocli"
 version = "0.3.1"
 dependencies = [
- "argparse 0.2.2",
  "base32 0.4.0",
  "libc 0.2.66",
  "nitrokey 0.4.0",

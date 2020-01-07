@@ -42,9 +42,6 @@ lto = true
 codegen-units = 1
 incremental = false
 
-[dependencies.argparse]
-version = "0.2.2"
-
 [dependencies.base32]
 version = "0.4.0"
 path = "../base32"
@@ -69,7 +66,6 @@ version = "0.1"
 version = "1"
 
 [patch.crates-io]
-argparse = { path = "../argparse" }
 base32 = { path = "../base32" }
 cc = { path = "../cc" }
 cfg-if = { path = "../cfg-if" }
