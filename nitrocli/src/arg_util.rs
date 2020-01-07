@@ -67,14 +67,6 @@ macro_rules! Enum {
       )*
     }
 
-    enum_int! {$name, [
-      $( $var => $str, )*
-    ]}
-  };
-}
-
-macro_rules! enum_int {
-  ( $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
     impl $name {
       #[allow(unused)]
       pub fn all(&self) -> [$name; count!($($var),*) ] {
@@ -90,6 +82,14 @@ macro_rules! enum_int {
       }
     }
 
+    enum_int! {$name, [
+      $( $var => $str, )*
+    ]}
+  };
+}
+
+macro_rules! enum_int {
+  ( $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
     impl ::std::convert::AsRef<str> for $name {
       fn as_ref(&self) -> &'static str {
         match *self {
