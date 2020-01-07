@@ -67,11 +67,10 @@ macro_rules! Command {
       fn execute(
         self,
         ctx: &mut crate::args::ExecCtx<'_>,
-        args: ::std::vec::Vec<::std::string::String>,
       ) -> crate::Result<()> {
         match self {
           $(
-            $name::$var(_) => $exec(ctx, args),
+            $name::$var(args) => $exec(ctx, args),
           )*
         }
       }
