@@ -101,6 +101,20 @@ impl<'io> Stdio for ExecCtx<'io> {
   }
 }
 
+/// Provides access to a Nitrokey device
+#[derive(structopt::StructOpt)]
+#[structopt(name = "nitrocli")]
+pub struct Args {
+  /// Increases the log level (can be supplied multiple times)
+  #[structopt(short, long, parse(from_occurrences))]
+  verbose: u8,
+  /// Selects the device model to connect to
+  #[structopt(short, long)]
+  model: Option<DeviceModel>,
+  #[structopt(subcommand)]
+  cmd: Command,
+}
+
 /// The available Nitrokey models.
 #[allow(unused_doc_comments)]
 Enum! {DeviceModel, [
@@ -129,21 +143,271 @@ impl From<DeviceModel> for nitrokey::Model {
 /// A top-level command for nitrocli.
 #[allow(unused_doc_comments)]
 Command! {Command, [
-  Config => ("config", config),
-  Encrypted => ("encrypted", encrypted),
-  Hidden => ("hidden", hidden),
-  Lock => ("lock", lock),
-  Otp => ("otp", otp),
-  Pin => ("pin", pin),
-  Pws => ("pws", pws),
-  Reset => ("reset", reset),
-  Status => ("status", status),
-  Unencrypted => ("unencrypted", unencrypted),
+  Config(ConfigArgs) => ("config", config),
+  Encrypted(EncryptedArgs) => ("encrypted", encrypted),
+  Hidden(HiddenArgs) => ("hidden", hidden),
+  Lock(LockArgs) => ("lock", lock),
+  Otp(OtpArgs) => ("otp", otp),
+  Pin(PinArgs) => ("pin", pin),
+  Pws(PwsArgs) => ("pws", pws),
+  Reset(ResetArgs) => ("reset", reset),
+  Status(StatusArgs) => ("status", status),
+  Unencrypted(UnencryptedArgs) => ("unencrypted", unencrypted),
 ]}
 
+/// Reads or writes the device configuration
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct ConfigArgs {
+  #[structopt(subcommand)]
+  subcmd: ConfigCommand,
+}
+
+/// Prints the Nitrokey configuration
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct ConfigGetArgs {}
+
+/// Changes the Nitrokey configuration
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct ConfigSetArgs {
+  /// Sets the numlock option to the given HOTP slot
+  #[structopt(short = "n", long)]
+  numlock: Option<u8>,
+  /// Unsets the numlock option
+  #[structopt(short = "N", long, conflicts_with("numlock"))]
+  no_numlock: bool,
+  /// Sets the capslock option to the given HOTP slot
+  #[structopt(short = "c", long)]
+  capslock: Option<u8>,
+  /// Unsets the capslock option
+  #[structopt(short = "C", long, conflicts_with("capslock"))]
+  no_capslock: bool,
+  /// Sets the scrollock option to the given HOTP slot
+  #[structopt(short = "s", long)]
+  scrollock: Option<u8>,
+  /// Unsets the scrollock option
+  #[structopt(short = "S", long, conflicts_with("scrollock"))]
+  no_scrollock: bool,
+  /// Requires the user PIN to generate one-time passwords
+  #[structopt(short = "o", long)]
+  otp_pin: bool,
+  /// Allows one-time password generation without PIN
+  #[structopt(short = "O", long, conflicts_with("otp_pin"))]
+  no_otp_pin: bool,
+}
+
+/// Interacts with the device's encrypted volume
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct EncryptedArgs {
+  #[structopt(subcommand)]
+  subcmd: EncryptedCommand,
+}
+
+/// Closes the encrypted volume on a Nitrokey Storage
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct EncryptedCloseArgs {}
+
+/// Opens the encrypted volume on a Nitrokey Storage
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct EncryptedOpenArgs {}
+
+/// Interacts with the device's hidden volume
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct HiddenArgs {
+  #[structopt(subcommand)]
+  subcmd: HiddenCommand,
+}
+
+/// Closes the hidden volume on a Nitrokey Storage
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct HiddenCloseArgs {}
+
+/// Creates a hidden volume on a Nitrokey Storage
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct HiddenCreateArgs {
+  /// The hidden volume slot to use
+  slot: u8,
+  /// The start location of the hidden volume as a percentage of the encrypted volume's size (0-99)
+  start: u8,
+  /// The end location of the hidden volume as a percentage of the encrypted volume's size (1-100)
+  end: u8,
+}
+
+/// Opens the hidden volume on a Nitrokey Storage
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct HiddenOpenArgs {}
+
+/// Locks the connected Nitrokey device
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct LockArgs {}
+
+/// Accesses one-time passwords
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct OtpArgs {
+  #[structopt(subcommand)]
+  subcmd: OtpCommand,
+}
+
+/// Clears a one-time password slot
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct OtpClearArgs {
+  /// The OTP algorithm to use
+  #[structopt(short, long, default_value = "totp")]
+  algorithm: OtpAlgorithm,
+  /// The OTP slot to clear
+  slot: u8,
+}
+
+/// Generates a one-time password
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct OtpGetArgs {
+  /// The OTP algorithm to use
+  #[structopt(short, long, default_value = "totp")]
+  algorithm: OtpAlgorithm,
+  /// The time to use for TOTP generation (Unix timestamp) [default: system time]
+  #[structopt(short, long)]
+  time: Option<u64>,
+  /// The OTP slot to use
+  slot: u8,
+}
+
+/// Configures a one-time password slot
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct OtpSetArgs {
+  /// The OTP algorithm to use
+  #[structopt(short, long, default_value = "totp")]
+  algorithm: OtpAlgorithm,
+  /// The number of digits to use for the one-time password
+  #[structopt(short, long, default_value = "6")]
+  digits: OtpMode,
+  /// The counter value for HOTP
+  #[structopt(short, long, default_value = "0")]
+  counter: u64,
+  /// The time window for TOTP
+  #[structopt(short, long, default_value = "30")]
+  time_window: u16,
+  /// The format of the secret
+  #[structopt(short, long, default_value = "hex")]
+  format: OtpSecretFormat,
+  /// The OTP slot to use
+  slot: u8,
+  /// The name of the slot
+  name: String,
+  /// The secret to store on the slot as a hexadecimal string (or in the format set with the
+  /// --format option)
+  secret: String,
+}
+
+/// Prints the status of the one-time password slots
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct OtpStatusArgs {
+  /// Shows slots that are not programmed
+  #[structopt(short, long)]
+  all: bool,
+}
+
+/// Manages the Nitrokey PINs
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct PinArgs {
+  #[structopt(subcommand)]
+  subcmd: PinCommand,
+}
+
+/// Clears the cached PINs
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct PinClearArgs {}
+
+/// Changes a PIN
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct PinSetArgs {
+  /// The PIN type to change
+  #[structopt(name = "type")]
+  pintype: pinentry::PinType,
+}
+
+/// Unblocks and resets the user PIN
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct PinUnblockArgs {}
+
+/// Accesses the password safe
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct PwsArgs {
+  #[structopt(subcommand)]
+  subcmd: PwsCommand,
+}
+
+/// Clears a password safe slot
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct PwsClearArgs {
+  /// The PWS slot to clear
+  slot: u8,
+}
+
+/// Reads a password safe slot
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct PwsGetArgs {
+  /// Shows the name stored on the slot
+  #[structopt(short, long)]
+  name: bool,
+  /// Shows the login stored on the slot
+  #[structopt(short, long)]
+  login: bool,
+  /// Shows the password stored on the slot
+  #[structopt(short, long)]
+  password: bool,
+  /// Prints the stored data without description
+  #[structopt(short, long)]
+  quiet: bool,
+  /// The PWS slot to read
+  slot: u8,
+}
+
+/// Writes a password safe slot
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct PwsSetArgs {
+  /// The PWS slot to write
+  slot: u8,
+  /// The name to store on the slot
+  name: String,
+  /// The login to store on the slot
+  login: String,
+  /// The password to store on the slot
+  password: String,
+}
+
+/// Prints the status of the password safe slots
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct PwsStatusArgs {
+  /// Shows slots that are not programmed
+  #[structopt(short, long)]
+  all: bool,
+}
+
+/// Performs a factory reset
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct ResetArgs {}
+
+/// Prints the status of the connected Nitrokey device
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct StatusArgs {}
+
+/// Interacts with the device's unencrypted volume
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct UnencryptedArgs {
+  #[structopt(subcommand)]
+  subcmd: UnencryptedCommand,
+}
+
+/// Changes the configuration of the unencrypted volume on a Nitrokey Storage
+#[derive(Debug, Default, PartialEq, structopt::StructOpt)]
+pub struct UnencryptedSetArgs {
+  /// The mode to change to
+  #[structopt(name = "type")]
+  mode: UnencryptedVolumeMode,
+}
+
 Command! {ConfigCommand, [
-  Get => ("get", config_get),
-  Set => ("set", config_set),
+  Get(ConfigGetArgs) => ("get", config_get),
+  Set(ConfigSetArgs) => ("set", config_set),
 ]}
 
 #[derive(Clone, Copy, Debug)]
@@ -182,10 +446,10 @@ impl<T> ConfigOption<T> {
 }
 
 Command! {OtpCommand, [
-  Clear => ("clear", otp_clear),
-  Get => ("get", otp_get),
-  Set => ("set", otp_set),
-  Status => ("status", otp_status),
+  Clear(OtpClearArgs) => ("clear", otp_clear),
+  Get(OtpGetArgs) => ("get", otp_get),
+  Set(OtpSetArgs) => ("set", otp_set),
+  Status(OtpStatusArgs) => ("status", otp_status),
 ]}
 
 Enum! {OtpAlgorithm, [
@@ -214,16 +478,16 @@ Enum! {OtpSecretFormat, [
 ]}
 
 Command! {PinCommand, [
-  Clear => ("clear", pin_clear),
-  Set => ("set", pin_set),
-  Unblock => ("unblock", pin_unblock),
+  Clear(PinClearArgs) => ("clear", pin_clear),
+  Set(PinSetArgs) => ("set", pin_set),
+  Unblock(PinUnblockArgs) => ("unblock", pin_unblock),
 ]}
 
 Command! {PwsCommand, [
-  Clear => ("clear", pws_clear),
-  Get => ("get", pws_get),
-  Set => ("set", pws_set),
-  Status => ("status", pws_status),
+  Clear(PwsClearArgs) => ("clear", pws_clear),
+  Get(PwsGetArgs) => ("get", pws_get),
+  Set(PwsSetArgs) => ("set", pws_set),
+  Status(PwsStatusArgs) => ("status", pws_status),
 ]}
 
 fn parse(
@@ -258,7 +522,7 @@ fn reset(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 }
 
 Command! {UnencryptedCommand, [
-  Set => ("set", unencrypted_set),
+  Set(UnencryptedSetArgs) => ("set", unencrypted_set),
 ]}
 
 Enum! {UnencryptedVolumeMode, [
@@ -268,7 +532,7 @@ Enum! {UnencryptedVolumeMode, [
 
 /// Execute an unencrypted subcommand.
 fn unencrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = UnencryptedCommand::Set;
+  let mut subcommand = UnencryptedCommand::Set(Default::default());
   let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
@@ -310,13 +574,13 @@ fn unencrypted_set(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 }
 
 Command! {EncryptedCommand, [
-  Close => ("close", encrypted_close),
-  Open => ("open", encrypted_open),
+  Close(EncryptedCloseArgs) => ("close", encrypted_close),
+  Open(EncryptedOpenArgs) => ("open", encrypted_open),
 ]}
 
 /// Execute an encrypted subcommand.
 fn encrypted(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = EncryptedCommand::Open;
+  let mut subcommand = EncryptedCommand::Open(Default::default());
   let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
@@ -360,14 +624,14 @@ fn encrypted_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 }
 
 Command! {HiddenCommand, [
-  Close => ("close", hidden_close),
-  Create => ("create", hidden_create),
-  Open => ("open", hidden_open),
+  Close(HiddenCloseArgs) => ("close", hidden_close),
+  Create(HiddenCreateArgs) => ("create", hidden_create),
+  Open(HiddenOpenArgs) => ("open", hidden_open),
 ]}
 
 /// Execute a hidden subcommand.
 fn hidden(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = HiddenCommand::Open;
+  let mut subcommand = HiddenCommand::Open(Default::default());
   let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
@@ -438,7 +702,7 @@ fn hidden_close(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
 /// Execute a config subcommand.
 fn config(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = ConfigCommand::Get;
+  let mut subcommand = ConfigCommand::Get(Default::default());
   let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
@@ -550,7 +814,7 @@ fn lock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
 /// Execute an OTP subcommand.
 fn otp(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = OtpCommand::Get;
+  let mut subcommand = OtpCommand::Get(Default::default());
   let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
@@ -716,7 +980,7 @@ fn otp_status(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
 /// Execute a PIN subcommand.
 fn pin(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = PinCommand::Clear;
+  let mut subcommand = PinCommand::Clear(Default::default());
   let help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
@@ -773,7 +1037,7 @@ fn pin_unblock(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
 
 /// Execute a PWS subcommand.
 fn pws(ctx: &mut ExecCtx<'_>, args: Vec<String>) -> Result<()> {
-  let mut subcommand = PwsCommand::Get;
+  let mut subcommand = PwsCommand::Get(Default::default());
   let mut subargs = vec![];
   let help = "".to_string();
   let mut parser = argparse::ArgumentParser::new();
@@ -908,7 +1172,7 @@ pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Resul
     fmt_enum!(DeviceModel::all_variants())
   );
   let mut verbosity = 0;
-  let mut command = Command::Status;
+  let mut command = Command::Status(Default::default());
   let cmd_help = "".to_string();
   let mut subargs = vec![];
   let mut parser = argparse::ArgumentParser::new();
