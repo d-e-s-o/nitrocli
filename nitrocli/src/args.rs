@@ -118,7 +118,7 @@ Command! {Command, [
   /// Interacts with the device's hidden volume
   Hidden(HiddenArgs) => |ctx, args: HiddenArgs| args.subcmd.execute(ctx),
   /// Locks the connected Nitrokey device
-  Lock(LockArgs) => |ctx, _| commands::lock(ctx),
+  Lock => commands::lock,
   /// Accesses one-time passwords
   Otp(OtpArgs) => |ctx, args: OtpArgs| args.subcmd.execute(ctx),
   /// Manages the Nitrokey PINs
@@ -126,9 +126,9 @@ Command! {Command, [
   /// Accesses the password safe
   Pws(PwsArgs) => |ctx, args: PwsArgs| args.subcmd.execute(ctx),
   /// Performs a factory reset
-  Reset(ResetArgs) => |ctx, _| commands::reset(ctx),
+  Reset => commands::reset,
   /// Prints the status of the connected Nitrokey device
-  Status(StatusArgs) => |ctx, _| commands::status(ctx),
+  Status => commands::status,
   /// Interacts with the device's unencrypted volume
   Unencrypted(UnencryptedArgs) => |ctx, args: UnencryptedArgs| args.subcmd.execute(ctx),
 ]}
@@ -141,13 +141,10 @@ pub struct ConfigArgs {
 
 Command! {ConfigCommand, [
   /// Prints the Nitrokey configuration
-  Get(ConfigGetArgs) => |ctx, _| commands::config_get(ctx),
+  Get => commands::config_get,
   /// Changes the Nitrokey configuration
   Set(ConfigSetArgs) => config_set,
 ]}
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct ConfigGetArgs {}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct ConfigSetArgs {
@@ -234,16 +231,10 @@ pub struct EncryptedArgs {
 
 Command! {EncryptedCommand, [
   /// Closes the encrypted volume on a Nitrokey Storage
-  Close(EncryptedCloseArgs) => |ctx, _| commands::encrypted_close(ctx),
+  Close => commands::encrypted_close,
   /// Opens the encrypted volume on a Nitrokey Storage
-  Open(EncryptedOpenArgs) => |ctx, _| commands::encrypted_open(ctx),
+  Open => commands::encrypted_open,
 ]}
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct EncryptedCloseArgs {}
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct EncryptedOpenArgs {}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct HiddenArgs {
@@ -253,15 +244,12 @@ pub struct HiddenArgs {
 
 Command! {HiddenCommand, [
   /// Closes the hidden volume on a Nitrokey Storage
-  Close(HiddenCloseArgs) => |ctx, _| commands::hidden_close(ctx),
+  Close => commands::hidden_close,
   /// Creates a hidden volume on a Nitrokey Storage
   Create(HiddenCreateArgs) => |ctx, args: HiddenCreateArgs| commands::hidden_create(ctx, args.slot, args.start, args.end),
   /// Opens the hidden volume on a Nitrokey Storage
-  Open(HiddenOpenArgs) => |ctx, _| commands::hidden_open(ctx),
+  Open => commands::hidden_open,
 ]}
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct HiddenCloseArgs {}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct HiddenCreateArgs {
@@ -272,12 +260,6 @@ pub struct HiddenCreateArgs {
   /// The end location of the hidden volume as a percentage of the encrypted volume's size (1-100)
   end: u8,
 }
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct HiddenOpenArgs {}
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct LockArgs {}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct OtpArgs {
@@ -402,15 +384,12 @@ pub struct PinArgs {
 
 Command! {PinCommand, [
   /// Clears the cached PINs
-  Clear(PinClearArgs) => |ctx, _| commands::pin_clear(ctx),
+  Clear => commands::pin_clear,
   /// Changes a PIN
   Set(PinSetArgs) => |ctx, args: PinSetArgs| commands::pin_set(ctx, args.pintype),
   /// Unblocks and resets the user PIN
-  Unblock(PinUnblockArgs) => |ctx, _| commands::pin_unblock(ctx),
+  Unblock => commands::pin_unblock,
 ]}
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct PinClearArgs {}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PinSetArgs {
@@ -418,9 +397,6 @@ pub struct PinSetArgs {
   #[structopt(name = "type", possible_values = &pinentry::PinType::all_str())]
   pintype: pinentry::PinType,
 }
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct PinUnblockArgs {}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PwsArgs {
@@ -481,12 +457,6 @@ pub struct PwsStatusArgs {
   #[structopt(short, long)]
   all: bool,
 }
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct ResetArgs {}
-
-#[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct StatusArgs {}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct UnencryptedArgs {
