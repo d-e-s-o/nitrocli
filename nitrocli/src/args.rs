@@ -130,6 +130,11 @@ pub struct ConfigArgs {
   subcmd: ConfigCommand,
 }
 
+Command! {ConfigCommand, [
+  Get(ConfigGetArgs) => |ctx, _| commands::config_get(ctx),
+  Set(ConfigSetArgs) => config_set,
+]}
+
 /// Prints the Nitrokey configuration
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct ConfigGetArgs {}
@@ -163,12 +168,66 @@ pub struct ConfigSetArgs {
   no_otp_pin: bool,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum ConfigOption<T> {
+  Enable(T),
+  Disable,
+  Ignore,
+}
+
+impl<T> ConfigOption<T> {
+  fn try_from(disable: bool, value: Option<T>, name: &'static str) -> Result<Self> {
+    if disable {
+      if value.is_some() {
+        Err(Error::Error(format!(
+          "--{name} and --no-{name} are mutually exclusive",
+          name = name
+        )))
+      } else {
+        Ok(ConfigOption::Disable)
+      }
+    } else {
+      match value {
+        Some(value) => Ok(ConfigOption::Enable(value)),
+        None => Ok(ConfigOption::Ignore),
+      }
+    }
+  }
+
+  pub fn or(self, default: Option<T>) -> Option<T> {
+    match self {
+      ConfigOption::Enable(value) => Some(value),
+      ConfigOption::Disable => None,
+      ConfigOption::Ignore => default,
+    }
+  }
+}
+
+fn config_set(ctx: &mut ExecCtx<'_>, args: ConfigSetArgs) -> Result<()> {
+  let numlock = ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")?;
+  let capslock = ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")?;
+  let scrollock = ConfigOption::try_from(args.no_scrollock, args.scrollock, "scrollock")?;
+  let otp_pin = if args.otp_pin {
+    Some(true)
+  } else if args.no_otp_pin {
+    Some(false)
+  } else {
+    None
+  };
+  commands::config_set(ctx, numlock, capslock, scrollock, otp_pin)
+}
+
 /// Interacts with the device's encrypted volume
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct EncryptedArgs {
   #[structopt(subcommand)]
   subcmd: EncryptedCommand,
 }
+
+Command! {EncryptedCommand, [
+  Close(EncryptedCloseArgs) => |ctx, _| commands::encrypted_close(ctx),
+  Open(EncryptedOpenArgs) => |ctx, _| commands::encrypted_open(ctx),
+]}
 
 /// Closes the encrypted volume on a Nitrokey Storage
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -184,6 +243,12 @@ pub struct HiddenArgs {
   #[structopt(subcommand)]
   subcmd: HiddenCommand,
 }
+
+Command! {HiddenCommand, [
+  Close(HiddenCloseArgs) => |ctx, _| commands::hidden_close(ctx),
+  Create(HiddenCreateArgs) => |ctx, args: HiddenCreateArgs| commands::hidden_create(ctx, args.slot, args.start, args.end),
+  Open(HiddenOpenArgs) => |ctx, _| commands::hidden_open(ctx),
+]}
 
 /// Closes the hidden volume on a Nitrokey Storage
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -214,6 +279,13 @@ pub struct OtpArgs {
   #[structopt(subcommand)]
   subcmd: OtpCommand,
 }
+
+Command! {OtpCommand, [
+  Clear(OtpClearArgs) => |ctx, args: OtpClearArgs| commands::otp_clear(ctx, args.slot, args.algorithm),
+  Get(OtpGetArgs) => |ctx, args: OtpGetArgs| commands::otp_get(ctx, args.slot, args.algorithm, args.time),
+  Set(OtpSetArgs) => otp_set,
+  Status(OtpStatusArgs) => |ctx, args: OtpStatusArgs| commands::otp_status(ctx, args.all),
+]}
 
 /// Clears a one-time password slot
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -273,12 +345,62 @@ pub struct OtpStatusArgs {
   all: bool,
 }
 
+Enum! {OtpAlgorithm, [
+  Hotp => "hotp",
+  Totp => "totp",
+]}
+
+Enum! {OtpMode, [
+  SixDigits => "6",
+  EightDigits => "8",
+]}
+
+impl From<OtpMode> for nitrokey::OtpMode {
+  fn from(mode: OtpMode) -> Self {
+    match mode {
+      OtpMode::SixDigits => nitrokey::OtpMode::SixDigits,
+      OtpMode::EightDigits => nitrokey::OtpMode::EightDigits,
+    }
+  }
+}
+
+Enum! {OtpSecretFormat, [
+  Ascii => "ascii",
+  Base32 => "base32",
+  Hex => "hex",
+]}
+
+fn otp_set(ctx: &mut ExecCtx<'_>, args: OtpSetArgs) -> Result<()> {
+  let data = nitrokey::OtpSlotData {
+    number: args.slot,
+    name: args.name,
+    secret: args.secret,
+    mode: args.digits.into(),
+    use_enter: false,
+    token_id: None,
+  };
+  commands::otp_set(
+    ctx,
+    data,
+    args.algorithm,
+    args.counter,
+    args.time_window,
+    args.format,
+  )
+}
+
 /// Manages the Nitrokey PINs
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PinArgs {
   #[structopt(subcommand)]
   subcmd: PinCommand,
 }
+
+Command! {PinCommand, [
+  Clear(PinClearArgs) => |ctx, _| commands::pin_clear(ctx),
+  Set(PinSetArgs) => |ctx, args: PinSetArgs| commands::pin_set(ctx, args.pintype),
+  Unblock(PinUnblockArgs) => |ctx, _| commands::pin_unblock(ctx),
+]}
 
 /// Clears the cached PINs
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -302,6 +424,13 @@ pub struct PwsArgs {
   #[structopt(subcommand)]
   subcmd: PwsCommand,
 }
+
+Command! {PwsCommand, [
+  Clear(PwsClearArgs) => |ctx, args: PwsClearArgs| commands::pws_clear(ctx, args.slot),
+  Get(PwsGetArgs) => |ctx, args: PwsGetArgs| commands::pws_get(ctx, args.slot, args.name, args.login, args.password, args.quiet),
+  Set(PwsSetArgs) => |ctx, args: PwsSetArgs| commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password),
+  Status(PwsStatusArgs) => |ctx, args: PwsStatusArgs| commands::pws_status(ctx, args.all),
+]}
 
 /// Clears a password safe slot
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -365,6 +494,10 @@ pub struct UnencryptedArgs {
   subcmd: UnencryptedCommand,
 }
 
+Command! {UnencryptedCommand, [
+  Set(UnencryptedSetArgs) => |ctx, args: UnencryptedSetArgs| commands::unencrypted_set(ctx, args.mode),
+]}
+
 /// Changes the configuration of the unencrypted volume on a Nitrokey Storage
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct UnencryptedSetArgs {
@@ -373,143 +506,10 @@ pub struct UnencryptedSetArgs {
   mode: UnencryptedVolumeMode,
 }
 
-Command! {ConfigCommand, [
-  Get(ConfigGetArgs) => |ctx, _| commands::config_get(ctx),
-  Set(ConfigSetArgs) => config_set,
-]}
-
-#[derive(Clone, Copy, Debug)]
-pub enum ConfigOption<T> {
-  Enable(T),
-  Disable,
-  Ignore,
-}
-
-impl<T> ConfigOption<T> {
-  fn try_from(disable: bool, value: Option<T>, name: &'static str) -> Result<Self> {
-    if disable {
-      if value.is_some() {
-        Err(Error::Error(format!(
-          "--{name} and --no-{name} are mutually exclusive",
-          name = name
-        )))
-      } else {
-        Ok(ConfigOption::Disable)
-      }
-    } else {
-      match value {
-        Some(value) => Ok(ConfigOption::Enable(value)),
-        None => Ok(ConfigOption::Ignore),
-      }
-    }
-  }
-
-  pub fn or(self, default: Option<T>) -> Option<T> {
-    match self {
-      ConfigOption::Enable(value) => Some(value),
-      ConfigOption::Disable => None,
-      ConfigOption::Ignore => default,
-    }
-  }
-}
-
-Command! {OtpCommand, [
-  Clear(OtpClearArgs) => |ctx, args: OtpClearArgs| commands::otp_clear(ctx, args.slot, args.algorithm),
-  Get(OtpGetArgs) => |ctx, args: OtpGetArgs| commands::otp_get(ctx, args.slot, args.algorithm, args.time),
-  Set(OtpSetArgs) => otp_set,
-  Status(OtpStatusArgs) => |ctx, args: OtpStatusArgs| commands::otp_status(ctx, args.all),
-]}
-
-Enum! {OtpAlgorithm, [
-  Hotp => "hotp",
-  Totp => "totp",
-]}
-
-Enum! {OtpMode, [
-  SixDigits => "6",
-  EightDigits => "8",
-]}
-
-impl From<OtpMode> for nitrokey::OtpMode {
-  fn from(mode: OtpMode) -> Self {
-    match mode {
-      OtpMode::SixDigits => nitrokey::OtpMode::SixDigits,
-      OtpMode::EightDigits => nitrokey::OtpMode::EightDigits,
-    }
-  }
-}
-
-Enum! {OtpSecretFormat, [
-  Ascii => "ascii",
-  Base32 => "base32",
-  Hex => "hex",
-]}
-
-Command! {PinCommand, [
-  Clear(PinClearArgs) => |ctx, _| commands::pin_clear(ctx),
-  Set(PinSetArgs) => |ctx, args: PinSetArgs| commands::pin_set(ctx, args.pintype),
-  Unblock(PinUnblockArgs) => |ctx, _| commands::pin_unblock(ctx),
-]}
-
-Command! {PwsCommand, [
-  Clear(PwsClearArgs) => |ctx, args: PwsClearArgs| commands::pws_clear(ctx, args.slot),
-  Get(PwsGetArgs) => |ctx, args: PwsGetArgs| commands::pws_get(ctx, args.slot, args.name, args.login, args.password, args.quiet),
-  Set(PwsSetArgs) => |ctx, args: PwsSetArgs| commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password),
-  Status(PwsStatusArgs) => |ctx, args: PwsStatusArgs| commands::pws_status(ctx, args.all),
-]}
-
-Command! {UnencryptedCommand, [
-  Set(UnencryptedSetArgs) => |ctx, args: UnencryptedSetArgs| commands::unencrypted_set(ctx, args.mode),
-]}
-
 Enum! {UnencryptedVolumeMode, [
   ReadWrite => "read-write",
   ReadOnly => "read-only",
 ]}
-
-Command! {EncryptedCommand, [
-  Close(EncryptedCloseArgs) => |ctx, _| commands::encrypted_close(ctx),
-  Open(EncryptedOpenArgs) => |ctx, _| commands::encrypted_open(ctx),
-]}
-
-Command! {HiddenCommand, [
-  Close(HiddenCloseArgs) => |ctx, _| commands::hidden_close(ctx),
-  Create(HiddenCreateArgs) => |ctx, args: HiddenCreateArgs| commands::hidden_create(ctx, args.slot, args.start, args.end),
-  Open(HiddenOpenArgs) => |ctx, _| commands::hidden_open(ctx),
-]}
-
-fn config_set(ctx: &mut ExecCtx<'_>, args: ConfigSetArgs) -> Result<()> {
-  let numlock = ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")?;
-  let capslock = ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")?;
-  let scrollock = ConfigOption::try_from(args.no_scrollock, args.scrollock, "scrollock")?;
-  let otp_pin = if args.otp_pin {
-    Some(true)
-  } else if args.no_otp_pin {
-    Some(false)
-  } else {
-    None
-  };
-  commands::config_set(ctx, numlock, capslock, scrollock, otp_pin)
-}
-
-fn otp_set(ctx: &mut ExecCtx<'_>, args: OtpSetArgs) -> Result<()> {
-  let data = nitrokey::OtpSlotData {
-    number: args.slot,
-    name: args.name,
-    secret: args.secret,
-    mode: args.digits.into(),
-    use_enter: false,
-    token_id: None,
-  };
-  commands::otp_set(
-    ctx,
-    data,
-    args.algorithm,
-    args.counter,
-    args.time_window,
-    args.format,
-  )
-}
 
 /// Parse the command-line arguments and execute the selected command.
 pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
