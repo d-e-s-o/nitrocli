@@ -35,7 +35,7 @@ macro_rules! tr {
 macro_rules! Command {
   ( $name:ident, [ $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *] ) => {
     #[derive(Debug, PartialEq, structopt::StructOpt)]
-    pub enum $name {
+    enum $name {
       $(
         $(#[$doc])*
         $var$(($inner))?,
