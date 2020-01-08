@@ -24,12 +24,21 @@ macro_rules! count {
   }
 }
 
+/// Translate an optional source into an optional destination.
+macro_rules! tr {
+  ($dst:tt, $src:tt) => {
+    $dst
+  };
+  ($dst:tt) => {};
+}
+
 macro_rules! Command {
-  ( $name:ident, [ $( $var:ident($inner:ident) => $exec:expr, ) *] ) => {
+  ( $name:ident, [ $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *] ) => {
     #[derive(Debug, PartialEq, structopt::StructOpt)]
     pub enum $name {
       $(
-        $var($inner),
+        $(#[$doc])*
+        $var$(($inner))?,
       )*
     }
 
@@ -41,7 +50,7 @@ macro_rules! Command {
       ) -> crate::Result<()> {
         match self {
           $(
-            $name::$var(args) => $exec(ctx, args),
+            $name::$var$((tr!(args, $inner)))? => $exec(ctx $(,tr!(args, $inner))?),
           )*
         }
       }
