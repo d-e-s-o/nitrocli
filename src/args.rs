@@ -72,7 +72,7 @@ impl<'io> Stdio for ExecCtx<'io> {
 /// Provides access to a Nitrokey device
 #[derive(structopt::StructOpt)]
 #[structopt(name = "nitrocli")]
-pub struct Args {
+struct Args {
   /// Increases the log level (can be supplied multiple times)
   #[structopt(short, long, parse(from_occurrences))]
   verbose: u8,
@@ -134,7 +134,7 @@ Command! {Command, [
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct ConfigArgs {
+struct ConfigArgs {
   #[structopt(subcommand)]
   subcmd: ConfigCommand,
 }
@@ -147,7 +147,7 @@ Command! {ConfigCommand, [
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct ConfigSetArgs {
+struct ConfigSetArgs {
   /// Sets the numlock option to the given HOTP slot
   #[structopt(short = "n", long)]
   numlock: Option<u8>,
@@ -224,7 +224,7 @@ fn config_set(ctx: &mut ExecCtx<'_>, args: ConfigSetArgs) -> Result<()> {
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct EncryptedArgs {
+struct EncryptedArgs {
   #[structopt(subcommand)]
   subcmd: EncryptedCommand,
 }
@@ -237,7 +237,7 @@ Command! {EncryptedCommand, [
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct HiddenArgs {
+struct HiddenArgs {
   #[structopt(subcommand)]
   subcmd: HiddenCommand,
 }
@@ -254,7 +254,7 @@ Command! {HiddenCommand, [
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct HiddenCreateArgs {
+struct HiddenCreateArgs {
   /// The hidden volume slot to use
   slot: u8,
   /// The start location of the hidden volume as a percentage of the encrypted volume's size (0-99)
@@ -264,7 +264,7 @@ pub struct HiddenCreateArgs {
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct OtpArgs {
+struct OtpArgs {
   #[structopt(subcommand)]
   subcmd: OtpCommand,
 }
@@ -285,7 +285,7 @@ Command! {OtpCommand, [
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct OtpClearArgs {
+struct OtpClearArgs {
   /// The OTP algorithm to use
   #[structopt(short, long, default_value = "totp", possible_values = &OtpAlgorithm::all_str())]
   algorithm: OtpAlgorithm,
@@ -294,7 +294,7 @@ pub struct OtpClearArgs {
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct OtpGetArgs {
+struct OtpGetArgs {
   /// The OTP algorithm to use
   #[structopt(short, long, default_value = "totp", possible_values = &OtpAlgorithm::all_str())]
   algorithm: OtpAlgorithm,
@@ -306,7 +306,7 @@ pub struct OtpGetArgs {
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct OtpSetArgs {
+struct OtpSetArgs {
   /// The OTP algorithm to use
   #[structopt(short, long, default_value = "totp", possible_values = &OtpAlgorithm::all_str())]
   algorithm: OtpAlgorithm,
@@ -332,7 +332,7 @@ pub struct OtpSetArgs {
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct OtpStatusArgs {
+struct OtpStatusArgs {
   /// Shows slots that are not programmed
   #[structopt(short, long)]
   all: bool,
@@ -383,7 +383,7 @@ fn otp_set(ctx: &mut ExecCtx<'_>, args: OtpSetArgs) -> Result<()> {
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct PinArgs {
+struct PinArgs {
   #[structopt(subcommand)]
   subcmd: PinCommand,
 }
@@ -398,14 +398,14 @@ Command! {PinCommand, [
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct PinSetArgs {
+struct PinSetArgs {
   /// The PIN type to change
   #[structopt(name = "type", possible_values = &pinentry::PinType::all_str())]
   pintype: pinentry::PinType,
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct PwsArgs {
+struct PwsArgs {
   #[structopt(subcommand)]
   subcmd: PwsCommand,
 }
@@ -426,13 +426,13 @@ Command! {PwsCommand, [
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct PwsClearArgs {
+struct PwsClearArgs {
   /// The PWS slot to clear
   slot: u8,
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct PwsGetArgs {
+struct PwsGetArgs {
   /// Shows the name stored on the slot
   #[structopt(short, long)]
   name: bool,
@@ -450,7 +450,7 @@ pub struct PwsGetArgs {
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct PwsSetArgs {
+struct PwsSetArgs {
   /// The PWS slot to write
   slot: u8,
   /// The name to store on the slot
@@ -462,14 +462,14 @@ pub struct PwsSetArgs {
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct PwsStatusArgs {
+struct PwsStatusArgs {
   /// Shows slots that are not programmed
   #[structopt(short, long)]
   all: bool,
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct UnencryptedArgs {
+struct UnencryptedArgs {
   #[structopt(subcommand)]
   subcmd: UnencryptedCommand,
 }
@@ -482,7 +482,7 @@ Command! {UnencryptedCommand, [
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
-pub struct UnencryptedSetArgs {
+struct UnencryptedSetArgs {
   /// The mode to change to
   #[structopt(name = "type", possible_values = &UnencryptedVolumeMode::all_str())]
   mode: UnencryptedVolumeMode,
