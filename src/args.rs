@@ -287,7 +287,8 @@ Command! {OtpCommand, [
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 struct OtpClearArgs {
   /// The OTP algorithm to use
-  #[structopt(short, long, default_value = "totp", possible_values = &OtpAlgorithm::all_str())]
+  #[structopt(short, long, default_value = OtpAlgorithm::Totp.as_ref(),
+              possible_values = &OtpAlgorithm::all_str())]
   algorithm: OtpAlgorithm,
   /// The OTP slot to clear
   slot: u8,
@@ -296,7 +297,8 @@ struct OtpClearArgs {
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 struct OtpGetArgs {
   /// The OTP algorithm to use
-  #[structopt(short, long, default_value = "totp", possible_values = &OtpAlgorithm::all_str())]
+  #[structopt(short, long, default_value = OtpAlgorithm::Totp.as_ref(),
+              possible_values = &OtpAlgorithm::all_str())]
   algorithm: OtpAlgorithm,
   /// The time to use for TOTP generation (Unix timestamp) [default: system time]
   #[structopt(short, long)]
@@ -308,10 +310,12 @@ struct OtpGetArgs {
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 struct OtpSetArgs {
   /// The OTP algorithm to use
-  #[structopt(short, long, default_value = "totp", possible_values = &OtpAlgorithm::all_str())]
+  #[structopt(short, long, default_value = OtpAlgorithm::Totp.as_ref(),
+              possible_values = &OtpAlgorithm::all_str())]
   algorithm: OtpAlgorithm,
   /// The number of digits to use for the one-time password
-  #[structopt(short, long, default_value = "6", possible_values = &OtpMode::all_str())]
+  #[structopt(short, long, default_value = OtpMode::SixDigits.as_ref(),
+              possible_values = &OtpMode::all_str())]
   digits: OtpMode,
   /// The counter value for HOTP
   #[structopt(short, long, default_value = "0")]
@@ -320,7 +324,8 @@ struct OtpSetArgs {
   #[structopt(short, long, default_value = "30")]
   time_window: u16,
   /// The format of the secret
-  #[structopt(short, long, default_value = "hex")]
+  #[structopt(short, long, default_value = OtpSecretFormat::Hex.as_ref(),
+              possible_values = &OtpSecretFormat::all_str())]
   format: OtpSecretFormat,
   /// The OTP slot to use
   slot: u8,
