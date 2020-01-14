@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2019-06-08
+.TH NITROCLI 1 2020-01-14
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -31,6 +31,15 @@ five times enables the highest verbosity.
 Print the nitrocli version and exit.
 .SH COMMANDS
 .SS General
+.TP
+.B nitrocli list \fR[\fB-n\fR|\fB\-\-no-connect\fR]
+List all attached Nitrokey devices.
+This command prints a list of the device path, the model and the serial number
+of all attached Nitrokey devices.
+To access the serial number of a Nitrokey Storage device, \fBnitrocli\fR has to
+connect to it.
+To omit the serial number of Nitrokey Storage devices instead of connecting to
+them, set the \fB\-\-no-connect\fR option.
 .TP
 .B nitrocli status
 Print the status of the connected Nitrokey device, including the stick serial
