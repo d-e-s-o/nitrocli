@@ -5,6 +5,7 @@ Unreleased
   - Replaced `argparse` with `structopt`
   - Removed the `argparse` dependency
 - Bumped `nitrokey` dependency to `0.5.1`
+- Added the `list` command that lists all attached Nitrokey devices
 
 0.3.1
 -----

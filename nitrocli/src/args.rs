@@ -117,6 +117,8 @@ Command! {Command, [
   Encrypted(EncryptedArgs) => |ctx, args: EncryptedArgs| args.subcmd.execute(ctx),
   /// Interacts with the device's hidden volume
   Hidden(HiddenArgs) => |ctx, args: HiddenArgs| args.subcmd.execute(ctx),
+  /// Lists the attached Nitrokey devices
+  List(ListArgs) => |ctx, args: ListArgs| commands::list(ctx, args.no_connect),
   /// Locks the connected Nitrokey device
   Lock => commands::lock,
   /// Accesses one-time passwords
@@ -261,6 +263,13 @@ struct HiddenCreateArgs {
   start: u8,
   /// The end location of the hidden volume as a percentage of the encrypted volume's size (1-100)
   end: u8,
+}
+
+#[derive(Debug, PartialEq, structopt::StructOpt)]
+struct ListArgs {
+  /// Only print the information that is available without connecting to a device.
+  #[structopt(short, long)]
+  no_connect: bool,
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
