@@ -13,6 +13,7 @@ Storage][nitrokey-storage] devices.
 
 
 The following commands are currently supported:
+- list: List all attached Nitrokey devices.
 - status: Report status information about the Nitrokey.
 - lock: Lock the Nitrokey.
 - config: Access the Nitrokey's configuration
