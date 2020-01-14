@@ -77,8 +77,8 @@ fn encrypted_open_close(model: nitrokey::Model) -> crate::Result<()> {
   {
     let mut manager = nitrokey::force_take()?;
     let device = manager.connect_storage()?;
-    assert!(device.get_status()?.encrypted_volume.active);
-    assert!(!device.get_status()?.hidden_volume.active);
+    assert!(device.get_storage_status()?.encrypted_volume.active);
+    assert!(!device.get_storage_status()?.hidden_volume.active);
   }
 
   let out = ncli.handle(&["encrypted", "close"])?;
@@ -87,8 +87,8 @@ fn encrypted_open_close(model: nitrokey::Model) -> crate::Result<()> {
   {
     let mut manager = nitrokey::force_take()?;
     let device = manager.connect_storage()?;
-    assert!(!device.get_status()?.encrypted_volume.active);
-    assert!(!device.get_status()?.hidden_volume.active);
+    assert!(!device.get_storage_status()?.encrypted_volume.active);
+    assert!(!device.get_storage_status()?.hidden_volume.active);
   }
 
   Ok(())
