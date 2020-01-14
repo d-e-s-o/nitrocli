@@ -25,6 +25,7 @@ use nitrokey_test::test as test_device;
 mod config;
 mod encrypted;
 mod hidden;
+mod list;
 mod lock;
 mod otp;
 mod pin;
