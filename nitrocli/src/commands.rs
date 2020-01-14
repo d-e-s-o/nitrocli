@@ -376,6 +376,11 @@ pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   })
 }
 
+/// List the attached Nitrokey devices.
+pub fn list(_ctx: &mut args::ExecCtx<'_>, _no_connect: bool) -> Result<()> {
+  unimplemented!();
+}
+
 /// Perform a factory reset.
 pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |ctx, mut device| {
