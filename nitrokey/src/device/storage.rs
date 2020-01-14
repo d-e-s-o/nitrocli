@@ -1,14 +1,16 @@
-// Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
+// Copyright (C) 2019-2020 Robin Krahl <robin.krahl@ireas.org>
 // SPDX-License-Identifier: MIT
 
+use std::convert::TryFrom as _;
 use std::fmt;
+use std::ops;
 
 use nitrokey_sys;
 
-use crate::device::{Device, FirmwareVersion, Model};
-use crate::error::Error;
+use crate::device::{Device, FirmwareVersion, Model, Status};
+use crate::error::{CommandError, Error};
 use crate::otp::GenerateOtp;
-use crate::util::{get_command_result, get_cstring};
+use crate::util::{get_command_result, get_cstring, get_last_error};
 
 /// A Nitrokey Storage device without user or admin authentication.
 ///
@@ -139,6 +141,20 @@ pub struct StorageStatus {
     /// Indicates whether the stick has been initialized by generating
     /// the AES keys.
     pub stick_initialized: bool,
+}
+
+/// The progress of a background operation on the Nitrokey.
+///
+/// Some commands may start a background operation during which no other commands can be executed.
+/// This enum stores the status of a background operation:  Ongoing with a relative progress (up to
+/// 100), or idle, i. e. no background operation has been started or the last one has been
+/// finished.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum OperationStatus {
+    /// A background operation with its progress value (less than or equal to 100).
+    Ongoing(u8),
+    /// No backgrund operation.
+    Idle,
 }
 
 impl<'a> Storage<'a> {
@@ -525,7 +541,7 @@ impl<'a> Storage<'a> {
     /// # fn try_main() -> Result<(), Error> {
     /// let mut manager = nitrokey::take()?;
     /// let device = manager.connect_storage()?;
-    /// match device.get_status() {
+    /// match device.get_storage_status() {
     ///     Ok(status) => {
     ///         println!("SD card ID: {:#x}", status.serial_number_sd_card);
     ///     },
@@ -534,7 +550,7 @@ impl<'a> Storage<'a> {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_status(&self) -> Result<StorageStatus, Error> {
+    pub fn get_storage_status(&self) -> Result<StorageStatus, Error> {
         let mut raw_status = nitrokey_sys::NK_storage_status {
             unencrypted_volume_read_only: false,
             unencrypted_volume_active: false,
@@ -635,9 +651,115 @@ impl<'a> Storage<'a> {
         })
     }
 
+    /// Returns a range of the SD card that has not been used to during this power cycle.
+    ///
+    /// The Nitrokey Storage tracks read and write access to the SD card during a power cycle.
+    /// This method returns a range of the SD card that has not been accessed during this power
+    /// cycle.  The range is relative to the total size of the SD card, so both values are less
+    /// than or equal to 100.  This can be used as a guideline when creating a hidden volume.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// let mut manager = nitrokey::take()?;
+    /// let storage = manager.connect_storage()?;
+    /// let usage = storage.get_sd_card_usage()?;
+    /// println!("SD card usage: {}..{}", usage.start, usage.end);
+    /// # Ok::<(), nitrokey::Error>(())
+    /// ```
+    pub fn get_sd_card_usage(&self) -> Result<ops::Range<u8>, Error> {
+        let mut usage_data = nitrokey_sys::NK_SD_usage_data {
+            write_level_min: 0,
+            write_level_max: 0,
+        };
+        let result = unsafe { nitrokey_sys::NK_get_SD_usage_data(&mut usage_data) };
+        match get_command_result(result) {
+            Ok(_) => {
+                if usage_data.write_level_min > usage_data.write_level_max
+                    || usage_data.write_level_max > 100
+                {
+                    Err(Error::UnexpectedError)
+                } else {
+                    Ok(ops::Range {
+                        start: usage_data.write_level_min,
+                        end: usage_data.write_level_max,
+                    })
+                }
+            }
+            Err(err) => Err(err),
+        }
+    }
+
     /// Blinks the red and green LED alternatively and infinitely until the device is reconnected.
     pub fn wink(&mut self) -> Result<(), Error> {
         get_command_result(unsafe { nitrokey_sys::NK_wink() })
+    }
+
+    /// Returns the status of an ongoing background operation on the Nitrokey Storage.
+    ///
+    /// Some commands may start a background operation during which no other commands can be
+    /// executed.  This method can be used to check whether such an operation is ongoing.
+    ///
+    /// Currently, this is only used by the [`fill_sd_card`][] method.
+    ///
+    /// [`fill_sd_card`]: #method.fill_sd_card
+    pub fn get_operation_status(&self) -> Result<OperationStatus, Error> {
+        let status = unsafe { nitrokey_sys::NK_get_progress_bar_value() };
+        match status {
+            0..=100 => u8::try_from(status)
+                .map(OperationStatus::Ongoing)
+                .map_err(|_| Error::UnexpectedError),
+            -1 => Ok(OperationStatus::Idle),
+            -2 => Err(get_last_error()),
+            _ => Err(Error::UnexpectedError),
+        }
+    }
+
+    /// Overwrites the SD card with random data.
+    ///
+    /// Ths method starts a background operation that overwrites the SD card with random data.
+    /// While this operation is ongoing, no other commands can be executed.  Use the
+    /// [`get_operation_status`][] function to check the progress of the operation.
+    ///
+    /// # Errors
+    ///
+    /// - [`InvalidString`][] if one of the provided passwords contains a null byte
+    /// - [`WrongPassword`][] if the admin password is wrong
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use nitrokey::OperationStatus;
+    ///
+    /// let mut manager = nitrokey::take()?;
+    /// let mut storage = manager.connect_storage()?;
+    /// storage.fill_sd_card("12345678")?;
+    /// loop {
+    ///     match storage.get_operation_status()? {
+    ///         OperationStatus::Ongoing(progress) => println!("{}/100", progress),
+    ///         OperationStatus::Idle => {
+    ///             println!("Done!");
+    ///             break;
+    ///         }
+    ///     }
+    /// }
+    /// # Ok::<(), nitrokey::Error>(())
+    /// ```
+    ///
+    /// [`get_operation_status`]: #method.get_operation_status
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
+    /// [`WrongPassword`]: enum.CommandError.html#variant.WrongPassword
+    pub fn fill_sd_card(&mut self, admin_pin: &str) -> Result<(), Error> {
+        let admin_pin_string = get_cstring(admin_pin)?;
+        get_command_result(unsafe {
+            nitrokey_sys::NK_fill_SD_card_with_random_data(admin_pin_string.as_ptr())
+        })
+        .or_else(|err| match err {
+            // libnitrokey’s C API returns a LongOperationInProgressException with the same error
+            // code as the WrongCrc command error, so we cannot distinguish them.
+            Error::CommandError(CommandError::WrongCrc) => Ok(()),
+            err => Err(err),
+        })
     }
 
     /// Exports the firmware to the unencrypted volume.
@@ -677,6 +799,33 @@ impl<'a> Device<'a> for Storage<'a> {
 
     fn get_model(&self) -> Model {
         Model::Storage
+    }
+
+    fn get_status(&self) -> Result<Status, Error> {
+        // Currently, the GET_STATUS command does not report the correct firmware version and
+        // serial number on the Nitrokey Storage, see [0].  Until this is fixed in libnitrokey, we
+        // have to manually execute the GET_DEVICE_STATUS command (get_storage_status) and complete
+        // the missing data, see [1].
+        // [0] https://github.com/Nitrokey/nitrokey-storage-firmware/issues/96
+        // [1] https://github.com/Nitrokey/libnitrokey/issues/166
+
+        let mut raw_status = nitrokey_sys::NK_status {
+            firmware_version_major: 0,
+            firmware_version_minor: 0,
+            serial_number_smart_card: 0,
+            config_numlock: 0,
+            config_capslock: 0,
+            config_scrolllock: 0,
+            otp_user_password: false,
+        };
+        get_command_result(unsafe { nitrokey_sys::NK_get_status(&mut raw_status) })?;
+        let mut status = Status::from(raw_status);
+
+        let storage_status = self.get_storage_status()?;
+        status.firmware_version = storage_status.firmware_version;
+        status.serial_number = storage_status.serial_number_smart_card;
+
+        Ok(status)
     }
 }
 

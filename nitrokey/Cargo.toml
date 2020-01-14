@@ -3,7 +3,7 @@
 
 [package]
 name = "nitrokey"
-version = "0.4.0"
+version = "0.5.1"
 authors = ["Robin Krahl <robin.krahl@ireas.org>"]
 edition = "2018"
 homepage = "https://code.ireas.org/nitrokey-rs/"

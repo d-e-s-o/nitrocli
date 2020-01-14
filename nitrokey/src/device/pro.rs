@@ -3,8 +3,10 @@
 
 use nitrokey_sys;
 
-use crate::device::{Device, Model};
+use crate::device::{Device, Model, Status};
+use crate::error::Error;
 use crate::otp::GenerateOtp;
+use crate::util::get_command_result;
 
 /// A Nitrokey Pro device without user or admin authentication.
 ///
@@ -73,6 +75,20 @@ impl<'a> Device<'a> for Pro<'a> {
 
     fn get_model(&self) -> Model {
         Model::Pro
+    }
+
+    fn get_status(&self) -> Result<Status, Error> {
+        let mut raw_status = nitrokey_sys::NK_status {
+            firmware_version_major: 0,
+            firmware_version_minor: 0,
+            serial_number_smart_card: 0,
+            config_numlock: 0,
+            config_capslock: 0,
+            config_scrolllock: 0,
+            otp_user_password: false,
+        };
+        get_command_result(unsafe { nitrokey_sys::NK_get_status(&mut raw_status) })?;
+        Ok(raw_status.into())
     }
 }
 

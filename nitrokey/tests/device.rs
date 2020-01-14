@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
+// Copyright (C) 2018-2020 Robin Krahl <robin.krahl@ireas.org>
 // SPDX-License-Identifier: MIT
 
 mod util;
@@ -8,9 +8,9 @@ use std::process::Command;
 use std::{thread, time};
 
 use nitrokey::{
-    Authenticate, CommandError, CommunicationError, Config, ConfigureOtp, Device, Error,
-    GenerateOtp, GetPasswordSafe, LibraryError, OtpMode, OtpSlotData, Storage, VolumeMode,
-    DEFAULT_ADMIN_PIN, DEFAULT_USER_PIN,
+    Authenticate, CommandError, CommunicationError, Config, ConfigureOtp, Device, DeviceInfo,
+    Error, GenerateOtp, GetPasswordSafe, LibraryError, OperationStatus, OtpMode, OtpSlotData,
+    Storage, VolumeMode, DEFAULT_ADMIN_PIN, DEFAULT_USER_PIN,
 };
 use nitrokey_test::test as test_device;
 
@@ -29,6 +29,33 @@ fn count_nitrokey_block_devices() -> usize {
         .split("\n")
         .filter(|&s| s.replace("_", " ") == "Nitrokey Storage")
         .count()
+}
+
+#[test_device]
+fn list_no_devices() {
+    let devices = nitrokey::list_devices();
+    assert_ok!(Vec::<DeviceInfo>::new(), devices);
+}
+
+#[test_device]
+fn list_devices(_device: DeviceWrapper) {
+    let devices = unwrap_ok!(nitrokey::list_devices());
+    for device in devices {
+        assert!(!device.path.is_empty());
+        if let Some(model) = device.model {
+            match model {
+                nitrokey::Model::Pro => {
+                    assert!(device.serial_number.is_some());
+                    let serial_number = device.serial_number.unwrap();
+                    assert!(!serial_number.is_empty());
+                    assert_valid_serial_number(&serial_number);
+                }
+                nitrokey::Model::Storage => {
+                    assert_eq!(None, device.serial_number);
+                }
+            }
+        }
+    }
 }
 
 #[test_device]
@@ -78,17 +105,74 @@ fn assert_empty_serial_number() {
 }
 
 #[test_device]
+fn connect_path_no_device() {
+    let mut manager = unwrap_ok!(nitrokey::take());
+
+    assert_cmu_err!(CommunicationError::NotConnected, manager.connect_path(""));
+    assert_cmu_err!(
+        CommunicationError::NotConnected,
+        manager.connect_path("foobar")
+    );
+    // TODO: add realistic path
+}
+
+#[test_device]
+fn connect_path(device: DeviceWrapper) {
+    let manager = device.into_manager();
+
+    assert_cmu_err!(CommunicationError::NotConnected, manager.connect_path(""));
+    assert_cmu_err!(
+        CommunicationError::NotConnected,
+        manager.connect_path("foobar")
+    );
+    // TODO: add realistic path
+
+    let devices = unwrap_ok!(nitrokey::list_devices());
+    assert!(!devices.is_empty());
+    for device in devices {
+        let connected_device = unwrap_ok!(manager.connect_path(device.path));
+        assert_eq!(device.model, Some(connected_device.get_model()));
+        match device.model.unwrap() {
+            nitrokey::Model::Pro => {
+                assert!(device.serial_number.is_some());
+                assert_ok!(
+                    device.serial_number.unwrap(),
+                    connected_device.get_serial_number()
+                );
+            }
+            nitrokey::Model::Storage => {
+                assert_eq!(None, device.serial_number);
+            }
+        }
+    }
+}
+
+#[test_device]
 fn disconnect(device: DeviceWrapper) {
     drop(device);
     assert_empty_serial_number();
 }
 
 #[test_device]
-fn get_serial_number(device: DeviceWrapper) {
-    let serial_number = unwrap_ok!(device.get_serial_number());
+fn get_status(device: DeviceWrapper) {
+    let status = unwrap_ok!(device.get_status());
+    assert_ok!(status.firmware_version, device.get_firmware_version());
+    let serial_number = format!("{:08x}", status.serial_number);
+    assert_ok!(serial_number, device.get_serial_number());
+    assert_ok!(status.config, device.get_config());
+}
+
+fn assert_valid_serial_number(serial_number: &str) {
     assert!(serial_number.is_ascii());
     assert!(serial_number.chars().all(|c| c.is_ascii_hexdigit()));
 }
+
+#[test_device]
+fn get_serial_number(device: DeviceWrapper) {
+    let serial_number = unwrap_ok!(device.get_serial_number());
+    assert_valid_serial_number(&serial_number);
+}
+
 #[test_device]
 fn get_firmware_version(device: Pro) {
     let version = unwrap_ok!(device.get_firmware_version());
@@ -480,7 +564,7 @@ fn set_encrypted_volume_mode(device: Storage) {
 #[test_device]
 fn set_unencrypted_volume_mode(device: Storage) {
     fn assert_mode(device: &Storage, mode: VolumeMode) {
-        let status = unwrap_ok!(device.get_status());
+        let status = unwrap_ok!(device.get_storage_status());
         assert_eq!(
             status.unencrypted_volume.read_only,
             mode == VolumeMode::ReadOnly
@@ -511,7 +595,7 @@ fn set_unencrypted_volume_mode(device: Storage) {
 
 #[test_device]
 fn get_storage_status(device: Storage) {
-    let status = unwrap_ok!(device.get_status());
+    let status = unwrap_ok!(device.get_storage_status());
     assert!(status.serial_number_sd_card > 0);
     assert!(status.serial_number_smart_card > 0);
 }
@@ -531,7 +615,7 @@ fn get_production_info(device: Storage) {
     assert!(info.sd_card.oem != 0);
     assert!(info.sd_card.manufacturer != 0);
 
-    let status = unwrap_ok!(device.get_status());
+    let status = unwrap_ok!(device.get_storage_status());
     assert_eq!(status.firmware_version, info.firmware_version);
     assert_eq!(status.serial_number_sd_card, info.sd_card.serial_number);
 }
@@ -546,13 +630,65 @@ fn clear_new_sd_card_warning(device: Storage) {
     // We have to perform an SD card operation to reset the new_sd_card_found field
     assert_ok!((), device.lock());
 
-    let status = unwrap_ok!(device.get_status());
+    let status = unwrap_ok!(device.get_storage_status());
     assert!(status.new_sd_card_found);
 
     assert_ok!((), device.clear_new_sd_card_warning(DEFAULT_ADMIN_PIN));
 
-    let status = unwrap_ok!(device.get_status());
+    let status = unwrap_ok!(device.get_storage_status());
     assert!(!status.new_sd_card_found);
+}
+
+#[test_device]
+fn get_sd_card_usage(device: Storage) {
+    let range = unwrap_ok!(device.get_sd_card_usage());
+
+    assert!(range.end >= range.start);
+    assert!(range.end <= 100);
+}
+
+#[test_device]
+fn get_operation_status(device: Storage) {
+    assert_ok!(OperationStatus::Idle, device.get_operation_status());
+}
+
+#[test_device]
+#[ignore]
+fn fill_sd_card(device: Storage) {
+    // This test takes up to 60 min to execute and is therefore ignored by default.  Use `cargo
+    // test -- --ignored fill_sd_card` to run the test.
+
+    let mut device = device;
+    assert_ok!((), device.factory_reset(DEFAULT_ADMIN_PIN));
+    thread::sleep(time::Duration::from_secs(3));
+    assert_ok!((), device.build_aes_key(DEFAULT_ADMIN_PIN));
+
+    let status = unwrap_ok!(device.get_storage_status());
+    assert!(!status.filled_with_random);
+
+    assert_ok!((), device.fill_sd_card(DEFAULT_ADMIN_PIN));
+    assert_cmd_err!(CommandError::WrongCrc, device.get_status());
+
+    let mut status = OperationStatus::Ongoing(0);
+    let mut last_progress = 0u8;
+    while status != OperationStatus::Idle {
+        status = unwrap_ok!(device.get_operation_status());
+        if let OperationStatus::Ongoing(progress) = status {
+            assert!(progress <= 100, "progress = {}", progress);
+            assert!(
+                progress >= last_progress,
+                "progress = {}, last_progress = {}",
+                progress,
+                last_progress
+            );
+            last_progress = progress;
+
+            thread::sleep(time::Duration::from_secs(10));
+        }
+    }
+
+    let status = unwrap_ok!(device.get_storage_status());
+    assert!(status.filled_with_random);
 }
 
 #[test_device]

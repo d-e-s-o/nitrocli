@@ -44,13 +44,12 @@ incremental = false
 
 [dependencies.base32]
 version = "0.4.0"
-path = "../base32"
 
 [dependencies.libc]
 version = "0.2"
 
 [dependencies.nitrokey]
-version = "0.4.0"
+version = "0.5.1"
 
 [dependencies.structopt]
 version = "0.3.7"

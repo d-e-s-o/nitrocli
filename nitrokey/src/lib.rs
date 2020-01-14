@@ -16,6 +16,10 @@
 //! [`connect_model`][], [`connect_pro`][] or [`connect_storage`][] to connect to a specific
 //! device.
 //!
+//! To get a list of all connected Nitrokey devices, use the [`list_devices`][] function.  You can
+//! then connect to one of the connected devices using the [`connect_path`][] function of the
+//! `Manager` struct.
+//!
 //! You can call [`authenticate_user`][] or [`authenticate_admin`][] to get an authenticated device
 //! that can perform operations that require authentication.  You can use [`device`][] to go back
 //! to the unauthenticated device.
@@ -24,6 +28,15 @@
 //! Otherwise, your code will not compile.  The only exception are the methods to generate one-time
 //! passwords – [`get_hotp_code`][] and [`get_totp_code`][].  Depending on the stick configuration,
 //! these operations are available without authentication or with user authentication.
+//!
+//! # Background operations
+//!
+//! Some commands may start background operations.  During such an operation, every new command
+//! will cause a [`WrongCrc`][] error.  To check whether a background operation is currently
+//! running, use the [`get_operation_status`][] method.
+//!
+//! Background operations are only available on the Nitrokey Storage.  Currently,
+//! [`fill_sd_card`][] is the only command that triggers a background operation.
 //!
 //! # Examples
 //!
@@ -86,8 +99,12 @@
 //! [`take`]: fn.take.html
 //! [`connect`]: struct.Manager.html#method.connect
 //! [`connect_model`]: struct.Manager.html#method.connect_model
+//! [`connect_path`]: struct.Manager.html#method.connect_path
 //! [`connect_pro`]: struct.Manager.html#method.connect_pro
 //! [`connect_storage`]: struct.Manager.html#method.connect_storage
+//! [`fill_sd_card`]: struct.Storage.html#method.fill_sd_card
+//! [`get_operation_status`]: struct.Storage.html#method.get_operation_status
+//! [`list_devices`]: fn.list_devices.html
 //! [`manager`]: trait.Device.html#method.manager
 //! [`device`]: struct.User.html#method.device
 //! [`get_hotp_code`]: trait.GenerateOtp.html#method.get_hotp_code
@@ -95,6 +112,7 @@
 //! [`Admin`]: struct.Admin.html
 //! [`DeviceWrapper`]: enum.DeviceWrapper.html
 //! [`User`]: struct.User.html
+//! [`WrongCrc`]: enum.CommandError.html#variant.WrongCrc
 
 #![warn(missing_docs, rust_2018_compatibility, rust_2018_idioms, unused)]
 
@@ -109,8 +127,10 @@ mod otp;
 mod pws;
 mod util;
 
+use std::convert::TryInto as _;
 use std::fmt;
 use std::marker;
+use std::ptr::NonNull;
 use std::sync;
 
 use nitrokey_sys;
@@ -118,13 +138,15 @@ use nitrokey_sys;
 pub use crate::auth::{Admin, Authenticate, User};
 pub use crate::config::Config;
 pub use crate::device::{
-    Device, DeviceWrapper, Model, Pro, SdCardData, Storage, StorageProductionInfo, StorageStatus,
-    VolumeMode, VolumeStatus,
+    Device, DeviceInfo, DeviceWrapper, Model, OperationStatus, Pro, SdCardData, Status, Storage,
+    StorageProductionInfo, StorageStatus, VolumeMode, VolumeStatus,
 };
 pub use crate::error::{CommandError, CommunicationError, Error, LibraryError};
 pub use crate::otp::{ConfigureOtp, GenerateOtp, OtpMode, OtpSlotData};
 pub use crate::pws::{GetPasswordSafe, PasswordSafe, SLOT_COUNT};
 pub use crate::util::LogLevel;
+
+use crate::util::{get_cstring, get_last_result};
 
 /// The default admin PIN for all Nitrokey devices.
 pub const DEFAULT_ADMIN_PIN: &str = "12345678";
@@ -235,6 +257,7 @@ impl Manager {
     /// # Errors
     ///
     /// - [`NotConnected`][] if no Nitrokey device is connected
+    /// - [`UnsupportedModelError`][] if the Nitrokey device is not supported by this crate
     ///
     /// # Example
     ///
@@ -252,6 +275,7 @@ impl Manager {
     /// ```
     ///
     /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
+    /// [`UnsupportedModelError`]: enum.Error.html#variant.UnsupportedModelError
     pub fn connect(&mut self) -> Result<DeviceWrapper<'_>, Error> {
         if unsafe { nitrokey_sys::NK_login_auto() } == 1 {
             device::get_connected_device(self)
@@ -285,6 +309,49 @@ impl Manager {
     pub fn connect_model(&mut self, model: Model) -> Result<DeviceWrapper<'_>, Error> {
         if device::connect_enum(model) {
             Ok(device::create_device_wrapper(self, model))
+        } else {
+            Err(CommunicationError::NotConnected.into())
+        }
+    }
+
+    /// Connects to a Nitrokey device at the given USB path.
+    ///
+    /// To get a list of all connected Nitrokey devices, use the [`list_devices`][] function.  The
+    /// [`DeviceInfo`][] structs returned by that function contain the USB path in the `path`
+    /// field.
+    ///
+    /// # Errors
+    ///
+    /// - [`InvalidString`][] if the USB path contains a null byte
+    /// - [`NotConnected`][] if no Nitrokey device can be found at the given USB path
+    /// - [`UnsupportedModelError`][] if the model of the Nitrokey device at the given USB path is
+    ///   not supported by this crate
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nitrokey::DeviceWrapper;
+    ///
+    /// fn use_device(device: DeviceWrapper) {}
+    ///
+    /// let mut manager = nitrokey::take()?;
+    /// let devices = nitrokey::list_devices()?;
+    /// for device in devices {
+    ///     let device = manager.connect_path(device.path)?;
+    ///     use_device(device);
+    /// }
+    /// # Ok::<(), nitrokey::Error>(())
+    /// ```
+    ///
+    /// [`list_devices`]: fn.list_devices.html
+    /// [`DeviceInfo`]: struct.DeviceInfo.html
+    /// [`InvalidString`]: enum.LibraryError.html#variant.InvalidString
+    /// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
+    /// [`UnsupportedModelError`]: enum.Error.html#variant.UnsupportedModelError
+    pub fn connect_path<S: Into<Vec<u8>>>(&mut self, path: S) -> Result<DeviceWrapper<'_>, Error> {
+        let path = get_cstring(path)?;
+        if unsafe { nitrokey_sys::NK_connect_with_path(path.as_ptr()) } == 1 {
+            device::get_connected_device(self)
         } else {
             Err(CommunicationError::NotConnected.into())
         }
@@ -412,6 +479,71 @@ pub fn force_take() -> Result<sync::MutexGuard<'static, Manager>, Error> {
             err => Err(err),
         },
     }
+}
+
+/// List all connected Nitrokey devices.
+///
+/// This functions returns a vector with [`DeviceInfo`][] structs that contain information about
+/// all connected Nitrokey devices.  It will even list unsupported models, although you cannot
+/// connect to them.  To connect to a supported model, call the [`connect_path`][] function.
+///
+/// # Errors
+///
+/// - [`NotConnected`][] if a Nitrokey device has been disconnected during enumeration
+/// - [`Utf8Error`][] if the USB path or the serial number returned by libnitrokey are invalid
+///   UTF-8 strings
+///
+/// # Example
+///
+/// ```
+/// let devices = nitrokey::list_devices()?;
+/// if devices.is_empty() {
+///     println!("No connected Nitrokey devices found.");
+/// } else {
+///     println!("model\tpath\tserial number");
+///     for device in devices {
+///         match device.model {
+///             Some(model) => print!("{}", model),
+///             None => print!("unsupported"),
+///         }
+///         print!("\t{}\t", device.path);
+///         match device.serial_number {
+///             Some(serial_number) => println!("{}", serial_number),
+///             None => println!("unknown"),
+///         }
+///     }
+/// }
+/// # Ok::<(), nitrokey::Error>(())
+/// ```
+///
+/// [`connect_path`]: struct.Manager.html#fn.connect_path
+/// [`DeviceInfo`]: struct.DeviceInfo.html
+/// [`NotConnected`]: enum.CommunicationError.html#variant.NotConnected
+/// [`Utf8Error`]: enum.Error.html#variant.Utf8Error
+pub fn list_devices() -> Result<Vec<DeviceInfo>, Error> {
+    let ptr = NonNull::new(unsafe { nitrokey_sys::NK_list_devices() });
+    match ptr {
+        Some(mut ptr) => {
+            let mut vec: Vec<DeviceInfo> = Vec::new();
+            push_device_info(&mut vec, unsafe { ptr.as_ref() })?;
+            unsafe {
+                nitrokey_sys::NK_free_device_info(ptr.as_mut());
+            }
+            Ok(vec)
+        }
+        None => get_last_result().map(|_| Vec::new()),
+    }
+}
+
+fn push_device_info(
+    vec: &mut Vec<DeviceInfo>,
+    info: &nitrokey_sys::NK_device_info,
+) -> Result<(), Error> {
+    vec.push(info.try_into()?);
+    if let Some(ptr) = NonNull::new(info.next) {
+        push_device_info(vec, unsafe { ptr.as_ref() })?;
+    }
+    Ok(())
 }
 
 /// Enables or disables debug output.  Calling this method with `true` is equivalent to setting the

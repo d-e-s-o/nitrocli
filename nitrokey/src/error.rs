@@ -28,6 +28,8 @@ pub enum Error {
     UnexpectedError,
     /// An unknown error returned by libnitrokey.
     UnknownError(i64),
+    /// An error caused by a Nitrokey model that is not supported by this crate.
+    UnsupportedModelError,
     /// An error occurred when interpreting a UTF-8 string.
     Utf8Error(str::Utf8Error),
 }
@@ -102,6 +104,7 @@ impl error::Error for Error {
             Error::RandError(ref err) => Some(err.as_ref()),
             Error::UnexpectedError => None,
             Error::UnknownError(_) => None,
+            Error::UnsupportedModelError => None,
             Error::Utf8Error(ref err) => Some(err),
         }
     }
@@ -118,6 +121,7 @@ impl fmt::Display for Error {
             Error::RandError(ref err) => write!(f, "RNG error: {}", err),
             Error::UnexpectedError => write!(f, "An unexpected error occurred"),
             Error::UnknownError(ref err) => write!(f, "Unknown error: {}", err),
+            Error::UnsupportedModelError => write!(f, "Unsupported Nitrokey model"),
             Error::Utf8Error(ref err) => write!(f, "UTF-8 error: {}", err),
         }
     }

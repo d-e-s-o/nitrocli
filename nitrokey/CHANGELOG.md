@@ -3,6 +3,29 @@ Copyright (C) 2019-2020 Robin Krahl <robin.krahl@ireas.org>
 SPDX-License-Identifier: CC0-1.0
 -->
 
+# v0.5.1 (2020-01-15)
+- Fix serial number formatting for Nitrokey Pro devices with firmware 0.8 or
+  older in the `list_devices` function.
+
+# v0.5.0 (2020-01-14)
+- List these libnitrokey functions as unsupported:
+  - `NK_change_firmware_password_pro`
+  - `NK_connect_with_ID`
+  - `NK_enable_firmware_update_pro`
+  - `NK_list_devices_by_cpuID`
+  - `NK_send_startup`
+- Implement connection by path:
+  - Add the `Error::UnsupportedDeviceError` variant.
+  - Add the `DeviceInfo` struct.
+  - Add the `list_devices` function.
+  - Add the `connect_path` function to the `Manager` struct.
+- Add the `get_status` function to the `Device` trait.
+- Rename `Status::get_status` to `get_storage_status`.
+- Add the `get_sd_card_usage` function to the `Storage` struct.
+- Add the `OperationStatus` enum and the `get_operation_status` function for
+  the `Storage` struct.
+- Add the `fill_sd_card` function to the `Storage` struct.
+
 # v0.4.0 (2020-01-02)
 - Remove the `test-pro` and `test-storage` features.
 - Implement `Display` for `Version`.

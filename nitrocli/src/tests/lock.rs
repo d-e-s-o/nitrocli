@@ -38,7 +38,7 @@ fn lock_storage(model: nitrokey::Model) -> crate::Result<()> {
 
   let mut manager = nitrokey::force_take()?;
   let device = manager.connect_storage()?;
-  assert!(!device.get_status()?.encrypted_volume.active);
+  assert!(!device.get_storage_status()?.encrypted_volume.active);
 
   Ok(())
 }

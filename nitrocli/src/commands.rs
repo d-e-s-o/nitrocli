@@ -356,7 +356,7 @@ fn print_status(
 
   if let nitrokey::DeviceWrapper::Storage(device) = device {
     let status = device
-      .get_status()
+      .get_storage_status()
       .map_err(|err| get_error("Getting Storage status failed", err))?;
 
     print_storage_status(ctx, &status)

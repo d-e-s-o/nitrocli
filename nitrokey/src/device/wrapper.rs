@@ -1,7 +1,7 @@
 // Copyright (C) 2018-2019 Robin Krahl <robin.krahl@ireas.org>
 // SPDX-License-Identifier: MIT
 
-use crate::device::{Device, Model, Pro, Storage};
+use crate::device::{Device, Model, Pro, Status, Storage};
 use crate::error::Error;
 use crate::otp::GenerateOtp;
 
@@ -129,6 +129,13 @@ impl<'a> Device<'a> for DeviceWrapper<'a> {
         match *self {
             DeviceWrapper::Pro(_) => Model::Pro,
             DeviceWrapper::Storage(_) => Model::Storage,
+        }
+    }
+
+    fn get_status(&self) -> Result<Status, Error> {
+        match self {
+            DeviceWrapper::Pro(dev) => dev.get_status(),
+            DeviceWrapper::Storage(dev) => dev.get_status(),
         }
     }
 }
