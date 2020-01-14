@@ -28,8 +28,8 @@ fn unencrypted_set_read_write(model: nitrokey::Model) -> crate::Result<()> {
   {
     let mut manager = nitrokey::force_take()?;
     let device = manager.connect_storage()?;
-    assert!(device.get_status()?.unencrypted_volume.active);
-    assert!(!device.get_status()?.unencrypted_volume.read_only);
+    assert!(device.get_storage_status()?.unencrypted_volume.active);
+    assert!(!device.get_storage_status()?.unencrypted_volume.read_only);
   }
 
   let out = ncli.handle(&["unencrypted", "set", "read-only"])?;
@@ -38,8 +38,8 @@ fn unencrypted_set_read_write(model: nitrokey::Model) -> crate::Result<()> {
   {
     let mut manager = nitrokey::force_take()?;
     let device = manager.connect_storage()?;
-    assert!(device.get_status()?.unencrypted_volume.active);
-    assert!(device.get_status()?.unencrypted_volume.read_only);
+    assert!(device.get_storage_status()?.unencrypted_volume.active);
+    assert!(device.get_storage_status()?.unencrypted_volume.read_only);
   }
 
   Ok(())

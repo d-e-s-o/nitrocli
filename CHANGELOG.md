@@ -6,6 +6,7 @@ Unreleased
   - Removed `argparse` dependency
 - Removed vendored dependencies and moved source code into repository
   root
+- Bumped `nitrokey` dependency to `0.5.1`
 
 
 0.3.1
