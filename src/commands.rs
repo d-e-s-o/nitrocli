@@ -377,8 +377,41 @@ pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// List the attached Nitrokey devices.
-pub fn list(_ctx: &mut args::ExecCtx<'_>, _no_connect: bool) -> Result<()> {
-  unimplemented!();
+pub fn list(ctx: &mut args::ExecCtx<'_>, no_connect: bool) -> Result<()> {
+  set_log_level(ctx);
+
+  let device_infos = nitrokey::list_devices()?;
+  if device_infos.is_empty() {
+    println!(ctx, "No Nitrokey device connected")?;
+  } else {
+    println!(ctx, "device path\tmodel\tserial number")?;
+    let mut manager = nitrokey::take()?;
+
+    for device_info in device_infos {
+      let model = device_info
+        .model
+        .map(|m| m.to_string())
+        .unwrap_or_else(|| "unknown".into());
+      let serial_number = match device_info.serial_number {
+        Some(serial_number) => format!("0x{}", serial_number),
+        None => {
+          // Storage devices do not have the serial number present in
+          // the device information. We have to connect to them to
+          // retrieve the information.
+          if no_connect {
+            "N/A".to_string()
+          } else {
+            let device = manager.connect_path(device_info.path.clone())?;
+            format!("0x{}", device.get_serial_number()?)
+          }
+        }
+      };
+
+      println!(ctx, "{}\t{}\t{}", device_info.path, model, serial_number)?;
+    }
+  }
+
+  Ok(())
 }
 
 /// Perform a factory reset.
