@@ -5,6 +5,7 @@ Unreleased
   - Replaced `argparse` with `structopt`
   - Removed the `argparse` dependency
 
+
 0.3.1
 -----
 - Added note about interaction with GnuPG to `README` file
