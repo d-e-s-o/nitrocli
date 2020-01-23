@@ -69,6 +69,7 @@ mod arg_util;
 
 mod args;
 mod commands;
+mod config;
 mod pinentry;
 #[cfg(test)]
 mod tests;
@@ -108,8 +109,6 @@ where
 /// the command execution.
 #[allow(missing_debug_implementations)]
 pub struct ExecCtx<'io> {
-  /// The Nitrokey model to use.
-  pub model: Option<args::DeviceModel>,
   /// See `RunCtx::stdout`.
   pub stdout: &'io mut dyn io::Write,
   /// See `RunCtx::stderr`.
@@ -124,10 +123,8 @@ pub struct ExecCtx<'io> {
   pub new_user_pin: Option<ffi::OsString>,
   /// See `RunCtx::password`.
   pub password: Option<ffi::OsString>,
-  /// See `RunCtx::no_cache`.
-  pub no_cache: bool,
-  /// The verbosity level to use for logging.
-  pub verbosity: u64,
+  /// See `RunCtx::config`.
+  pub config: config::Config,
 }
 
 impl<'io> Stdio for ExecCtx<'io> {
@@ -142,8 +139,9 @@ fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> anyhow::Result<(
 
   match args::Args::from_iter_safe(args.iter()) {
     Ok(args) => {
+      let mut config = ctx.config;
+      config.update(&args);
       let mut ctx = ExecCtx {
-        model: args.model,
         stdout: ctx.stdout,
         stderr: ctx.stderr,
         admin_pin: ctx.admin_pin.take(),
@@ -151,8 +149,7 @@ fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> anyhow::Result<(
         new_admin_pin: ctx.new_admin_pin.take(),
         new_user_pin: ctx.new_user_pin.take(),
         password: ctx.password.take(),
-        no_cache: ctx.no_cache,
-        verbosity: args.verbose.into(),
+        config,
       };
       args.cmd.execute(&mut ctx)
     }
@@ -187,8 +184,9 @@ pub(crate) struct RunCtx<'io> {
   pub new_user_pin: Option<ffi::OsString>,
   /// A password used by some commands, if provided through an environment variable.
   pub password: Option<ffi::OsString>,
-  /// Whether to bypass the cache for all secrets or not.
-  pub no_cache: bool,
+  /// The configuration, usually read from configuration files and environment
+  /// variables.
+  pub config: config::Config,
 }
 
 fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
@@ -206,19 +204,33 @@ fn main() {
 
   let mut stdout = io::stdout();
   let mut stderr = io::stderr();
-  let args = env::args().collect::<Vec<_>>();
-  let ctx = &mut RunCtx {
-    stdout: &mut stdout,
-    stderr: &mut stderr,
-    admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
-    user_pin: env::var_os(NITROCLI_USER_PIN),
-    new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
-    new_user_pin: env::var_os(NITROCLI_NEW_USER_PIN),
-    password: env::var_os(NITROCLI_PASSWORD),
-    no_cache: env::var_os(NITROCLI_NO_CACHE).is_some(),
+
+  let rc = match config::Config::load() {
+    Ok(mut config) => {
+      if env::var_os(NITROCLI_NO_CACHE).is_some() {
+        config.no_cache = true;
+      }
+
+      let args = env::args().collect::<Vec<_>>();
+      let ctx = &mut RunCtx {
+        stdout: &mut stdout,
+        stderr: &mut stderr,
+        admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
+        user_pin: env::var_os(NITROCLI_USER_PIN),
+        new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
+        new_user_pin: env::var_os(NITROCLI_NEW_USER_PIN),
+        password: env::var_os(NITROCLI_PASSWORD),
+        config,
+      };
+
+      run(ctx, args)
+    }
+    Err(err) => {
+      let _ = writeln!(stderr, "{:?}", err);
+      1
+    }
   };
 
-  let rc = run(ctx, args);
   // We exit the process the hard way below. The problem is that because
   // of this, buffered IO may not be flushed. So make sure to explicitly
   // flush before exiting. Note that stderr is unbuffered, alleviating
