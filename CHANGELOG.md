@@ -3,6 +3,8 @@ Unreleased
 - Added support for configuration files
   - Added `toml` dependency in version `0.5.6`
   - Added `serde` dependency in version `1.0.114`
+  - Added `envy` dependency in version `0.4.2`
+  - Added `merge` dependency in version `0.1.0`
 
 
 0.3.4
@@ -10,6 +12,11 @@ Unreleased
 - Changed default OTP format from `hex` to `base32`
 - Improved error reporting format and fidelity
   - Added `anyhow` dependency in version `1.0.32`
+- Reworked environment variables:
+  - Added the `NITROCLI_MODEL` and `NITROCLI_VERBOSITY` variables that
+    set the defaults for the `--model` and `--verbose` options
+  - Changed the handling of the `NITROCLI_NO_CACHE` variable to check
+    the value of the variable instead of only the presence
 - Updated minimum required Rust version to `1.42.0`
 - Bumped `nitrokey` dependency to `0.7.1`
 - Bumped `proc-macro2` dependency to `1.0.19`
