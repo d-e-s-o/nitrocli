@@ -39,7 +39,7 @@ use crate::ExecCtx;
 
 /// Set `libnitrokey`'s log level based on the execution context's verbosity.
 fn set_log_level(ctx: &mut ExecCtx<'_>) {
-  let log_lvl = match ctx.verbosity {
+  let log_lvl = match ctx.config.verbosity {
     // The error log level is what libnitrokey uses by default. As such,
     // there is no harm in us setting that as well when the user did not
     // ask for higher verbosity.
@@ -63,7 +63,7 @@ where
 
   set_log_level(ctx);
 
-  let device = match ctx.model {
+  let device = match ctx.config.model {
     Some(model) => manager.connect_model(model.into()).with_context(|| {
       anyhow::anyhow!("Nitrokey {} device not found", model.as_user_facing_str())
     })?,
@@ -83,7 +83,7 @@ where
 
   set_log_level(ctx);
 
-  if let Some(model) = ctx.model {
+  if let Some(model) = ctx.config.model {
     if model != args::DeviceModel::Storage {
       anyhow::bail!("This command is only available on the Nitrokey Storage");
     }
