@@ -58,9 +58,16 @@ version = "0.2"
 [dependencies.nitrokey]
 version = "0.7.1"
 
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+
 [dependencies.structopt]
 version = "0.3.7"
 default-features = false
+
+[dependencies.toml]
+version = "0.5.6"
 
 [dev-dependencies.nitrokey-test]
 version = "0.4"

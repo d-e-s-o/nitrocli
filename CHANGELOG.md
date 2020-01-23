@@ -7,6 +7,9 @@ Unreleased
 - Bumped `nitrokey` dependency to `0.7.1`
 - Bumped `proc-macro2` dependency to `1.0.19`
 - Bumped `syn` dependency to `1.0.36`
+- Added support for configuration files:
+  - Added `toml` dependency in version `0.5.6`
+  - Added `serde` dependency in version `1.0.114`
 
 
 0.3.3

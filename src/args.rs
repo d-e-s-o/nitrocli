@@ -18,7 +18,7 @@
 // *************************************************************************
 
 /// Provides access to a Nitrokey device
-#[derive(structopt::StructOpt)]
+#[derive(Debug, structopt::StructOpt)]
 #[structopt(name = "nitrocli")]
 pub struct Args {
   /// Increases the log level (can be supplied multiple times)
@@ -54,6 +54,19 @@ impl From<DeviceModel> for nitrokey::Model {
       DeviceModel::Pro => nitrokey::Model::Pro,
       DeviceModel::Storage => nitrokey::Model::Storage,
     }
+  }
+}
+
+impl<'de> serde::Deserialize<'de> for DeviceModel {
+  fn deserialize<D>(deserializer: D) -> Result<DeviceModel, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    use serde::de::Error as _;
+    use std::str::FromStr as _;
+
+    let s = String::deserialize(deserializer)?;
+    DeviceModel::from_str(&s).map_err(D::Error::custom)
   }
 }
 
@@ -200,6 +213,7 @@ pub struct HiddenCreateArgs {
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
+#[allow(missing_copy_implementations)]
 pub struct ListArgs {
   /// Only print the information that is available without connecting to a device
   #[structopt(short, long)]
