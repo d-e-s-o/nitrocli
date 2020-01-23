@@ -54,6 +54,9 @@ version = "0.10.0"
 default-features = false
 features = ["toml"]
 
+[dependencies.directories]
+version = "2"
+
 [dependencies.libc]
 version = "0.2"
 

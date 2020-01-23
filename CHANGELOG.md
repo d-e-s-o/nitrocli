@@ -5,6 +5,7 @@ Unreleased
 - Added support for configuration files:
   - Added `config` dependency in version `0.10.1`
   - Added `serde` dependency in version `1.0.114`
+  - Added `directories` dependency in version `2.0.2`
 - Reworked environment variables:
   - Added the `NITROCLI_MODEL` and `NITROCLI_VERBOSITY` variables that set the
     defaults for the `--model` and `--verbose` options
