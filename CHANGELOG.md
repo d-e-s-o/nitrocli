@@ -1,5 +1,8 @@
 Unreleased
 ----------
+- Added support for configuration files
+  - Added `toml` dependency in version `0.5.6`
+  - Added `serde` dependency in version `1.0.114`
 - Changed default OTP format from `hex` to `base32`
 - Improved error reporting format and fidelity
   - Added `anyhow` dependency in version `1.0.32`
