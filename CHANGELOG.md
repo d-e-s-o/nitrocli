@@ -2,6 +2,8 @@ Unreleased
 ----------
 - Bumped `proc-macro2` dependency to `1.0.19`
 - Bumped `syn` dependency to `1.0.36`
+- Added support for configuration files:
+  - Added `config` dependency in version `0.10.1`
 
 
 0.3.3

@@ -49,6 +49,11 @@ incremental = false
 [dependencies.base32]
 version = "0.4.0"
 
+[dependencies.config]
+version = "0.10.0"
+default-features = false
+features = ["toml"]
+
 [dependencies.libc]
 version = "0.2"
 
