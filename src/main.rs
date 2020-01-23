@@ -85,7 +85,6 @@ const NITROCLI_USER_PIN: &str = "NITROCLI_USER_PIN";
 const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";
 const NITROCLI_NEW_USER_PIN: &str = "NITROCLI_NEW_USER_PIN";
 const NITROCLI_PASSWORD: &str = "NITROCLI_PASSWORD";
-const NITROCLI_NO_CACHE: &str = "NITROCLI_NO_CACHE";
 
 trait Stdio {
   fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write);
@@ -205,17 +204,13 @@ fn main() {
   let mut stdout = io::stdout();
   let mut stderr = io::stderr();
 
-  let mut config = match config::Config::load() {
+  let config = match config::Config::load() {
     Ok(config) => config,
     Err(err) => {
       let _ = writeln!(stderr, "{}", err);
       process::exit(1);
     }
   };
-
-  if env::var_os(NITROCLI_NO_CACHE).is_some() {
-    config.no_cache = true;
-  }
 
   let args = env::args().collect::<Vec<_>>();
   let ctx = &mut RunCtx {

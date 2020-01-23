@@ -27,21 +27,31 @@ use anyhow::Result;
 
 /// The configuration for nitrocli, usually read from configuration files and environment
 /// variables.
-#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, merge::Merge, serde::Deserialize)]
 pub struct Config {
   /// The model to connect to.
   pub model: Option<args::DeviceModel>,
   /// Whether to bypass the cache for all secrets or not.
+  #[merge(strategy = merge::bool::overwrite_false)]
   #[serde(default)]
   pub no_cache: bool,
   /// The log level.
+  #[merge(strategy = merge::num::overwrite_zero)]
   #[serde(default)]
   pub verbosity: u8,
 }
 
 impl Config {
   pub fn load() -> Result<Self> {
-    load_user_config().map(|o| o.unwrap_or_else(Default::default))
+    use merge::Merge as _;
+
+    let mut config = Config::default();
+    if let Some(user_config) = load_user_config()? {
+      config.merge(user_config);
+    }
+    config.merge(load_env_config()?);
+
+    Ok(config)
   }
 
   pub fn update(&mut self, args: &args::Args) {
@@ -61,6 +71,12 @@ fn load_user_config() -> Result<Option<Config>> {
   } else {
     Ok(None)
   }
+}
+
+fn load_env_config() -> Result<Config> {
+  envy::prefixed("NITROCLI_")
+    .from_env()
+    .context("Failed to parse environment variables")
 }
 
 pub fn read_config_file(path: impl AsRef<path::Path>) -> Result<Config> {

@@ -10,6 +10,13 @@ Unreleased
 - Added support for configuration files:
   - Added `toml` dependency in version `0.5.6`
   - Added `serde` dependency in version `1.0.114`
+  - Added `envy` dependency in version `0.4.1`
+  - Added `merge` dependency in version `0.1.0`
+- Reworked environment variables:
+  - Added the `NITROCLI_MODEL` and `NITROCLI_VERBOSITY` variables that set the
+    defaults for the `--model` and `--verbose` options
+  - Changed the handling of the `NITROCLI_NO_CACHE` variable to check the value
+    of the variable instead of only the presence
 
 
 0.3.3
