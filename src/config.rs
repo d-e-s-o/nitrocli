@@ -38,7 +38,9 @@ pub struct Config {
 impl Config {
   pub fn load() -> Result<Self> {
     let mut config = config::Config::new();
-    let _ = config.merge(get_config_file("config.toml"))?;
+    let _ = config
+      .merge(get_config_file("config.toml"))?
+      .merge(config::Environment::with_prefix("NITROCLI"))?;
     config.try_into().map_err(error::Error::from)
   }
 
