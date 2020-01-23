@@ -43,6 +43,7 @@ where
 #[derive(Debug)]
 pub enum Error {
   ClapError(clap::Error),
+  ConfigError(config::ConfigError),
   IoError(io::Error),
   NitrokeyError(Option<&'static str>, nitrokey::Error),
   Utf8Error(str::Utf8Error),
@@ -76,6 +77,12 @@ impl From<clap::Error> for Error {
   }
 }
 
+impl From<config::ConfigError> for Error {
+  fn from(e: config::ConfigError) -> Error {
+    Error::ConfigError(e)
+  }
+}
+
 impl From<nitrokey::Error> for Error {
   fn from(e: nitrokey::Error) -> Error {
     Error::NitrokeyError(None, e)
@@ -104,6 +111,7 @@ impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
       Error::ClapError(ref e) => write!(f, "{}", e),
+      Error::ConfigError(ref e) => write!(f, "Configuration error: {}", e),
       Error::NitrokeyError(ref ctx, ref e) => {
         if let Some(ctx) = ctx {
           write!(f, "{}: ", ctx)?;
