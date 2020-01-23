@@ -60,6 +60,10 @@ version = "0.2"
 [dependencies.nitrokey]
 version = "0.6"
 
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+
 [dependencies.structopt]
 version = "0.3.7"
 default-features = false
