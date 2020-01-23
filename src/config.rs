@@ -17,19 +17,20 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use std::str::FromStr;
-
 use crate::args;
+use crate::error;
 use crate::Result;
 
 /// The configuration for nitrocli, usually read from configuration files and environment
 /// variables.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Deserialize)]
 pub struct Config {
   /// The model to connect to.
   pub model: Option<args::DeviceModel>,
   /// Whether to bypass the cache for all secrets or not.
+  #[serde(default)]
   pub no_cache: bool,
+  #[serde(default)]
   /// The log level.
   pub verbosity: u8,
 }
@@ -37,16 +38,8 @@ pub struct Config {
 impl Config {
   pub fn load() -> Result<Self> {
     let mut config = config::Config::new();
-    let _ = config.set_default("model", "")?;
-    let _ = config.set_default("no_cache", false)?;
-    let _ = config.set_default("verbosity", 0)?;
     let _ = config.merge(get_config_file("config.toml"))?;
-    Ok(Self {
-      model: args::DeviceModel::from_str(&config.get_str("model")?).ok(),
-      no_cache: config.get_bool("no_cache")?,
-      verbosity: config.get_int("verbosity")? as u8,
-      ..Default::default()
-    })
+    config.try_into().map_err(error::Error::from)
   }
 
   pub fn update(&mut self, args: &args::Args) {

@@ -17,6 +17,8 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::fmt;
+
 /// Provides access to a Nitrokey device
 #[derive(structopt::StructOpt)]
 #[structopt(name = "nitrocli")]
@@ -54,6 +56,40 @@ impl From<DeviceModel> for nitrokey::Model {
       DeviceModel::Pro => nitrokey::Model::Pro,
       DeviceModel::Storage => nitrokey::Model::Storage,
     }
+  }
+}
+
+impl<'de> serde::Deserialize<'de> for DeviceModel {
+  fn deserialize<D>(deserializer: D) -> Result<DeviceModel, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    deserializer.deserialize_str(DeviceModelVisitor)
+  }
+}
+
+struct DeviceModelVisitor;
+
+impl<'de> serde::de::Visitor<'de> for DeviceModelVisitor {
+  type Value = DeviceModel;
+
+  fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    formatter.write_fmt(format_args!("one of {}", DeviceModel::all_str().join(", ")))
+  }
+
+  fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+  where
+    E: serde::de::Error,
+  {
+    use std::str::FromStr;
+
+    DeviceModel::from_str(v).map_err(|_| {
+      E::custom(format!(
+        "unexpected device model '{}', expected one of {}",
+        v,
+        DeviceModel::all_str().join(", "),
+      ))
+    })
   }
 }
 
