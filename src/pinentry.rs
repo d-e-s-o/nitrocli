@@ -232,7 +232,7 @@ where
 {
   let cache_id = entry
     .cache_id()
-    .and_then(|id| if ctx.no_cache { None } else { Some(id) })
+    .and_then(|id| if ctx.config.no_cache { None } else { Some(id) })
     // "X" is a sentinel value indicating that no caching is desired.
     .unwrap_or_else(|| "X".into())
     .into();
