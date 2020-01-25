@@ -21,6 +21,12 @@ use crate::args;
 use crate::error;
 use crate::Result;
 
+/// The name of nitrocli's configuration file relative to the application configuration directory.
+///
+/// The application configuration directory is determined using the `directories` crate.  For Unix,
+/// it is `$XDG_CONFIG_HOME/nitrocli` (defaults to `$HOME/.config/nitrocli`).
+const CONFIG_FILE: &str = "config.toml";
+
 /// The configuration for nitrocli, usually read from configuration files and environment
 /// variables.
 #[derive(Clone, Copy, Debug, Default, PartialEq, serde::Deserialize)]
@@ -37,9 +43,13 @@ pub struct Config {
 
 impl Config {
   pub fn load() -> Result<Self> {
+    let project_dirs = directories::ProjectDirs::from("", "", "nitrocli")
+      .ok_or_else(|| error::Error::from("Could not determine the home directory"))?;
+    let config_file = project_dirs.config_dir().join(CONFIG_FILE);
+
     let mut config = config::Config::new();
     let _ = config
-      .merge(get_config_file("config.toml"))?
+      .merge(config::File::from(config_file).format(config::FileFormat::Toml).required(false))?
       .merge(config::Environment::with_prefix("NITROCLI"))?;
     config.try_into().map_err(error::Error::from)
   }
@@ -52,10 +62,4 @@ impl Config {
       self.verbosity = args.verbose;
     }
   }
-}
-
-fn get_config_file(name: &str) -> config::File<config::FileSourceFile> {
-  config::File::with_name(name)
-    .format(config::FileFormat::Toml)
-    .required(false)
 }
