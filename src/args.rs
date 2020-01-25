@@ -13,6 +13,16 @@ pub struct Args {
   /// Selects the device model to connect to
   #[structopt(short, long, global = true, possible_values = &DeviceModel::all_str())]
   pub model: Option<DeviceModel>,
+  /// Sets the serial number of the device to connect to. Can be set multiple times to allow
+  /// mulitple serial numbers
+  // TODO: add short options (avoid collisions)
+  #[structopt(
+    long = "serial-number",
+    global = true,
+    multiple = true,
+    number_of_values = 1
+  )]
+  pub serial_numbers: Vec<nitrokey::SerialNumber>,
   /// Disables the cache for all secrets.
   #[structopt(long, global = true)]
   pub no_cache: bool,

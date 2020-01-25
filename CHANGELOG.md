@@ -12,6 +12,8 @@ Unreleased
   Nitrokey devices:
   - Fail if multiple attached devices match the filter options (or no filter
     options are set)
+  - Added `--serial-number` option that restricts the serial number of the
+    device to connect to
 
 
 0.3.4
@@ -54,8 +56,6 @@ Unreleased
 - Removed vendored dependencies and moved source code into repository
   root
 - Bumped `nitrokey` dependency to `0.6.0`
-- Bumped `quote` dependency to `1.0.3`
-- Bumped `syn` dependency to `1.0.14`
 
 
 0.3.1

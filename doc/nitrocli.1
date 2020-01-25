@@ -12,15 +12,24 @@ It can be used to access the encrypted volume, the one-time password generator,
 and the password safe.
 .SS Device selection
 Per default, \fBnitrocli\fR connects to any attached Nitrokey device.
-You can use the \fB\-\-model\fR option to select the device to connect to.
-\fBnitrocli\fR fails if more than one attached Nitrokey device matches
-this filter, or if multiple Nitrokey devices are attached and this option
-is not set.
+You can use the \fB\-\-model\fR and \fB\-\-serial-number\fR options to select
+the device to connect to.
+\fBnitrocli\fR fails if more than one attached Nitrokey device matches this
+filter, or if multiple Nitrokey devices are attached and none of the filter
+options is set.
 .SH OPTIONS
 .TP
 \fB\-m\fR, \fB\-\-model pro\fR|\fBstorage\fR
 Restrict connections to the given device model, see the Device selection
 section.
+.TP
+\fB\-\-serial-number \fIserial-number\fR
+Restrict connections to the given serial number, see the Device selection
+section.
+\fIserial-number\fR must be a hex string with an optional 0x prefix.
+This option can be set multiple times to allow any of the given serial numbers.
+Nitrokey Storage devices never match this restriction as they do not expose
+their serial number in the USB device descriptor.
 .TP
 \fB\-\-no\-cache\fR
 If this option is set, nitrocli will not cache any inquired secrets using
@@ -302,6 +311,10 @@ The following values can be set in the configuration file:
 Restrict connections to the given device model (string, default: not set, see
 \fB\-\-model\fR).
 .TP
+.B serial_numbers
+Restrict connections to the given serial numbers (list of strings, default:
+empty, see \fB\-\-serial-number\fR).
+.TP
 .B no_cache
 If set to true, do not cache any inquired secrets (boolean, default: false,
 see \fB\-\-no\-cache\fR).
@@ -311,6 +324,7 @@ Set the log level (integer, default: 0, see \fB\-\-verbose\fR).
 .P
 The configuration file must use the TOML format, for example:
     model = "pro"
+    serial_numbers = ["0xf00baa", "deadbeef"]
     no_cache = false
     verbosity = 0
 
@@ -342,6 +356,10 @@ configuration (see the Config file section):
 .B NITROCLI_MODEL
 Restrict connections to the given device model (string, default: not set, see
 \fB\-\-model\fR).
+.TP
+.B NITROCLI_SERIAL_NUMBERS
+Restrict connections to the given list of serial numbers (comma-separated list
+of strings, default: empty, see \fB\-\-serial-number\fR).
 .TP
 .B NITROCLI_NO_CACHE
 If set to true, do not cache any inquired secrets (boolean, default: false,

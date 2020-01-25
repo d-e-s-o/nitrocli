@@ -40,18 +40,40 @@ fn set_log_level(ctx: &mut Context<'_>) {
 }
 
 /// Find a Nitrokey device that matches the given requirements
-fn find_device(model: Option<args::DeviceModel>) -> anyhow::Result<nitrokey::DeviceInfo> {
+fn find_device(
+  model: Option<args::DeviceModel>,
+  serial_numbers: &[nitrokey::SerialNumber],
+) -> anyhow::Result<nitrokey::DeviceInfo> {
   let devices = nitrokey::list_devices().context("Failed to enumerate Nitrokey devices")?;
   let nkmodel: Option<nitrokey::Model> = model.map(From::from);
   let mut iter = devices
     .into_iter()
-    .filter(|device| nkmodel.is_none() || device.model == nkmodel);
+    .filter(|device| nkmodel.is_none() || device.model == nkmodel)
+    .filter(|device| {
+      serial_numbers.is_empty()
+        || device
+          .serial_number
+          .map(|sn| serial_numbers.contains(&sn))
+          .unwrap_or_default()
+    });
 
   let get_filter = || {
+    let mut filters = Vec::new();
     if let Some(model) = model {
-      format!(" (filter: model = {})", model.as_user_facing_str())
-    } else {
+      filters.push(format!("model = {}", model.as_user_facing_str()));
+    }
+    if !serial_numbers.is_empty() {
+      let serial_numbers: Vec<_> = serial_numbers
+        .as_ref()
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+      filters.push(format!("serial number in [{}]", serial_numbers.join(", ")));
+    }
+    if filters.is_empty() {
       String::new()
+    } else {
+      format!(" (filter: {})", filters.join(", "))
     }
   };
   let device = iter
@@ -67,13 +89,14 @@ fn find_device(model: Option<args::DeviceModel>) -> anyhow::Result<nitrokey::Dev
 }
 
 /// Connect to a Nitrokey device that matches the given requirements
-fn connect(
-  manager: &mut nitrokey::Manager,
+fn connect<'mgr>(
+  manager: &'mgr mut nitrokey::Manager,
   model: Option<args::DeviceModel>,
-) -> anyhow::Result<nitrokey::DeviceWrapper<'_>> {
+  serial_numbers: &[nitrokey::SerialNumber],
+) -> anyhow::Result<nitrokey::DeviceWrapper<'mgr>> {
   use std::ops::Deref as _;
 
-  let device_info = find_device(model)?;
+  let device_info = find_device(model, serial_numbers)?;
   manager
     .connect_path(device_info.path.deref())
     .with_context(|| {
@@ -94,7 +117,7 @@ where
 
   set_log_level(ctx);
 
-  let device = connect(&mut manager, ctx.config.model)?;
+  let device = connect(&mut manager, ctx.config.model, &ctx.config.serial_numbers)?;
   op(ctx, device)
 }
 
@@ -114,7 +137,11 @@ where
     }
   }
 
-  let device = connect(&mut manager, Some(args::DeviceModel::Storage))?;
+  let device = connect(
+    &mut manager,
+    Some(args::DeviceModel::Storage),
+    &ctx.config.serial_numbers,
+  )?;
   if let nitrokey::DeviceWrapper::Storage(storage) = device {
     op(ctx, storage)
   } else {
