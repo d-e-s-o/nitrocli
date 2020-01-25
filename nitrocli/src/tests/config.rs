@@ -19,6 +19,23 @@
 
 use super::*;
 
+#[test]
+fn mutually_exclusive_set_options() {
+  fn test(option1: &str, option2: &str) {
+    let (rc, out, err) = Nitrocli::new().run(&["config", "set", option1, option2]);
+
+    assert_ne!(rc, 0);
+    assert_eq!(out, b"");
+
+    let err = String::from_utf8(err).unwrap();
+    assert!(err.contains("cannot be used with"), err);
+  }
+
+  test("-c", "-C");
+  test("-o", "-O");
+  test("-s", "-S");
+}
+
 #[test_device]
 fn get(model: nitrokey::Model) -> crate::Result<()> {
   let re = regex::Regex::new(

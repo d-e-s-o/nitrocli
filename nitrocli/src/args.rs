@@ -172,7 +172,7 @@ struct ConfigSetArgs {
   #[structopt(short = "o", long)]
   otp_pin: bool,
   /// Allows one-time password generation without PIN
-  #[structopt(short = "O", long, conflicts_with("otp_pin"))]
+  #[structopt(short = "O", long, conflicts_with("otp-pin"))]
   no_otp_pin: bool,
 }
 
