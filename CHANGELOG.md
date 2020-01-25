@@ -1,10 +1,13 @@
 Unreleased
 ----------
 - Added support for configuration files
+  - Added support for configuration files that can be used to set
+    default values for some arguments
   - Added `toml` dependency in version `0.5.6`
   - Added `serde` dependency in version `1.0.114`
   - Added `envy` dependency in version `0.4.2`
   - Added `merge` dependency in version `0.1.0`
+  - Added `directories` dependency in version `3.0.1`
 
 
 0.3.4
