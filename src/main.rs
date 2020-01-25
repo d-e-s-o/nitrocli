@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2020 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#![allow(clippy::trivially_copy_pass_by_ref)]
 #![warn(
   bad_style,
   dead_code,
