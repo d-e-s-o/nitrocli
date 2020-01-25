@@ -11,12 +11,7 @@ fn not_found_raw() {
 
   assert_ne!(rc, 0);
   assert_eq!(out, b"");
-  let expected = r#"Nitrokey device not found
-
-Caused by:
-    Communication error: Could not connect to a Nitrokey device
-"#;
-  assert_eq!(err, expected.as_bytes());
+  assert_eq!(err, b"Nitrokey device not found\n");
 }
 
 #[test_device]
