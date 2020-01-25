@@ -24,6 +24,14 @@ use crate::args;
 
 use anyhow::Context as _;
 
+/// The name of nitrocli's configuration file relative to the
+/// application configuration directory.
+///
+/// The application configuration directory is determined using the
+/// `directories` crate.  For Unix, it is `$XDG_CONFIG_HOME/nitrocli`
+/// (defaults to `$HOME/.config/nitrocli`).
+const CONFIG_FILE: &str = "config.toml";
+
 /// The configuration for nitrocli, usually read from configuration
 /// files and environment variables.
 #[derive(Clone, Copy, Debug, Default, PartialEq, merge::Merge, serde::Deserialize)]
@@ -64,7 +72,9 @@ impl Config {
 }
 
 fn load_user_config() -> anyhow::Result<Option<Config>> {
-  let path = path::Path::new("config.toml");
+  let project_dirs = directories::ProjectDirs::from("", "", "nitrocli")
+    .ok_or_else(|| anyhow::anyhow!("Could not determine the nitrocli application directory"))?;
+  let path = project_dirs.config_dir().join(CONFIG_FILE);
   if path.is_file() {
     read_config_file(&path).map(Some)
   } else {
