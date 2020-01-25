@@ -28,6 +28,16 @@ fn not_found_pro() {
   assert_eq!(err, "Nitrokey device not found (filter: model=pro)");
 }
 
+#[test_device]
+fn not_found_by_serial_number() {
+  let res = Nitrocli::new().handle(&["status", "--model=storage", "--serial-number=deadbeef"]);
+  let err = res.unwrap_err().to_string();
+  assert_eq!(
+    err,
+    "Nitrokey device not found (filter: model=storage, serial number in [0xdeadbeef])"
+  );
+}
+
 #[test_device(pro)]
 fn output_pro(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(

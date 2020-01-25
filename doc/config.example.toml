@@ -4,6 +4,9 @@
 
 # The model to connect to (string, "pro" or "storage", default: not set).
 model = "pro"
+# The serial number of the device to connect to (list of strings, default:
+# empty).
+serial_numbers = ["0xf00baa", "deadbeef"]
 # Do not cache secrets (boolean, default: false).
 no_cache = true
 # The log level (integer, default: 0).

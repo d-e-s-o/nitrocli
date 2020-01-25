@@ -5,6 +5,9 @@
 
 use std::fs;
 use std::path;
+use std::str::FromStr as _;
+
+use serde::de::Error as _;
 
 use crate::args;
 
@@ -20,10 +23,14 @@ const CONFIG_FILE: &str = "config.toml";
 
 /// The configuration for nitrocli, usually read from configuration
 /// files and environment variables.
-#[derive(Clone, Copy, Debug, Default, PartialEq, merge::Merge, serde::Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, merge::Merge, serde::Deserialize)]
 pub struct Config {
   /// The model to connect to.
   pub model: Option<args::DeviceModel>,
+  /// The serial numbers of the device to connect to.
+  #[merge(strategy = merge::vec::overwrite_empty)]
+  #[serde(default, deserialize_with = "deserialize_serial_number_vec")]
+  pub serial_numbers: Vec<nitrokey::SerialNumber>,
   /// Whether to bypass the cache for all secrets or not.
   #[merge(strategy = merge::bool::overwrite_false)]
   #[serde(default)]
@@ -32,6 +39,18 @@ pub struct Config {
   #[merge(strategy = merge::num::overwrite_zero)]
   #[serde(default)]
   pub verbosity: u8,
+}
+
+fn deserialize_serial_number_vec<'de, D>(d: D) -> Result<Vec<nitrokey::SerialNumber>, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  let strings: Vec<String> = serde::Deserialize::deserialize(d).map_err(D::Error::custom)?;
+  let result: Result<Vec<_>, _> = strings
+    .iter()
+    .map(|s| nitrokey::SerialNumber::from_str(s))
+    .collect();
+  result.map_err(D::Error::custom)
 }
 
 impl Config {
@@ -50,6 +69,10 @@ impl Config {
   pub fn update(&mut self, args: &args::Args) {
     if args.model.is_some() {
       self.model = args.model;
+    }
+    if !args.serial_numbers.is_empty() {
+      // TODO: Don't clone.
+      self.serial_numbers = args.serial_numbers.clone();
     }
     if args.no_cache {
       self.no_cache = true;
