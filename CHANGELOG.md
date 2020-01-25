@@ -11,6 +11,8 @@ Unreleased
 - Reworked connection handling for multiple attached Nitrokey devices:
   - Fail if multiple attached devices match the filter options (or no filter
     options are set)
+  - Added `--serial-number` option that restricts the serial number of the
+    device to connect to
 
 
 0.3.4

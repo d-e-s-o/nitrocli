@@ -43,10 +43,22 @@ fn set_log_level(ctx: &mut Context<'_>) {
 
 /// Create a filter string from the program configuration.
 fn format_filter(config: &config::Config) -> String {
+  let mut filters = Vec::new();
   if let Some(model) = config.model {
-    format!(" (filter: model={})", model.as_ref())
-  } else {
+    filters.push(format!("model={}", model.as_ref()));
+  }
+  if !config.serial_numbers.is_empty() {
+    let serial_numbers = config
+      .serial_numbers
+      .iter()
+      .map(ToString::to_string)
+      .collect::<Vec<_>>();
+    filters.push(format!("serial number in [{}]", serial_numbers.join(", ")));
+  }
+  if filters.is_empty() {
     String::new()
+  } else {
+    format!(" (filter: {})", filters.join(", "))
   }
 }
 
@@ -56,7 +68,14 @@ fn find_device(config: &config::Config) -> anyhow::Result<nitrokey::DeviceInfo> 
   let nkmodel = config.model.map(nitrokey::Model::from);
   let mut iter = devices
     .into_iter()
-    .filter(|device| nkmodel.is_none() || device.model == nkmodel);
+    .filter(|device| nkmodel.is_none() || device.model == nkmodel)
+    .filter(|device| {
+      config.serial_numbers.is_empty()
+        || device
+          .serial_number
+          .map(|sn| config.serial_numbers.contains(&sn))
+          .unwrap_or_default()
+    });
 
   let device = iter
     .next()
