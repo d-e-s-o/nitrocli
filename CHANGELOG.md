@@ -8,6 +8,8 @@ Unreleased
   - Added `envy` dependency in version `0.4.1`
   - Added `merge` dependency in version `0.1.0`
   - Added `directories` dependency in version `3.0.1`
+- Refactored connection handling to improve support for multiple attached
+  Nitrokey devices
 
 
 0.3.4

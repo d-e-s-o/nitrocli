@@ -39,6 +39,45 @@ fn set_log_level(ctx: &mut Context<'_>) {
   nitrokey::set_log_level(log_lvl);
 }
 
+/// Find a Nitrokey device that matches the given requirements
+fn find_device(model: Option<args::DeviceModel>) -> anyhow::Result<nitrokey::DeviceInfo> {
+  let devices = nitrokey::list_devices().context("Failed to enumerate Nitrokey devices")?;
+  let nkmodel: Option<nitrokey::Model> = model.map(From::from);
+  let mut iter = devices
+    .into_iter()
+    .filter(|device| nkmodel.is_none() || device.model == nkmodel);
+
+  let get_filter = || {
+    if let Some(model) = model {
+      format!(" (filter: model = {})", model.as_user_facing_str())
+    } else {
+      String::new()
+    }
+  };
+  let device = iter
+    .next()
+    .with_context(|| format!("No Nitrokey device found{}", get_filter()))?;
+  Ok(device)
+}
+
+/// Connect to a Nitrokey device that matches the given requirements
+fn connect(
+  manager: &mut nitrokey::Manager,
+  model: Option<args::DeviceModel>,
+) -> anyhow::Result<nitrokey::DeviceWrapper<'_>> {
+  use std::ops::Deref as _;
+
+  let device_info = find_device(model)?;
+  manager
+    .connect_path(device_info.path.deref())
+    .with_context(|| {
+      format!(
+        "Failed to connect to Nitrokey device at path {}",
+        device_info.path
+      )
+    })
+}
+
 /// Connect to any Nitrokey device and do something with it.
 fn with_device<F>(ctx: &mut Context<'_>, op: F) -> anyhow::Result<()>
 where
@@ -49,13 +88,7 @@ where
 
   set_log_level(ctx);
 
-  let device = match ctx.config.model {
-    Some(model) => manager.connect_model(model.into()).with_context(|| {
-      anyhow::anyhow!("Nitrokey {} device not found", model.as_user_facing_str())
-    })?,
-    None => manager.connect().context("Nitrokey device not found")?,
-  };
-
+  let device = connect(&mut manager, ctx.config.model)?;
   op(ctx, device)
 }
 
@@ -75,10 +108,14 @@ where
     }
   }
 
-  let device = manager
-    .connect_storage()
-    .context("Nitrokey Storage device not found")?;
-  op(ctx, device)
+  let device = connect(&mut manager, Some(args::DeviceModel::Storage))?;
+  if let nitrokey::DeviceWrapper::Storage(storage) = device {
+    op(ctx, storage)
+  } else {
+    Err(anyhow::anyhow!(
+      "Programming error: connect returned a wrong model"
+    ))
+  }
 }
 
 /// Connect to any Nitrokey device, retrieve a password safe handle, and
