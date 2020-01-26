@@ -74,10 +74,10 @@ impl<'io> Stdio for ExecCtx<'io> {
 #[structopt(name = "nitrocli")]
 struct Args {
   /// Increases the log level (can be supplied multiple times)
-  #[structopt(short, long, parse(from_occurrences))]
+  #[structopt(short, long, global = true, parse(from_occurrences))]
   verbose: u8,
   /// Selects the device model to connect to
-  #[structopt(short, long, possible_values = &DeviceModel::all_str())]
+  #[structopt(short, long, global = true, possible_values = &DeviceModel::all_str())]
   model: Option<DeviceModel>,
   #[structopt(subcommand)]
   cmd: Command,
