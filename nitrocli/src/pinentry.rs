@@ -54,7 +54,7 @@ pub trait SecretEntry: fmt::Debug {
 pub struct PinEntry {
   pin_type: PinType,
   model: nitrokey::Model,
-  serial: String,
+  serial: nitrokey::SerialNumber,
 }
 
 impl PinEntry {
@@ -79,7 +79,8 @@ impl PinEntry {
 impl SecretEntry for PinEntry {
   fn cache_id(&self) -> Option<CowStr> {
     let model = self.model.to_string().to_lowercase();
-    let suffix = format!("{}:{}", model, self.serial);
+    // TODO: directly format serial instead?
+    let suffix = format!("{}:{:08x}", model, self.serial.as_u32());
     let cache_id = match self.pin_type {
       PinType::Admin => format!("nitrocli:admin:{}", suffix),
       PinType::User => format!("nitrocli:user:{}", suffix),
@@ -127,7 +128,7 @@ impl SecretEntry for PinEntry {
 #[derive(Debug)]
 pub struct PwdEntry {
   model: nitrokey::Model,
-  serial: String,
+  serial: nitrokey::SerialNumber,
 }
 
 impl PwdEntry {

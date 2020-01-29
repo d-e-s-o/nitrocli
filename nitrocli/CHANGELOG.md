@@ -6,7 +6,7 @@ Unreleased
   - Replaced `argparse` with `structopt`
   - Removed the `argparse` dependency
   - Made the --verbose and --model options global
-- Bumped `nitrokey` dependency to `0.5.1`
+- Bumped `nitrokey` dependency to `0.6.0`
 
 
 0.3.1
