@@ -54,7 +54,7 @@ pub trait SecretEntry: fmt::Debug {
 pub struct PinEntry {
   pin_type: PinType,
   model: nitrokey::Model,
-  serial: String,
+  serial: nitrokey::SerialNumber,
 }
 
 impl PinEntry {
@@ -127,7 +127,7 @@ impl SecretEntry for PinEntry {
 #[derive(Debug)]
 pub struct PwdEntry {
   model: nitrokey::Model,
-  serial: String,
+  serial: nitrokey::SerialNumber,
 }
 
 impl PwdEntry {
