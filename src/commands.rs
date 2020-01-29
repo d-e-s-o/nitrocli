@@ -343,7 +343,7 @@ fn print_status(
     ctx,
     r#"Status:
   model:             {model}
-  serial number:     0x{id}
+  serial number:     {id}
   firmware version:  {fwv}
   user retry count:  {urc}
   admin retry count: {arc}"#,
@@ -393,7 +393,7 @@ pub fn list(ctx: &mut args::ExecCtx<'_>, no_connect: bool) -> Result<()> {
         .map(|m| m.to_string())
         .unwrap_or_else(|| "unknown".into());
       let serial_number = match device_info.serial_number {
-        Some(serial_number) => format!("0x{}", serial_number),
+        Some(serial_number) => serial_number.to_string(),
         None => {
           // Storage devices do not have the serial number present in
           // the device information. We have to connect to them to
@@ -402,7 +402,7 @@ pub fn list(ctx: &mut args::ExecCtx<'_>, no_connect: bool) -> Result<()> {
             "N/A".to_string()
           } else {
             let device = manager.connect_path(device_info.path.clone())?;
-            format!("0x{}", device.get_serial_number()?)
+            device.get_serial_number()?.to_string()
           }
         }
       };
