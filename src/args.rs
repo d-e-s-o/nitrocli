@@ -29,6 +29,9 @@ pub struct Args {
   /// Selects the device model to connect to
   #[structopt(short, long, global = true, possible_values = &DeviceModel::all_str())]
   pub model: Option<DeviceModel>,
+  /// Disables the cache for all secrets.
+  #[structopt(long, global = true)]
+  pub no_cache: bool,
   #[structopt(subcommand)]
   pub cmd: Command,
 }
