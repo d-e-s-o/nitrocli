@@ -17,6 +17,8 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::path;
+
 use super::*;
 
 #[test]
@@ -107,4 +109,14 @@ fn version_option() {
 
   test(&re, "--version");
   test(&re, "-V");
+}
+
+#[test]
+fn config_file() {
+  let config =
+    crate::config::read_config_file(&path::Path::new("doc/config.example.toml")).unwrap();
+
+  assert_eq!(Some(crate::args::DeviceModel::Pro), config.model);
+  assert_eq!(true, config.no_cache);
+  assert_eq!(2, config.verbosity);
 }
