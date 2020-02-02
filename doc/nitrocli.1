@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2020-08-04
+.TH NITROCLI 1 2020-09-01
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -16,6 +16,14 @@ and the password safe.
 Restrict connections to the given device model.
 If this option is not set, nitrocli will connect to any connected Nitrokey Pro
 or Nitrokey Storage device.
+.TP
+\fB\-\-no\-cache\fR
+If this option is set, nitrocli will not cache any inquired secrets using
+\fBgpg\-agent\fR(1) but ask for them each time they are needed.
+Note that this option does not cause any cached secrets to be cleared.
+If a secret is already in the cache it will be ignored, but left otherwise
+untouched.
+Use the \fBpin clear\fR command to clear secrets from the cache.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Enable additional logging and control its verbosity. Logging enabled through
@@ -175,7 +183,7 @@ scrollock keys can be mapped to an HOTP slot, and OTP generation can be set to
 require the user PIN.
 .TP
 \fBnitrocli config get\fR
-Print the current configuration.
+Print the current Nitrokey configuration.
 .TP
 \fBnitrocli config set \fR\
 [[\fB\-n\fR|\fB\-\-numlock \fIslot\fR] | [\fB\-N\fR|\fB\-\-no\-numlock\fR]] \
@@ -271,6 +279,36 @@ The admin PIN cannot be unblocked.
 This operation is equivalent to the unblock PIN option provided by \fBgpg\fR(1)
 (using the \fB\-\-change\-pin\fR option).
 
+.SH CONFIG FILE
+\fBnitrocli\fR tries to read the configuration file at
+\fB${XDG_CONFIG_HOME}/nitrocli/config.toml\fR (or
+\fB${HOME}/nitrocli/config.toml\fR if the \fBXDG_CONFIG_HOME\fR environment
+variable is not set).
+It is used to set default values for the options listed below.
+.P
+You can also set the environment variable \fBNITROCLI_\fIKEY\fR to overwrite
+the configuration for \fIkey\fR (see the Environment section).
+Note that command-line arguments overwrite both the configuration file and the
+environment variables.
+.P
+The following values can be set in the configuration file:
+.TP
+.B model
+Restrict connections to the given device model (string, default: not set, see
+\fB\-\-model\fR).
+.TP
+.B no_cache
+If set to true, do not cache any inquired secrets (boolean, default: false,
+see \fB\-\-no\-cache\fR).
+.TP
+.B verbosity
+Set the log level (integer, default: 0, see \fB\-\-verbose\fR).
+.P
+The configuration file must use the TOML format, for example:
+    model = "pro"
+    no_cache = false
+    verbosity = 0
+
 .SH ENVIRONMENT
 The program honors a set of environment variables that can be used to
 suppress interactive PIN entry through \fBpinentry\fR(1). The following
@@ -292,13 +330,27 @@ for the \fBuser\fR type.
 .TP
 .B NITROCLI_PASSWORD
 A password used by commands that require one (e.g., \fBhidden open\fR).
+.P
+Additionally, these environment variables can be used to overwrite the
+configuration (see the Config file section):
+.TP
+.B NITROCLI_MODEL
+Restrict connections to the given device model (string, default: not set, see
+\fB\-\-model\fR).
 .TP
 .B NITROCLI_NO_CACHE
-If this variable is present in the environment, do not cache any inquired
-secrets using \fBgpg\-agent\fR(1) but ask for them each time they are needed.
-Note that this variable does not cause any cached secrets to be cleared. If a
-secret is already in the cache it will be ignored, but left otherwise untouched.
-Use the \fBpin clear\fR command to clear secrets from the cache.
+If set to true, do not cache any inquired secrets (boolean, default: false,
+see \fB\-\-no\-cache\fR).
+.TP
+.B NITROCLI_VERBOSITY
+Set the log level (integer, default: 0, see \fB\-\-verbose\fR).
+
+.SH FILES
+.TP
+.B ${XDG_CONFIG_HOME}/nitrocli/config.toml
+.TP
+.B ${HOME}/nitrocli/config.toml
+User configuration file, see the Config file section.
 
 .SH EXAMPLES
 .SS Storage
