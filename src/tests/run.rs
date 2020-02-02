@@ -108,3 +108,14 @@ fn version_option() {
   test(&re, "--version");
   test(&re, "-V");
 }
+
+#[test]
+fn config_file() {
+    let mut config = ::config::Config::new();
+    let _ = config.merge(::config::File::with_name("doc/config.example.toml")).unwrap();
+    let config: crate::config::Config = config.try_into().unwrap();
+
+    assert_eq!(Some(crate::args::DeviceModel::Pro), config.model);
+    assert_eq!(true, config.no_cache);
+    assert_eq!(2, config.verbosity);
+}

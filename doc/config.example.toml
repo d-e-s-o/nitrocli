@@ -1,0 +1,10 @@
+# This is an example configuration file for nitrocli.   To use it, place it at
+# ${XDG_CONFIG_HOME}/nitrocli/config.toml, where XDG_CONFIG_HOME defaults to
+# $HOME.
+
+# The model to connect to (string, "pro" or "storage", default: not set).
+model = "pro"
+# Do not cache secrets (boolean, default: false).
+no_cache = true
+# The log level (integer, default: 0).
+verbosity = 2
