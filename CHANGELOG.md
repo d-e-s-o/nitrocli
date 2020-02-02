@@ -5,6 +5,8 @@ Unreleased
   - Added `anyhow` dependency in version `1.0.32`
 - Updated minimum required Rust version to `1.42.0`
 - Bumped `nitrokey` dependency to `0.7.1`
+- Bumped `proc-macro2` dependency to `1.0.19`
+- Bumped `syn` dependency to `1.0.36`
 
 
 0.3.3
