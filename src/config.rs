@@ -65,6 +65,9 @@ impl Config {
     if args.model.is_some() {
       self.model = args.model;
     }
+    if args.no_cache {
+      self.no_cache = true;
+    }
     if args.verbose > 0 {
       self.verbosity = args.verbose;
     }
