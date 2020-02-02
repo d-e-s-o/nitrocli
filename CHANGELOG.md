@@ -1,3 +1,9 @@
+Unreleased
+----------
+- Bumped `proc-macro2` dependency to `1.0.19`
+- Bumped `syn` dependency to `1.0.36`
+
+
 0.3.3
 -----
 - Added bash completion support via `shell-complete` utility program
@@ -20,7 +26,6 @@
   root
 - Bumped `nitrokey` dependency to `0.6.0`
 - Bumped `quote` dependency to `1.0.3`
-- Bumped `syn` dependency to `1.0.14`
 
 
 0.3.1
