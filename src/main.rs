@@ -68,6 +68,7 @@ mod redefine;
 #[macro_use]
 mod arg_util;
 
+mod arg_defs;
 mod args;
 mod commands;
 mod error;
