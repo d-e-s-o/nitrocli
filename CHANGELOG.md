@@ -9,6 +9,7 @@ Unreleased
 - Removed vendored dependencies and moved source code into repository
   root
 - Bumped `nitrokey` dependency to `0.6.0`
+- Bumped `quote` dependency to `1.0.3`
 - Bumped `syn` dependency to `1.0.14`
 
 
