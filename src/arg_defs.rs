@@ -20,7 +20,6 @@
 use crate::args;
 use crate::commands;
 use crate::error::Error;
-use crate::pinentry;
 
 /// Provides access to a Nitrokey device
 #[derive(structopt::StructOpt)]
@@ -331,11 +330,21 @@ Command! {PinCommand, [
   Unblock => commands::pin_unblock,
 ]}
 
+/// PIN type requested from pinentry.
+///
+/// The available PIN types correspond to the PIN types used by the Nitrokey devices:  user and
+/// admin.
+#[allow(unused_doc_comments)]
+Enum! {PinType, [
+  Admin => "admin",
+  User => "user",
+]}
+
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PinSetArgs {
   /// The PIN type to change
-  #[structopt(name = "type", possible_values = &pinentry::PinType::all_str())]
-  pub pintype: pinentry::PinType,
+  #[structopt(name = "type", possible_values = &PinType::all_str())]
+  pub pintype: PinType,
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]

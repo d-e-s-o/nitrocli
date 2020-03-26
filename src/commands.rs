@@ -108,7 +108,7 @@ where
   F: FnMut(&mut args::ExecCtx<'_>, nitrokey::PasswordSafe<'_, '_>) -> Result<()>,
 {
   with_device(ctx, |ctx, mut device| {
-    let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
+    let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::User, &device)?;
     try_with_pin_and_data(
       ctx,
       &pin_entry,
@@ -132,7 +132,7 @@ where
 fn authenticate<'mgr, D, A, F>(
   ctx: &mut args::ExecCtx<'_>,
   device: D,
-  pin_type: pinentry::PinType,
+  pin_type: arg_defs::PinType,
   msg: &'static str,
   op: F,
 ) -> Result<A>
@@ -156,7 +156,7 @@ where
   authenticate(
     ctx,
     device,
-    pinentry::PinType::User,
+    arg_defs::PinType::User,
     "Could not authenticate as user",
     |_ctx, device, pin| device.authenticate_user(pin),
   )
@@ -173,7 +173,7 @@ where
   authenticate(
     ctx,
     device,
-    pinentry::PinType::Admin,
+    arg_defs::PinType::Admin,
     "Could not authenticate as admin",
     |_ctx, device, pin| device.authenticate_admin(pin),
   )
@@ -261,8 +261,8 @@ where
     // Ideally we would not clone here, but that would require us to
     // restrict op to work with an immutable ExecCtx, which is not
     // possible given that some clients print data.
-    pinentry::PinType::Admin => ctx.admin_pin.clone(),
-    pinentry::PinType::User => ctx.user_pin.clone(),
+    arg_defs::PinType::Admin => ctx.admin_pin.clone(),
+    arg_defs::PinType::User => ctx.user_pin.clone(),
   };
 
   if let Some(pin) = pin {
@@ -418,7 +418,7 @@ pub fn list(ctx: &mut args::ExecCtx<'_>, no_connect: bool) -> Result<()> {
 /// Perform a factory reset.
 pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |ctx, mut device| {
-    let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
+    let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::Admin, &device)?;
 
     // To force the user to enter the admin PIN before performing a
     // factory reset, we clear the pinentry cache for the admin PIN.
@@ -445,7 +445,7 @@ pub fn unencrypted_set(
   mode: arg_defs::UnencryptedVolumeMode,
 ) -> Result<()> {
   with_storage_device(ctx, |ctx, mut device| {
-    let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
+    let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::Admin, &device)?;
     let mode = match mode {
       arg_defs::UnencryptedVolumeMode::ReadWrite => nitrokey::VolumeMode::ReadWrite,
       arg_defs::UnencryptedVolumeMode::ReadOnly => nitrokey::VolumeMode::ReadOnly,
@@ -467,7 +467,7 @@ pub fn unencrypted_set(
 /// Open the encrypted volume on the Nitrokey.
 pub fn encrypted_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   with_storage_device(ctx, |ctx, mut device| {
-    let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
+    let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::User, &device)?;
 
     // We may forcefully close a hidden volume, if active, so be sure to
     // flush caches to disk.
@@ -795,10 +795,10 @@ pub fn otp_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
 pub fn pin_clear(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |_ctx, device| {
     pinentry::clear(&pinentry::PinEntry::from(
-      pinentry::PinType::Admin,
+      arg_defs::PinType::Admin,
       &device,
     )?)?;
-    pinentry::clear(&pinentry::PinEntry::from(pinentry::PinType::User, &device)?)?;
+    pinentry::clear(&pinentry::PinEntry::from(arg_defs::PinType::User, &device)?)?;
     Ok(())
   })
 }
@@ -813,14 +813,14 @@ fn choose_pin(
   new: bool,
 ) -> Result<String> {
   let new_pin = match pin_entry.pin_type() {
-    pinentry::PinType::Admin => {
+    arg_defs::PinType::Admin => {
       if new {
         &ctx.new_admin_pin
       } else {
         &ctx.admin_pin
       }
     }
-    pinentry::PinType::User => {
+    arg_defs::PinType::User => {
       if new {
         &ctx.new_user_pin
       } else {
@@ -840,7 +840,7 @@ fn choose_pin(
 }
 
 /// Change a PIN.
-pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Result<()> {
+pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: arg_defs::PinType) -> Result<()> {
   with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
     let new_pin = choose_pin(ctx, &pin_entry, true)?;
@@ -850,8 +850,8 @@ pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Resu
       &pin_entry,
       "Could not change the PIN",
       |current_pin| match pin_type {
-        pinentry::PinType::Admin => device.change_admin_pin(&current_pin, &new_pin),
-        pinentry::PinType::User => device.change_user_pin(&current_pin, &new_pin),
+        arg_defs::PinType::Admin => device.change_admin_pin(&current_pin, &new_pin),
+        arg_defs::PinType::User => device.change_user_pin(&current_pin, &new_pin),
       },
     )?;
 
@@ -865,9 +865,9 @@ pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: pinentry::PinType) -> Resu
 /// Unblock and reset the user PIN.
 pub fn pin_unblock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |ctx, mut device| {
-    let pin_entry = pinentry::PinEntry::from(pinentry::PinType::User, &device)?;
+    let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::User, &device)?;
     let user_pin = choose_pin(ctx, &pin_entry, false)?;
-    let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
+    let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::Admin, &device)?;
 
     try_with_pin(
       ctx,
