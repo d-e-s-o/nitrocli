@@ -64,6 +64,12 @@ impl From<&str> for Error {
   }
 }
 
+impl From<String> for Error {
+  fn from(s: String) -> Error {
+    Error::Error(s)
+  }
+}
+
 impl From<clap::Error> for Error {
   fn from(e: clap::Error) -> Error {
     Error::ClapError(e)

@@ -19,7 +19,6 @@
 
 use crate::args;
 use crate::commands;
-use crate::error::Error;
 
 /// Provides access to a Nitrokey device
 #[derive(structopt::StructOpt)]
@@ -136,13 +135,13 @@ pub enum ConfigOption<T> {
 }
 
 impl<T> ConfigOption<T> {
-  pub fn try_from(disable: bool, value: Option<T>, name: &'static str) -> Result<Self, Error> {
+  pub fn try_from(disable: bool, value: Option<T>, name: &'static str) -> Result<Self, String> {
     if disable {
       if value.is_some() {
-        Err(Error::Error(format!(
+        Err(format!(
           "--{name} and --no-{name} are mutually exclusive",
           name = name
-        )))
+        ))
       } else {
         Ok(ConfigOption::Disable)
       }
