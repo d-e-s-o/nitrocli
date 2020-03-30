@@ -156,7 +156,7 @@ the full text of the license.
 [`libnitrokey`]: https://github.com/nitrokey/libnitrokey
 [nitrokey-ug]: https://www.nitrokey.com
 [nitrokey-pro]: https://shop.nitrokey.com/shop/product/nitrokey-pro-2-3
-[nitrokey-storage]: https://shop.nitrokey.com/shop/product/nitrokey-storage-2-16gb-23
+[nitrokey-storage]: https://shop.nitrokey.com/shop/product/nitrokey-storage-2-56
 [nitrocli-arch]: https://aur.archlinux.org/packages/nitrocli
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
 [nitrocli-debian]: https://packages.debian.org/stable/nitrocli
