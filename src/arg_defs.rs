@@ -17,9 +17,6 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
-use crate::args;
-use crate::commands;
-
 /// Provides access to a Nitrokey device
 #[derive(structopt::StructOpt)]
 #[structopt(name = "nitrocli")]
@@ -69,9 +66,9 @@ Command! {Command, [
   /// Interacts with the device's hidden volume
   Hidden(HiddenArgs) => |ctx, args: HiddenArgs| args.subcmd.execute(ctx),
   /// Lists the attached Nitrokey devices
-  List(ListArgs) => |ctx, args: ListArgs| commands::list(ctx, args.no_connect),
+  List(ListArgs) => |ctx, args: ListArgs| crate::commands::list(ctx, args.no_connect),
   /// Locks the connected Nitrokey device
-  Lock => commands::lock,
+  Lock => crate::commands::lock,
   /// Accesses one-time passwords
   Otp(OtpArgs) => |ctx, args: OtpArgs| args.subcmd.execute(ctx),
   /// Manages the Nitrokey PINs
@@ -79,9 +76,9 @@ Command! {Command, [
   /// Accesses the password safe
   Pws(PwsArgs) => |ctx, args: PwsArgs| args.subcmd.execute(ctx),
   /// Performs a factory reset
-  Reset => commands::reset,
+  Reset => crate::commands::reset,
   /// Prints the status of the connected Nitrokey device
-  Status => commands::status,
+  Status => crate::commands::status,
   /// Interacts with the device's unencrypted volume
   Unencrypted(UnencryptedArgs) => |ctx, args: UnencryptedArgs| args.subcmd.execute(ctx),
 ]}
@@ -94,9 +91,9 @@ pub struct ConfigArgs {
 
 Command! {ConfigCommand, [
   /// Prints the Nitrokey configuration
-  Get => commands::config_get,
+  Get => crate::commands::config_get,
   /// Changes the Nitrokey configuration
-  Set(ConfigSetArgs) => args::config_set,
+  Set(ConfigSetArgs) => crate::args::config_set,
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -170,9 +167,9 @@ pub struct EncryptedArgs {
 
 Command! {EncryptedCommand, [
   /// Closes the encrypted volume on a Nitrokey Storage
-  Close => commands::encrypted_close,
+  Close => crate::commands::encrypted_close,
   /// Opens the encrypted volume on a Nitrokey Storage
-  Open => commands::encrypted_open,
+  Open => crate::commands::encrypted_open,
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -183,13 +180,13 @@ pub struct HiddenArgs {
 
 Command! {HiddenCommand, [
   /// Closes the hidden volume on a Nitrokey Storage
-  Close => commands::hidden_close,
+  Close => crate::commands::hidden_close,
   /// Creates a hidden volume on a Nitrokey Storage
   Create(HiddenCreateArgs) => |ctx, args: HiddenCreateArgs| {
-    commands::hidden_create(ctx, args.slot, args.start, args.end)
+    crate::commands::hidden_create(ctx, args.slot, args.start, args.end)
   },
   /// Opens the hidden volume on a Nitrokey Storage
-  Open => commands::hidden_open,
+  Open => crate::commands::hidden_open,
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -218,16 +215,16 @@ pub struct OtpArgs {
 Command! {OtpCommand, [
   /// Clears a one-time password slot
   Clear(OtpClearArgs) => |ctx, args: OtpClearArgs| {
-    commands::otp_clear(ctx, args.slot, args.algorithm)
+    crate::commands::otp_clear(ctx, args.slot, args.algorithm)
   },
   /// Generates a one-time password
   Get(OtpGetArgs) => |ctx, args: OtpGetArgs| {
-    commands::otp_get(ctx, args.slot, args.algorithm, args.time)
+    crate::commands::otp_get(ctx, args.slot, args.algorithm, args.time)
   },
   /// Configures a one-time password slot
-  Set(OtpSetArgs) => args::otp_set,
+  Set(OtpSetArgs) => crate::args::otp_set,
   /// Prints the status of the one-time password slots
-  Status(OtpStatusArgs) => |ctx, args: OtpStatusArgs| commands::otp_status(ctx, args.all),
+  Status(OtpStatusArgs) => |ctx, args: OtpStatusArgs| crate::commands::otp_status(ctx, args.all),
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -322,11 +319,11 @@ pub struct PinArgs {
 
 Command! {PinCommand, [
   /// Clears the cached PINs
-  Clear => commands::pin_clear,
+  Clear => crate::commands::pin_clear,
   /// Changes a PIN
-  Set(PinSetArgs) => |ctx, args: PinSetArgs| commands::pin_set(ctx, args.pintype),
+  Set(PinSetArgs) => |ctx, args: PinSetArgs| crate::commands::pin_set(ctx, args.pintype),
   /// Unblocks and resets the user PIN
-  Unblock => commands::pin_unblock,
+  Unblock => crate::commands::pin_unblock,
 ]}
 
 /// PIN type requested from pinentry.
@@ -354,17 +351,17 @@ pub struct PwsArgs {
 
 Command! {PwsCommand, [
   /// Clears a password safe slot
-  Clear(PwsClearArgs) => |ctx, args: PwsClearArgs| commands::pws_clear(ctx, args.slot),
+  Clear(PwsClearArgs) => |ctx, args: PwsClearArgs| crate::commands::pws_clear(ctx, args.slot),
   /// Reads a password safe slot
   Get(PwsGetArgs) => |ctx, args: PwsGetArgs| {
-    commands::pws_get(ctx, args.slot, args.name, args.login, args.password, args.quiet)
+    crate::commands::pws_get(ctx, args.slot, args.name, args.login, args.password, args.quiet)
   },
   /// Writes a password safe slot
   Set(PwsSetArgs) => |ctx, args: PwsSetArgs| {
-    commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password)
+    crate::commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password)
   },
   /// Prints the status of the password safe slots
-  Status(PwsStatusArgs) => |ctx, args: PwsStatusArgs| commands::pws_status(ctx, args.all),
+  Status(PwsStatusArgs) => |ctx, args: PwsStatusArgs| crate::commands::pws_status(ctx, args.all),
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
@@ -419,7 +416,7 @@ pub struct UnencryptedArgs {
 Command! {UnencryptedCommand, [
   /// Changes the configuration of the unencrypted volume on a Nitrokey Storage
   Set(UnencryptedSetArgs) => |ctx, args: UnencryptedSetArgs| {
-    commands::unencrypted_set(ctx, args.mode)
+    crate::commands::unencrypted_set(ctx, args.mode)
   },
 ]}
 
