@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.3.2
+-----
 - Added the `list` command that lists all attached Nitrokey devices
 - Reworked argument handling:
   - Added `structopt` dependency in version `0.3.7`
