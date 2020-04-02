@@ -19,7 +19,7 @@
 
 use super::*;
 
-use crate::args;
+use crate::arg_defs;
 
 #[test_device]
 fn set_invalid_slot_raw(model: nitrokey::Model) {
@@ -101,8 +101,8 @@ fn set_get_totp(model: nitrokey::Model) -> crate::Result<()> {
 #[test_device]
 fn set_totp_uneven_chars(model: nitrokey::Model) -> crate::Result<()> {
   let secrets = [
-    (args::OtpSecretFormat::Hex, "123"),
-    (args::OtpSecretFormat::Base32, "FBILDWWGA2"),
+    (arg_defs::OtpSecretFormat::Hex, "123"),
+    (arg_defs::OtpSecretFormat::Base32, "FBILDWWGA2"),
   ];
 
   for (format, secret) in &secrets {

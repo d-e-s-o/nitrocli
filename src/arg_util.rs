@@ -35,7 +35,7 @@ macro_rules! tr {
 macro_rules! Command {
   ( $name:ident, [ $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *] ) => {
     #[derive(Debug, PartialEq, structopt::StructOpt)]
-    enum $name {
+    pub enum $name {
       $(
         $(#[$doc])*
         $var$(($inner))?,
@@ -44,7 +44,7 @@ macro_rules! Command {
 
     #[allow(unused_qualifications)]
     impl $name {
-      fn execute(
+      pub fn execute(
         self,
         ctx: &mut crate::args::ExecCtx<'_>,
       ) -> crate::Result<()> {

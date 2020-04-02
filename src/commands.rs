@@ -30,6 +30,7 @@ use nitrokey::Device;
 use nitrokey::GenerateOtp;
 use nitrokey::GetPasswordSafe;
 
+use crate::arg_defs;
 use crate::args;
 use crate::error;
 use crate::error::Error;
@@ -87,7 +88,7 @@ where
   set_log_level(ctx);
 
   if let Some(model) = ctx.model {
-    if model != args::DeviceModel::Storage {
+    if model != arg_defs::DeviceModel::Storage {
       return Err(Error::from(
         "This command is only available on the Nitrokey Storage",
       ));
@@ -441,13 +442,13 @@ pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 /// Change the configuration of the unencrypted volume.
 pub fn unencrypted_set(
   ctx: &mut args::ExecCtx<'_>,
-  mode: args::UnencryptedVolumeMode,
+  mode: arg_defs::UnencryptedVolumeMode,
 ) -> Result<()> {
   with_storage_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pinentry::PinType::Admin, &device)?;
     let mode = match mode {
-      args::UnencryptedVolumeMode::ReadWrite => nitrokey::VolumeMode::ReadWrite,
-      args::UnencryptedVolumeMode::ReadOnly => nitrokey::VolumeMode::ReadOnly,
+      arg_defs::UnencryptedVolumeMode::ReadWrite => nitrokey::VolumeMode::ReadWrite,
+      arg_defs::UnencryptedVolumeMode::ReadOnly => nitrokey::VolumeMode::ReadOnly,
     };
 
     // The unencrypted volume may reconnect, so be sure to flush caches to
@@ -579,9 +580,9 @@ pub fn config_get(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 /// Write the Nitrokey configuration.
 pub fn config_set(
   ctx: &mut args::ExecCtx<'_>,
-  numlock: args::ConfigOption<u8>,
-  capslock: args::ConfigOption<u8>,
-  scrollock: args::ConfigOption<u8>,
+  numlock: arg_defs::ConfigOption<u8>,
+  capslock: arg_defs::ConfigOption<u8>,
+  scrollock: arg_defs::ConfigOption<u8>,
   user_password: Option<bool>,
 ) -> Result<()> {
   with_device(ctx, |ctx, device| {
@@ -610,13 +611,13 @@ pub fn lock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
   })
 }
 
-fn get_otp<T>(slot: u8, algorithm: args::OtpAlgorithm, device: &mut T) -> Result<String>
+fn get_otp<T>(slot: u8, algorithm: arg_defs::OtpAlgorithm, device: &mut T) -> Result<String>
 where
   T: GenerateOtp,
 {
   match algorithm {
-    args::OtpAlgorithm::Hotp => device.get_hotp_code(slot),
-    args::OtpAlgorithm::Totp => device.get_totp_code(slot),
+    arg_defs::OtpAlgorithm::Hotp => device.get_hotp_code(slot),
+    arg_defs::OtpAlgorithm::Totp => device.get_totp_code(slot),
   }
   .map_err(|err| get_error("Could not generate OTP", err))
 }
@@ -632,11 +633,11 @@ fn get_unix_timestamp() -> Result<u64> {
 pub fn otp_get(
   ctx: &mut args::ExecCtx<'_>,
   slot: u8,
-  algorithm: args::OtpAlgorithm,
+  algorithm: arg_defs::OtpAlgorithm,
   time: Option<u64>,
 ) -> Result<()> {
   with_device(ctx, |ctx, mut device| {
-    if algorithm == args::OtpAlgorithm::Totp {
+    if algorithm == arg_defs::OtpAlgorithm::Totp {
       device
         .set_time(
           match time {
@@ -696,16 +697,16 @@ fn prepare_base32_secret(secret: &str) -> Result<String> {
 pub fn otp_set(
   ctx: &mut args::ExecCtx<'_>,
   mut data: nitrokey::OtpSlotData,
-  algorithm: args::OtpAlgorithm,
+  algorithm: arg_defs::OtpAlgorithm,
   counter: u64,
   time_window: u16,
-  secret_format: args::OtpSecretFormat,
+  secret_format: arg_defs::OtpSecretFormat,
 ) -> Result<()> {
   with_device(ctx, |ctx, device| {
     let secret = match secret_format {
-      args::OtpSecretFormat::Ascii => prepare_ascii_secret(&data.secret)?,
-      args::OtpSecretFormat::Base32 => prepare_base32_secret(&data.secret)?,
-      args::OtpSecretFormat::Hex => {
+      arg_defs::OtpSecretFormat::Ascii => prepare_ascii_secret(&data.secret)?,
+      arg_defs::OtpSecretFormat::Base32 => prepare_base32_secret(&data.secret)?,
+      arg_defs::OtpSecretFormat::Hex => {
         // We need to ensure to provide a string with an even number of
         // characters in it, just because that's what libnitrokey
         // expects. So prepend a '0' if that is not the case.
@@ -721,8 +722,8 @@ pub fn otp_set(
     let data = nitrokey::OtpSlotData { secret, ..data };
     let mut device = authenticate_admin(ctx, device)?;
     match algorithm {
-      args::OtpAlgorithm::Hotp => device.write_hotp_slot(data, counter),
-      args::OtpAlgorithm::Totp => device.write_totp_slot(data, time_window),
+      arg_defs::OtpAlgorithm::Hotp => device.write_hotp_slot(data, counter),
+      arg_defs::OtpAlgorithm::Totp => device.write_totp_slot(data, time_window),
     }
     .map_err(|err| get_error("Could not write OTP slot", err))?;
     Ok(())
@@ -733,13 +734,13 @@ pub fn otp_set(
 pub fn otp_clear(
   ctx: &mut args::ExecCtx<'_>,
   slot: u8,
-  algorithm: args::OtpAlgorithm,
+  algorithm: arg_defs::OtpAlgorithm,
 ) -> Result<()> {
   with_device(ctx, |ctx, device| {
     let mut device = authenticate_admin(ctx, device)?;
     match algorithm {
-      args::OtpAlgorithm::Hotp => device.erase_hotp_slot(slot),
-      args::OtpAlgorithm::Totp => device.erase_totp_slot(slot),
+      arg_defs::OtpAlgorithm::Hotp => device.erase_hotp_slot(slot),
+      arg_defs::OtpAlgorithm::Totp => device.erase_totp_slot(slot),
     }
     .map_err(|err| get_error("Could not clear OTP slot", err))?;
     Ok(())
@@ -748,15 +749,15 @@ pub fn otp_clear(
 
 fn print_otp_status(
   ctx: &mut args::ExecCtx<'_>,
-  algorithm: args::OtpAlgorithm,
+  algorithm: arg_defs::OtpAlgorithm,
   device: &nitrokey::DeviceWrapper<'_>,
   all: bool,
 ) -> Result<()> {
   let mut slot: u8 = 0;
   loop {
     let result = match algorithm {
-      args::OtpAlgorithm::Hotp => device.get_hotp_slot_name(slot),
-      args::OtpAlgorithm::Totp => device.get_totp_slot_name(slot),
+      arg_defs::OtpAlgorithm::Hotp => device.get_hotp_slot_name(slot),
+      arg_defs::OtpAlgorithm::Totp => device.get_totp_slot_name(slot),
     };
     slot = match slot.checked_add(1) {
       Some(slot) => slot,
@@ -784,8 +785,8 @@ fn print_otp_status(
 pub fn otp_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
   with_device(ctx, |ctx, device| {
     println!(ctx, "alg\tslot\tname")?;
-    print_otp_status(ctx, args::OtpAlgorithm::Hotp, &device, all)?;
-    print_otp_status(ctx, args::OtpAlgorithm::Totp, &device, all)?;
+    print_otp_status(ctx, arg_defs::OtpAlgorithm::Hotp, &device, all)?;
+    print_otp_status(ctx, arg_defs::OtpAlgorithm::Totp, &device, all)?;
     Ok(())
   })
 }
