@@ -6,6 +6,7 @@ Unreleased
   - Replaced `argparse` with `structopt`
   - Removed `argparse` dependency
   - Made the --verbose and --model options global
+- Added bash completion support via `shell-complete` utility program
 - Removed vendored dependencies and moved source code into repository
   root
 - Bumped `nitrokey` dependency to `0.6.0`

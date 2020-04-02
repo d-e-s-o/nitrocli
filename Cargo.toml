@@ -36,6 +36,10 @@ exclude = ["ci/*", "rustfmt.toml"]
 [badges]
 gitlab = { repository = "d-e-s-o/nitrocli", branch = "master" }
 
+[[bin]]
+name = "shell-complete"
+path = "var/shell-complete.rs"
+
 [profile.release]
 opt-level = "z"
 lto = true
