@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Added bash completion support via `shell-complete` utility program
+
+
 0.3.2
 -----
 - Added the `list` command that lists all attached Nitrokey devices
