@@ -1,7 +1,0 @@
-# Copyright (C) 2019 Robin Krahl <robin.krahl@ireas.org>
-# SPDX-License-Identifier: CC0-1.0
-/target
-/nitrokey-sys/target
-**/*.rs.bk
-Cargo.lock
-*.swp

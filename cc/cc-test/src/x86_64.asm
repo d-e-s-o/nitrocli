@@ -1,8 +1,0 @@
-_TEXT SEGMENT
-
-asm PROC
-  MOV EAX, 7
-  RET
-asm ENDP
-
-END

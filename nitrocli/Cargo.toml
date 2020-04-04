@@ -47,7 +47,6 @@ version = "0.2.2"
 
 [dependencies.base32]
 version = "0.4.0"
-path = "../base32"
 
 [dependencies.libc]
 version = "0.2"
@@ -63,15 +62,3 @@ version = "0.1"
 
 [dev-dependencies.regex]
 version = "1"
-
-[patch.crates-io]
-argparse = { path = "../argparse" }
-base32 = { path = "../base32" }
-cc = { path = "../cc" }
-cfg-if = { path = "../cfg-if" }
-getrandom = { path = "../getrandom" }
-libc = { path = "../libc" }
-nitrokey = { path = "../nitrokey" }
-nitrokey-sys = { path = "../nitrokey-sys" }
-lazy_static = { path = "../lazy-static" }
-rand_core = { path = "../rand/rand_core" }
