@@ -12,25 +12,15 @@ build-test:cargo:
   - apt-get update
   - apt-get install --assume-yes libudev-dev libhidapi-dev
   - rustc --version && cargo --version
-  - cd nitrocli
   - cargo build --all --verbose
   - cargo test --all --verbose
 
 lint:clippy:
   script:
   - rustup component add clippy
-  # First check and build everything but be very permissive. Then clean
-  # only the nitrocli package artifacts. Lastly check once more, but
-  # with warnings turned to errors. This last run will only recheck
-  # nitrocli (everything else is still up-to-date). That procedure is
-  # necessary because consumed dependencies may emit errors otherwise.
-  - cd nitrocli
-  - cargo clippy --all-targets --all-features -- -A clippy::all
-  - cargo clean --package=nitrocli
   - cargo clippy --all-targets --all-features -- -D warnings
 
 format:rustfmt:
   script:
   - rustup component add rustfmt
-  - cd nitrocli
   - cargo fmt --all -- --check

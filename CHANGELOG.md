@@ -1,6 +1,7 @@
 Unreleased
 ----------
-- Removed vendored dependencies
+- Removed vendored dependencies and moved source code into repository
+  root
 
 
 0.3.1

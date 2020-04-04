@@ -102,8 +102,7 @@ $ cargo install nitrocli --root=$PWD/nitrocli
 ```
 
 #### From Source
-After cloning the repository and changing into the `nitrocli` subfolder,
-the build is as simple as running:
+After cloning the repository the build is as simple as running:
 ```bash
 $ cargo build --release
 ```
