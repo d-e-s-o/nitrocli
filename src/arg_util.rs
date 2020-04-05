@@ -50,7 +50,7 @@ macro_rules! Command {
       pub fn execute(
         self,
         ctx: &mut crate::ExecCtx<'_>,
-      ) -> crate::Result<()> {
+      ) -> anyhow::Result<()> {
         match self {
           $(
             $name::$var$((tr!(args, $inner)))? => $exec(ctx $(,tr!(args, $inner))?),

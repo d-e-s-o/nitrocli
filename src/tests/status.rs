@@ -19,15 +19,18 @@
 
 use super::*;
 
-// This test acts as verification that conversion of Error::Error
-// variants into the proper exit code works properly.
 #[test_device]
 fn not_found_raw() {
   let (rc, out, err) = Nitrocli::new().run(&["status"]);
 
   assert_ne!(rc, 0);
   assert_eq!(out, b"");
-  assert_eq!(err, b"Nitrokey device not found\n");
+  let expected = r#"Nitrokey device not found
+
+Caused by:
+    Communication error: Could not connect to a Nitrokey device
+"#;
+  assert_eq!(err, expected.as_bytes());
 }
 
 #[test_device]

@@ -17,12 +17,18 @@
 // * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 // *************************************************************************
 
+use std::convert::TryFrom as _;
 use std::fmt;
 use std::mem;
-use std::result;
 use std::thread;
 use std::time;
 use std::u8;
+
+use anyhow::anyhow;
+use anyhow::bail;
+use anyhow::Context as _;
+use anyhow::Error;
+use anyhow::Result;
 
 use libc::sync;
 
@@ -32,16 +38,8 @@ use nitrokey::GenerateOtp;
 use nitrokey::GetPasswordSafe;
 
 use crate::args;
-use crate::error;
-use crate::error::Error;
 use crate::pinentry;
 use crate::ExecCtx;
-use crate::Result;
-
-/// Create an `error::Error` with an error message of the format `msg: err`.
-fn get_error(msg: &'static str, err: nitrokey::Error) -> Error {
-  Error::NitrokeyError(Some(msg), err)
-}
 
 /// Set `libnitrokey`'s log level based on the execution context's verbosity.
 fn set_log_level(ctx: &mut ExecCtx<'_>) {
@@ -64,17 +62,16 @@ fn with_device<F>(ctx: &mut ExecCtx<'_>, op: F) -> Result<()>
 where
   F: FnOnce(&mut ExecCtx<'_>, nitrokey::DeviceWrapper<'_>) -> Result<()>,
 {
-  let mut manager = nitrokey::take()?;
+  let mut manager =
+    nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
+
   set_log_level(ctx);
 
   let device = match ctx.model {
-    Some(model) => manager.connect_model(model.into()).map_err(|_| {
-      let error = format!("Nitrokey {} device not found", model.as_user_facing_str());
-      Error::Error(error)
-    })?,
-    None => manager
-      .connect()
-      .map_err(|_| Error::from("Nitrokey device not found"))?,
+    Some(model) => manager
+      .connect_model(model.into())
+      .with_context(|| anyhow!("Nitrokey {} device not found", model.as_user_facing_str()))?,
+    None => manager.connect().context("Nitrokey device not found")?,
   };
 
   op(ctx, device)
@@ -85,20 +82,20 @@ fn with_storage_device<F>(ctx: &mut ExecCtx<'_>, op: F) -> Result<()>
 where
   F: FnOnce(&mut ExecCtx<'_>, nitrokey::Storage<'_>) -> Result<()>,
 {
-  let mut manager = nitrokey::take()?;
+  let mut manager =
+    nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
+
   set_log_level(ctx);
 
   if let Some(model) = ctx.model {
     if model != args::DeviceModel::Storage {
-      return Err(Error::from(
-        "This command is only available on the Nitrokey Storage",
-      ));
+      bail!("This command is only available on the Nitrokey Storage");
     }
   }
 
   let device = manager
     .connect_storage()
-    .map_err(|_| Error::from("Nitrokey Storage device not found"))?;
+    .context("Nitrokey Storage device not found")?;
   op(ctx, device)
 }
 
@@ -118,7 +115,7 @@ where
       move |ctx, _, pin| {
         let pws = device
           .get_password_safe(pin)
-          .map_err(|err| ((), Error::from(err)))?;
+          .map_err(|err| ((), err.into()))?;
 
         op(ctx, pws).map_err(|err| ((), err))
       },
@@ -139,7 +136,7 @@ fn authenticate<'mgr, D, A, F>(
 ) -> Result<A>
 where
   D: Device<'mgr>,
-  F: FnMut(&mut ExecCtx<'_>, D, &str) -> result::Result<A, (D, nitrokey::Error)>,
+  F: FnMut(&mut ExecCtx<'_>, D, &str) -> Result<A, (D, Error)>,
 {
   let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
 
@@ -156,7 +153,13 @@ where
     device,
     args::PinType::User,
     "Could not authenticate as user",
-    |_ctx, device, pin| device.authenticate_user(pin),
+    |_ctx, device, pin| {
+      device.authenticate_user(pin).or_else(|(x, err)| {
+        Err(err)
+          .context("Failed to authenticate as user")
+          .map_err(|err| (x, err))
+      })
+    },
   )
 }
 
@@ -170,7 +173,13 @@ where
     device,
     args::PinType::Admin,
     "Could not authenticate as admin",
-    |_ctx, device, pin| device.authenticate_admin(pin),
+    |_ctx, device, pin| {
+      device.authenticate_admin(pin).or_else(|(x, err)| {
+        Err(err)
+          .context("Failed to authenticate as admin")
+          .map_err(|err| (x, err))
+      })
+    },
   )
 }
 
@@ -201,7 +210,7 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
 /// the first try, this function will call `op` with `data`.  At the
 /// second or third try, it will call `op` with the data returned by the
 /// previous call to `op`.
-fn try_with_pin_and_data_with_pinentry<D, F, R, E>(
+fn try_with_pin_and_data_with_pinentry<D, F, R>(
   ctx: &mut ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
@@ -209,8 +218,7 @@ fn try_with_pin_and_data_with_pinentry<D, F, R, E>(
   mut op: F,
 ) -> Result<R>
 where
-  F: FnMut(&mut ExecCtx<'_>, D, &str) -> result::Result<R, (D, E)>,
-  E: error::TryInto<nitrokey::Error>,
+  F: FnMut(&mut ExecCtx<'_>, D, &str) -> Result<R, (D, Error)>,
 {
   let mut data = data;
   let mut retry = 3;
@@ -219,10 +227,10 @@ where
     let pin = pinentry::inquire(ctx, pin_entry, pinentry::Mode::Query, error_msg)?;
     match op(ctx, data, &pin) {
       Ok(result) => return Ok(result),
-      Err((new_data, err)) => match err.try_into() {
+      Err((new_data, err)) => match err.downcast::<nitrokey::Error>() {
         Ok(err) => match err {
           nitrokey::Error::CommandError(nitrokey::CommandError::WrongPassword) => {
-            pinentry::clear(pin_entry)?;
+            pinentry::clear(pin_entry).context("Failed to clear cached secret")?;
             retry -= 1;
 
             if retry > 0 {
@@ -230,18 +238,18 @@ where
               data = new_data;
               continue;
             }
-            return Err(get_error(msg, err));
+            bail!(err);
           }
-          err => return Err(get_error(msg, err)),
+          err => bail!(err),
         },
-        Err(err) => return Err(err),
+        Err(err) => bail!(err),
       },
     };
   }
 }
 
 /// Try to execute the given function with a PIN.
-fn try_with_pin_and_data<D, F, R, E>(
+fn try_with_pin_and_data<D, F, R>(
   ctx: &mut ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
@@ -249,8 +257,7 @@ fn try_with_pin_and_data<D, F, R, E>(
   mut op: F,
 ) -> Result<R>
 where
-  F: FnMut(&mut ExecCtx<'_>, D, &str) -> result::Result<R, (D, E)>,
-  E: Into<Error> + error::TryInto<nitrokey::Error>,
+  F: FnMut(&mut ExecCtx<'_>, D, &str) -> Result<R, (D, Error)>,
 {
   let pin = match pin_entry.pin_type() {
     // Ideally we would not clone here, but that would require us to
@@ -261,13 +268,10 @@ where
   };
 
   if let Some(pin) = pin {
-    let pin = pin.to_str().ok_or_else(|| {
-      Error::Error(format!(
-        "{}: Failed to read PIN due to invalid Unicode data",
-        msg
-      ))
-    })?;
-    op(ctx, data, &pin).map_err(|(_, err)| err.into())
+    let pin = pin
+      .to_str()
+      .ok_or_else(|| anyhow!("Failed to read PIN: Invalid Unicode data found"))?;
+    op(ctx, data, &pin).map_err(|(_, err)| err)
   } else {
     try_with_pin_and_data_with_pinentry(ctx, pin_entry, msg, data, op)
   }
@@ -277,15 +281,14 @@ where
 ///
 /// This function behaves exactly as `try_with_pin_and_data`, but
 /// it refrains from passing any data to it.
-fn try_with_pin<F, E>(
+fn try_with_pin<F>(
   ctx: &mut ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   mut op: F,
 ) -> Result<()>
 where
-  F: FnMut(&str) -> result::Result<(), E>,
-  E: Into<Error> + error::TryInto<nitrokey::Error>,
+  F: FnMut(&str) -> Result<()>,
 {
   try_with_pin_and_data(ctx, pin_entry, msg, (), |_ctx, data, pin| {
     op(pin).map_err(|err| (data, err))
@@ -330,7 +333,7 @@ fn print_status(
 ) -> Result<()> {
   let serial_number = device
     .get_serial_number()
-    .map_err(|err| get_error("Could not query the serial number", err))?;
+    .context("Could not query the serial number")?;
 
   println!(
     ctx,
@@ -342,15 +345,21 @@ fn print_status(
   admin retry count: {arc}"#,
     model = model,
     id = serial_number,
-    fwv = device.get_firmware_version()?,
-    urc = device.get_user_retry_count()?,
-    arc = device.get_admin_retry_count()?,
+    fwv = device
+      .get_firmware_version()
+      .context("Failed to retrieve firmware version")?,
+    urc = device
+      .get_user_retry_count()
+      .context("Failed to retrieve user retry count")?,
+    arc = device
+      .get_admin_retry_count()
+      .context("Failed to retrieve admin retry count")?,
   )?;
 
   if let nitrokey::DeviceWrapper::Storage(device) = device {
     let status = device
       .get_storage_status()
-      .map_err(|err| get_error("Getting Storage status failed", err))?;
+      .context("Failed to retrieve storage status")?;
 
     print_storage_status(ctx, &status)
   } else {
@@ -373,12 +382,14 @@ pub fn status(ctx: &mut ExecCtx<'_>) -> Result<()> {
 pub fn list(ctx: &mut ExecCtx<'_>, no_connect: bool) -> Result<()> {
   set_log_level(ctx);
 
-  let device_infos = nitrokey::list_devices()?;
+  let device_infos =
+    nitrokey::list_devices().context("Failed to list connected Nitrokey devices")?;
   if device_infos.is_empty() {
     println!(ctx, "No Nitrokey device connected")?;
   } else {
     println!(ctx, "device path\tmodel\tserial number")?;
-    let mut manager = nitrokey::take()?;
+    let mut manager =
+      nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
 
     for device_info in device_infos {
       let model = device_info
@@ -394,8 +405,13 @@ pub fn list(ctx: &mut ExecCtx<'_>, no_connect: bool) -> Result<()> {
           if no_connect {
             "N/A".to_string()
           } else {
-            let device = manager.connect_path(device_info.path.clone())?;
-            device.get_serial_number()?.to_string()
+            let device = manager
+              .connect_path(device_info.path.clone())
+              .context("Failed to connect to Nitrokey")?;
+            device
+              .get_serial_number()
+              .context("Failed to retrieve device serial number")?
+              .to_string()
           }
         }
       };
@@ -414,10 +430,12 @@ pub fn reset(ctx: &mut ExecCtx<'_>) -> Result<()> {
 
     // To force the user to enter the admin PIN before performing a
     // factory reset, we clear the pinentry cache for the admin PIN.
-    pinentry::clear(&pin_entry)?;
+    pinentry::clear(&pin_entry).context("Failed to clear cached secret")?;
 
     try_with_pin(ctx, &pin_entry, "Factory reset failed", |pin| {
-      device.factory_reset(&pin)?;
+      device
+        .factory_reset(&pin)
+        .context("Failed to reset to factory settings")?;
       // Work around for a timing issue between factory_reset and
       // build_aes_key, see
       // https://github.com/Nitrokey/nitrokey-storage-firmware/issues/80
@@ -426,7 +444,9 @@ pub fn reset(ctx: &mut ExecCtx<'_>) -> Result<()> {
       // build_aes_key after a factory reset on Pro devices.
       // https://github.com/Nitrokey/nitrokey-pro-firmware/issues/57
       let _ = device.get_user_retry_count();
-      device.build_aes_key(nitrokey::DEFAULT_ADMIN_PIN)
+      device
+        .build_aes_key(nitrokey::DEFAULT_ADMIN_PIN)
+        .context("Failed to rebuild AES key")
     })
   })
 }
@@ -448,7 +468,11 @@ pub fn unencrypted_set(ctx: &mut ExecCtx<'_>, mode: args::UnencryptedVolumeMode)
       ctx,
       &pin_entry,
       "Changing unencrypted volume mode failed",
-      |pin| device.set_unencrypted_volume_mode(&pin, mode),
+      |pin| {
+        device
+          .set_unencrypted_volume_mode(&pin, mode)
+          .context("Failed to change unencrypted volume mode")
+      },
     )
   })
 }
@@ -463,7 +487,9 @@ pub fn encrypted_open(ctx: &mut ExecCtx<'_>) -> Result<()> {
     unsafe { sync() };
 
     try_with_pin(ctx, &pin_entry, "Opening encrypted volume failed", |pin| {
-      device.enable_encrypted_volume(&pin)
+      device
+        .enable_encrypted_volume(&pin)
+        .context("Failed to open encrypted volume")
     })
   })
 }
@@ -479,7 +505,7 @@ pub fn encrypted_close(ctx: &mut ExecCtx<'_>) -> Result<()> {
 
     device
       .disable_encrypted_volume()
-      .map_err(|err| get_error("Closing encrypted volume failed", err))
+      .context("Failed to close encrypted volume")
   })
 }
 
@@ -490,15 +516,15 @@ pub fn hidden_create(ctx: &mut ExecCtx<'_>, slot: u8, start: u8, end: u8) -> Res
     let pwd = if let Some(pwd) = &ctx.password {
       pwd
         .to_str()
-        .ok_or_else(|| Error::from("Failed to read password: invalid Unicode data found"))
+        .ok_or_else(|| anyhow!("Failed to read password: invalid unicode data found"))
         .map(ToOwned::to_owned)
     } else {
-      pinentry::choose(ctx, &pwd_entry)
+      pinentry::choose(ctx, &pwd_entry).context("Failed to select new PIN")
     }?;
 
     device
       .create_hidden_volume(slot, start, end, &pwd)
-      .map_err(|err| get_error("Creating hidden volume failed", err))
+      .context("Failed to create hidden volume")
   })
 }
 
@@ -509,10 +535,11 @@ pub fn hidden_open(ctx: &mut ExecCtx<'_>) -> Result<()> {
     let pwd = if let Some(pwd) = &ctx.password {
       pwd
         .to_str()
-        .ok_or_else(|| Error::from("Failed to read password: invalid Unicode data found"))
+        .ok_or_else(|| anyhow!("Failed to read password: Invalid Unicode data found"))
         .map(ToOwned::to_owned)
     } else {
       pinentry::inquire(ctx, &pwd_entry, pinentry::Mode::Query, None)
+        .context("Failed to inquire PIN")
     }?;
 
     // We may forcefully close an encrypted volume, if active, so be sure
@@ -521,7 +548,7 @@ pub fn hidden_open(ctx: &mut ExecCtx<'_>) -> Result<()> {
 
     device
       .enable_hidden_volume(&pwd)
-      .map_err(|err| get_error("Opening hidden volume failed", err))
+      .context("Failed to open hidden volume")
   })
 }
 
@@ -532,7 +559,7 @@ pub fn hidden_close(ctx: &mut ExecCtx<'_>) -> Result<()> {
 
     device
       .disable_hidden_volume()
-      .map_err(|err| get_error("Closing hidden volume failed", err))
+      .context("Failed to close hidden volume")
   })
 }
 
@@ -547,9 +574,7 @@ fn format_option<T: fmt::Display>(option: Option<T>) -> String {
 /// Read the Nitrokey configuration.
 pub fn config_get(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |ctx, device| {
-    let config = device
-      .get_config()
-      .map_err(|err| get_error("Could not get configuration", err))?;
+    let config = device.get_config().context("Failed to get configuration")?;
     println!(
       ctx,
       r#"Config:
@@ -568,9 +593,12 @@ pub fn config_get(ctx: &mut ExecCtx<'_>) -> Result<()> {
 
 /// Write the Nitrokey configuration.
 pub fn config_set(ctx: &mut ExecCtx<'_>, args: args::ConfigSetArgs) -> Result<()> {
-  let numlock = args::ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")?;
-  let capslock = args::ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")?;
-  let scrollock = args::ConfigOption::try_from(args.no_scrollock, args.scrollock, "scrollock")?;
+  let numlock = args::ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")
+    .context("Failed to apply numlock configuration")?;
+  let capslock = args::ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")
+    .context("Failed to apply capslock configuration")?;
+  let scrollock = args::ConfigOption::try_from(args.no_scrollock, args.scrollock, "scrollock")
+    .context("Failed to apply scrollock configuration")?;
   let otp_pin = if args.otp_pin {
     Some(true)
   } else if args.no_otp_pin {
@@ -583,7 +611,7 @@ pub fn config_set(ctx: &mut ExecCtx<'_>, args: args::ConfigSetArgs) -> Result<()
     let mut device = authenticate_admin(ctx, device)?;
     let config = device
       .get_config()
-      .map_err(|err| get_error("Could not get configuration", err))?;
+      .context("Failed to get current configuration")?;
     let config = nitrokey::Config {
       numlock: numlock.or(config.numlock),
       capslock: capslock.or(config.capslock),
@@ -592,16 +620,14 @@ pub fn config_set(ctx: &mut ExecCtx<'_>, args: args::ConfigSetArgs) -> Result<()
     };
     device
       .write_config(config)
-      .map_err(|err| get_error("Could not set configuration", err))
+      .context("Failed to set new configuration")
   })
 }
 
 /// Lock the Nitrokey device.
 pub fn lock(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |_ctx, mut device| {
-    device
-      .lock()
-      .map_err(|err| get_error("Could not lock the device", err))
+    device.lock().context("Failed to lock the device")
   })
 }
 
@@ -613,13 +639,13 @@ where
     args::OtpAlgorithm::Hotp => device.get_hotp_code(slot),
     args::OtpAlgorithm::Totp => device.get_totp_code(slot),
   }
-  .map_err(|err| get_error("Could not generate OTP", err))
+  .context("Failed to generate OTP")
 }
 
 fn get_unix_timestamp() -> Result<u64> {
   time::SystemTime::now()
     .duration_since(time::UNIX_EPOCH)
-    .map_err(|_| Error::from("Current system time is before the Unix epoch"))
+    .context("Current system time is before the Unix epoch")
     .map(|duration| duration.as_secs())
 }
 
@@ -636,15 +662,15 @@ pub fn otp_get(
         .set_time(
           match time {
             Some(time) => time,
-            None => get_unix_timestamp()?,
+            None => get_unix_timestamp().context("Failed to retrieve current time")?,
           },
           true,
         )
-        .map_err(|err| get_error("Could not set time", err))?;
+        .context("Failed to set new time")?;
     }
     let config = device
       .get_config()
-      .map_err(|err| get_error("Could not get device configuration", err))?;
+      .context("Failed to get get current device configuration")?;
     let otp = if config.user_password {
       let mut user = authenticate_user(ctx, device)?;
       get_otp(slot, algorithm, &mut user)
@@ -674,8 +700,8 @@ fn prepare_ascii_secret(secret: &str) -> Result<String> {
   if secret.is_ascii() {
     Ok(format_bytes(&secret.as_bytes()))
   } else {
-    Err(Error::from(
-      "The given secret is not an ASCII string despite --format ascii being set",
+    Err(anyhow!(
+      "The given secret is not an ASCII string as expected",
     ))
   }
 }
@@ -684,7 +710,7 @@ fn prepare_ascii_secret(secret: &str) -> Result<String> {
 fn prepare_base32_secret(secret: &str) -> Result<String> {
   base32::decode(base32::Alphabet::RFC4648 { padding: false }, secret)
     .map(|vec| format_bytes(&vec))
-    .ok_or_else(|| Error::from("Could not parse base32 secret"))
+    .ok_or_else(|| anyhow!("Failed to parse base32 secret"))
 }
 
 /// Configure a one-time password slot on the Nitrokey device.
@@ -721,7 +747,7 @@ pub fn otp_set(ctx: &mut ExecCtx<'_>, mut args: args::OtpSetArgs) -> Result<()> 
       args::OtpAlgorithm::Hotp => device.write_hotp_slot(data, args.counter),
       args::OtpAlgorithm::Totp => device.write_totp_slot(data, args.time_window),
     }
-    .map_err(|err| get_error("Could not write OTP slot", err))?;
+    .context("Failed to write OTP slot")?;
     Ok(())
   })
 }
@@ -734,7 +760,7 @@ pub fn otp_clear(ctx: &mut ExecCtx<'_>, slot: u8, algorithm: args::OtpAlgorithm)
       args::OtpAlgorithm::Hotp => device.erase_hotp_slot(slot),
       args::OtpAlgorithm::Totp => device.erase_totp_slot(slot),
     }
-    .map_err(|err| get_error("Could not clear OTP slot", err))?;
+    .context("Failed to clear OTP slot")?;
     Ok(())
   })
 }
@@ -751,12 +777,9 @@ fn print_otp_status(
       args::OtpAlgorithm::Hotp => device.get_hotp_slot_name(slot),
       args::OtpAlgorithm::Totp => device.get_totp_slot_name(slot),
     };
-    slot = match slot.checked_add(1) {
-      Some(slot) => slot,
-      None => {
-        return Err(Error::from("Integer overflow when iterating OTP slots"));
-      }
-    };
+    slot = slot
+      .checked_add(1)
+      .ok_or_else(|| anyhow!("Encountered integer overflow when iterating OTP slots"))?;
     let name = match result {
       Ok(name) => name,
       Err(nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot)) => return Ok(()),
@@ -767,7 +790,7 @@ fn print_otp_status(
           continue;
         }
       }
-      Err(err) => return Err(get_error("Could not check OTP slot", err)),
+      Err(err) => return Err(err).context("Failed to check OTP slot"),
     };
     println!(ctx, "{}\t{}\t{}", algorithm, slot - 1, name)?;
   }
@@ -786,8 +809,10 @@ pub fn otp_status(ctx: &mut ExecCtx<'_>, all: bool) -> Result<()> {
 /// Clear the PIN stored by various operations.
 pub fn pin_clear(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |_ctx, device| {
-    pinentry::clear(&pinentry::PinEntry::from(args::PinType::Admin, &device)?)?;
-    pinentry::clear(&pinentry::PinEntry::from(args::PinType::User, &device)?)?;
+    pinentry::clear(&pinentry::PinEntry::from(args::PinType::Admin, &device)?)
+      .context("Failed to clear admin PIN")?;
+    pinentry::clear(&pinentry::PinEntry::from(args::PinType::User, &device)?)
+      .context("Failed to clear user PIN")?;
     Ok(())
   })
 }
@@ -817,10 +842,10 @@ fn choose_pin(ctx: &mut ExecCtx<'_>, pin_entry: &pinentry::PinEntry, new: bool) 
   if let Some(new_pin) = new_pin {
     new_pin
       .to_str()
-      .ok_or_else(|| Error::from("Failed to read PIN: invalid Unicode data found"))
+      .ok_or_else(|| anyhow!("Failed to read PIN: Invalid Unicode data found"))
       .map(ToOwned::to_owned)
   } else {
-    pinentry::choose(ctx, pin_entry)
+    pinentry::choose(ctx, pin_entry).context("Failed to select PIN")
   }
 }
 
@@ -835,8 +860,12 @@ pub fn pin_set(ctx: &mut ExecCtx<'_>, pin_type: args::PinType) -> Result<()> {
       &pin_entry,
       "Could not change the PIN",
       |current_pin| match pin_type {
-        args::PinType::Admin => device.change_admin_pin(&current_pin, &new_pin),
-        args::PinType::User => device.change_user_pin(&current_pin, &new_pin),
+        args::PinType::Admin => device
+          .change_admin_pin(&current_pin, &new_pin)
+          .context("Failed to change admin PIN"),
+        args::PinType::User => device
+          .change_user_pin(&current_pin, &new_pin)
+          .context("Failed to change user PIN"),
       },
     )?;
 
@@ -858,7 +887,11 @@ pub fn pin_unblock(ctx: &mut ExecCtx<'_>) -> Result<()> {
       ctx,
       &pin_entry,
       "Could not unblock the user PIN",
-      |admin_pin| device.unlock_user_pin(&admin_pin, &user_pin),
+      |admin_pin| {
+        device
+          .unlock_user_pin(&admin_pin, &user_pin)
+          .context("Failed to unblock user PIN")
+      },
     )
   })
 }
@@ -866,10 +899,10 @@ pub fn pin_unblock(ctx: &mut ExecCtx<'_>) -> Result<()> {
 fn print_pws_data(
   ctx: &mut ExecCtx<'_>,
   description: &'static str,
-  result: result::Result<String, nitrokey::Error>,
+  result: Result<String, nitrokey::Error>,
   quiet: bool,
 ) -> Result<()> {
-  let value = result.map_err(|err| get_error("Could not access PWS slot", err))?;
+  let value = result.context("Could not access PWS slot")?;
   if quiet {
     println!(ctx, "{}", value)?;
   } else {
@@ -880,18 +913,15 @@ fn print_pws_data(
 
 fn check_slot(pws: &nitrokey::PasswordSafe<'_, '_>, slot: u8) -> Result<()> {
   if slot >= nitrokey::SLOT_COUNT {
-    return Err(nitrokey::Error::from(nitrokey::LibraryError::InvalidSlot).into());
+    bail!("Slot {} is not valid", slot);
   }
   let status = pws
     .get_slot_status()
-    .map_err(|err| get_error("Could not read PWS slot status", err))?;
+    .context("Could not read PWS slot status")?;
   if status[slot as usize] {
     Ok(())
   } else {
-    Err(get_error(
-      "Could not access PWS slot",
-      nitrokey::CommandError::SlotNotProgrammed.into(),
-    ))
+    bail!("Slot {} is not programmed", slot)
   }
 }
 
@@ -932,16 +962,14 @@ pub fn pws_set(
   with_password_safe(ctx, |_ctx, mut pws| {
     pws
       .write_slot(slot, name, login, password)
-      .map_err(|err| get_error("Could not write PWS slot", err))
+      .context("Failed to write PWS slot")
   })
 }
 
 /// Clear a PWS slot.
 pub fn pws_clear(ctx: &mut ExecCtx<'_>, slot: u8) -> Result<()> {
   with_password_safe(ctx, |_ctx, mut pws| {
-    pws
-      .erase_slot(slot)
-      .map_err(|err| get_error("Could not clear PWS slot", err))
+    pws.erase_slot(slot).context("Failed to clear PWS slot")
   })
 }
 
@@ -951,14 +979,11 @@ fn print_pws_slot(
   slot: usize,
   programmed: bool,
 ) -> Result<()> {
-  if slot > u8::MAX as usize {
-    return Err(Error::from("Invalid PWS slot number"));
-  }
-  let slot = slot as u8;
+  let slot = u8::try_from(slot).map_err(|_| anyhow!("Invalid PWS slot number"))?;
   let name = if programmed {
     pws
       .get_slot_name(slot)
-      .map_err(|err| get_error("Could not read PWS slot", err))?
+      .context("Failed to read PWS slot name")?
   } else {
     "[not programmed]".to_string()
   };
@@ -971,7 +996,7 @@ pub fn pws_status(ctx: &mut ExecCtx<'_>, all: bool) -> Result<()> {
   with_password_safe(ctx, |ctx, pws| {
     let slots = pws
       .get_slot_status()
-      .map_err(|err| get_error("Could not read PWS slot status", err))?;
+      .context("Failed to read PWS slot status")?;
     println!(ctx, "slot\tname")?;
     for (i, &value) in slots.iter().enumerate().filter(|(_, &value)| all || value) {
       print_pws_slot(ctx, &pws, i, value)?;

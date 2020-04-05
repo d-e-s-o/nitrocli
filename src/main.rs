@@ -79,11 +79,8 @@ use std::env;
 use std::ffi;
 use std::io;
 use std::process;
-use std::result;
 
-use crate::error::Error;
-
-type Result<T> = result::Result<T, Error>;
+use anyhow::Result;
 
 const NITROCLI_ADMIN_PIN: &str = "NITROCLI_ADMIN_PIN";
 const NITROCLI_USER_PIN: &str = "NITROCLI_USER_PIN";
@@ -202,7 +199,7 @@ fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
   match handle_arguments(ctx, args) {
     Ok(()) => 0,
     Err(err) => {
-      let _ = eprintln!(ctx, "{}", err);
+      let _ = eprintln!(ctx, "{:?}", err);
       1
     }
   }

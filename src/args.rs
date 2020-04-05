@@ -134,13 +134,13 @@ pub enum ConfigOption<T> {
 }
 
 impl<T> ConfigOption<T> {
-  pub fn try_from(disable: bool, value: Option<T>, name: &'static str) -> Result<Self, String> {
+  pub fn try_from(disable: bool, value: Option<T>, name: &'static str) -> anyhow::Result<Self> {
     if disable {
       if value.is_some() {
-        Err(format!(
+        anyhow::bail!(
           "--{name} and --no-{name} are mutually exclusive",
           name = name
-        ))
+        )
       } else {
         Ok(ConfigOption::Disable)
       }

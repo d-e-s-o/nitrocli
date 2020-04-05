@@ -19,12 +19,14 @@
 
 use std::borrow;
 use std::fmt;
-use std::io;
 use std::process;
 use std::str;
 
+use anyhow::anyhow;
+use anyhow::Context as _;
+use anyhow::Result;
+
 use crate::args;
-use crate::error::Error;
 use crate::ExecCtx;
 
 type CowStr = borrow::Cow<'static, str>;
@@ -49,12 +51,15 @@ pub struct PinEntry {
 }
 
 impl PinEntry {
-  pub fn from<'mgr, D>(pin_type: args::PinType, device: &D) -> crate::Result<Self>
+  pub fn from<'mgr, D>(pin_type: args::PinType, device: &D) -> Result<Self>
   where
     D: nitrokey::Device<'mgr>,
   {
     let model = device.get_model();
-    let serial = device.get_serial_number()?;
+    let serial = device
+      .get_serial_number()
+      .context("Failed to retrieve serial number")?;
+
     Ok(Self {
       pin_type,
       model,
@@ -122,12 +127,15 @@ pub struct PwdEntry {
 }
 
 impl PwdEntry {
-  pub fn from<'mgr, D>(device: &D) -> crate::Result<Self>
+  pub fn from<'mgr, D>(device: &D) -> Result<Self>
   where
     D: nitrokey::Device<'mgr>,
   {
     let model = device.get_model();
-    let serial = device.get_serial_number()?;
+    let serial = device
+      .get_serial_number()
+      .context("Failed to retrieve serial number")?;
+
     Ok(Self { model, serial })
   }
 }
@@ -186,7 +194,7 @@ impl Mode {
   }
 }
 
-fn parse_pinentry_pin<R>(response: R) -> crate::Result<String>
+fn parse_pinentry_pin<R>(response: R) -> Result<String>
 where
   R: AsRef<str>,
 {
@@ -208,9 +216,9 @@ where
   // specially.
   if !lines.is_empty() && lines[0].starts_with("ERR ") {
     let (_, error) = lines[0].split_at(4);
-    return Err(Error::from(error));
+    return Err(anyhow!("{}", error));
   }
-  Err(Error::Error(format!("Unexpected response: {}", string)))
+  Err(anyhow!("Unexpected response: {}", string))
 }
 
 /// Inquire a secret from the user.
@@ -226,7 +234,7 @@ pub fn inquire<E>(
   entry: &E,
   mode: Mode,
   error_msg: Option<&str>,
-) -> crate::Result<String>
+) -> Result<String>
 where
   E: SecretEntry,
 {
@@ -256,30 +264,28 @@ where
     .arg(command)
     .arg("/bye")
     .output()
-    .map_err(|err| match err.kind() {
-      io::ErrorKind::NotFound => {
-        io::Error::new(io::ErrorKind::NotFound, "gpg-connect-agent not found")
-      }
-      _ => err,
-    })?;
-  parse_pinentry_pin(str::from_utf8(&output.stdout)?)
+    .context("Failed to invoke gpg-connect-agent")?;
+
+  let response =
+    str::from_utf8(&output.stdout).context("Failed to parse gpg-connect-agent output as UTF-8")?;
+  parse_pinentry_pin(response).context("Failed to parse pinentry secret")
 }
 
-fn check<E>(entry: &E, secret: &str) -> crate::Result<()>
+fn check<E>(entry: &E, secret: &str) -> Result<()>
 where
   E: SecretEntry,
 {
   if secret.len() < usize::from(entry.min_len()) {
-    Err(Error::Error(format!(
+    Err(anyhow!(
       "The secret must be at least {} characters long",
       entry.min_len()
-    )))
+    ))
   } else {
     Ok(())
   }
 }
 
-pub fn choose<E>(ctx: &mut ExecCtx<'_>, entry: &E) -> crate::Result<String>
+pub fn choose<E>(ctx: &mut ExecCtx<'_>, entry: &E) -> Result<String>
 where
   E: SecretEntry,
 {
@@ -292,13 +298,13 @@ where
   clear(entry)?;
 
   if chosen != confirmed {
-    Err(Error::from("Entered secrets do not match"))
+    Err(anyhow!("Entered secrets do not match"))
   } else {
     Ok(chosen)
   }
 }
 
-fn parse_pinentry_response<R>(response: R) -> crate::Result<()>
+fn parse_pinentry_response<R>(response: R) -> Result<()>
 where
   R: AsRef<str>,
 {
@@ -309,11 +315,11 @@ where
     // We got the only valid answer we accept.
     return Ok(());
   }
-  Err(Error::Error(format!("Unexpected response: {}", string)))
+  Err(anyhow!("Unexpected response: {}", string))
 }
 
 /// Clear the cached secret represented by the given entry.
-pub fn clear<E>(entry: &E) -> crate::Result<()>
+pub fn clear<E>(entry: &E) -> Result<()>
 where
   E: SecretEntry,
 {
@@ -322,9 +328,13 @@ where
     let output = process::Command::new("gpg-connect-agent")
       .arg(command)
       .arg("/bye")
-      .output()?;
+      .output()
+      .context("Failed to invoke gpg-connect-agent")?;
 
-    parse_pinentry_response(str::from_utf8(&output.stdout)?)
+    let response = str::from_utf8(&output.stdout)
+      .context("Failed to parse gpg-connect-agent output as UTF-8")?;
+
+    parse_pinentry_response(response).context("Failed to parse pinentry response")
   } else {
     Ok(())
   }
