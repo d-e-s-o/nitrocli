@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Added bash completion support via `shell-complete` utility program
+- Updated minimum required Rust version to `1.40.0`
 
 
 0.3.2
