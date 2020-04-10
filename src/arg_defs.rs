@@ -222,7 +222,7 @@ Command! {OtpCommand, [
     crate::commands::otp_get(ctx, args.slot, args.algorithm, args.time)
   },
   /// Configures a one-time password slot
-  Set(OtpSetArgs) => crate::args::otp_set,
+  Set(OtpSetArgs) => crate::commands::otp_set,
   /// Prints the status of the one-time password slots
   Status(OtpStatusArgs) => |ctx, args: OtpStatusArgs| crate::commands::otp_status(ctx, args.all),
 ]}

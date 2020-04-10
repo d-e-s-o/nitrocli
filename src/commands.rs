@@ -18,6 +18,7 @@
 // *************************************************************************
 
 use std::fmt;
+use std::mem;
 use std::result;
 use std::thread;
 use std::time;
@@ -694,16 +695,18 @@ fn prepare_base32_secret(secret: &str) -> Result<String> {
 }
 
 /// Configure a one-time password slot on the Nitrokey device.
-pub fn otp_set(
-  ctx: &mut args::ExecCtx<'_>,
-  mut data: nitrokey::OtpSlotData,
-  algorithm: arg_defs::OtpAlgorithm,
-  counter: u64,
-  time_window: u16,
-  secret_format: arg_defs::OtpSecretFormat,
-) -> Result<()> {
+pub fn otp_set(ctx: &mut args::ExecCtx<'_>, mut args: arg_defs::OtpSetArgs) -> Result<()> {
+  let mut data = nitrokey::OtpSlotData {
+    number: args.slot,
+    name: mem::take(&mut args.name),
+    secret: mem::take(&mut args.secret),
+    mode: args.digits.into(),
+    use_enter: false,
+    token_id: None,
+  };
+
   with_device(ctx, |ctx, device| {
-    let secret = match secret_format {
+    let secret = match args.format {
       arg_defs::OtpSecretFormat::Ascii => prepare_ascii_secret(&data.secret)?,
       arg_defs::OtpSecretFormat::Base32 => prepare_base32_secret(&data.secret)?,
       arg_defs::OtpSecretFormat::Hex => {
@@ -721,9 +724,9 @@ pub fn otp_set(
     };
     let data = nitrokey::OtpSlotData { secret, ..data };
     let mut device = authenticate_admin(ctx, device)?;
-    match algorithm {
-      arg_defs::OtpAlgorithm::Hotp => device.write_hotp_slot(data, counter),
-      arg_defs::OtpAlgorithm::Totp => device.write_totp_slot(data, time_window),
+    match args.algorithm {
+      arg_defs::OtpAlgorithm::Hotp => device.write_hotp_slot(data, args.counter),
+      arg_defs::OtpAlgorithm::Totp => device.write_totp_slot(data, args.time_window),
     }
     .map_err(|err| get_error("Could not write OTP slot", err))?;
     Ok(())

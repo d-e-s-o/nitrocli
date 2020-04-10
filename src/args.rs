@@ -82,25 +82,6 @@ pub fn config_set(ctx: &mut ExecCtx<'_>, args: arg_defs::ConfigSetArgs) -> Resul
   commands::config_set(ctx, numlock, capslock, scrollock, otp_pin)
 }
 
-pub fn otp_set(ctx: &mut ExecCtx<'_>, args: arg_defs::OtpSetArgs) -> Result<()> {
-  let data = nitrokey::OtpSlotData {
-    number: args.slot,
-    name: args.name,
-    secret: args.secret,
-    mode: args.digits.into(),
-    use_enter: false,
-    token_id: None,
-  };
-  commands::otp_set(
-    ctx,
-    data,
-    args.algorithm,
-    args.counter,
-    args.time_window,
-    args.format,
-  )
-}
-
 /// Parse the command-line arguments and execute the selected command.
 pub(crate) fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
   use structopt::StructOpt;
