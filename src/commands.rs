@@ -32,10 +32,10 @@ use nitrokey::GenerateOtp;
 use nitrokey::GetPasswordSafe;
 
 use crate::arg_defs;
-use crate::args;
 use crate::error;
 use crate::error::Error;
 use crate::pinentry;
+use crate::ExecCtx;
 use crate::Result;
 
 /// Create an `error::Error` with an error message of the format `msg: err`.
@@ -44,7 +44,7 @@ fn get_error(msg: &'static str, err: nitrokey::Error) -> Error {
 }
 
 /// Set `libnitrokey`'s log level based on the execution context's verbosity.
-fn set_log_level(ctx: &mut args::ExecCtx<'_>) {
+fn set_log_level(ctx: &mut ExecCtx<'_>) {
   let log_lvl = match ctx.verbosity {
     // The error log level is what libnitrokey uses by default. As such,
     // there is no harm in us setting that as well when the user did not
@@ -60,9 +60,9 @@ fn set_log_level(ctx: &mut args::ExecCtx<'_>) {
 }
 
 /// Connect to any Nitrokey device and do something with it.
-fn with_device<F>(ctx: &mut args::ExecCtx<'_>, op: F) -> Result<()>
+fn with_device<F>(ctx: &mut ExecCtx<'_>, op: F) -> Result<()>
 where
-  F: FnOnce(&mut args::ExecCtx<'_>, nitrokey::DeviceWrapper<'_>) -> Result<()>,
+  F: FnOnce(&mut ExecCtx<'_>, nitrokey::DeviceWrapper<'_>) -> Result<()>,
 {
   let mut manager = nitrokey::take()?;
   set_log_level(ctx);
@@ -81,9 +81,9 @@ where
 }
 
 /// Connect to a Nitrokey Storage device and do something with it.
-fn with_storage_device<F>(ctx: &mut args::ExecCtx<'_>, op: F) -> Result<()>
+fn with_storage_device<F>(ctx: &mut ExecCtx<'_>, op: F) -> Result<()>
 where
-  F: FnOnce(&mut args::ExecCtx<'_>, nitrokey::Storage<'_>) -> Result<()>,
+  F: FnOnce(&mut ExecCtx<'_>, nitrokey::Storage<'_>) -> Result<()>,
 {
   let mut manager = nitrokey::take()?;
   set_log_level(ctx);
@@ -104,9 +104,9 @@ where
 
 /// Connect to any Nitrokey device, retrieve a password safe handle, and
 /// do something with it.
-fn with_password_safe<F>(ctx: &mut args::ExecCtx<'_>, mut op: F) -> Result<()>
+fn with_password_safe<F>(ctx: &mut ExecCtx<'_>, mut op: F) -> Result<()>
 where
-  F: FnMut(&mut args::ExecCtx<'_>, nitrokey::PasswordSafe<'_, '_>) -> Result<()>,
+  F: FnMut(&mut ExecCtx<'_>, nitrokey::PasswordSafe<'_, '_>) -> Result<()>,
 {
   with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::User, &device)?;
@@ -131,7 +131,7 @@ where
 ///
 /// If an error occurs, the error message `msg` is used.
 fn authenticate<'mgr, D, A, F>(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   device: D,
   pin_type: arg_defs::PinType,
   msg: &'static str,
@@ -139,7 +139,7 @@ fn authenticate<'mgr, D, A, F>(
 ) -> Result<A>
 where
   D: Device<'mgr>,
-  F: FnMut(&mut args::ExecCtx<'_>, D, &str) -> result::Result<A, (D, nitrokey::Error)>,
+  F: FnMut(&mut ExecCtx<'_>, D, &str) -> result::Result<A, (D, nitrokey::Error)>,
 {
   let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
 
@@ -147,10 +147,7 @@ where
 }
 
 /// Authenticate the given device with the user PIN.
-fn authenticate_user<'mgr, T>(
-  ctx: &mut args::ExecCtx<'_>,
-  device: T,
-) -> Result<nitrokey::User<'mgr, T>>
+fn authenticate_user<'mgr, T>(ctx: &mut ExecCtx<'_>, device: T) -> Result<nitrokey::User<'mgr, T>>
 where
   T: Device<'mgr>,
 {
@@ -164,10 +161,7 @@ where
 }
 
 /// Authenticate the given device with the admin PIN.
-fn authenticate_admin<'mgr, T>(
-  ctx: &mut args::ExecCtx<'_>,
-  device: T,
-) -> Result<nitrokey::Admin<'mgr, T>>
+fn authenticate_admin<'mgr, T>(ctx: &mut ExecCtx<'_>, device: T) -> Result<nitrokey::Admin<'mgr, T>>
 where
   T: Device<'mgr>,
 {
@@ -208,14 +202,14 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
 /// second or third try, it will call `op` with the data returned by the
 /// previous call to `op`.
 fn try_with_pin_and_data_with_pinentry<D, F, R, E>(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   data: D,
   mut op: F,
 ) -> Result<R>
 where
-  F: FnMut(&mut args::ExecCtx<'_>, D, &str) -> result::Result<R, (D, E)>,
+  F: FnMut(&mut ExecCtx<'_>, D, &str) -> result::Result<R, (D, E)>,
   E: error::TryInto<nitrokey::Error>,
 {
   let mut data = data;
@@ -248,14 +242,14 @@ where
 
 /// Try to execute the given function with a PIN.
 fn try_with_pin_and_data<D, F, R, E>(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   data: D,
   mut op: F,
 ) -> Result<R>
 where
-  F: FnMut(&mut args::ExecCtx<'_>, D, &str) -> result::Result<R, (D, E)>,
+  F: FnMut(&mut ExecCtx<'_>, D, &str) -> result::Result<R, (D, E)>,
   E: Into<Error> + error::TryInto<nitrokey::Error>,
 {
   let pin = match pin_entry.pin_type() {
@@ -284,7 +278,7 @@ where
 /// This function behaves exactly as `try_with_pin_and_data`, but
 /// it refrains from passing any data to it.
 fn try_with_pin<F, E>(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
   msg: &'static str,
   mut op: F,
@@ -299,10 +293,7 @@ where
 }
 
 /// Pretty print the status of a Nitrokey Storage.
-fn print_storage_status(
-  ctx: &mut args::ExecCtx<'_>,
-  status: &nitrokey::StorageStatus,
-) -> Result<()> {
+fn print_storage_status(ctx: &mut ExecCtx<'_>, status: &nitrokey::StorageStatus) -> Result<()> {
   println!(
     ctx,
     r#"  Storage:
@@ -333,7 +324,7 @@ fn print_storage_status(
 
 /// Query and pretty print the status that is common to all Nitrokey devices.
 fn print_status(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   model: &'static str,
   device: &nitrokey::DeviceWrapper<'_>,
 ) -> Result<()> {
@@ -368,7 +359,7 @@ fn print_status(
 }
 
 /// Inquire the status of the nitrokey.
-pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn status(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |ctx, device| {
     let model = match device {
       nitrokey::DeviceWrapper::Pro(_) => "Pro",
@@ -379,7 +370,7 @@ pub fn status(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// List the attached Nitrokey devices.
-pub fn list(ctx: &mut args::ExecCtx<'_>, no_connect: bool) -> Result<()> {
+pub fn list(ctx: &mut ExecCtx<'_>, no_connect: bool) -> Result<()> {
   set_log_level(ctx);
 
   let device_infos = nitrokey::list_devices()?;
@@ -417,7 +408,7 @@ pub fn list(ctx: &mut args::ExecCtx<'_>, no_connect: bool) -> Result<()> {
 }
 
 /// Perform a factory reset.
-pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn reset(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::Admin, &device)?;
 
@@ -441,10 +432,7 @@ pub fn reset(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Change the configuration of the unencrypted volume.
-pub fn unencrypted_set(
-  ctx: &mut args::ExecCtx<'_>,
-  mode: arg_defs::UnencryptedVolumeMode,
-) -> Result<()> {
+pub fn unencrypted_set(ctx: &mut ExecCtx<'_>, mode: arg_defs::UnencryptedVolumeMode) -> Result<()> {
   with_storage_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::Admin, &device)?;
     let mode = match mode {
@@ -466,7 +454,7 @@ pub fn unencrypted_set(
 }
 
 /// Open the encrypted volume on the Nitrokey.
-pub fn encrypted_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn encrypted_open(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_storage_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::User, &device)?;
 
@@ -481,7 +469,7 @@ pub fn encrypted_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Close the previously opened encrypted volume.
-pub fn encrypted_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn encrypted_close(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_storage_device(ctx, |_ctx, mut device| {
     // Flush all filesystem caches to disk. We are mostly interested in
     // making sure that the encrypted volume on the Nitrokey we are
@@ -496,7 +484,7 @@ pub fn encrypted_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Create a hidden volume.
-pub fn hidden_create(ctx: &mut args::ExecCtx<'_>, slot: u8, start: u8, end: u8) -> Result<()> {
+pub fn hidden_create(ctx: &mut ExecCtx<'_>, slot: u8, start: u8, end: u8) -> Result<()> {
   with_storage_device(ctx, |ctx, mut device| {
     let pwd_entry = pinentry::PwdEntry::from(&device)?;
     let pwd = if let Some(pwd) = &ctx.password {
@@ -515,7 +503,7 @@ pub fn hidden_create(ctx: &mut args::ExecCtx<'_>, slot: u8, start: u8, end: u8) 
 }
 
 /// Open a hidden volume.
-pub fn hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn hidden_open(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_storage_device(ctx, |ctx, mut device| {
     let pwd_entry = pinentry::PwdEntry::from(&device)?;
     let pwd = if let Some(pwd) = &ctx.password {
@@ -538,7 +526,7 @@ pub fn hidden_open(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Close a previously opened hidden volume.
-pub fn hidden_close(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn hidden_close(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_storage_device(ctx, |_ctx, mut device| {
     unsafe { sync() };
 
@@ -557,7 +545,7 @@ fn format_option<T: fmt::Display>(option: Option<T>) -> String {
 }
 
 /// Read the Nitrokey configuration.
-pub fn config_get(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn config_get(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |ctx, device| {
     let config = device
       .get_config()
@@ -579,7 +567,7 @@ pub fn config_get(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Write the Nitrokey configuration.
-pub fn config_set(ctx: &mut args::ExecCtx<'_>, args: arg_defs::ConfigSetArgs) -> Result<()> {
+pub fn config_set(ctx: &mut ExecCtx<'_>, args: arg_defs::ConfigSetArgs) -> Result<()> {
   let numlock = arg_defs::ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")?;
   let capslock = arg_defs::ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")?;
   let scrollock = arg_defs::ConfigOption::try_from(args.no_scrollock, args.scrollock, "scrollock")?;
@@ -609,7 +597,7 @@ pub fn config_set(ctx: &mut args::ExecCtx<'_>, args: arg_defs::ConfigSetArgs) ->
 }
 
 /// Lock the Nitrokey device.
-pub fn lock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn lock(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |_ctx, mut device| {
     device
       .lock()
@@ -637,7 +625,7 @@ fn get_unix_timestamp() -> Result<u64> {
 
 /// Generate a one-time password on the Nitrokey device.
 pub fn otp_get(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   slot: u8,
   algorithm: arg_defs::OtpAlgorithm,
   time: Option<u64>,
@@ -700,7 +688,7 @@ fn prepare_base32_secret(secret: &str) -> Result<String> {
 }
 
 /// Configure a one-time password slot on the Nitrokey device.
-pub fn otp_set(ctx: &mut args::ExecCtx<'_>, mut args: arg_defs::OtpSetArgs) -> Result<()> {
+pub fn otp_set(ctx: &mut ExecCtx<'_>, mut args: arg_defs::OtpSetArgs) -> Result<()> {
   let mut data = nitrokey::OtpSlotData {
     number: args.slot,
     name: mem::take(&mut args.name),
@@ -739,11 +727,7 @@ pub fn otp_set(ctx: &mut args::ExecCtx<'_>, mut args: arg_defs::OtpSetArgs) -> R
 }
 
 /// Clear an OTP slot.
-pub fn otp_clear(
-  ctx: &mut args::ExecCtx<'_>,
-  slot: u8,
-  algorithm: arg_defs::OtpAlgorithm,
-) -> Result<()> {
+pub fn otp_clear(ctx: &mut ExecCtx<'_>, slot: u8, algorithm: arg_defs::OtpAlgorithm) -> Result<()> {
   with_device(ctx, |ctx, device| {
     let mut device = authenticate_admin(ctx, device)?;
     match algorithm {
@@ -756,7 +740,7 @@ pub fn otp_clear(
 }
 
 fn print_otp_status(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   algorithm: arg_defs::OtpAlgorithm,
   device: &nitrokey::DeviceWrapper<'_>,
   all: bool,
@@ -790,7 +774,7 @@ fn print_otp_status(
 }
 
 /// Print the status of the OTP slots.
-pub fn otp_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
+pub fn otp_status(ctx: &mut ExecCtx<'_>, all: bool) -> Result<()> {
   with_device(ctx, |ctx, device| {
     println!(ctx, "alg\tslot\tname")?;
     print_otp_status(ctx, arg_defs::OtpAlgorithm::Hotp, &device, all)?;
@@ -800,7 +784,7 @@ pub fn otp_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
 }
 
 /// Clear the PIN stored by various operations.
-pub fn pin_clear(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn pin_clear(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |_ctx, device| {
     pinentry::clear(&pinentry::PinEntry::from(
       arg_defs::PinType::Admin,
@@ -815,11 +799,7 @@ pub fn pin_clear(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 ///
 /// If the user has set the respective environment variable for the
 /// given PIN type, it will be used.
-fn choose_pin(
-  ctx: &mut args::ExecCtx<'_>,
-  pin_entry: &pinentry::PinEntry,
-  new: bool,
-) -> Result<String> {
+fn choose_pin(ctx: &mut ExecCtx<'_>, pin_entry: &pinentry::PinEntry, new: bool) -> Result<String> {
   let new_pin = match pin_entry.pin_type() {
     arg_defs::PinType::Admin => {
       if new {
@@ -848,7 +828,7 @@ fn choose_pin(
 }
 
 /// Change a PIN.
-pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: arg_defs::PinType) -> Result<()> {
+pub fn pin_set(ctx: &mut ExecCtx<'_>, pin_type: arg_defs::PinType) -> Result<()> {
   with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
     let new_pin = choose_pin(ctx, &pin_entry, true)?;
@@ -871,7 +851,7 @@ pub fn pin_set(ctx: &mut args::ExecCtx<'_>, pin_type: arg_defs::PinType) -> Resu
 }
 
 /// Unblock and reset the user PIN.
-pub fn pin_unblock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
+pub fn pin_unblock(ctx: &mut ExecCtx<'_>) -> Result<()> {
   with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(arg_defs::PinType::User, &device)?;
     let user_pin = choose_pin(ctx, &pin_entry, false)?;
@@ -887,7 +867,7 @@ pub fn pin_unblock(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 fn print_pws_data(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   description: &'static str,
   result: result::Result<String, nitrokey::Error>,
   quiet: bool,
@@ -920,7 +900,7 @@ fn check_slot(pws: &nitrokey::PasswordSafe<'_, '_>, slot: u8) -> Result<()> {
 
 /// Read a PWS slot.
 pub fn pws_get(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   slot: u8,
   show_name: bool,
   show_login: bool,
@@ -946,7 +926,7 @@ pub fn pws_get(
 
 /// Write a PWS slot.
 pub fn pws_set(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   slot: u8,
   name: &str,
   login: &str,
@@ -960,7 +940,7 @@ pub fn pws_set(
 }
 
 /// Clear a PWS slot.
-pub fn pws_clear(ctx: &mut args::ExecCtx<'_>, slot: u8) -> Result<()> {
+pub fn pws_clear(ctx: &mut ExecCtx<'_>, slot: u8) -> Result<()> {
   with_password_safe(ctx, |_ctx, mut pws| {
     pws
       .erase_slot(slot)
@@ -969,7 +949,7 @@ pub fn pws_clear(ctx: &mut args::ExecCtx<'_>, slot: u8) -> Result<()> {
 }
 
 fn print_pws_slot(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   pws: &nitrokey::PasswordSafe<'_, '_>,
   slot: usize,
   programmed: bool,
@@ -990,7 +970,7 @@ fn print_pws_slot(
 }
 
 /// Print the status of all PWS slots.
-pub fn pws_status(ctx: &mut args::ExecCtx<'_>, all: bool) -> Result<()> {
+pub fn pws_status(ctx: &mut ExecCtx<'_>, all: bool) -> Result<()> {
   with_password_safe(ctx, |ctx, pws| {
     let slots = pws
       .get_slot_status()

@@ -46,7 +46,7 @@ macro_rules! Command {
     impl $name {
       pub fn execute(
         self,
-        ctx: &mut crate::args::ExecCtx<'_>,
+        ctx: &mut crate::ExecCtx<'_>,
       ) -> crate::Result<()> {
         match self {
           $(

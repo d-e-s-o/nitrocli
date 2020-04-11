@@ -24,8 +24,8 @@ use std::process;
 use std::str;
 
 use crate::arg_defs;
-use crate::args;
 use crate::error::Error;
+use crate::ExecCtx;
 
 type CowStr = borrow::Cow<'static, str>;
 
@@ -222,7 +222,7 @@ where
 /// dialog. It is used to choose an appropriate description and to
 /// decide whether a quality bar is shown in the dialog.
 pub fn inquire<E>(
-  ctx: &mut args::ExecCtx<'_>,
+  ctx: &mut ExecCtx<'_>,
   entry: &E,
   mode: Mode,
   error_msg: Option<&str>,
@@ -279,7 +279,7 @@ where
   }
 }
 
-pub fn choose<E>(ctx: &mut args::ExecCtx<'_>, entry: &E) -> crate::Result<String>
+pub fn choose<E>(ctx: &mut ExecCtx<'_>, entry: &E) -> crate::Result<String>
 where
   E: SecretEntry,
 {

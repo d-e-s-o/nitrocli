@@ -69,7 +69,6 @@ mod redefine;
 mod arg_util;
 
 mod arg_defs;
-mod args;
 mod commands;
 mod error;
 mod pinentry;
@@ -92,6 +91,88 @@ const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";
 const NITROCLI_NEW_USER_PIN: &str = "NITROCLI_NEW_USER_PIN";
 const NITROCLI_PASSWORD: &str = "NITROCLI_PASSWORD";
 const NITROCLI_NO_CACHE: &str = "NITROCLI_NO_CACHE";
+
+trait Stdio {
+  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write);
+}
+
+impl<'io> Stdio for RunCtx<'io> {
+  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
+    (self.stdout, self.stderr)
+  }
+}
+
+impl<W> Stdio for (&mut W, &mut W)
+where
+  W: io::Write,
+{
+  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
+    (self.0, self.1)
+  }
+}
+
+/// A command execution context that captures additional data pertaining
+/// the command execution.
+#[allow(missing_debug_implementations)]
+pub struct ExecCtx<'io> {
+  /// The Nitrokey model to use.
+  pub model: Option<arg_defs::DeviceModel>,
+  /// See `RunCtx::stdout`.
+  pub stdout: &'io mut dyn io::Write,
+  /// See `RunCtx::stderr`.
+  pub stderr: &'io mut dyn io::Write,
+  /// See `RunCtx::admin_pin`.
+  pub admin_pin: Option<ffi::OsString>,
+  /// See `RunCtx::user_pin`.
+  pub user_pin: Option<ffi::OsString>,
+  /// See `RunCtx::new_admin_pin`.
+  pub new_admin_pin: Option<ffi::OsString>,
+  /// See `RunCtx::new_user_pin`.
+  pub new_user_pin: Option<ffi::OsString>,
+  /// See `RunCtx::password`.
+  pub password: Option<ffi::OsString>,
+  /// See `RunCtx::no_cache`.
+  pub no_cache: bool,
+  /// The verbosity level to use for logging.
+  pub verbosity: u64,
+}
+
+impl<'io> Stdio for ExecCtx<'io> {
+  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
+    (self.stdout, self.stderr)
+  }
+}
+
+/// Parse the command-line arguments and execute the selected command.
+fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
+  use structopt::StructOpt;
+
+  match arg_defs::Args::from_iter_safe(args.iter()) {
+    Ok(args) => {
+      let mut ctx = ExecCtx {
+        model: args.model,
+        stdout: ctx.stdout,
+        stderr: ctx.stderr,
+        admin_pin: ctx.admin_pin.take(),
+        user_pin: ctx.user_pin.take(),
+        new_admin_pin: ctx.new_admin_pin.take(),
+        new_user_pin: ctx.new_user_pin.take(),
+        password: ctx.password.take(),
+        no_cache: ctx.no_cache,
+        verbosity: args.verbose.into(),
+      };
+      args.cmd.execute(&mut ctx)
+    }
+    Err(err) => {
+      if err.use_stderr() {
+        Err(err.into())
+      } else {
+        println!(ctx, "{}", err.message)?;
+        Ok(())
+      }
+    }
+  }
+}
 
 /// The context used when running the program.
 pub(crate) struct RunCtx<'io> {
@@ -118,7 +199,7 @@ pub(crate) struct RunCtx<'io> {
 }
 
 fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
-  match args::handle_arguments(ctx, args) {
+  match handle_arguments(ctx, args) {
     Ok(()) => 0,
     Err(err) => {
       let _ = eprintln!(ctx, "{}", err);
