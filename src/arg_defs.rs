@@ -93,7 +93,7 @@ Command! {ConfigCommand, [
   /// Prints the Nitrokey configuration
   Get => crate::commands::config_get,
   /// Changes the Nitrokey configuration
-  Set(ConfigSetArgs) => crate::args::config_set,
+  Set(ConfigSetArgs) => crate::commands::config_set,
 ]}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]

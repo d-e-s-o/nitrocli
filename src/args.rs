@@ -22,7 +22,6 @@ use std::io;
 use std::result;
 
 use crate::arg_defs;
-use crate::commands;
 use crate::error::Error;
 use crate::RunCtx;
 
@@ -66,20 +65,6 @@ impl<'io> Stdio for ExecCtx<'io> {
   fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
     (self.stdout, self.stderr)
   }
-}
-
-pub fn config_set(ctx: &mut ExecCtx<'_>, args: arg_defs::ConfigSetArgs) -> Result<()> {
-  let numlock = arg_defs::ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")?;
-  let capslock = arg_defs::ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")?;
-  let scrollock = arg_defs::ConfigOption::try_from(args.no_scrollock, args.scrollock, "scrollock")?;
-  let otp_pin = if args.otp_pin {
-    Some(true)
-  } else if args.no_otp_pin {
-    Some(false)
-  } else {
-    None
-  };
-  commands::config_set(ctx, numlock, capslock, scrollock, otp_pin)
 }
 
 /// Parse the command-line arguments and execute the selected command.

@@ -579,13 +579,18 @@ pub fn config_get(ctx: &mut args::ExecCtx<'_>) -> Result<()> {
 }
 
 /// Write the Nitrokey configuration.
-pub fn config_set(
-  ctx: &mut args::ExecCtx<'_>,
-  numlock: arg_defs::ConfigOption<u8>,
-  capslock: arg_defs::ConfigOption<u8>,
-  scrollock: arg_defs::ConfigOption<u8>,
-  user_password: Option<bool>,
-) -> Result<()> {
+pub fn config_set(ctx: &mut args::ExecCtx<'_>, args: arg_defs::ConfigSetArgs) -> Result<()> {
+  let numlock = arg_defs::ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")?;
+  let capslock = arg_defs::ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")?;
+  let scrollock = arg_defs::ConfigOption::try_from(args.no_scrollock, args.scrollock, "scrollock")?;
+  let otp_pin = if args.otp_pin {
+    Some(true)
+  } else if args.no_otp_pin {
+    Some(false)
+  } else {
+    None
+  };
+
   with_device(ctx, |ctx, device| {
     let mut device = authenticate_admin(ctx, device)?;
     let config = device
@@ -595,7 +600,7 @@ pub fn config_set(
       numlock: numlock.or(config.numlock),
       capslock: capslock.or(config.capslock),
       scrollock: scrollock.or(config.scrollock),
-      user_password: user_password.unwrap_or(config.user_password),
+      user_password: otp_pin.unwrap_or(config.user_password),
     };
     device
       .write_config(config)
