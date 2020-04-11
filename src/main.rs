@@ -68,7 +68,7 @@ mod redefine;
 #[macro_use]
 mod arg_util;
 
-mod arg_defs;
+mod args;
 mod commands;
 mod error;
 mod pinentry;
@@ -116,7 +116,7 @@ where
 #[allow(missing_debug_implementations)]
 pub struct ExecCtx<'io> {
   /// The Nitrokey model to use.
-  pub model: Option<arg_defs::DeviceModel>,
+  pub model: Option<args::DeviceModel>,
   /// See `RunCtx::stdout`.
   pub stdout: &'io mut dyn io::Write,
   /// See `RunCtx::stderr`.
@@ -147,7 +147,7 @@ impl<'io> Stdio for ExecCtx<'io> {
 fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
   use structopt::StructOpt;
 
-  match arg_defs::Args::from_iter_safe(args.iter()) {
+  match args::Args::from_iter_safe(args.iter()) {
     Ok(args) => {
       let mut ctx = ExecCtx {
         model: args.model,

@@ -39,7 +39,7 @@ mod nitrocli {
     };
   }
 
-  include!("../src/arg_defs.rs");
+  include!("../src/args.rs");
 }
 
 /// Generate a bash completion script for nitrocli.

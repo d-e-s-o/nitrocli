@@ -23,7 +23,7 @@ use std::io;
 use std::process;
 use std::str;
 
-use crate::arg_defs;
+use crate::args;
 use crate::error::Error;
 use crate::ExecCtx;
 
@@ -43,13 +43,13 @@ pub trait SecretEntry: fmt::Debug {
 
 #[derive(Debug)]
 pub struct PinEntry {
-  pin_type: arg_defs::PinType,
+  pin_type: args::PinType,
   model: nitrokey::Model,
   serial: nitrokey::SerialNumber,
 }
 
 impl PinEntry {
-  pub fn from<'mgr, D>(pin_type: arg_defs::PinType, device: &D) -> crate::Result<Self>
+  pub fn from<'mgr, D>(pin_type: args::PinType, device: &D) -> crate::Result<Self>
   where
     D: nitrokey::Device<'mgr>,
   {
@@ -62,7 +62,7 @@ impl PinEntry {
     })
   }
 
-  pub fn pin_type(&self) -> arg_defs::PinType {
+  pub fn pin_type(&self) -> args::PinType {
     self.pin_type
   }
 }
@@ -72,16 +72,16 @@ impl SecretEntry for PinEntry {
     let model = self.model.to_string().to_lowercase();
     let suffix = format!("{}:{}", model, self.serial);
     let cache_id = match self.pin_type {
-      arg_defs::PinType::Admin => format!("nitrocli:admin:{}", suffix),
-      arg_defs::PinType::User => format!("nitrocli:user:{}", suffix),
+      args::PinType::Admin => format!("nitrocli:admin:{}", suffix),
+      args::PinType::User => format!("nitrocli:user:{}", suffix),
     };
     Some(cache_id.into())
   }
 
   fn prompt(&self) -> CowStr {
     match self.pin_type {
-      arg_defs::PinType::Admin => "Admin PIN",
-      arg_defs::PinType::User => "User PIN",
+      args::PinType::Admin => "Admin PIN",
+      args::PinType::User => "User PIN",
     }
     .into()
   }
@@ -90,12 +90,12 @@ impl SecretEntry for PinEntry {
     format!(
       "{} for\rNitrokey {} {}",
       match self.pin_type {
-        arg_defs::PinType::Admin => match mode {
+        args::PinType::Admin => match mode {
           Mode::Choose => "Please enter a new admin PIN",
           Mode::Confirm => "Please confirm the new admin PIN",
           Mode::Query => "Please enter the admin PIN",
         },
-        arg_defs::PinType::User => match mode {
+        args::PinType::User => match mode {
           Mode::Choose => "Please enter a new user PIN",
           Mode::Confirm => "Please confirm the new user PIN",
           Mode::Query => "Please enter the user PIN",
@@ -109,8 +109,8 @@ impl SecretEntry for PinEntry {
 
   fn min_len(&self) -> u8 {
     match self.pin_type {
-      arg_defs::PinType::Admin => 8,
-      arg_defs::PinType::User => 6,
+      args::PinType::Admin => 8,
+      args::PinType::User => 6,
     }
   }
 }

@@ -1,7 +1,7 @@
 // otp.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -19,7 +19,7 @@
 
 use super::*;
 
-use crate::arg_defs;
+use crate::args;
 
 #[test_device]
 fn set_invalid_slot_raw(model: nitrokey::Model) {
@@ -101,8 +101,8 @@ fn set_get_totp(model: nitrokey::Model) -> crate::Result<()> {
 #[test_device]
 fn set_totp_uneven_chars(model: nitrokey::Model) -> crate::Result<()> {
   let secrets = [
-    (arg_defs::OtpSecretFormat::Hex, "123"),
-    (arg_defs::OtpSecretFormat::Base32, "FBILDWWGA2"),
+    (args::OtpSecretFormat::Hex, "123"),
+    (args::OtpSecretFormat::Base32, "FBILDWWGA2"),
   ];
 
   for (format, secret) in &secrets {
