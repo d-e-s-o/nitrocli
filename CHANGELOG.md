@@ -3,6 +3,7 @@ Unreleased
 - Added bash completion support via `shell-complete` utility program
 - Updated minimum required Rust version to `1.40.0`
 - Bumped `libc` dependency to `0.2.69`
+- Bumped `structopt` dependency to `0.3.13`
 
 
 0.3.2
