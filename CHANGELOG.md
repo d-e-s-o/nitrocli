@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.3.3
+-----
 - Added bash completion support via `shell-complete` utility program
 - Updated minimum required Rust version to `1.40.0`
 - Converted `Cargo.lock` to new lock file format
