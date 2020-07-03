@@ -33,7 +33,10 @@ macro_rules! tr {
 }
 
 macro_rules! Command {
-  ( $name:ident, [ $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *] ) => {
+  ( $(#[$docs:meta])* $name:ident, [
+    $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *
+  ] ) => {
+    $(#[$docs])*
     #[derive(Debug, PartialEq, structopt::StructOpt)]
     pub enum $name {
       $(
@@ -63,7 +66,8 @@ macro_rules! Command {
 // TODO: Right now we hard code the derives we create. We may want to
 //       make this set configurable.
 macro_rules! Enum {
-  ( $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
+  ( $(#[$docs:meta])* $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
+    $(#[$docs])*
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum $name {
       $(

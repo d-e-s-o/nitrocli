@@ -31,12 +31,13 @@ pub struct Args {
   pub cmd: Command,
 }
 
-/// The available Nitrokey models.
-#[allow(unused_doc_comments)]
-Enum! {DeviceModel, [
-  Pro => "pro",
-  Storage => "storage",
-]}
+Enum! {
+  /// The available Nitrokey models.
+  DeviceModel, [
+    Pro => "pro",
+    Storage => "storage",
+  ]
+}
 
 impl DeviceModel {
   pub fn as_user_facing_str(&self) -> &str {
@@ -56,32 +57,33 @@ impl From<DeviceModel> for nitrokey::Model {
   }
 }
 
-/// A top-level command for nitrocli.
-#[allow(unused_doc_comments)]
-Command! {Command, [
-  /// Reads or writes the device configuration
-  Config(ConfigArgs) => |ctx, args: ConfigArgs| args.subcmd.execute(ctx),
-  /// Interacts with the device's encrypted volume
-  Encrypted(EncryptedArgs) => |ctx, args: EncryptedArgs| args.subcmd.execute(ctx),
-  /// Interacts with the device's hidden volume
-  Hidden(HiddenArgs) => |ctx, args: HiddenArgs| args.subcmd.execute(ctx),
-  /// Lists the attached Nitrokey devices
-  List(ListArgs) => |ctx, args: ListArgs| crate::commands::list(ctx, args.no_connect),
-  /// Locks the connected Nitrokey device
-  Lock => crate::commands::lock,
-  /// Accesses one-time passwords
-  Otp(OtpArgs) => |ctx, args: OtpArgs| args.subcmd.execute(ctx),
-  /// Manages the Nitrokey PINs
-  Pin(PinArgs) => |ctx, args: PinArgs| args.subcmd.execute(ctx),
-  /// Accesses the password safe
-  Pws(PwsArgs) => |ctx, args: PwsArgs| args.subcmd.execute(ctx),
-  /// Performs a factory reset
-  Reset => crate::commands::reset,
-  /// Prints the status of the connected Nitrokey device
-  Status => crate::commands::status,
-  /// Interacts with the device's unencrypted volume
-  Unencrypted(UnencryptedArgs) => |ctx, args: UnencryptedArgs| args.subcmd.execute(ctx),
-]}
+Command! {
+  /// A top-level command for nitrocli.
+  Command, [
+    /// Reads or writes the device configuration
+    Config(ConfigArgs) => |ctx, args: ConfigArgs| args.subcmd.execute(ctx),
+    /// Interacts with the device's encrypted volume
+    Encrypted(EncryptedArgs) => |ctx, args: EncryptedArgs| args.subcmd.execute(ctx),
+    /// Interacts with the device's hidden volume
+    Hidden(HiddenArgs) => |ctx, args: HiddenArgs| args.subcmd.execute(ctx),
+    /// Lists the attached Nitrokey devices
+    List(ListArgs) => |ctx, args: ListArgs| crate::commands::list(ctx, args.no_connect),
+    /// Locks the connected Nitrokey device
+    Lock => crate::commands::lock,
+    /// Accesses one-time passwords
+    Otp(OtpArgs) => |ctx, args: OtpArgs| args.subcmd.execute(ctx),
+    /// Manages the Nitrokey PINs
+    Pin(PinArgs) => |ctx, args: PinArgs| args.subcmd.execute(ctx),
+    /// Accesses the password safe
+    Pws(PwsArgs) => |ctx, args: PwsArgs| args.subcmd.execute(ctx),
+    /// Performs a factory reset
+    Reset => crate::commands::reset,
+    /// Prints the status of the connected Nitrokey device
+    Status => crate::commands::status,
+    /// Interacts with the device's unencrypted volume
+    Unencrypted(UnencryptedArgs) => |ctx, args: UnencryptedArgs| args.subcmd.execute(ctx),
+  ]
+}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct ConfigArgs {
@@ -326,15 +328,16 @@ Command! {PinCommand, [
   Unblock => crate::commands::pin_unblock,
 ]}
 
-/// PIN type requested from pinentry.
-///
-/// The available PIN types correspond to the PIN types used by the Nitrokey devices:  user and
-/// admin.
-#[allow(unused_doc_comments)]
-Enum! {PinType, [
-  Admin => "admin",
-  User => "user",
-]}
+Enum! {
+  /// PIN type requested from pinentry.
+  ///
+  /// The available PIN types correspond to the PIN types used by the
+  /// Nitrokey devices: user and admin.
+  PinType, [
+    Admin => "admin",
+    User => "user",
+  ]
+}
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PinSetArgs {

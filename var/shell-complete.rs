@@ -28,7 +28,10 @@ mod nitrocli {
 
   // We only need a stripped down version of the `Command` macro.
   macro_rules! Command {
-    ( $name:ident, [ $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *] ) => {
+    ( $(#[$docs:meta])* $name:ident, [
+      $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *
+    ] ) => {
+      $(#[$docs])*
       #[derive(Debug, PartialEq, structopt::StructOpt)]
       pub enum $name {
         $(
