@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -B
 
 #/***************************************************************************
-# *   Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+# *   Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU General Public License as published by  *
@@ -86,9 +86,8 @@ def resolveCommit(commit):
 def determineSizeAt(root, rev):
   """Determine the size of the nitrocli release build binary at the given git revision."""
   sha1 = resolveCommit(rev)
-  with TemporaryDirectory() as d:
-    cwd = join(d, "nitrocli")
-    check_call(["git", "clone", root, d])
+  with TemporaryDirectory() as cwd:
+    check_call(["git", "clone", root, cwd])
     check_call(["git", "checkout", "--quiet", sha1], cwd=cwd)
     check_call(["cargo", "build", "--quiet", "--release"], cwd=cwd)
 
