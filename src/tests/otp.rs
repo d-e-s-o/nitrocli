@@ -32,15 +32,16 @@ fn set_invalid_slot_raw(model: nitrokey::Model) {
 
 #[test_device]
 fn set_invalid_slot(model: nitrokey::Model) {
-  let res = Nitrocli::with_model(model).handle(&["otp", "set", "100", "name", "1234"]);
-
-  assert_eq!(
-    res.unwrap_lib_err(),
-    (
-      Some("Could not write OTP slot"),
-      nitrokey::LibraryError::InvalidSlot
-    )
+  let err = Nitrocli::with_model(model)
+    .handle(&["otp", "set", "100", "name", "1234"])
+    .unwrap_err()
+    .to_string();
+  let expected = format!(
+    "Could not write OTP slot: {}",
+    nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot)
   );
+
+  assert_eq!(err, expected);
 }
 
 #[test_device]
