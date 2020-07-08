@@ -1,7 +1,7 @@
 // status.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -33,7 +33,8 @@ fn not_found_raw() {
 #[test_device]
 fn not_found() {
   let res = Nitrocli::new().handle(&["status"]);
-  assert_eq!(res.unwrap_str_err(), "Nitrokey device not found");
+  let err = res.unwrap_err().to_string();
+  assert_eq!(err, "Nitrokey device not found");
 }
 
 #[test_device(pro)]

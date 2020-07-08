@@ -1,7 +1,7 @@
 // encrypted.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -61,9 +61,12 @@ $"#,
 
 #[test_device(pro)]
 fn encrypted_open_on_pro(model: nitrokey::Model) {
-  let res = Nitrocli::with_model(model).handle(&["encrypted", "open"]);
+  let err = Nitrocli::with_model(model)
+    .handle(&["encrypted", "open"])
+    .unwrap_err()
+    .to_string();
   assert_eq!(
-    res.unwrap_str_err(),
+    err,
     "This command is only available on the Nitrokey Storage",
   );
 }
