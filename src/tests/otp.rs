@@ -120,12 +120,11 @@ fn clear(model: nitrokey::Model) -> crate::Result<()> {
   let _ = ncli.handle(&["otp", "clear", "3"])?;
   let res = ncli.handle(&["otp", "get", "3"]);
 
-  assert_eq!(
-    res.unwrap_cmd_err(),
-    (
-      Some("Could not generate OTP"),
-      nitrokey::CommandError::SlotNotProgrammed
-    )
+  let err = res.unwrap_err().to_string();
+  let expected = format!(
+    "Could not generate OTP: {}",
+    nitrokey::Error::CommandError(nitrokey::CommandError::SlotNotProgrammed)
   );
+  assert_eq!(err, expected);
   Ok(())
 }
