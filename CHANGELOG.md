@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Changed default OTP format from `hex` to `base32`
+
+
 0.3.3
 -----
 - Added bash completion support via `shell-complete` utility program
