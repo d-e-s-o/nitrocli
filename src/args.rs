@@ -269,7 +269,7 @@ pub struct OtpSetArgs {
   #[structopt(short, long, default_value = "30")]
   pub time_window: u16,
   /// The format of the secret
-  #[structopt(short, long, default_value = OtpSecretFormat::Hex.as_ref(),
+  #[structopt(short, long, default_value = OtpSecretFormat::Base32.as_ref(),
               possible_values = &OtpSecretFormat::all_str())]
   pub format: OtpSecretFormat,
   /// The OTP slot to use
