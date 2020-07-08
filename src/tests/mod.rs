@@ -37,8 +37,6 @@ mod unencrypted;
 
 /// A trait simplifying checking for expected errors.
 pub trait UnwrapError {
-  /// Unwrap an Error::Error variant.
-  fn unwrap_str_err(self) -> String;
   /// Unwrap a Error::CommandError variant.
   fn unwrap_cmd_err(self) -> (Option<&'static str>, nitrokey::CommandError);
   /// Unwrap a Error::LibraryError variant.
@@ -49,20 +47,6 @@ impl<T> UnwrapError for crate::Result<T>
 where
   T: fmt::Debug,
 {
-  fn unwrap_str_err(self) -> String {
-    match self.unwrap_err() {
-      crate::Error::ClapError(err) => {
-        if err.use_stderr() {
-          err.message
-        } else {
-          String::new()
-        }
-      }
-      crate::Error::Error(err) => err,
-      err => panic!("Unexpected error variant found: {:?}", err),
-    }
-  }
-
   fn unwrap_cmd_err(self) -> (Option<&'static str>, nitrokey::CommandError) {
     match self.unwrap_err() {
       crate::Error::NitrokeyError(ctx, err) => match err {
