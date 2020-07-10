@@ -18,7 +18,6 @@
 // *************************************************************************
 
 use std::ffi;
-use std::fmt;
 
 use nitrokey_test::test as test_device;
 
@@ -34,27 +33,6 @@ mod reset;
 mod run;
 mod status;
 mod unencrypted;
-
-/// A trait simplifying checking for expected errors.
-pub trait UnwrapError {
-  /// Unwrap a Error::CommandError variant.
-  fn unwrap_cmd_err(self) -> (Option<&'static str>, nitrokey::CommandError);
-}
-
-impl<T> UnwrapError for crate::Result<T>
-where
-  T: fmt::Debug,
-{
-  fn unwrap_cmd_err(self) -> (Option<&'static str>, nitrokey::CommandError) {
-    match self.unwrap_err() {
-      crate::Error::NitrokeyError(ctx, err) => match err {
-        nitrokey::Error::CommandError(err) => (ctx, err),
-        err => panic!("Unexpected error variant found: {:?}", err),
-      },
-      err => panic!("Unexpected error variant found: {:?}", err),
-    }
-  }
-}
 
 struct Nitrocli {
   model: Option<nitrokey::Model>,
