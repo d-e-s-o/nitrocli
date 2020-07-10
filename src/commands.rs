@@ -107,31 +107,24 @@ where
 {
   with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(args::PinType::User, &device)?;
-    try_with_pin_and_data(
-      ctx,
-      &pin_entry,
-      "Could not access the password safe",
-      (),
-      move |ctx, _, pin| {
-        let pws = device
-          .get_password_safe(pin)
-          .map_err(|err| ((), err.into()))?;
+    try_with_pin_and_data(ctx, &pin_entry, (), move |ctx, _, pin| {
+      let pws = device.get_password_safe(pin).or_else(|err| {
+        Err(err)
+          .context("Could not access the password safe")
+          .map_err(|err| ((), err))
+      })?;
 
-        op(ctx, pws).map_err(|err| ((), err))
-      },
-    )
+      op(ctx, pws).map_err(|err| ((), err))
+    })
   })?;
   Ok(())
 }
 
 /// Authenticate the given device using the given PIN type and operation.
-///
-/// If an error occurs, the error message `msg` is used.
 fn authenticate<'mgr, D, A, F>(
   ctx: &mut ExecCtx<'_>,
   device: D,
   pin_type: args::PinType,
-  msg: &'static str,
   op: F,
 ) -> Result<A>
 where
@@ -140,7 +133,7 @@ where
 {
   let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
 
-  try_with_pin_and_data(ctx, &pin_entry, msg, device, op)
+  try_with_pin_and_data(ctx, &pin_entry, device, op)
 }
 
 /// Authenticate the given device with the user PIN.
@@ -148,19 +141,13 @@ fn authenticate_user<'mgr, T>(ctx: &mut ExecCtx<'_>, device: T) -> Result<nitrok
 where
   T: Device<'mgr>,
 {
-  authenticate(
-    ctx,
-    device,
-    args::PinType::User,
-    "Could not authenticate as user",
-    |_ctx, device, pin| {
-      device.authenticate_user(pin).or_else(|(x, err)| {
-        Err(err)
-          .context("Failed to authenticate as user")
-          .map_err(|err| (x, err))
-      })
-    },
-  )
+  authenticate(ctx, device, args::PinType::User, |_ctx, device, pin| {
+    device.authenticate_user(pin).or_else(|(x, err)| {
+      Err(err)
+        .context("Failed to authenticate as user")
+        .map_err(|err| (x, err))
+    })
+  })
 }
 
 /// Authenticate the given device with the admin PIN.
@@ -168,19 +155,13 @@ fn authenticate_admin<'mgr, T>(ctx: &mut ExecCtx<'_>, device: T) -> Result<nitro
 where
   T: Device<'mgr>,
 {
-  authenticate(
-    ctx,
-    device,
-    args::PinType::Admin,
-    "Could not authenticate as admin",
-    |_ctx, device, pin| {
-      device.authenticate_admin(pin).or_else(|(x, err)| {
-        Err(err)
-          .context("Failed to authenticate as admin")
-          .map_err(|err| (x, err))
-      })
-    },
-  )
+  authenticate(ctx, device, args::PinType::Admin, |_ctx, device, pin| {
+    device.authenticate_admin(pin).or_else(|(x, err)| {
+      Err(err)
+        .context("Failed to authenticate as admin")
+        .map_err(|err| (x, err))
+    })
+  })
 }
 
 /// Return a string representation of the given volume status.
@@ -213,7 +194,6 @@ fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
 fn try_with_pin_and_data_with_pinentry<D, F, R>(
   ctx: &mut ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
-  msg: &'static str,
   data: D,
   mut op: F,
 ) -> Result<R>
@@ -252,7 +232,6 @@ where
 fn try_with_pin_and_data<D, F, R>(
   ctx: &mut ExecCtx<'_>,
   pin_entry: &pinentry::PinEntry,
-  msg: &'static str,
   data: D,
   mut op: F,
 ) -> Result<R>
@@ -273,7 +252,7 @@ where
       .ok_or_else(|| anyhow!("Failed to read PIN: Invalid Unicode data found"))?;
     op(ctx, data, &pin).map_err(|(_, err)| err)
   } else {
-    try_with_pin_and_data_with_pinentry(ctx, pin_entry, msg, data, op)
+    try_with_pin_and_data_with_pinentry(ctx, pin_entry, data, op)
   }
 }
 
@@ -281,16 +260,11 @@ where
 ///
 /// This function behaves exactly as `try_with_pin_and_data`, but
 /// it refrains from passing any data to it.
-fn try_with_pin<F>(
-  ctx: &mut ExecCtx<'_>,
-  pin_entry: &pinentry::PinEntry,
-  msg: &'static str,
-  mut op: F,
-) -> Result<()>
+fn try_with_pin<F>(ctx: &mut ExecCtx<'_>, pin_entry: &pinentry::PinEntry, mut op: F) -> Result<()>
 where
   F: FnMut(&str) -> Result<()>,
 {
-  try_with_pin_and_data(ctx, pin_entry, msg, (), |_ctx, data, pin| {
+  try_with_pin_and_data(ctx, pin_entry, (), |_ctx, data, pin| {
     op(pin).map_err(|err| (data, err))
   })
 }
@@ -432,7 +406,7 @@ pub fn reset(ctx: &mut ExecCtx<'_>) -> Result<()> {
     // factory reset, we clear the pinentry cache for the admin PIN.
     pinentry::clear(&pin_entry).context("Failed to clear cached secret")?;
 
-    try_with_pin(ctx, &pin_entry, "Factory reset failed", |pin| {
+    try_with_pin(ctx, &pin_entry, |pin| {
       device
         .factory_reset(&pin)
         .context("Failed to reset to factory settings")?;
@@ -464,16 +438,11 @@ pub fn unencrypted_set(ctx: &mut ExecCtx<'_>, mode: args::UnencryptedVolumeMode)
     // disk.
     unsafe { sync() };
 
-    try_with_pin(
-      ctx,
-      &pin_entry,
-      "Changing unencrypted volume mode failed",
-      |pin| {
-        device
-          .set_unencrypted_volume_mode(&pin, mode)
-          .context("Failed to change unencrypted volume mode")
-      },
-    )
+    try_with_pin(ctx, &pin_entry, |pin| {
+      device
+        .set_unencrypted_volume_mode(&pin, mode)
+        .context("Failed to change unencrypted volume mode")
+    })
   })
 }
 
@@ -486,7 +455,7 @@ pub fn encrypted_open(ctx: &mut ExecCtx<'_>) -> Result<()> {
     // flush caches to disk.
     unsafe { sync() };
 
-    try_with_pin(ctx, &pin_entry, "Opening encrypted volume failed", |pin| {
+    try_with_pin(ctx, &pin_entry, |pin| {
       device
         .enable_encrypted_volume(&pin)
         .context("Failed to open encrypted volume")
@@ -855,19 +824,14 @@ pub fn pin_set(ctx: &mut ExecCtx<'_>, pin_type: args::PinType) -> Result<()> {
     let pin_entry = pinentry::PinEntry::from(pin_type, &device)?;
     let new_pin = choose_pin(ctx, &pin_entry, true)?;
 
-    try_with_pin(
-      ctx,
-      &pin_entry,
-      "Could not change the PIN",
-      |current_pin| match pin_type {
-        args::PinType::Admin => device
-          .change_admin_pin(&current_pin, &new_pin)
-          .context("Failed to change admin PIN"),
-        args::PinType::User => device
-          .change_user_pin(&current_pin, &new_pin)
-          .context("Failed to change user PIN"),
-      },
-    )?;
+    try_with_pin(ctx, &pin_entry, |current_pin| match pin_type {
+      args::PinType::Admin => device
+        .change_admin_pin(&current_pin, &new_pin)
+        .context("Failed to change admin PIN"),
+      args::PinType::User => device
+        .change_user_pin(&current_pin, &new_pin)
+        .context("Failed to change user PIN"),
+    })?;
 
     // We just changed the PIN but confirmed the action with the old PIN,
     // which may have caused it to be cached. Since it no longer applies,
@@ -883,16 +847,11 @@ pub fn pin_unblock(ctx: &mut ExecCtx<'_>) -> Result<()> {
     let user_pin = choose_pin(ctx, &pin_entry, false)?;
     let pin_entry = pinentry::PinEntry::from(args::PinType::Admin, &device)?;
 
-    try_with_pin(
-      ctx,
-      &pin_entry,
-      "Could not unblock the user PIN",
-      |admin_pin| {
-        device
-          .unlock_user_pin(&admin_pin, &user_pin)
-          .context("Failed to unblock user PIN")
-      },
-    )
+    try_with_pin(ctx, &pin_entry, |admin_pin| {
+      device
+        .unlock_user_pin(&admin_pin, &user_pin)
+        .context("Failed to unblock user PIN")
+    })
   })
 }
 
