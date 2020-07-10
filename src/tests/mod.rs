@@ -39,8 +39,6 @@ mod unencrypted;
 pub trait UnwrapError {
   /// Unwrap a Error::CommandError variant.
   fn unwrap_cmd_err(self) -> (Option<&'static str>, nitrokey::CommandError);
-  /// Unwrap a Error::LibraryError variant.
-  fn unwrap_lib_err(self) -> (Option<&'static str>, nitrokey::LibraryError);
 }
 
 impl<T> UnwrapError for crate::Result<T>
@@ -51,16 +49,6 @@ where
     match self.unwrap_err() {
       crate::Error::NitrokeyError(ctx, err) => match err {
         nitrokey::Error::CommandError(err) => (ctx, err),
-        err => panic!("Unexpected error variant found: {:?}", err),
-      },
-      err => panic!("Unexpected error variant found: {:?}", err),
-    }
-  }
-
-  fn unwrap_lib_err(self) -> (Option<&'static str>, nitrokey::LibraryError) {
-    match self.unwrap_err() {
-      crate::Error::NitrokeyError(ctx, err) => match err {
-        nitrokey::Error::LibraryError(err) => (ctx, err),
         err => panic!("Unexpected error variant found: {:?}", err),
       },
       err => panic!("Unexpected error variant found: {:?}", err),
