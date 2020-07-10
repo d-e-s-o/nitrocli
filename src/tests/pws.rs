@@ -96,13 +96,12 @@ fn set_reset_get(model: nitrokey::Model) -> crate::Result<()> {
   assert_eq!(out, "");
 
   let res = ncli.handle(&["pws", "get", "2"]);
-  assert_eq!(
-    res.unwrap_cmd_err(),
-    (
-      Some("Could not access PWS slot"),
-      nitrokey::CommandError::SlotNotProgrammed
-    )
+  let err = res.unwrap_err().to_string();
+  let expected = format!(
+    "Could not access PWS slot: {}",
+    nitrokey::Error::CommandError(nitrokey::CommandError::SlotNotProgrammed)
   );
+  assert_eq!(err, expected);
   Ok(())
 }
 
@@ -113,12 +112,11 @@ fn clear(model: nitrokey::Model) -> crate::Result<()> {
   let _ = ncli.handle(&["pws", "clear", "10"])?;
   let res = ncli.handle(&["pws", "get", "10"]);
 
-  assert_eq!(
-    res.unwrap_cmd_err(),
-    (
-      Some("Could not access PWS slot"),
-      nitrokey::CommandError::SlotNotProgrammed
-    )
+  let err = res.unwrap_err().to_string();
+  let expected = format!(
+    "Could not access PWS slot: {}",
+    nitrokey::Error::CommandError(nitrokey::CommandError::SlotNotProgrammed)
   );
+  assert_eq!(err, expected);
   Ok(())
 }
