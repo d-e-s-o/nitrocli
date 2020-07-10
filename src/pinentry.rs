@@ -348,26 +348,16 @@ mod tests {
     let response = "ERR ".to_string() + error + "\n";
     let expected = error;
 
-    let error = parse_pinentry_pin(response);
-
-    if let Error::Error(ref e) = error.err().unwrap() {
-      assert_eq!(e, &expected);
-    } else {
-      panic!("Unexpected result");
-    }
+    let error = parse_pinentry_pin(response).unwrap_err();
+    assert_eq!(error.to_string(), expected)
   }
 
   #[test]
   fn parse_pinentry_pin_unexpected() {
     let response = "foobar\n";
     let expected = format!("Unexpected response: {}", response);
-    let error = parse_pinentry_pin(response);
-
-    if let Error::Error(ref e) = error.err().unwrap() {
-      assert_eq!(e, &expected);
-    } else {
-      panic!("Unexpected result");
-    }
+    let error = parse_pinentry_pin(response).unwrap_err();
+    assert_eq!(error.to_string(), expected)
   }
 
   #[test]
@@ -384,12 +374,7 @@ mod tests {
   fn parse_pinentry_response_unexpected() {
     let response = "ERR 42";
     let expected = format!("Unexpected response: {}", response);
-    let error = parse_pinentry_response(response);
-
-    if let Error::Error(ref e) = error.err().unwrap() {
-      assert_eq!(e, &expected);
-    } else {
-      panic!("Unexpected result");
-    }
+    let error = parse_pinentry_response(response).unwrap_err();
+    assert_eq!(error.to_string(), expected)
   }
 }
