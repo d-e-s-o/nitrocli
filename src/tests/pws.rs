@@ -1,7 +1,7 @@
 // pws.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -21,15 +21,16 @@ use super::*;
 
 #[test_device]
 fn set_invalid_slot(model: nitrokey::Model) {
-  let res = Nitrocli::with_model(model).handle(&["pws", "set", "100", "name", "login", "1234"]);
-
-  assert_eq!(
-    res.unwrap_lib_err(),
-    (
-      Some("Could not write PWS slot"),
-      nitrokey::LibraryError::InvalidSlot
-    )
+  let err = Nitrocli::with_model(model)
+    .handle(&["pws", "set", "100", "name", "login", "1234"])
+    .unwrap_err()
+    .to_string();
+  let expected = format!(
+    "Could not write PWS slot: {}",
+    nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot)
   );
+
+  assert_eq!(err, expected);
 }
 
 #[test_device]
