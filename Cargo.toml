@@ -60,7 +60,7 @@ version = "0.3.7"
 default-features = false
 
 [dev-dependencies.nitrokey-test]
-version = "0.3.1"
+version = "0.4"
 
 [dev-dependencies.nitrokey-test-state]
 version = "0.1"
