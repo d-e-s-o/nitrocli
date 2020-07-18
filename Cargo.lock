@@ -97,9 +97,9 @@ dependencies = [
 
 [[package]]
 name = "nitrokey"
-version = "0.6.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1587c61144935958f74fb9111c9a369a23a2e5ad39476bde1750b7b8c0c87ac0"
+checksum = "62ad51d978a97a526a3501ec6f6304bdd1b6446be1b0302759421f6269b6bc4a"
 dependencies = [
  "lazy_static",
  "libc",
