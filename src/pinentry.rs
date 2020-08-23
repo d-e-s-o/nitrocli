@@ -25,7 +25,7 @@ use std::str;
 use anyhow::Context as _;
 
 use crate::args;
-use crate::ExecCtx;
+use crate::Context;
 
 type CowStr = borrow::Cow<'static, str>;
 
@@ -228,7 +228,7 @@ where
 /// dialog. It is used to choose an appropriate description and to
 /// decide whether a quality bar is shown in the dialog.
 pub fn inquire<E>(
-  ctx: &mut ExecCtx<'_>,
+  ctx: &mut Context<'_>,
   entry: &E,
   mode: Mode,
   error_msg: Option<&str>,
@@ -283,7 +283,7 @@ where
   }
 }
 
-pub fn choose<E>(ctx: &mut ExecCtx<'_>, entry: &E) -> anyhow::Result<String>
+pub fn choose<E>(ctx: &mut Context<'_>, entry: &E) -> anyhow::Result<String>
 where
   E: SecretEntry,
 {
