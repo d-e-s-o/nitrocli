@@ -85,47 +85,14 @@ const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";
 const NITROCLI_NEW_USER_PIN: &str = "NITROCLI_NEW_USER_PIN";
 const NITROCLI_PASSWORD: &str = "NITROCLI_PASSWORD";
 
-/// A command execution context that captures additional data pertaining
-/// the command execution.
-#[allow(missing_debug_implementations)]
-pub struct ExecCtx<'io> {
-  /// See `RunCtx::stdout`.
-  pub stdout: &'io mut dyn io::Write,
-  /// See `RunCtx::stderr`.
-  pub stderr: &'io mut dyn io::Write,
-  /// See `RunCtx::admin_pin`.
-  pub admin_pin: Option<ffi::OsString>,
-  /// See `RunCtx::user_pin`.
-  pub user_pin: Option<ffi::OsString>,
-  /// See `RunCtx::new_admin_pin`.
-  pub new_admin_pin: Option<ffi::OsString>,
-  /// See `RunCtx::new_user_pin`.
-  pub new_user_pin: Option<ffi::OsString>,
-  /// See `RunCtx::password`.
-  pub password: Option<ffi::OsString>,
-  /// See `RunCtx::config`.
-  pub config: config::Config,
-}
-
 /// Parse the command-line arguments and execute the selected command.
-fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> anyhow::Result<()> {
+fn handle_arguments(ctx: &mut Context<'_>, args: Vec<String>) -> anyhow::Result<()> {
   use structopt::StructOpt;
 
   match args::Args::from_iter_safe(args.iter()) {
     Ok(args) => {
-      let mut config = ctx.config;
-      config.update(&args);
-      let mut ctx = ExecCtx {
-        stdout: ctx.stdout,
-        stderr: ctx.stderr,
-        admin_pin: ctx.admin_pin.take(),
-        user_pin: ctx.user_pin.take(),
-        new_admin_pin: ctx.new_admin_pin.take(),
-        new_user_pin: ctx.new_user_pin.take(),
-        password: ctx.password.take(),
-        config,
-      };
-      args.cmd.execute(&mut ctx)
+      ctx.config.update(&args);
+      args.cmd.execute(ctx)
     }
     Err(err) => {
       if err.use_stderr() {
@@ -139,7 +106,8 @@ fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> anyhow::Result<(
 }
 
 /// The context used when running the program.
-pub(crate) struct RunCtx<'io> {
+#[allow(missing_debug_implementations)]
+pub struct Context<'io> {
   /// The `Write` object used as standard output throughout the program.
   pub stdout: &'io mut dyn io::Write,
   /// The `Write` object used as standard error throughout the program.
@@ -163,7 +131,7 @@ pub(crate) struct RunCtx<'io> {
   pub config: config::Config,
 }
 
-fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut RunCtx<'io>, args: Vec<String>) -> i32 {
+fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut Context<'io>, args: Vec<String>) -> i32 {
   match handle_arguments(ctx, args) {
     Ok(()) => 0,
     Err(err) => {
@@ -182,7 +150,7 @@ fn main() {
   let rc = match config::Config::load() {
     Ok(config) => {
       let args = env::args().collect::<Vec<_>>();
-      let ctx = &mut RunCtx {
+      let ctx = &mut Context {
         stdout: &mut stdout,
         stderr: &mut stderr,
         admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
