@@ -94,7 +94,7 @@ impl Nitrocli {
 
   fn do_run<F, R>(&mut self, args: &[&str], f: F) -> (R, Vec<u8>, Vec<u8>)
   where
-    F: FnOnce(&mut crate::RunCtx<'_>, Vec<String>) -> R,
+    F: FnOnce(&mut crate::Context<'_>, Vec<String>) -> R,
   {
     let args = ["nitrocli"]
       .iter()
@@ -107,7 +107,7 @@ impl Nitrocli {
     let mut stdout = Vec::new();
     let mut stderr = Vec::new();
 
-    let ctx = &mut crate::RunCtx {
+    let ctx = &mut crate::Context {
       stdout: &mut stdout,
       stderr: &mut stderr,
       admin_pin: self.admin_pin.clone(),

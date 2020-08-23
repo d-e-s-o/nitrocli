@@ -49,7 +49,7 @@ macro_rules! Command {
     impl $name {
       pub fn execute(
         self,
-        ctx: &mut crate::ExecCtx<'_>,
+        ctx: &mut crate::Context<'_>,
       ) -> anyhow::Result<()> {
         match self {
           $(
