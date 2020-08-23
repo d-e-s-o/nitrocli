@@ -150,6 +150,25 @@ pub struct Context<'io> {
   pub config: config::Config,
 }
 
+impl<'io> Context<'io> {
+  fn from_env<O, E>(stdout: &'io mut O, stderr: &'io mut E, config: config::Config) -> Context<'io>
+  where
+    O: io::Write,
+    E: io::Write,
+  {
+    Context {
+      stdout,
+      stderr,
+      admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
+      user_pin: env::var_os(NITROCLI_USER_PIN),
+      new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
+      new_user_pin: env::var_os(NITROCLI_NEW_USER_PIN),
+      password: env::var_os(NITROCLI_PASSWORD),
+      config,
+    }
+  }
+}
+
 fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut Context<'io>, args: Vec<String>) -> i32 {
   match handle_arguments(ctx, args) {
     Ok(()) => 0,
@@ -169,16 +188,7 @@ fn main() {
   let rc = match config::Config::load() {
     Ok(config) => {
       let args = env::args().collect::<Vec<_>>();
-      let ctx = &mut Context {
-        stdout: &mut stdout,
-        stderr: &mut stderr,
-        admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
-        user_pin: env::var_os(NITROCLI_USER_PIN),
-        new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
-        new_user_pin: env::var_os(NITROCLI_NEW_USER_PIN),
-        password: env::var_os(NITROCLI_PASSWORD),
-        config,
-      };
+      let ctx = &mut Context::from_env(&mut stdout, &mut stderr, config);
 
       run(ctx, args)
     }
