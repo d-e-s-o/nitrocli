@@ -7,7 +7,7 @@ use super::*;
 
 #[test_device(storage)]
 fn hidden_create_open_close(model: nitrokey::Model) -> anyhow::Result<()> {
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::new().model(model).password("1234567");
   let out = ncli.handle(&["hidden", "create", "0", "50", "100"])?;
   assert!(out.is_empty());
 

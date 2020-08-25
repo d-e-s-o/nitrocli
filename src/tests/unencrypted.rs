@@ -7,7 +7,7 @@ use super::*;
 
 #[test_device(storage)]
 fn unencrypted_set_read_write(model: nitrokey::Model) -> anyhow::Result<()> {
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::new().model(model);
   let out = ncli.handle(&["unencrypted", "set", "read-write"])?;
   assert!(out.is_empty());
 

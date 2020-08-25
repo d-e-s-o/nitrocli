@@ -22,7 +22,7 @@ fn connected(model: nitrokey::Model) -> anyhow::Result<()> {
   )
   .unwrap();
 
-  let out = Nitrocli::with_model(model).handle(&["list"])?;
+  let out = Nitrocli::new().model(model).handle(&["list"])?;
   assert!(re.is_match(&out), out);
   Ok(())
 }
