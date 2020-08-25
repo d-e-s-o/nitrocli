@@ -34,17 +34,24 @@ $"#,
   )
   .unwrap();
 
-  let out = Nitrocli::with_model(model).handle(&["config", "get"])?;
+  let out = Nitrocli::make()
+    .model(model)
+    .build()
+    .handle(&["config", "get"])?;
+
   assert!(re.is_match(&out), out);
   Ok(())
 }
 
 #[test_device]
 fn set_wrong_usage(model: nitrokey::Model) {
-  let err = Nitrocli::with_model(model)
+  let err = Nitrocli::make()
+    .model(model)
+    .build()
     .handle(&["config", "set", "--numlock", "2", "-N"])
     .unwrap_err()
     .to_string();
+
   assert!(
     err.contains("The argument '--numlock <numlock>' cannot be used with '--no-numlock'"),
     err,
@@ -53,7 +60,7 @@ fn set_wrong_usage(model: nitrokey::Model) {
 
 #[test_device]
 fn set_get(model: nitrokey::Model) -> anyhow::Result<()> {
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::make().model(model).build();
   let _ = ncli.handle(&["config", "set", "-s", "1", "-c", "0", "-N"])?;
 
   let re = regex::Regex::new(
