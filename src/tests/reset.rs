@@ -11,10 +11,9 @@ use super::*;
 #[test_device]
 fn reset(model: nitrokey::Model) -> anyhow::Result<()> {
   let new_admin_pin = "87654321";
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::new().model(model).new_admin_pin(new_admin_pin);
 
   // Change the admin PIN.
-  ncli.new_admin_pin(new_admin_pin);
   let _ = ncli.handle(&["pin", "set", "admin"])?;
 
   {
@@ -25,7 +24,7 @@ fn reset(model: nitrokey::Model) -> anyhow::Result<()> {
   }
 
   // Perform factory reset
-  ncli.admin_pin(new_admin_pin);
+  let mut ncli = ncli.admin_pin(new_admin_pin);
   let out = ncli.handle(&["reset"])?;
   assert!(out.is_empty());
 

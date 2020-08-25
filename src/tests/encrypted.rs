@@ -30,7 +30,7 @@ $"#,
     regex::Regex::new(&re).unwrap()
   }
 
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::new().model(model);
   let out = ncli.handle(&["status"])?;
   assert!(make_re(None).is_match(&out), out);
 
@@ -47,10 +47,12 @@ $"#,
 
 #[test_device(pro)]
 fn encrypted_open_on_pro(model: nitrokey::Model) {
-  let err = Nitrocli::with_model(model)
+  let err = Nitrocli::new()
+    .model(model)
     .handle(&["encrypted", "open"])
     .unwrap_err()
     .to_string();
+
   assert_eq!(
     err,
     "This command is only available on the Nitrokey Storage",
@@ -59,7 +61,7 @@ fn encrypted_open_on_pro(model: nitrokey::Model) {
 
 #[test_device(storage)]
 fn encrypted_open_close(model: nitrokey::Model) -> anyhow::Result<()> {
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::new().model(model);
   let out = ncli.handle(&["encrypted", "open"])?;
   assert!(out.is_empty());
 

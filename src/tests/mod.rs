@@ -41,34 +41,36 @@ impl Nitrocli {
     }
   }
 
-  pub fn with_model<M>(model: M) -> Self
-  where
-    M: Into<nitrokey::Model>,
-  {
-    Self {
-      model: Some(model.into()),
-      admin_pin: Some(nitrokey::DEFAULT_ADMIN_PIN.into()),
-      user_pin: Some(nitrokey::DEFAULT_USER_PIN.into()),
-      new_admin_pin: None,
-      new_user_pin: None,
-      password: Some("1234567".into()),
-    }
+  /// Set the model to use.
+  fn model(mut self, model: nitrokey::Model) -> Self {
+    self.model = Some(model);
+    self
   }
 
-  pub fn admin_pin(&mut self, pin: impl Into<ffi::OsString>) {
-    self.admin_pin = Some(pin.into())
+  /// Set the password to use for certain operations.
+  fn password(mut self, password: impl Into<ffi::OsString>) -> Self {
+    self.password = Some(password.into());
+    self
   }
 
-  pub fn new_admin_pin(&mut self, pin: impl Into<ffi::OsString>) {
-    self.new_admin_pin = Some(pin.into())
+  pub fn admin_pin(mut self, pin: impl Into<ffi::OsString>) -> Self {
+    self.admin_pin = Some(pin.into());
+    self
   }
 
-  pub fn user_pin(&mut self, pin: impl Into<ffi::OsString>) {
-    self.user_pin = Some(pin.into())
+  pub fn new_admin_pin(mut self, pin: impl Into<ffi::OsString>) -> Self {
+    self.new_admin_pin = Some(pin.into());
+    self
   }
 
-  pub fn new_user_pin(&mut self, pin: impl Into<ffi::OsString>) {
-    self.new_user_pin = Some(pin.into())
+  pub fn user_pin(mut self, pin: impl Into<ffi::OsString>) -> Self {
+    self.user_pin = Some(pin.into());
+    self
+  }
+
+  pub fn new_user_pin(mut self, pin: impl Into<ffi::OsString>) -> Self {
+    self.new_user_pin = Some(pin.into());
+    self
   }
 
   fn model_to_arg(model: nitrokey::Model) -> &'static str {

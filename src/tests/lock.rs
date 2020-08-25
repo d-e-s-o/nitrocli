@@ -8,7 +8,7 @@ use super::*;
 #[test_device(pro)]
 fn lock_pro(model: nitrokey::Model) -> anyhow::Result<()> {
   // We can't really test much more here than just success of the command.
-  let out = Nitrocli::with_model(model).handle(&["lock"])?;
+  let out = Nitrocli::new().model(model).handle(&["lock"])?;
   assert!(out.is_empty());
 
   Ok(())
@@ -16,7 +16,7 @@ fn lock_pro(model: nitrokey::Model) -> anyhow::Result<()> {
 
 #[test_device(storage)]
 fn lock_storage(model: nitrokey::Model) -> anyhow::Result<()> {
-  let mut ncli = Nitrocli::with_model(model);
+  let mut ncli = Nitrocli::new().model(model);
   let _ = ncli.handle(&["encrypted", "open"])?;
 
   let out = ncli.handle(&["lock"])?;
