@@ -3,11 +3,17 @@
 // Copyright (C) 2018-2020 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use std::borrow;
 use std::convert::TryFrom as _;
+use std::env;
+use std::ffi;
 use std::fmt;
+use std::io;
 use std::mem;
 use std::ops;
 use std::ops::Deref as _;
+use std::path;
+use std::process;
 use std::thread;
 use std::time;
 use std::u8;
@@ -1079,6 +1085,103 @@ pub fn pws_status(ctx: &mut Context<'_>, all: bool) -> anyhow::Result<()> {
     }
     Ok(())
   })
+}
+
+/// Resolve an extension provided by name to an actual path.
+///
+/// Extensions are (executable) files that have the "nitrocli-" prefix
+/// and are discoverable via the `PATH` environment variable.
+pub(crate) fn resolve_extension(
+  path_var: &ffi::OsStr,
+  ext_name: &ffi::OsStr,
+) -> anyhow::Result<path::PathBuf> {
+  let mut bin_name = ffi::OsString::from("nitrocli-");
+  bin_name.push(ext_name);
+
+  for dir in env::split_paths(path_var) {
+    let mut bin_path = dir.clone();
+    bin_path.push(&bin_name);
+    // Note that we deliberately do not check whether the file we found
+    // is executable. If it is not we will just fail later on with a
+    // permission denied error. The reasons for this behavior are two
+    // fold:
+    // 1) Checking whether a file is executable in Rust is painful (as
+    //    of 1.37 there exists the PermissionsExt trait but it is
+    //    available only for Unix based systems).
+    // 2) It is considered a better user experience to resolve to an
+    //    extension even if it later turned out to be not usable over
+    //    not showing it and silently doing nothing -- mostly because
+    //    anything residing in PATH should be executable anyway and
+    //    given that its name also starts with nitrocli- we are pretty
+    //    sure that's a bug on the user's side.
+    if bin_path.is_file() {
+      return Ok(bin_path);
+    }
+  }
+
+  let err = if let Some(name) = bin_name.to_str() {
+    format!("Extension {} not found", name).into()
+  } else {
+    borrow::Cow::from("Extension not found")
+  };
+  Err(io::Error::new(io::ErrorKind::NotFound, err).into())
+}
+
+/// Run an extension.
+pub fn extension(ctx: &mut Context<'_>, args: Vec<ffi::OsString>) -> anyhow::Result<()> {
+  // Note that while `Command` would actually honor PATH by itself, we
+  // do not want that behavior because it would circumvent the execution
+  // context we use for testing. As such, we need to do our own search.
+  let mut args = args.into_iter();
+  let ext_name = args.next().context("No extension specified")?;
+  let path_var = ctx.path.as_ref().context("PATH variable not present")?;
+  let ext_path = resolve_extension(&path_var, &ext_name)?;
+
+  // Note that theoretically we could just exec the extension and be
+  // done. However, the problem with that approach is that it makes
+  // testing extension support much more nasty, because the test process
+  // would be overwritten in the process, requiring us to essentially
+  // fork & exec nitrocli beforehand -- which is much more involved from
+  // a cargo test context.
+  let mut cmd = process::Command::new(&ext_path);
+
+  if let Some(model) = ctx.config.model {
+    let _ = cmd.env(crate::NITROCLI_MODEL, model.to_string());
+  }
+
+  if let Some(usb_path) = &ctx.config.usb_path {
+    let _ = cmd.env(crate::NITROCLI_USB_PATH, usb_path);
+  }
+
+  // TODO: We may want to take this path from the command execution
+  //       context.
+  let binary = env::current_exe().context("Failed to retrieve path to nitrocli binary")?;
+  let serial_numbers = ctx
+    .config
+    .serial_numbers
+    .iter()
+    .map(ToString::to_string)
+    .collect::<Vec<_>>()
+    .join(",");
+
+  let out = cmd
+    .env(crate::NITROCLI_BINARY, binary)
+    .env(crate::NITROCLI_VERBOSITY, ctx.config.verbosity.to_string())
+    .env(crate::NITROCLI_NO_CACHE, ctx.config.no_cache.to_string())
+    .env(crate::NITROCLI_SERIAL_NUMBERS, serial_numbers)
+    .args(args)
+    .output()
+    .with_context(|| format!("Failed to execute extension {}", ext_path.display()))?;
+  ctx.stdout.write_all(&out.stdout)?;
+  ctx.stderr.write_all(&out.stderr)?;
+
+  if out.status.success() {
+    Ok(())
+  } else if let Some(rc) = out.status.code() {
+    Err(anyhow::Error::new(crate::DirectExitError(rc)))
+  } else {
+    Err(anyhow::Error::new(crate::DirectExitError(1)))
+  }
 }
 
 #[cfg(test)]

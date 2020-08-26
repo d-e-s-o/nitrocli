@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::convert;
+use std::ffi;
 
 /// Provides access to a Nitrokey device
 #[derive(Debug, structopt::StructOpt)]
@@ -107,6 +108,9 @@ Command! {
     Status => crate::commands::status,
     /// Interacts with the device's unencrypted volume
     Unencrypted(UnencryptedArgs) => |ctx, args: UnencryptedArgs| args.subcmd.execute(ctx),
+    /// An extension and its arguments.
+    #[structopt(external_subcommand)]
+    Extension(Vec<ffi::OsString>) => crate::commands::extension,
   ]
 }
 

@@ -62,15 +62,47 @@ mod pinentry;
 mod tests;
 
 use std::env;
+use std::error;
 use std::ffi;
+use std::fmt;
 use std::io;
 use std::process;
+use std::str;
+
+const NITROCLI_BINARY: &str = "NITROCLI_BINARY";
+const NITROCLI_MODEL: &str = "NITROCLI_MODEL";
+const NITROCLI_USB_PATH: &str = "NITROCLI_USB_PATH";
+const NITROCLI_VERBOSITY: &str = "NITROCLI_VERBOSITY";
+const NITROCLI_NO_CACHE: &str = "NITROCLI_NO_CACHE";
+const NITROCLI_SERIAL_NUMBERS: &str = "NITROCLI_SERIAL_NUMBERS";
 
 const NITROCLI_ADMIN_PIN: &str = "NITROCLI_ADMIN_PIN";
 const NITROCLI_USER_PIN: &str = "NITROCLI_USER_PIN";
 const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";
 const NITROCLI_NEW_USER_PIN: &str = "NITROCLI_NEW_USER_PIN";
 const NITROCLI_PASSWORD: &str = "NITROCLI_PASSWORD";
+
+/// A special error type that indicates the desire to exit directly,
+/// without additional error reporting.
+///
+/// This error is mostly used by the extension support code so that we
+/// are able to mirror the extension's exit code while preserving our
+/// context logic and the fairly isolated testing it enables.
+struct DirectExitError(i32);
+
+impl fmt::Debug for DirectExitError {
+  fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
+    unreachable!()
+  }
+}
+
+impl fmt::Display for DirectExitError {
+  fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
+    unreachable!()
+  }
+}
+
+impl error::Error for DirectExitError {}
 
 /// Parse the command-line arguments and execute the selected command.
 fn handle_arguments(ctx: &mut Context<'_>, args: Vec<String>) -> anyhow::Result<()> {
@@ -101,6 +133,8 @@ pub struct Context<'io> {
   pub stderr: &'io mut dyn io::Write,
   /// Whether `stdout` is a TTY.
   pub is_tty: bool,
+  /// The content of the `PATH` environment variable.
+  pub path: Option<ffi::OsString>,
   /// The admin PIN, if provided through an environment variable.
   pub admin_pin: Option<ffi::OsString>,
   /// The user PIN, if provided through an environment variable.
@@ -135,6 +169,10 @@ impl<'io> Context<'io> {
       stdout,
       stderr,
       is_tty,
+      // The std::env module has several references to the PATH
+      // environment variable, indicating that this name is considered
+      // platform independent from their perspective. We do the same.
+      path: env::var_os("PATH"),
       admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
       user_pin: env::var_os(NITROCLI_USER_PIN),
       new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
@@ -145,14 +183,19 @@ impl<'io> Context<'io> {
   }
 }
 
-fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut Context<'io>, args: Vec<String>) -> i32 {
-  match handle_arguments(ctx, args) {
-    Ok(()) => 0,
-    Err(err) => {
-      let _ = eprintln!(ctx, "{:?}", err);
-      1
-    }
+fn evaluate_err(err: anyhow::Error, stderr: &mut dyn io::Write) -> i32 {
+  if let Some(err) = err.root_cause().downcast_ref::<DirectExitError>() {
+    err.0
+  } else {
+    let _ = writeln!(stderr, "{:?}", err);
+    1
   }
+}
+
+fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut Context<'io>, args: Vec<String>) -> i32 {
+  handle_arguments(ctx, args)
+    .map(|()| 0)
+    .unwrap_or_else(|err| evaluate_err(err, ctx.stderr))
 }
 
 fn main() {
@@ -169,10 +212,7 @@ fn main() {
 
       run(ctx, args)
     }
-    Err(err) => {
-      let _ = writeln!(stderr, "{:?}", err);
-      1
-    }
+    Err(err) => evaluate_err(err, &mut stderr),
   };
 
   // We exit the process the hard way below. The problem is that because
