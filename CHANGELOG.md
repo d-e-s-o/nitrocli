@@ -13,6 +13,7 @@ Unreleased
     options are set)
   - Added `--serial-number` option that restricts the serial number of the
     device to connect to
+- Bumped `structopt` dependency to `0.3.17`
 
 
 0.3.4
