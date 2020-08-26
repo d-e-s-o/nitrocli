@@ -9,6 +9,7 @@ use nitrokey_test::test as test_device;
 
 mod config;
 mod encrypted;
+mod extensions;
 mod fill;
 mod hidden;
 mod list;
@@ -23,6 +24,7 @@ mod unencrypted;
 
 struct Nitrocli {
   model: Option<nitrokey::Model>,
+  path: Option<ffi::OsString>,
   admin_pin: Option<ffi::OsString>,
   user_pin: Option<ffi::OsString>,
   new_admin_pin: Option<ffi::OsString>,
@@ -34,6 +36,7 @@ impl Nitrocli {
   pub fn new() -> Self {
     Self {
       model: None,
+      path: None,
       admin_pin: Some(nitrokey::DEFAULT_ADMIN_PIN.into()),
       user_pin: Some(nitrokey::DEFAULT_USER_PIN.into()),
       new_admin_pin: None,
@@ -51,6 +54,12 @@ impl Nitrocli {
   /// Set the password to use for certain operations.
   fn password(mut self, password: impl Into<ffi::OsString>) -> Self {
     self.password = Some(password.into());
+    self
+  }
+
+  /// Set the `PATH` used for looking up extensions.
+  fn path(mut self, path: impl Into<ffi::OsString>) -> Self {
+    self.path = Some(path.into());
     self
   }
 
@@ -100,6 +109,7 @@ impl Nitrocli {
       stdout: &mut stdout,
       stderr: &mut stderr,
       is_tty: false,
+      path: self.path.clone(),
       admin_pin: self.admin_pin.clone(),
       user_pin: self.user_pin.clone(),
       new_admin_pin: self.new_admin_pin.clone(),

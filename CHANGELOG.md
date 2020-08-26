@@ -1,5 +1,7 @@
 Unreleased
 ----------
+- Added support for user provided extensions through lookup via the
+  `PATH` environment variable
 - Added support for configuration files
   - Added support for configuration files that can be used to set
     default values for some arguments
