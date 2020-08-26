@@ -1,6 +1,6 @@
 // redefine.rs
 
-// Copyright (C) 2019 The Nitrocli Developers
+// Copyright (C) 2019-2020 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // A replacement of the standard println!() macro that requires an
@@ -17,14 +17,5 @@ macro_rules! println {
 macro_rules! print {
   ($ctx:expr, $($arg:tt)*) => {
     write!($ctx.stdout, $($arg)*)
-  };
-}
-
-macro_rules! eprintln {
-  ($ctx:expr) => {
-    writeln!($ctx.stderr, "")
-  };
-  ($ctx:expr, $($arg:tt)*) => {
-    writeln!($ctx.stderr, $($arg)*)
   };
 }

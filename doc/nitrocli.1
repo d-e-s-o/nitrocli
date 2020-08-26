@@ -318,6 +318,18 @@ The admin PIN cannot be unblocked.
 This operation is equivalent to the unblock PIN option provided by \fBgpg\fR(1)
 (using the \fB\-\-change\-pin\fR option).
 
+.SS Extensions
+In addition to the above built-in commands, \fBnitrocli\fR supports
+user-provided functionality in the form of extensions. An extension can be any
+executable file whose filename starts with "nitrocli-" and that is discoverable
+through lookup via the \fBPATH\fR environment variable. Those executables can be
+invoked as regular subcommands (without the need of the prefix; e.g., an
+extension with the name "nitrocli-otp-cache" could be invoked as "nitrocli
+otp-cache").
+.P
+More information on how to write extensions can be found in the Extensions
+section below.
+
 .SH CONFIG FILE
 \fBnitrocli\fR tries to read the configuration file at
 \fB${XDG_CONFIG_HOME}/nitrocli/config.toml\fR (or
@@ -405,6 +417,47 @@ for the \fBuser\fR type.
 .TP
 .B NITROCLI_PASSWORD
 A password used by commands that require one (e.g., \fBhidden open\fR).
+
+.SH EXTENSIONS
+\fBnitrocli\fR supports user-provided extensions that are executable files whose
+filename starts with "nitrocli-" and that are discoverable through lookup via
+the \fBPATH\fR environment variable.
+
+The program conveys basic configuration information to any extension being
+started this way. Specifically, it will set each environment variable as
+described in the Configuration subsection of the Environment section above, if
+the corresponding \fBnitrocli\fR program configuration was set. In addition, the
+following variable will be set unconditionally:
+.TP
+.B NITROCLI_BINARY
+The absolute path to the \fBnitrocli\fR binary through which the extension was
+invoked. This path may be used to recursively invoke \fBnitrocli\fR to implement
+certain functionality.
+
+.P
+All other variables present in the environment will be passed through to the
+extension verbatim.
+.P
+Newer versions of the program reserve the right to set additional environment
+variables inside the "NITROCLI_" namespace. As such, extensions are advised to
+not define custom variables with this prefix. However, "NITROCLI_EXT_" is
+provided specifically for this purpose. To further avoid conflicts between
+extensions, it is recommended that this prefix be followed by the extension's
+name (uppercased).
+
+.P
+Extensions may optionally read or write persistent data of various forms.
+Similar to the main program, extensions should follow the XDG Base Directory
+Specification as a guideline where to store such data. More specifically, the
+following conventions should be followed:
+
+For configuration data, \fB${XDG_CONFIG_HOME}/\fIextension/\fR is the preferred
+directory, where \fIextension\fR is the full extension name, including the
+"nitrocli-" prefix. The recommended configuration format is TOML. If only a
+single configuration file is used, \fBconfig.toml\fR is the recommended name.
+
+Similarly, regular data should reside in \fB${XDG_DATA_HOME}/\fIextension/\fR
+and cached data be stored in \fB${XDG_CACHE_HOME}/\fIextension/\fR.
 
 .SH FILES
 .TP
