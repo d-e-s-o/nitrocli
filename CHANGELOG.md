@@ -1,6 +1,8 @@
 Unreleased
 ----------
 - Changed default OTP format from `hex` to `base32`
+- Improved error reporting format and fidelity
+  - Added `anyhow` dependency in version `1.0.32`
 - Updated minimum required Rust version to `1.42.0`
 - Bumped `nitrokey` dependency to `0.7.1`
 

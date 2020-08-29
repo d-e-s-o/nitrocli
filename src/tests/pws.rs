@@ -25,12 +25,8 @@ fn set_invalid_slot(model: nitrokey::Model) {
     .handle(&["pws", "set", "100", "name", "login", "1234"])
     .unwrap_err()
     .to_string();
-  let expected = format!(
-    "Could not write PWS slot: {}",
-    nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot)
-  );
 
-  assert_eq!(err, expected);
+  assert_eq!(err, "Failed to write PWS slot");
 }
 
 #[test_device]
@@ -97,11 +93,7 @@ fn set_reset_get(model: nitrokey::Model) -> crate::Result<()> {
 
   let res = ncli.handle(&["pws", "get", "2"]);
   let err = res.unwrap_err().to_string();
-  let expected = format!(
-    "Could not access PWS slot: {}",
-    nitrokey::Error::CommandError(nitrokey::CommandError::SlotNotProgrammed)
-  );
-  assert_eq!(err, expected);
+  assert_eq!(err, "Failed to access PWS slot");
   Ok(())
 }
 
@@ -113,10 +105,6 @@ fn clear(model: nitrokey::Model) -> crate::Result<()> {
   let res = ncli.handle(&["pws", "get", "10"]);
 
   let err = res.unwrap_err().to_string();
-  let expected = format!(
-    "Could not access PWS slot: {}",
-    nitrokey::Error::CommandError(nitrokey::CommandError::SlotNotProgrammed)
-  );
-  assert_eq!(err, expected);
+  assert_eq!(err, "Failed to access PWS slot");
   Ok(())
 }

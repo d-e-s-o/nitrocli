@@ -28,7 +28,7 @@ fn set_invalid_slot_raw(model: nitrokey::Model) {
 
   assert_ne!(rc, 0);
   assert_eq!(out, b"");
-  assert_eq!(&err[..24], b"Could not write OTP slot");
+  assert_eq!(&err[..24], b"Failed to write OTP slot");
 }
 
 #[test_device]
@@ -37,12 +37,8 @@ fn set_invalid_slot(model: nitrokey::Model) {
     .handle(&["otp", "set", "100", "name", "1234", "-f", "hex"])
     .unwrap_err()
     .to_string();
-  let expected = format!(
-    "Could not write OTP slot: {}",
-    nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot)
-  );
 
-  assert_eq!(err, expected);
+  assert_eq!(err, "Failed to write OTP slot");
 }
 
 #[test_device]
@@ -122,10 +118,6 @@ fn clear(model: nitrokey::Model) -> crate::Result<()> {
   let res = ncli.handle(&["otp", "get", "3"]);
 
   let err = res.unwrap_err().to_string();
-  let expected = format!(
-    "Could not generate OTP: {}",
-    nitrokey::Error::CommandError(nitrokey::CommandError::SlotNotProgrammed)
-  );
-  assert_eq!(err, expected);
+  assert_eq!(err, "Failed to generate OTP");
   Ok(())
 }
