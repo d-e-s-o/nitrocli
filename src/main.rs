@@ -70,7 +70,6 @@ mod arg_util;
 
 mod args;
 mod commands;
-mod error;
 mod pinentry;
 #[cfg(test)]
 mod tests;
