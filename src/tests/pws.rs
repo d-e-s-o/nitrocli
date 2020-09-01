@@ -30,7 +30,7 @@ fn set_invalid_slot(model: nitrokey::Model) {
 }
 
 #[test_device]
-fn status(model: nitrokey::Model) -> crate::Result<()> {
+fn status(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^slot\tname
 (\d+\t.+\n)+$"#,
@@ -48,7 +48,7 @@ fn status(model: nitrokey::Model) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_get(model: nitrokey::Model) -> crate::Result<()> {
+fn set_get(model: nitrokey::Model) -> anyhow::Result<()> {
   const NAME: &str = "dropbox";
   const LOGIN: &str = "d-e-s-o";
   const PASSWORD: &str = "my-secret-password";
@@ -80,7 +80,7 @@ fn set_get(model: nitrokey::Model) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_reset_get(model: nitrokey::Model) -> crate::Result<()> {
+fn set_reset_get(model: nitrokey::Model) -> anyhow::Result<()> {
   const NAME: &str = "some/svc";
   const LOGIN: &str = "a\\user";
   const PASSWORD: &str = "!@&-)*(&+%^@";
@@ -98,7 +98,7 @@ fn set_reset_get(model: nitrokey::Model) -> crate::Result<()> {
 }
 
 #[test_device]
-fn clear(model: nitrokey::Model) -> crate::Result<()> {
+fn clear(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["pws", "set", "10", "clear-test", "some-login", "abcdef"])?;
   let _ = ncli.handle(&["pws", "clear", "10"])?;

@@ -1,7 +1,7 @@
 // hidden.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -20,7 +20,7 @@
 use super::*;
 
 #[test_device(storage)]
-fn hidden_create_open_close(model: nitrokey::Model) -> crate::Result<()> {
+fn hidden_create_open_close(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::with_model(model);
   let out = ncli.handle(&["hidden", "create", "0", "50", "100"])?;
   assert!(out.is_empty());

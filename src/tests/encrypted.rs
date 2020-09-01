@@ -20,7 +20,7 @@
 use super::*;
 
 #[test_device(storage)]
-fn status_open_close(model: nitrokey::Model) -> crate::Result<()> {
+fn status_open_close(model: nitrokey::Model) -> anyhow::Result<()> {
   fn make_re(open: Option<bool>) -> regex::Regex {
     let encrypted = match open {
       Some(open) => {
@@ -72,7 +72,7 @@ fn encrypted_open_on_pro(model: nitrokey::Model) {
 }
 
 #[test_device(storage)]
-fn encrypted_open_close(model: nitrokey::Model) -> crate::Result<()> {
+fn encrypted_open_close(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::with_model(model);
   let out = ncli.handle(&["encrypted", "open"])?;
   assert!(out.is_empty());

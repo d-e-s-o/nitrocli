@@ -127,7 +127,7 @@ impl Nitrocli {
   }
 
   /// Run `nitrocli`'s `handle_arguments` function.
-  pub fn handle(&mut self, args: &[&str]) -> crate::Result<String> {
+  pub fn handle(&mut self, args: &[&str]) -> anyhow::Result<String> {
     let (res, out, _) = self.do_run(args, |c, a| crate::handle_arguments(c, a));
     res.map(|_| String::from_utf8_lossy(&out).into_owned())
   }

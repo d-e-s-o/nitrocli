@@ -79,8 +79,6 @@ use std::ffi;
 use std::io;
 use std::process;
 
-use anyhow::Result;
-
 const NITROCLI_ADMIN_PIN: &str = "NITROCLI_ADMIN_PIN";
 const NITROCLI_USER_PIN: &str = "NITROCLI_USER_PIN";
 const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";
@@ -140,7 +138,7 @@ impl<'io> Stdio for ExecCtx<'io> {
 }
 
 /// Parse the command-line arguments and execute the selected command.
-fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> Result<()> {
+fn handle_arguments(ctx: &mut RunCtx<'_>, args: Vec<String>) -> anyhow::Result<()> {
   use structopt::StructOpt;
 
   match args::Args::from_iter_safe(args.iter()) {

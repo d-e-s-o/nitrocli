@@ -42,7 +42,7 @@ fn set_invalid_slot(model: nitrokey::Model) {
 }
 
 #[test_device]
-fn status(model: nitrokey::Model) -> crate::Result<()> {
+fn status(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^alg\tslot\tname
 ((totp|hotp)\t\d+\t.+\n)+$"#,
@@ -60,7 +60,7 @@ fn status(model: nitrokey::Model) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_get_hotp(model: nitrokey::Model) -> crate::Result<()> {
+fn set_get_hotp(model: nitrokey::Model) -> anyhow::Result<()> {
   // Secret and expected HOTP values as per RFC 4226: Appendix D -- HOTP
   // Algorithm: Test Values.
   const SECRET: &str = "12345678901234567890";
@@ -81,7 +81,7 @@ fn set_get_hotp(model: nitrokey::Model) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_get_totp(model: nitrokey::Model) -> crate::Result<()> {
+fn set_get_totp(model: nitrokey::Model) -> anyhow::Result<()> {
   // Secret and expected TOTP values as per RFC 6238: Appendix B --
   // Test Vectors.
   const SECRET: &str = "12345678901234567890";
@@ -97,7 +97,7 @@ fn set_get_totp(model: nitrokey::Model) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_totp_uneven_chars(model: nitrokey::Model) -> crate::Result<()> {
+fn set_totp_uneven_chars(model: nitrokey::Model) -> anyhow::Result<()> {
   let secrets = [
     (args::OtpSecretFormat::Hex, "123"),
     (args::OtpSecretFormat::Base32, "FBILDWWGA2"),
@@ -111,7 +111,7 @@ fn set_totp_uneven_chars(model: nitrokey::Model) -> crate::Result<()> {
 }
 
 #[test_device]
-fn clear(model: nitrokey::Model) -> crate::Result<()> {
+fn clear(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["otp", "set", "3", "hotp-test", "abcdef"])?;
   let _ = ncli.handle(&["otp", "clear", "3"])?;
