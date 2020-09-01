@@ -20,7 +20,7 @@
 use super::*;
 
 #[test_device]
-fn not_connected() -> crate::Result<()> {
+fn not_connected() -> anyhow::Result<()> {
   let res = Nitrocli::new().handle(&["list"])?;
   assert_eq!(res, "No Nitrokey device connected\n");
 
@@ -28,7 +28,7 @@ fn not_connected() -> crate::Result<()> {
 }
 
 #[test_device]
-fn connected(model: nitrokey::Model) -> crate::Result<()> {
+fn connected(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^device path\tmodel\tserial number
 ([[:^space:]]+\t(Pro|Storage|unknown)\t0x[[:xdigit:]]+

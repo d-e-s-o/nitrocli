@@ -37,7 +37,7 @@ fn mutually_exclusive_set_options() {
 }
 
 #[test_device]
-fn get(model: nitrokey::Model) -> crate::Result<()> {
+fn get(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^Config:
   numlock binding:          (not set|\d+)
@@ -66,7 +66,7 @@ fn set_wrong_usage(model: nitrokey::Model) {
 }
 
 #[test_device]
-fn set_get(model: nitrokey::Model) -> crate::Result<()> {
+fn set_get(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["config", "set", "-s", "1", "-c", "0", "-N"])?;
 

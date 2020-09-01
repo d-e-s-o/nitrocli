@@ -41,7 +41,7 @@ fn not_found() {
 }
 
 #[test_device(pro)]
-fn output_pro(model: nitrokey::Model) -> crate::Result<()> {
+fn output_pro(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^Status:
   model:             Pro
@@ -59,7 +59,7 @@ $"#,
 }
 
 #[test_device(storage)]
-fn output_storage(model: nitrokey::Model) -> crate::Result<()> {
+fn output_storage(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^Status:
   model:             Storage

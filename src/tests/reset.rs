@@ -1,7 +1,7 @@
 // reset.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Robin Krahl (robin.krahl@ireas.org)                *
+// * Copyright (C) 2019-2020 Robin Krahl (robin.krahl@ireas.org)           *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -23,7 +23,7 @@ use nitrokey::GetPasswordSafe;
 use super::*;
 
 #[test_device]
-fn reset(model: nitrokey::Model) -> crate::Result<()> {
+fn reset(model: nitrokey::Model) -> anyhow::Result<()> {
   let new_admin_pin = "87654321";
   let mut ncli = Nitrocli::with_model(model);
 

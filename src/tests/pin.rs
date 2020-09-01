@@ -1,7 +1,7 @@
 // pin.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -23,7 +23,7 @@ use nitrokey::Device;
 use super::*;
 
 #[test_device]
-fn unblock(model: nitrokey::Model) -> crate::Result<()> {
+fn unblock(model: nitrokey::Model) -> anyhow::Result<()> {
   {
     let mut manager = nitrokey::force_take()?;
     let device = manager.connect_model(model)?;
@@ -46,7 +46,7 @@ fn unblock(model: nitrokey::Model) -> crate::Result<()> {
 }
 
 #[test_device]
-fn set_user(model: nitrokey::Model) -> crate::Result<()> {
+fn set_user(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::with_model(model);
   // Set a new user PIN.
   ncli.new_user_pin("new-pin");

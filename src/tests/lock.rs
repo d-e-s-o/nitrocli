@@ -1,7 +1,7 @@
 // lock.rs
 
 // *************************************************************************
-// * Copyright (C) 2019 Daniel Mueller (deso@posteo.net)                   *
+// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
@@ -20,7 +20,7 @@
 use super::*;
 
 #[test_device(pro)]
-fn lock_pro(model: nitrokey::Model) -> crate::Result<()> {
+fn lock_pro(model: nitrokey::Model) -> anyhow::Result<()> {
   // We can't really test much more here than just success of the command.
   let out = Nitrocli::with_model(model).handle(&["lock"])?;
   assert!(out.is_empty());
@@ -29,7 +29,7 @@ fn lock_pro(model: nitrokey::Model) -> crate::Result<()> {
 }
 
 #[test_device(storage)]
-fn lock_storage(model: nitrokey::Model) -> crate::Result<()> {
+fn lock_storage(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::with_model(model);
   let _ = ncli.handle(&["encrypted", "open"])?;
 
