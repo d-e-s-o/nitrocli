@@ -23,7 +23,8 @@ use crate::args;
 
 #[test_device]
 fn set_invalid_slot_raw(model: nitrokey::Model) {
-  let (rc, out, err) = Nitrocli::with_model(model).run(&["otp", "set", "100", "name", "1234"]);
+  let (rc, out, err) =
+    Nitrocli::with_model(model).run(&["otp", "set", "100", "name", "1234", "-f", "hex"]);
 
   assert_ne!(rc, 0);
   assert_eq!(out, b"");
@@ -32,7 +33,7 @@ fn set_invalid_slot_raw(model: nitrokey::Model) {
 
 #[test_device]
 fn set_invalid_slot(model: nitrokey::Model) {
-  let res = Nitrocli::with_model(model).handle(&["otp", "set", "100", "name", "1234"]);
+  let res = Nitrocli::with_model(model).handle(&["otp", "set", "100", "name", "1234", "-f", "hex"]);
 
   assert_eq!(
     res.unwrap_lib_err(),
@@ -54,7 +55,7 @@ fn status(model: nitrokey::Model) -> crate::Result<()> {
   let mut ncli = Nitrocli::with_model(model);
   // Make sure that we have at least something to display by ensuring
   // that there is one slot programmed.
-  let _ = ncli.handle(&["otp", "set", "0", "the-name", "123456"])?;
+  let _ = ncli.handle(&["otp", "set", "0", "the-name", "123456", "-f", "hex"])?;
 
   let out = ncli.handle(&["otp", "status"])?;
   assert!(re.is_match(&out), out);
