@@ -1,7 +1,7 @@
 // pws.rs
 
 // *************************************************************************
-// * Copyright (C) 2019-2020 Daniel Mueller (deso@posteo.net)              *
+// * Copyright (C) 2019-2020 The Nitrocli Developers                       *
 // *                                                                       *
 // * This program is free software: you can redistribute it and/or modify  *
 // * it under the terms of the GNU General Public License as published by  *
