@@ -25,7 +25,6 @@
   improper_ctypes,
   intra_doc_link_resolution_failure,
   late_bound_lifetime_arguments,
-  missing_copy_implementations,
   missing_debug_implementations,
   missing_docs,
   no_mangle_generic_items,
