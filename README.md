@@ -166,6 +166,8 @@ License
 See the [LICENSE](LICENSE) file that accompanies this distribution for
 the full text of the license.
 
+`nitrocli` complies with [version 3.0 of the REUSE specification][reuse].
+
 
 [`libnitrokey`]: https://github.com/nitrokey/libnitrokey
 [nitrokey-ug]: https://www.nitrokey.com
@@ -179,3 +181,4 @@ the full text of the license.
 [gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
 [libnitrokey#32]: https://github.com/Nitrokey/libnitrokey/issues/32
 [libnitrokey#137]: https://github.com/Nitrokey/libnitrokey/issues/137
+[reuse]: https://reuse.software/practices/3.0/

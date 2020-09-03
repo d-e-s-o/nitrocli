@@ -1,2 +1,5 @@
+# Copyright (C) 2020 The Nitrocli Developers
+# SPDX-License-Identifier: CC0-1.0
+
 target
 *.swp
