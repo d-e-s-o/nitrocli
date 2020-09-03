@@ -141,6 +141,13 @@ Known Problems
   running shortly afterwards ([upstream issue][libnitrokey#137]).
 
 
+Public API and Stability
+------------------------
+
+**nitrocli** follows the [Semantic Versioning specification 2.0.0][semver].
+Its public API is defined by the [nitrocli(1) `man` page](doc/nitrocli.1.pdf).
+
+
 Contributing
 ------------
 
@@ -179,3 +186,4 @@ the full text of the license.
 [gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
 [libnitrokey#32]: https://github.com/Nitrokey/libnitrokey/issues/32
 [libnitrokey#137]: https://github.com/Nitrokey/libnitrokey/issues/137
+[semver]: https://semver.org
