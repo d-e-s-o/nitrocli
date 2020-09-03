@@ -85,25 +85,6 @@ const NITROCLI_NEW_ADMIN_PIN: &str = "NITROCLI_NEW_ADMIN_PIN";
 const NITROCLI_NEW_USER_PIN: &str = "NITROCLI_NEW_USER_PIN";
 const NITROCLI_PASSWORD: &str = "NITROCLI_PASSWORD";
 
-trait Stdio {
-  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write);
-}
-
-impl<'io> Stdio for RunCtx<'io> {
-  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
-    (self.stdout, self.stderr)
-  }
-}
-
-impl<W> Stdio for (&mut W, &mut W)
-where
-  W: io::Write,
-{
-  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
-    (self.0, self.1)
-  }
-}
-
 /// A command execution context that captures additional data pertaining
 /// the command execution.
 #[allow(missing_debug_implementations)]
@@ -124,12 +105,6 @@ pub struct ExecCtx<'io> {
   pub password: Option<ffi::OsString>,
   /// See `RunCtx::config`.
   pub config: config::Config,
-}
-
-impl<'io> Stdio for ExecCtx<'io> {
-  fn stdio(&mut self) -> (&mut dyn io::Write, &mut dyn io::Write) {
-    (self.stdout, self.stderr)
-  }
 }
 
 /// Parse the command-line arguments and execute the selected command.
