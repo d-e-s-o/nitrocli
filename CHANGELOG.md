@@ -16,6 +16,8 @@ Unreleased
     set the defaults for the `--model` and `--verbose` options
   - Changed the handling of the `NITROCLI_NO_CACHE` variable to check
     the value of the variable instead of only the presence
+- Adjusted license & copyright headers to comply with REUSE 3.0
+  - Added CI stage checking compliance
 - Updated minimum required Rust version to `1.42.0`
 - Bumped `nitrokey` dependency to `0.7.1`
 - Bumped `proc-macro2` dependency to `1.0.19`
