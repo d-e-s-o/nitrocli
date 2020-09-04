@@ -16,6 +16,7 @@ Unreleased
     set the defaults for the `--model` and `--verbose` options
   - Changed the handling of the `NITROCLI_NO_CACHE` variable to check
     the value of the variable instead of only the presence
+- Declared public API to be the man page
 - Adjusted license & copyright headers to comply with REUSE 3.0
   - Added CI stage checking compliance
 - Updated minimum required Rust version to `1.42.0`
