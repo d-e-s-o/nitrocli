@@ -16,6 +16,9 @@ pub struct Args {
   /// Disables the cache for all secrets.
   #[structopt(long, global = true)]
   pub no_cache: bool,
+  /// Selects the output format.
+  #[structopt(long, global = true, possible_values = &OutputFormat::all_str())]
+  pub output_format: Option<OutputFormat>,
   #[structopt(subcommand)]
   pub cmd: Command,
 }
@@ -65,6 +68,26 @@ impl<'de> serde::Deserialize<'de> for DeviceModel {
 
     let s = String::deserialize(deserializer)?;
     DeviceModel::from_str(&s).map_err(D::Error::custom)
+  }
+}
+
+Enum! {
+  /// The format for the nitrocli output.
+  OutputFormat, [
+    Text => "text",
+  ]
+}
+
+impl<'de> serde::Deserialize<'de> for OutputFormat {
+  fn deserialize<D>(deserializer: D) -> Result<OutputFormat, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    use serde::de::Error as _;
+    use std::str::FromStr as _;
+
+    let s = String::deserialize(deserializer)?;
+    OutputFormat::from_str(&s).map_err(D::Error::custom)
   }
 }
 

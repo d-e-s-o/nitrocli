@@ -7,19 +7,28 @@
 
 use std::fmt;
 
+use crate::args;
 use crate::Context;
 
 /// A trait for objects that can be printed as nitrocli’s output.
 pub trait Output {
-  /// Formats this object as a string that can be printed to the standard output.
-  fn format(&self) -> anyhow::Result<String>;
+  /// Formats this object using the given output format.
+  fn format(&self, format: args::OutputFormat) -> anyhow::Result<String>;
 
-  /// Prints this object to the output set in the given context.
+  /// Prints this object to the output set in the given context using the output format set in the
+  /// context configuration.
   ///
   /// The default implementation for this method prints the return value of `format` to
   /// `ctx.stdout`.
   fn print(&self, ctx: &mut Context<'_>) -> anyhow::Result<()> {
-    println!(ctx, "{}", self.format()?.trim_end()).map_err(From::from)
+    println!(
+      ctx,
+      "{}",
+      self
+        .format(ctx.config.output_format.unwrap_or(args::OutputFormat::Text))?
+        .trim_end()
+    )
+    .map_err(From::from)
   }
 }
 
@@ -54,8 +63,10 @@ impl<T: fmt::Display> Value<T> {
 }
 
 impl<T: fmt::Display> Output for Value<T> {
-  fn format(&self) -> anyhow::Result<String> {
-    Ok(self.0.to_string())
+  fn format(&self, format: args::OutputFormat) -> anyhow::Result<String> {
+    match format {
+      args::OutputFormat::Text => Ok(self.0.to_string()),
+    }
   }
 }
 
@@ -77,13 +88,17 @@ impl<T: TableItem> Table<T> {
 }
 
 impl<T: TableItem> Output for Table<T> {
-  fn format(&self) -> anyhow::Result<String> {
-    if self.items.is_empty() {
-      Ok(self.empty_message.clone())
-    } else {
-      let headers = T::headers().into_iter().map(ToOwned::to_owned).collect();
-      let values = self.items.iter().map(TableItem::values);
-      Ok(print_table(headers, values))
+  fn format(&self, format: args::OutputFormat) -> anyhow::Result<String> {
+    match format {
+      args::OutputFormat::Text => {
+        if self.items.is_empty() {
+          Ok(self.empty_message.clone())
+        } else {
+          let headers = T::headers().into_iter().map(ToOwned::to_owned).collect();
+          let values = self.items.iter().map(TableItem::values);
+          Ok(print_table(headers, values))
+        }
+      }
     }
   }
 }

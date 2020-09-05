@@ -32,6 +32,8 @@ pub struct Config {
   #[merge(strategy = merge::num::overwrite_zero)]
   #[serde(default)]
   pub verbosity: u8,
+  /// The output format.
+  pub output_format: Option<args::OutputFormat>,
 }
 
 impl Config {
@@ -56,6 +58,9 @@ impl Config {
     }
     if args.verbose > 0 {
       self.verbosity = args.verbose;
+    }
+    if args.output_format.is_some() {
+      self.output_format = args.output_format;
     }
   }
 }
