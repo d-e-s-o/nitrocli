@@ -54,7 +54,8 @@ macro_rules! Command {
 macro_rules! Enum {
   ( $(#[$docs:meta])* $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
     $(#[$docs])*
-    #[derive(Clone, Copy, Debug, PartialEq)]
+    #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize)]
+    #[serde(rename_all = "lowercase")]
     pub enum $name {
       $(
         $var,
@@ -124,6 +125,19 @@ macro_rules! enum_int {
              )
            )
         }
+      }
+    }
+
+    impl<'de> ::serde::Deserialize<'de> for $name {
+      fn deserialize<D>(deserializer: D) -> Result<$name, D::Error>
+      where
+        D: ::serde::Deserializer<'de>,
+      {
+        use ::serde::de::Error as _;
+        use ::std::str::FromStr as _;
+    
+        let s = String::deserialize(deserializer)?;
+        $name::from_str(&s).map_err(D::Error::custom)
       }
     }
   };

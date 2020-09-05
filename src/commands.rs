@@ -250,6 +250,7 @@ where
   })
 }
 
+#[derive(serde::Serialize)]
 struct Status {
   model: args::DeviceModel,
   serial_number: String,
@@ -259,6 +260,7 @@ struct Status {
   storage_status: Option<StorageStatus>,
 }
 
+#[derive(serde::Serialize)]
 struct StorageStatus {
   card_id: u32,
   firmware_locked: bool,
@@ -268,6 +270,7 @@ struct StorageStatus {
   hidden_volume: VolumeStatus,
 }
 
+#[derive(serde::Serialize)]
 struct VolumeStatus {
   read_only: bool,
   active: bool,
@@ -390,10 +393,11 @@ pub fn status(ctx: &mut Context<'_>) -> anyhow::Result<()> {
         None
       },
     };
-    output::Value::new(status).print(ctx)
+    output::Value::new("status", status).print(ctx)
   })
 }
 
+#[derive(serde::Serialize)]
 struct DeviceInfo {
   path: String,
   model: Option<args::DeviceModel>,
@@ -439,7 +443,7 @@ impl output::TableItem for DeviceInfo {
 pub fn list(ctx: &mut Context<'_>, no_connect: bool) -> anyhow::Result<()> {
   set_log_level(ctx);
 
-  let mut table = output::Table::new("No Nitrokey device connected");
+  let mut table = output::Table::new("devices", "No Nitrokey device connected");
   let device_infos =
     nitrokey::list_devices().context("Failed to list connected Nitrokey devices")?;
 
@@ -622,6 +626,7 @@ fn format_option<T: fmt::Display>(option: Option<T>) -> String {
   }
 }
 
+#[derive(serde::Serialize)]
 struct Config {
   numlock: Option<u8>,
   capslock: Option<u8>,
@@ -664,7 +669,7 @@ pub fn config_get(ctx: &mut Context<'_>) -> anyhow::Result<()> {
       .get_config()
       .context("Failed to get configuration")?
       .into();
-    output::Value::new(config).print(ctx)
+    output::Value::new("config", config).print(ctx)
   })
 }
 
@@ -754,7 +759,7 @@ pub fn otp_get(
     } else {
       get_otp(slot, algorithm, &mut device)
     }?;
-    output::Value::new(otp).print(ctx)
+    output::Value::new("code", otp).print(ctx)
   })
 }
 
@@ -843,6 +848,7 @@ pub fn otp_clear(
   })
 }
 
+#[derive(serde::Serialize)]
 struct OtpSlot {
   algorithm: args::OtpAlgorithm,
   slot: u8,
@@ -912,7 +918,7 @@ fn get_otp_slots(
 /// Print the status of the OTP slots.
 pub fn otp_status(ctx: &mut Context<'_>, all: bool) -> anyhow::Result<()> {
   with_device(ctx, |ctx, device| {
-    let mut table = output::Table::new("No OTP slots programmed.");
+    let mut table = output::Table::new("otp-slots", "No OTP slots programmed.");
     table.append(&mut get_otp_slots(args::OtpAlgorithm::Hotp, &device, all)?);
     table.append(&mut get_otp_slots(args::OtpAlgorithm::Totp, &device, all)?);
     table.print(ctx)
@@ -1003,6 +1009,7 @@ pub fn pin_unblock(ctx: &mut Context<'_>) -> anyhow::Result<()> {
   })
 }
 
+#[derive(serde::Serialize)]
 struct PwsSlotData {
   name: Option<String>,
   login: Option<String>,
@@ -1085,11 +1092,14 @@ pub fn pws_get(
       None
     };
 
-    output::Value::new(PwsSlotData {
-      name,
-      login,
-      password,
-    })
+    output::Value::new(
+      "pws-slot",
+      PwsSlotData {
+        name,
+        login,
+        password,
+      },
+    )
     .print(ctx)
   })
 }
@@ -1116,6 +1126,7 @@ pub fn pws_clear(ctx: &mut Context<'_>, slot: u8) -> anyhow::Result<()> {
   })
 }
 
+#[derive(serde::Serialize)]
 struct PwsSlot {
   slot: u8,
   name: Option<String>,
@@ -1159,7 +1170,7 @@ fn get_pws_slot(
 /// Print the status of all PWS slots.
 pub fn pws_status(ctx: &mut Context<'_>, all: bool) -> anyhow::Result<()> {
   with_password_safe(ctx, |ctx, pws| {
-    let mut table = output::Table::new("No PWS slots programmed");
+    let mut table = output::Table::new("otp-slots", "No PWS slots programmed");
     let slots = pws
       .get_slot_status()
       .context("Failed to read PWS slot status")?;

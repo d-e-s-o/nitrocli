@@ -5,7 +5,10 @@
 
 //! Defines data types that can be formatted in different output formats.
 
+use std::collections;
 use std::fmt;
+
+use anyhow::Context as _;
 
 use crate::args;
 use crate::Context;
@@ -33,17 +36,21 @@ pub trait Output {
 }
 
 /// A single object.
-pub struct Value<T: fmt::Display>(T);
+pub struct Value<T: fmt::Display + serde::Serialize> {
+  key: String,
+  value: T,
+}
 
 /// A list of objects of the same type that is displayed as a table with a fallback message for an
 /// empty list.
 pub struct Table<T: TableItem> {
+  key: String,
   items: Vec<T>,
   empty_message: String,
 }
 
 /// A trait for objects that can be displayed in a table.
-pub trait TableItem {
+pub trait TableItem: serde::Serialize {
   /// Returns the column headers for this type of table items.
   fn headers() -> Vec<&'static str>;
   /// Returns the values of the column for this table item.
@@ -56,23 +63,28 @@ pub struct TextObject {
   items: Vec<(usize, String, String)>,
 }
 
-impl<T: fmt::Display> Value<T> {
-  pub fn new(value: T) -> Value<T> {
-    Value(value)
+impl<T: fmt::Display + serde::Serialize> Value<T> {
+  pub fn new(key: impl Into<String>, value: T) -> Value<T> {
+    Value {
+      key: key.into(),
+      value,
+    }
   }
 }
 
-impl<T: fmt::Display> Output for Value<T> {
+impl<T: fmt::Display + serde::Serialize> Output for Value<T> {
   fn format(&self, format: args::OutputFormat) -> anyhow::Result<String> {
     match format {
-      args::OutputFormat::Text => Ok(self.0.to_string()),
+      args::OutputFormat::Json => get_json(&self.key, &self.value),
+      args::OutputFormat::Text => Ok(self.value.to_string()),
     }
   }
 }
 
 impl<T: TableItem> Table<T> {
-  pub fn new(empty_message: impl Into<String>) -> Table<T> {
+  pub fn new(key: impl Into<String>, empty_message: impl Into<String>) -> Table<T> {
     Table {
+      key: key.into(),
       items: Vec::new(),
       empty_message: empty_message.into(),
     }
@@ -90,6 +102,7 @@ impl<T: TableItem> Table<T> {
 impl<T: TableItem> Output for Table<T> {
   fn format(&self, format: args::OutputFormat) -> anyhow::Result<String> {
     match format {
+      args::OutputFormat::Json => get_json(&self.key, &self.items),
       args::OutputFormat::Text => {
         if self.items.is_empty() {
           Ok(self.empty_message.clone())
@@ -172,4 +185,10 @@ impl fmt::Display for TextObject {
     }
     Ok(())
   }
+}
+
+fn get_json<T: serde::Serialize + ?Sized>(key: &str, value: &T) -> anyhow::Result<String> {
+  let mut map = collections::HashMap::new();
+  let _ = map.insert(key, value);
+  serde_json::to_string_pretty(&map).context("Could not serialize output to JSON")
 }

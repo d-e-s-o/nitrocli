@@ -58,37 +58,12 @@ impl From<DeviceModel> for nitrokey::Model {
   }
 }
 
-impl<'de> serde::Deserialize<'de> for DeviceModel {
-  fn deserialize<D>(deserializer: D) -> Result<DeviceModel, D::Error>
-  where
-    D: serde::Deserializer<'de>,
-  {
-    use serde::de::Error as _;
-    use std::str::FromStr as _;
-
-    let s = String::deserialize(deserializer)?;
-    DeviceModel::from_str(&s).map_err(D::Error::custom)
-  }
-}
-
 Enum! {
   /// The format for the nitrocli output.
   OutputFormat, [
+    Json => "json",
     Text => "text",
   ]
-}
-
-impl<'de> serde::Deserialize<'de> for OutputFormat {
-  fn deserialize<D>(deserializer: D) -> Result<OutputFormat, D::Error>
-  where
-    D: serde::Deserializer<'de>,
-  {
-    use serde::de::Error as _;
-    use std::str::FromStr as _;
-
-    let s = String::deserialize(deserializer)?;
-    OutputFormat::from_str(&s).map_err(D::Error::custom)
-  }
 }
 
 Command! {
