@@ -120,8 +120,4 @@ impl Nitrocli {
     let (res, out, _) = self.do_run(args, |c, a| crate::handle_arguments(c, a));
     res.map(|_| String::from_utf8_lossy(&out).into_owned())
   }
-
-  pub fn model(&self) -> Option<nitrokey::Model> {
-    self.model
-  }
 }
