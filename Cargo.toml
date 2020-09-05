@@ -19,7 +19,7 @@
 
 [package]
 name = "nitrocli"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2018"
 authors = ["Daniel Mueller <deso@posteo.net>"]
 license = "GPL-3.0-or-later"
