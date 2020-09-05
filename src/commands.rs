@@ -20,6 +20,8 @@ use nitrokey::GenerateOtp;
 use nitrokey::GetPasswordSafe;
 
 use crate::args;
+use crate::output;
+use crate::output::Output as _;
 use crate::pinentry;
 use crate::Context;
 
@@ -152,19 +154,6 @@ where
   })
 }
 
-/// Return a string representation of the given volume status.
-fn get_volume_status(status: &nitrokey::VolumeStatus) -> &'static str {
-  if status.active {
-    if status.read_only {
-      "read-only"
-    } else {
-      "active"
-    }
-  } else {
-    "inactive"
-  }
-}
-
 /// Try to execute the given function with a pin queried using pinentry.
 ///
 /// This function will query the pin of the given type from the user
@@ -261,135 +250,230 @@ where
   })
 }
 
-/// Pretty print the status of a Nitrokey Storage.
-fn print_storage_status(
-  ctx: &mut Context<'_>,
-  status: &nitrokey::StorageStatus,
-) -> anyhow::Result<()> {
-  println!(
-    ctx,
-    r#"  Storage:
-    SD card ID:        {id:#x}
-    firmware:          {fw}
-    storage keys:      {sk}
-    volumes:
-      unencrypted:     {vu}
-      encrypted:       {ve}
-      hidden:          {vh}"#,
-    id = status.serial_number_sd_card,
-    fw = if status.firmware_locked {
-      "locked"
-    } else {
-      "unlocked"
-    },
-    sk = if status.stick_initialized {
-      "created"
-    } else {
-      "not created"
-    },
-    vu = get_volume_status(&status.unencrypted_volume),
-    ve = get_volume_status(&status.encrypted_volume),
-    vh = get_volume_status(&status.hidden_volume),
-  )?;
-  Ok(())
+struct Status {
+  model: args::DeviceModel,
+  serial_number: String,
+  firmware_version: String,
+  user_retry_count: u8,
+  admin_retry_count: u8,
+  storage_status: Option<StorageStatus>,
 }
 
-/// Query and pretty print the status that is common to all Nitrokey devices.
-fn print_status(
-  ctx: &mut Context<'_>,
-  model: &'static str,
-  device: &nitrokey::DeviceWrapper<'_>,
-) -> anyhow::Result<()> {
-  let serial_number = device
-    .get_serial_number()
-    .context("Could not query the serial number")?;
+struct StorageStatus {
+  card_id: u32,
+  firmware_locked: bool,
+  stick_initialized: bool,
+  unencrypted_volume: VolumeStatus,
+  encrypted_volume: VolumeStatus,
+  hidden_volume: VolumeStatus,
+}
 
-  println!(
-    ctx,
-    r#"Status:
-  model:             {model}
-  serial number:     {id}
-  firmware version:  {fwv}
-  user retry count:  {urc}
-  admin retry count: {arc}"#,
-    model = model,
-    id = serial_number,
-    fwv = device
-      .get_firmware_version()
-      .context("Failed to retrieve firmware version")?,
-    urc = device
-      .get_user_retry_count()
-      .context("Failed to retrieve user retry count")?,
-    arc = device
-      .get_admin_retry_count()
-      .context("Failed to retrieve admin retry count")?,
-  )?;
+struct VolumeStatus {
+  read_only: bool,
+  active: bool,
+}
 
-  if let nitrokey::DeviceWrapper::Storage(device) = device {
-    let status = device
-      .get_storage_status()
-      .context("Failed to retrieve storage status")?;
+impl From<&Status> for output::TextObject {
+  fn from(status: &Status) -> output::TextObject {
+    let mut o = output::TextObject::new("Status");
+    o.push_line("model", status.model.to_string());
+    o.push_line("serial number", &status.serial_number);
+    o.push_line("firmware version", &status.firmware_version);
+    o.push_line("user retry count", status.user_retry_count.to_string());
+    o.push_line("admin retry count", status.admin_retry_count.to_string());
 
-    print_storage_status(ctx, &status)
-  } else {
-    Ok(())
+    if let Some(storage_status) = &status.storage_status {
+      o.push_object(storage_status.into());
+    }
+
+    o
+  }
+}
+
+impl fmt::Display for Status {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    output::TextObject::from(self).fmt(f)
+  }
+}
+
+impl From<&StorageStatus> for output::TextObject {
+  fn from(status: &StorageStatus) -> output::TextObject {
+    let mut o = output::TextObject::new("Storage");
+    o.push_line("SD card ID", format!("{:#x}", status.card_id));
+    o.push_line(
+      "firmware",
+      if status.firmware_locked {
+        "locked"
+      } else {
+        "unlocked"
+      },
+    );
+    o.push_line(
+      "storage keys",
+      if status.stick_initialized {
+        "created"
+      } else {
+        "not created "
+      },
+    );
+    o.push_line("volumes", "");
+    o.push_line("  unencrypted", status.unencrypted_volume.to_string());
+    o.push_line("  encrypted", status.encrypted_volume.to_string());
+    o.push_line("  hidden", status.hidden_volume.to_string());
+    o
+  }
+}
+
+impl From<nitrokey::StorageStatus> for StorageStatus {
+  fn from(status: nitrokey::StorageStatus) -> StorageStatus {
+    StorageStatus {
+      card_id: status.serial_number_sd_card,
+      firmware_locked: status.firmware_locked,
+      stick_initialized: status.stick_initialized,
+      unencrypted_volume: status.unencrypted_volume.into(),
+      encrypted_volume: status.encrypted_volume.into(),
+      hidden_volume: status.hidden_volume.into(),
+    }
+  }
+}
+
+impl From<nitrokey::VolumeStatus> for VolumeStatus {
+  fn from(status: nitrokey::VolumeStatus) -> VolumeStatus {
+    VolumeStatus {
+      read_only: status.read_only,
+      active: status.active,
+    }
+  }
+}
+
+impl fmt::Display for VolumeStatus {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.write_str(if self.active {
+      if self.read_only {
+        "read-only"
+      } else {
+        "active"
+      }
+    } else {
+      "inactive"
+    })
   }
 }
 
 /// Inquire the status of the nitrokey.
 pub fn status(ctx: &mut Context<'_>) -> anyhow::Result<()> {
   with_device(ctx, |ctx, device| {
-    let model = match device {
-      nitrokey::DeviceWrapper::Pro(_) => "Pro",
-      nitrokey::DeviceWrapper::Storage(_) => "Storage",
+    let status = Status {
+      model: device.get_model().into(),
+      serial_number: device
+        .get_serial_number()
+        .context("Could not query the serial number")?
+        .to_string(),
+      firmware_version: device
+        .get_firmware_version()
+        .context("Failed to retrieve firmware version")?
+        .to_string(),
+      user_retry_count: device
+        .get_user_retry_count()
+        .context("Failed to retrieve user retry count")?,
+      admin_retry_count: device
+        .get_admin_retry_count()
+        .context("Failed to retrieve admin retry count")?,
+      storage_status: if let nitrokey::DeviceWrapper::Storage(device) = device {
+        Some(
+          device
+            .get_storage_status()
+            .context("Failed to retrieve storage status")?
+            .into(),
+        )
+      } else {
+        None
+      },
     };
-    print_status(ctx, model, &device)
+    output::Value::new(status).print(ctx)
   })
+}
+
+struct DeviceInfo {
+  path: String,
+  model: Option<args::DeviceModel>,
+  serial_number: Option<String>,
+}
+
+impl DeviceInfo {
+  fn new(
+    device_info: nitrokey::DeviceInfo,
+    serial_number: Option<nitrokey::SerialNumber>,
+  ) -> DeviceInfo {
+    DeviceInfo {
+      path: device_info.path,
+      model: device_info.model.map(From::from),
+      serial_number: serial_number.as_ref().map(ToString::to_string),
+    }
+  }
+}
+
+impl output::TableItem for DeviceInfo {
+  fn headers() -> Vec<&'static str> {
+    vec!["device path", "model", "serial number"]
+  }
+
+  fn values(&self) -> Vec<String> {
+    vec![
+      self.path.clone(),
+      self
+        .model
+        .as_ref()
+        .map(ToString::to_string)
+        .unwrap_or_else(|| "unknown".to_owned()),
+      self
+        .serial_number
+        .as_ref()
+        .cloned()
+        .unwrap_or_else(|| "N/A".to_owned()),
+    ]
+  }
 }
 
 /// List the attached Nitrokey devices.
 pub fn list(ctx: &mut Context<'_>, no_connect: bool) -> anyhow::Result<()> {
   set_log_level(ctx);
 
+  let mut table = output::Table::new("No Nitrokey device connected");
   let device_infos =
     nitrokey::list_devices().context("Failed to list connected Nitrokey devices")?;
-  if device_infos.is_empty() {
-    println!(ctx, "No Nitrokey device connected")?;
-  } else {
-    println!(ctx, "device path\tmodel\tserial number")?;
+
+  if !device_infos.is_empty() {
     let mut manager =
       nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
 
     for device_info in device_infos {
-      let model = device_info
-        .model
-        .map(|m| m.to_string())
-        .unwrap_or_else(|| "unknown".into());
       let serial_number = match device_info.serial_number {
-        Some(serial_number) => serial_number.to_string(),
+        Some(serial_number) => Some(serial_number),
         None => {
           // Storage devices do not have the serial number present in
           // the device information. We have to connect to them to
           // retrieve the information.
           if no_connect {
-            "N/A".to_string()
+            None
           } else {
             let device = manager
               .connect_path(device_info.path.clone())
               .context("Failed to connect to Nitrokey")?;
-            device
-              .get_serial_number()
-              .context("Failed to retrieve device serial number")?
-              .to_string()
+            Some(
+              device
+                .get_serial_number()
+                .context("Failed to retrieve device serial number")?,
+            )
           }
         }
       };
 
-      println!(ctx, "{}\t{}\t{}", device_info.path, model, serial_number)?;
+      table.push(DeviceInfo::new(device_info, serial_number));
     }
   }
 
-  Ok(())
+  table.print(ctx)
 }
 
 /// Perform a factory reset.
@@ -538,23 +622,49 @@ fn format_option<T: fmt::Display>(option: Option<T>) -> String {
   }
 }
 
+struct Config {
+  numlock: Option<u8>,
+  capslock: Option<u8>,
+  scrolllock: Option<u8>,
+  user_password: bool,
+}
+
+impl From<&Config> for output::TextObject {
+  fn from(config: &Config) -> output::TextObject {
+    let mut o = output::TextObject::new("Config");
+    o.push_line("numlock binding", format_option(config.numlock));
+    o.push_line("capslock binding", format_option(config.capslock));
+    o.push_line("scrolllock binding", format_option(config.scrolllock));
+    o.push_line("require user PIN for OTP", config.user_password.to_string());
+    o
+  }
+}
+
+impl From<nitrokey::Config> for Config {
+  fn from(config: nitrokey::Config) -> Config {
+    Config {
+      numlock: config.numlock,
+      capslock: config.capslock,
+      scrolllock: config.scrollock,
+      user_password: config.user_password,
+    }
+  }
+}
+
+impl fmt::Display for Config {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    output::TextObject::from(self).fmt(f)
+  }
+}
+
 /// Read the Nitrokey configuration.
 pub fn config_get(ctx: &mut Context<'_>) -> anyhow::Result<()> {
   with_device(ctx, |ctx, device| {
-    let config = device.get_config().context("Failed to get configuration")?;
-    println!(
-      ctx,
-      r#"Config:
-  numlock binding:          {nl}
-  capslock binding:         {cl}
-  scrollock binding:        {sl}
-  require user PIN for OTP: {otp}"#,
-      nl = format_option(config.numlock),
-      cl = format_option(config.capslock),
-      sl = format_option(config.scrollock),
-      otp = config.user_password,
-    )?;
-    Ok(())
+    let config: Config = device
+      .get_config()
+      .context("Failed to get configuration")?
+      .into();
+    output::Value::new(config).print(ctx)
   })
 }
 
@@ -644,8 +754,7 @@ pub fn otp_get(
     } else {
       get_otp(slot, algorithm, &mut device)
     }?;
-    println!(ctx, "{}", otp)?;
-    Ok(())
+    output::Value::new(otp).print(ctx)
   })
 }
 
@@ -734,12 +843,46 @@ pub fn otp_clear(
   })
 }
 
-fn print_otp_status(
-  ctx: &mut Context<'_>,
+struct OtpSlot {
+  algorithm: args::OtpAlgorithm,
+  slot: u8,
+  name: Option<String>,
+}
+
+impl OtpSlot {
+  fn new(algorithm: args::OtpAlgorithm, slot: u8, name: Option<String>) -> OtpSlot {
+    OtpSlot {
+      algorithm,
+      slot,
+      name,
+    }
+  }
+}
+
+impl output::TableItem for OtpSlot {
+  fn headers() -> Vec<&'static str> {
+    vec!["algorithm", "slot", "name"]
+  }
+
+  fn values(&self) -> Vec<String> {
+    vec![
+      self.algorithm.to_string(),
+      self.slot.to_string(),
+      self
+        .name
+        .as_ref()
+        .cloned()
+        .unwrap_or_else(|| "[not programmed]".to_owned()),
+    ]
+  }
+}
+
+fn get_otp_slots(
   algorithm: args::OtpAlgorithm,
   device: &nitrokey::DeviceWrapper<'_>,
   all: bool,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<Vec<OtpSlot>> {
+  let mut vec = Vec::new();
   let mut slot: u8 = 0;
   loop {
     let result = match algorithm {
@@ -750,28 +893,29 @@ fn print_otp_status(
       .checked_add(1)
       .ok_or_else(|| anyhow::anyhow!("Encountered integer overflow when iterating OTP slots"))?;
     let name = match result {
-      Ok(name) => name,
-      Err(nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot)) => return Ok(()),
+      Ok(name) => Some(name),
+      Err(nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot)) => break,
       Err(nitrokey::Error::CommandError(nitrokey::CommandError::SlotNotProgrammed)) => {
         if all {
-          "[not programmed]".to_string()
+          None
         } else {
           continue;
         }
       }
       Err(err) => return Err(err).context("Failed to check OTP slot"),
     };
-    println!(ctx, "{}\t{}\t{}", algorithm, slot - 1, name)?;
+    vec.push(OtpSlot::new(algorithm, slot - 1, name));
   }
+  Ok(vec)
 }
 
 /// Print the status of the OTP slots.
 pub fn otp_status(ctx: &mut Context<'_>, all: bool) -> anyhow::Result<()> {
   with_device(ctx, |ctx, device| {
-    println!(ctx, "alg\tslot\tname")?;
-    print_otp_status(ctx, args::OtpAlgorithm::Hotp, &device, all)?;
-    print_otp_status(ctx, args::OtpAlgorithm::Totp, &device, all)?;
-    Ok(())
+    let mut table = output::Table::new("No OTP slots programmed.");
+    table.append(&mut get_otp_slots(args::OtpAlgorithm::Hotp, &device, all)?);
+    table.append(&mut get_otp_slots(args::OtpAlgorithm::Totp, &device, all)?);
+    table.print(ctx)
   })
 }
 
@@ -859,19 +1003,32 @@ pub fn pin_unblock(ctx: &mut Context<'_>) -> anyhow::Result<()> {
   })
 }
 
-fn print_pws_data(
-  ctx: &mut Context<'_>,
-  description: &'static str,
-  result: Result<String, nitrokey::Error>,
-  quiet: bool,
-) -> anyhow::Result<()> {
-  let value = result.context("Failed to access PWS slot")?;
-  if quiet {
-    println!(ctx, "{}", value)?;
-  } else {
-    println!(ctx, "{} {}", description, value)?;
+struct PwsSlotData {
+  name: Option<String>,
+  login: Option<String>,
+  password: Option<String>,
+}
+
+impl From<&PwsSlotData> for output::TextObject {
+  fn from(data: &PwsSlotData) -> output::TextObject {
+    let mut o = output::TextObject::new("PWS slot");
+    if let Some(name) = &data.name {
+      o.push_line("name", name);
+    }
+    if let Some(login) = &data.login {
+      o.push_line("login", login);
+    }
+    if let Some(password) = &data.password {
+      o.push_line("password", password);
+    }
+    o
   }
-  Ok(())
+}
+
+impl fmt::Display for PwsSlotData {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    output::TextObject::from(self).fmt(f)
+  }
 }
 
 fn check_slot(pws: &nitrokey::PasswordSafe<'_, '_>, slot: u8) -> anyhow::Result<()> {
@@ -895,22 +1052,45 @@ pub fn pws_get(
   show_name: bool,
   show_login: bool,
   show_password: bool,
-  quiet: bool,
 ) -> anyhow::Result<()> {
   with_password_safe(ctx, |ctx, pws| {
     check_slot(&pws, slot).context("Failed to access PWS slot")?;
 
     let show_all = !show_name && !show_login && !show_password;
-    if show_all || show_name {
-      print_pws_data(ctx, "name:    ", pws.get_slot_name(slot), quiet)?;
-    }
-    if show_all || show_login {
-      print_pws_data(ctx, "login:   ", pws.get_slot_login(slot), quiet)?;
-    }
-    if show_all || show_password {
-      print_pws_data(ctx, "password:", pws.get_slot_password(slot), quiet)?;
-    }
-    Ok(())
+    let name = if show_all || show_name {
+      Some(
+        pws
+          .get_slot_name(slot)
+          .context("Failed to access PWS slot")?,
+      )
+    } else {
+      None
+    };
+    let login = if show_all || show_login {
+      Some(
+        pws
+          .get_slot_login(slot)
+          .context("Failed to access PWS slot")?,
+      )
+    } else {
+      None
+    };
+    let password = if show_all || show_password {
+      Some(
+        pws
+          .get_slot_password(slot)
+          .context("Failed to access PWS slot")?,
+      )
+    } else {
+      None
+    };
+
+    output::Value::new(PwsSlotData {
+      name,
+      login,
+      password,
+    })
+    .print(ctx)
   })
 }
 
@@ -936,35 +1116,57 @@ pub fn pws_clear(ctx: &mut Context<'_>, slot: u8) -> anyhow::Result<()> {
   })
 }
 
-fn print_pws_slot(
-  ctx: &mut Context<'_>,
+struct PwsSlot {
+  slot: u8,
+  name: Option<String>,
+}
+
+impl output::TableItem for PwsSlot {
+  fn headers() -> Vec<&'static str> {
+    vec!["slot", "name"]
+  }
+
+  fn values(&self) -> Vec<String> {
+    vec![
+      self.slot.to_string(),
+      self
+        .name
+        .as_ref()
+        .cloned()
+        .unwrap_or_else(|| "[not programmed]".to_owned()),
+    ]
+  }
+}
+
+fn get_pws_slot(
   pws: &nitrokey::PasswordSafe<'_, '_>,
   slot: usize,
   programmed: bool,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<PwsSlot> {
   let slot = u8::try_from(slot).map_err(|_| anyhow::anyhow!("Invalid PWS slot number"))?;
   let name = if programmed {
-    pws
-      .get_slot_name(slot)
-      .context("Failed to read PWS slot name")?
+    Some(
+      pws
+        .get_slot_name(slot)
+        .context("Failed to read PWS slot name")?,
+    )
   } else {
-    "[not programmed]".to_string()
+    None
   };
-  println!(ctx, "{}\t{}", slot, name)?;
-  Ok(())
+  Ok(PwsSlot { slot, name })
 }
 
 /// Print the status of all PWS slots.
 pub fn pws_status(ctx: &mut Context<'_>, all: bool) -> anyhow::Result<()> {
   with_password_safe(ctx, |ctx, pws| {
+    let mut table = output::Table::new("No PWS slots programmed");
     let slots = pws
       .get_slot_status()
       .context("Failed to read PWS slot status")?;
-    println!(ctx, "slot\tname")?;
     for (i, &value) in slots.iter().enumerate().filter(|(_, &value)| all || value) {
-      print_pws_slot(ctx, &pws, i, value)?;
+      table.push(get_pws_slot(&pws, i, value)?);
     }
-    Ok(())
+    table.print(ctx)
   })
 }
 

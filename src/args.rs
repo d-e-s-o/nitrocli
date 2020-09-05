@@ -37,6 +37,15 @@ impl DeviceModel {
   }
 }
 
+impl From<nitrokey::Model> for DeviceModel {
+  fn from(model: nitrokey::Model) -> DeviceModel {
+    match model {
+      nitrokey::Model::Pro => DeviceModel::Pro,
+      nitrokey::Model::Storage => DeviceModel::Storage,
+    }
+  }
+}
+
 impl From<DeviceModel> for nitrokey::Model {
   fn from(model: DeviceModel) -> nitrokey::Model {
     match model {
@@ -357,7 +366,7 @@ Command! {PwsCommand, [
   Clear(PwsClearArgs) => |ctx, args: PwsClearArgs| crate::commands::pws_clear(ctx, args.slot),
   /// Reads a password safe slot
   Get(PwsGetArgs) => |ctx, args: PwsGetArgs| {
-    crate::commands::pws_get(ctx, args.slot, args.name, args.login, args.password, args.quiet)
+    crate::commands::pws_get(ctx, args.slot, args.name, args.login, args.password)
   },
   /// Writes a password safe slot
   Set(PwsSetArgs) => |ctx, args: PwsSetArgs| {
@@ -384,9 +393,6 @@ pub struct PwsGetArgs {
   /// Shows the password stored on the slot
   #[structopt(short, long)]
   pub password: bool,
-  /// Prints the stored data without description
-  #[structopt(short, long)]
-  pub quiet: bool,
   /// The PWS slot to read
   pub slot: u8,
 }

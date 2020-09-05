@@ -217,18 +217,12 @@ You can use the \fBlock\fR command to lock the password safe.
 \fBnitrocli pws get \fIslot \fR[\fB\-n\fR|\fB\-\-name\fR] \
 [\fB\-l\fR|\fB\-\-login\fR] \
 [\fB\-p\fR|\fB\-\-password\fR] \
-[\fB\-q\fR|\fB\-\-quiet\fR]
 Print the content of one PWS slot.
 \fIslot\fR is the number of the slot.
 Per default, this command prints the name, the login and the password (in that
 order).
 If one or more of the options \fB\-\-name\fR, \fB\-\-login\fR, and
 \fB\-\-password\fR are set, only the selected fields are printed.
-The order of the fields never changes.
-
-The fields are printed together with a label.
-Use the \fB\-\-quiet\fR option to suppress the labels and to only output the
-values stored in the PWS slot.
 .TP
 \fBnitrocli pws set \fIslot name login password\fR
 Set the content of a PWS slot.
