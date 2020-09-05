@@ -76,6 +76,7 @@ impl<T: fmt::Display + serde::Serialize> Output for Value<T> {
   fn format(&self, format: args::OutputFormat) -> anyhow::Result<String> {
     match format {
       args::OutputFormat::Json => get_json(&self.key, &self.value),
+      args::OutputFormat::Tsv => get_tsv_object(&self.value),
       args::OutputFormat::Text => Ok(self.value.to_string()),
     }
   }
@@ -103,6 +104,7 @@ impl<T: TableItem> Output for Table<T> {
   fn format(&self, format: args::OutputFormat) -> anyhow::Result<String> {
     match format {
       args::OutputFormat::Json => get_json(&self.key, &self.items),
+      args::OutputFormat::Tsv => get_tsv_list(&self.items),
       args::OutputFormat::Text => {
         if self.items.is_empty() {
           Ok(self.empty_message.clone())
@@ -191,4 +193,61 @@ fn get_json<T: serde::Serialize + ?Sized>(key: &str, value: &T) -> anyhow::Resul
   let mut map = collections::HashMap::new();
   let _ = map.insert(key, value);
   serde_json::to_string_pretty(&map).context("Could not serialize output to JSON")
+}
+
+fn get_tsv_list<T: serde::Serialize>(items: &[T]) -> anyhow::Result<String> {
+  let mut writer = csv::WriterBuilder::new()
+    .delimiter(b'\t')
+    .from_writer(vec![]);
+  for item in items {
+    writer
+      .serialize(item)
+      .context("Could not serialize output to TSV")?;
+  }
+  String::from_utf8(writer.into_inner()?).context("Could not parse TSV output as UTF-8")
+}
+
+fn get_tsv_object<T: serde::Serialize>(value: T) -> anyhow::Result<String> {
+  let value = serde_json::to_value(&value).context("Could not serialize output")?;
+  get_tsv_list(&get_tsv_records(&[], value))
+}
+
+/// Converts an arbitrary value into a list of TSV records.
+///
+/// There are two cases:  Scalars are converted to a single value (without headers).  Arrays and
+/// objects are converted to a list of key-value pairs (with headers).  Nested arrays and objects
+/// are flattened and their keys are separated by dots.
+///
+/// `prefix` is the prefix to use for the keys of arrays and objects, or an empty slice if the
+/// given value is the top-level value.
+fn get_tsv_records(prefix: &[&str], value: serde_json::Value) -> Vec<serde_json::Value> {
+  use serde_json::Value;
+
+  let mut vec = Vec::new();
+  if (value.is_array() || value.is_object()) && prefix.is_empty() {
+    vec.push(Value::Array(vec!["key".into(), "value".into()]));
+  }
+
+  match value {
+    Value::Object(o) => {
+      for (key, value) in o {
+        vec.append(&mut get_tsv_records(&[prefix, &[&key]].concat(), value));
+      }
+    }
+    Value::Array(a) => {
+      for (idx, value) in a.into_iter().enumerate() {
+        let idx = idx.to_string();
+        vec.append(&mut get_tsv_records(&[prefix, &[&idx]].concat(), value));
+      }
+    }
+    _ => {
+      if prefix.is_empty() {
+        vec.push(value);
+      } else {
+        vec.push(Value::Array(vec![prefix.join(".").into(), value]));
+      }
+    }
+  }
+
+  vec
 }

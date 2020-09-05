@@ -63,6 +63,7 @@ Enum! {
   OutputFormat, [
     Json => "json",
     Text => "text",
+    Tsv => "tsv",
   ]
 }
 
