@@ -61,7 +61,7 @@ fn set_user(model: nitrokey::Model) -> anyhow::Result<()> {
 
   {
     let mut manager = nitrokey::force_take()?;
-    let device = manager.connect_model(ncli.model().unwrap())?;
+    let device = manager.connect_model(model)?;
     let _ = device
       .authenticate_user(nitrokey::DEFAULT_USER_PIN)
       .unwrap();

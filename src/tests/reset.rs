@@ -20,7 +20,7 @@ fn reset(model: nitrokey::Model) -> anyhow::Result<()> {
   {
     let mut manager = nitrokey::force_take()?;
     // Check that the admin PIN has been changed.
-    let device = manager.connect_model(ncli.model().unwrap())?;
+    let device = manager.connect_model(model)?;
     let _ = device.authenticate_admin(new_admin_pin).unwrap();
   }
 
@@ -32,7 +32,7 @@ fn reset(model: nitrokey::Model) -> anyhow::Result<()> {
   {
     let mut manager = nitrokey::force_take()?;
     // Check that the admin PIN has been reset.
-    let device = manager.connect_model(ncli.model().unwrap())?;
+    let device = manager.connect_model(model)?;
     let mut device = device
       .authenticate_admin(nitrokey::DEFAULT_ADMIN_PIN)
       .unwrap();
