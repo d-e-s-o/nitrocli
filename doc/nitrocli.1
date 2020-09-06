@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2020-09-01
+.TH NITROCLI 1 2020-09-07
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -10,12 +10,17 @@ nitrocli \- access Nitrokey devices
 It supports the Nitrokey Pro and the Nitrokey Storage.
 It can be used to access the encrypted volume, the one-time password generator,
 and the password safe.
+.SS Device selection
+Per default, \fBnitrocli\fR connects to any attached Nitrokey device.
+You can use the \fB\-\-model\fR option to select the device to connect to.
+\fBnitrocli\fR fails if more than one attached Nitrokey device matches
+this filter or if multiple Nitrokey devices are attached and this option
+is not set.
 .SH OPTIONS
 .TP
 \fB\-m\fR, \fB\-\-model pro\fR|\fBstorage\fR
-Restrict connections to the given device model.
-If this option is not set, nitrocli will connect to any connected Nitrokey Pro
-or Nitrokey Storage device.
+Restrict connections to the given device model, see the Device selection
+section.
 .TP
 \fB\-\-no\-cache\fR
 If this option is set, nitrocli will not cache any inquired secrets using

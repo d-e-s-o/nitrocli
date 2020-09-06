@@ -61,6 +61,13 @@ fn find_device(config: &config::Config) -> anyhow::Result<nitrokey::DeviceInfo> 
   let device = iter
     .next()
     .with_context(|| format!("Nitrokey device not found{}", format_filter(config)))?;
+
+  anyhow::ensure!(
+    iter.next().is_none(),
+    "Multiple Nitrokey devices found{}.  Use the --model and --serial-number options to \
+    select one",
+    format_filter(config)
+  );
   Ok(device)
 }
 
