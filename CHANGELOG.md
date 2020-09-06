@@ -8,6 +8,9 @@ Unreleased
   - Added `envy` dependency in version `0.4.2`
   - Added `merge` dependency in version `0.1.0`
   - Added `directories` dependency in version `3.0.1`
+- Reworked connection handling for multiple attached Nitrokey devices:
+  - Fail if multiple attached devices match the filter options (or no filter
+    options are set)
 
 
 0.3.4
