@@ -9,7 +9,9 @@ Unreleased
   - Added `merge` dependency in version `0.1.0`
   - Added `directories` dependency in version `3.0.1`
 - Refactored connection handling to improve support for multiple attached
-  Nitrokey devices
+  Nitrokey devices:
+  - Fail if multiple attached devices match the filter options (or no filter
+    options are set)
 
 
 0.3.4
