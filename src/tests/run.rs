@@ -3,6 +3,7 @@
 // Copyright (C) 2019-2020 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use std::collections;
 use std::path;
 
 use super::*;
@@ -105,4 +106,76 @@ fn config_file() {
   assert_eq!(Some(crate::args::DeviceModel::Pro), config.model);
   assert_eq!(true, config.no_cache);
   assert_eq!(2, config.verbosity);
+}
+
+#[test_device]
+fn connect_multiple(_model: nitrokey::Model) -> anyhow::Result<()> {
+  let devices = nitrokey::list_devices()?;
+  if devices.len() > 1 {
+    let res = Nitrocli::new().handle(&["status"]);
+    let err = res.unwrap_err().to_string();
+    assert_eq!(
+      err,
+      "Multiple Nitrokey devices found.  Use the --model and --serial-number options to select one"
+    );
+  }
+  Ok(())
+}
+
+#[test_device]
+fn connect_serial_number(_model: nitrokey::Model) -> anyhow::Result<()> {
+  let devices = nitrokey::list_devices()?;
+  for serial_number in devices.iter().filter_map(|d| d.serial_number) {
+    let res = Nitrocli::new().handle(&["status", &format!("--serial-number={}", serial_number)])?;
+    assert!(res.contains(&format!("serial number:     {}\n", serial_number)));
+  }
+  Ok(())
+}
+
+#[test_device]
+fn connect_wrong_serial_number(_model: nitrokey::Model) {
+  let res = Nitrocli::new().handle(&["status", "--serial-number=0xdeadbeef"]);
+  let err = res.unwrap_err().to_string();
+  assert_eq!(
+    err,
+    "Nitrokey device not found (filter: serial number in [0xdeadbeef])"
+  );
+}
+
+#[test_device]
+fn connect_model(_model: nitrokey::Model) -> anyhow::Result<()> {
+  let devices = nitrokey::list_devices()?;
+  let mut model_counts = collections::BTreeMap::new();
+  let _ = model_counts.insert(nitrokey::Model::Pro.to_string(), 0);
+  let _ = model_counts.insert(nitrokey::Model::Storage.to_string(), 0);
+  for model in devices.iter().filter_map(|d| d.model) {
+    *model_counts.entry(model.to_string()).or_default() += 1;
+  }
+
+  for (model, count) in model_counts {
+    let res = Nitrocli::new().handle(&["status", &format!("--model={}", model.to_lowercase())]);
+    if count == 0 {
+      let err = res.unwrap_err().to_string();
+      assert_eq!(
+        err,
+        format!(
+          "Nitrokey device not found (filter: model={})",
+          model.to_lowercase()
+        )
+      );
+    } else if count == 1 {
+      assert!(res?.contains(&format!("model:             {}\n", model)));
+    } else {
+      let err = res.unwrap_err().to_string();
+      assert_eq!(
+        err,
+        format!(
+          "Multiple Nitrokey devices found (filter: model={}).  ",
+          model.to_lowercase()
+        ) + "Use the --model and --serial-number options to select one"
+      );
+    }
+  }
+
+  Ok(())
 }
