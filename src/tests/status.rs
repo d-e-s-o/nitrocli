@@ -21,13 +21,6 @@ fn not_found() {
   assert_eq!(err, "Nitrokey device not found");
 }
 
-#[test_device]
-fn not_found_pro() {
-  let res = Nitrocli::new().handle(&["status", "--model=pro"]);
-  let err = res.unwrap_err().to_string();
-  assert_eq!(err, "Nitrokey device not found (filter: model=pro)");
-}
-
 #[test_device(pro)]
 fn output_pro(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
