@@ -78,7 +78,7 @@ fn find_device(
   };
   let device = iter
     .next()
-    .with_context(|| format!("No Nitrokey device found{}", get_filter()))?;
+    .with_context(|| format!("Nitrokey device not found{}", get_filter()))?;
   anyhow::ensure!(
     iter.next().is_none(),
     "Multiple Nitrokey devices found{}.  Use the --model and --serial-number options to \
