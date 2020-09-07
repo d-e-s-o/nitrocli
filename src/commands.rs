@@ -134,6 +134,8 @@ where
     if model != args::DeviceModel::Storage {
       anyhow::bail!("This command is only available on the Nitrokey Storage");
     }
+  } else {
+    ctx.config.model = Some(args::DeviceModel::Storage);
   }
 
   let device = connect(&mut manager, &ctx.config)?;
