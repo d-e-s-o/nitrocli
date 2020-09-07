@@ -140,7 +140,7 @@ where
   if let nitrokey::DeviceWrapper::Storage(storage) = device {
     op(ctx, storage)
   } else {
-    panic!("connect returned a wrong model: {:?}", device)
+    panic!("connect returned a wrong model: {}", device.get_model())
   }
 }
 
