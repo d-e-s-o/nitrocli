@@ -55,6 +55,9 @@ fn format_filter(config: &config::Config) -> String {
       .collect::<Vec<_>>();
     filters.push(format!("serial number in [{}]", serial_numbers.join(", ")));
   }
+  if let Some(path) = &config.usb_path {
+    filters.push(format!("usb path={}", path));
+  }
   if filters.is_empty() {
     String::new()
   } else {
@@ -75,7 +78,8 @@ fn find_device(config: &config::Config) -> anyhow::Result<nitrokey::DeviceInfo> 
           .serial_number
           .map(|sn| config.serial_numbers.contains(&sn))
           .unwrap_or_default()
-    });
+    })
+    .filter(|device| config.usb_path.is_none() || config.usb_path.as_ref() == Some(&device.path));
 
   let device = iter
     .next()
@@ -83,8 +87,8 @@ fn find_device(config: &config::Config) -> anyhow::Result<nitrokey::DeviceInfo> 
 
   anyhow::ensure!(
     iter.next().is_none(),
-    "Multiple Nitrokey devices found{}.  Use the --model and --serial-number options to \
-    select one",
+    "Multiple Nitrokey devices found{}.  Use the --model, --serial-number, and --usb-path options \
+    to select one",
     format_filter(config)
   );
   Ok(device)
