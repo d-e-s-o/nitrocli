@@ -364,11 +364,7 @@ fn print_storage_status(
 }
 
 /// Query and pretty print the status that is common to all Nitrokey devices.
-fn print_status(
-  ctx: &mut Context<'_>,
-  model: &'static str,
-  device: &nitrokey::DeviceWrapper<'_>,
-) -> anyhow::Result<()> {
+fn print_status(ctx: &mut Context<'_>, device: &nitrokey::DeviceWrapper<'_>) -> anyhow::Result<()> {
   let serial_number = device
     .get_serial_number()
     .context("Could not query the serial number")?;
@@ -381,7 +377,7 @@ fn print_status(
   firmware version:  {fwv}
   user retry count:  {urc}
   admin retry count: {arc}"#,
-    model = model,
+    model = args::DeviceModel::from(device.get_model()).as_user_facing_str(),
     id = serial_number,
     fwv = device
       .get_firmware_version()
@@ -407,13 +403,7 @@ fn print_status(
 
 /// Inquire the status of the nitrokey.
 pub fn status(ctx: &mut Context<'_>) -> anyhow::Result<()> {
-  with_device(ctx, |ctx, device| {
-    let model = match device {
-      nitrokey::DeviceWrapper::Pro(_) => "Pro",
-      nitrokey::DeviceWrapper::Storage(_) => "Storage",
-    };
-    print_status(ctx, model, &device)
-  })
+  with_device(ctx, |ctx, device| print_status(ctx, &device))
 }
 
 /// List the attached Nitrokey devices.

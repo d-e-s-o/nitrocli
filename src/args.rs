@@ -50,6 +50,15 @@ impl DeviceModel {
   }
 }
 
+impl From<nitrokey::Model> for DeviceModel {
+  fn from(model: nitrokey::Model) -> DeviceModel {
+    match model {
+      nitrokey::Model::Pro => DeviceModel::Pro,
+      nitrokey::Model::Storage => DeviceModel::Storage,
+    }
+  }
+}
+
 impl From<DeviceModel> for nitrokey::Model {
   fn from(model: DeviceModel) -> nitrokey::Model {
     match model {
