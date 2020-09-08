@@ -23,6 +23,9 @@ pub struct Args {
     number_of_values = 1
   )]
   pub serial_numbers: Vec<nitrokey::SerialNumber>,
+  /// Sets the USB path of the device to connect to
+  #[structopt(long, global = true)]
+  pub usb_path: Option<String>,
   /// Disables the cache for all secrets.
   #[structopt(long, global = true)]
   pub no_cache: bool,

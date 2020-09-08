@@ -7,6 +7,8 @@ model = "pro"
 # The serial number of the device to connect to (list of strings, default:
 # empty).
 serial_numbers = ["0xf00baa", "deadbeef"]
+# The USB path of the device to connect to (string, default: empty).
+usb_path = "004:001:00"
 # Do not cache secrets (boolean, default: false).
 no_cache = true
 # The log level (integer, default: 0).

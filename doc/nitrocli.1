@@ -12,11 +12,13 @@ It can be used to access the encrypted volume, the one-time password generator,
 and the password safe.
 .SS Device selection
 Per default, \fBnitrocli\fR connects to any attached Nitrokey device.
-You can use the \fB\-\-model\fR and \fB\-\-serial-number\fR options to select
-the device to connect to.
+You can use the \fB\-\-model\fR, \fB\-\-serial-number\fR and \fB\-\-usb-path\fR
+options to select the device to connect to.
 \fBnitrocli\fR fails if more than one attached Nitrokey device matches this
 filter or if multiple Nitrokey devices are attached and none of the filter
 options is set.
+Use the \fBlist\fR command to list all attached devices with their USB path,
+model, and serial number (if available).
 .SH OPTIONS
 .TP
 \fB\-m\fR, \fB\-\-model pro\fR|\fBstorage\fR
@@ -30,6 +32,9 @@ section.
 This option can be set multiple times to allow any of the given serial numbers.
 Nitrokey Storage devices never match this restriction as they do not expose
 their serial number in the USB device descriptor.
+.TP
+\fB\-\-usb-path \fIusb-path\fR
+Restrict connections to the given USB path, see the Device selection section.
 .TP
 \fB\-\-no\-cache\fR
 If this option is set, nitrocli will not cache any inquired secrets using
@@ -315,6 +320,10 @@ Restrict connections to the given device model (string, default: not set, see
 Restrict connections to the given serial numbers (list of strings, default:
 empty, see \fB\-\-serial-number\fR).
 .TP
+.B usb_path
+Restrict connections to the given USB path (string, default: not set, see
+\fB\-\-usb-path\fR).
+.TP
 .B no_cache
 If set to true, do not cache any inquired secrets (boolean, default: false,
 see \fB\-\-no\-cache\fR).
@@ -325,6 +334,7 @@ Set the log level (integer, default: 0, see \fB\-\-verbose\fR).
 The configuration file must use the TOML format, for example:
     model = "pro"
     serial_numbers = ["0xf00baa", "deadbeef"]
+    usb_path = "0001:0006:02"
     no_cache = false
     verbosity = 0
 
@@ -360,6 +370,10 @@ Restrict connections to the given device model (string, default: not set, see
 .B NITROCLI_SERIAL_NUMBERS
 Restrict connections to the given list of serial numbers (comma-separated list
 of strings, default: empty, see \fB\-\-serial-number\fR).
+.TP
+.B NITROCLI_USB_PATH
+Restrict connections to the given USB path (string, default: not set, see
+\fB\-\-usb-path\fR).
 .TP
 .B NITROCLI_NO_CACHE
 If set to true, do not cache any inquired secrets (boolean, default: false,

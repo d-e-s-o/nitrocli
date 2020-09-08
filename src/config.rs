@@ -31,6 +31,8 @@ pub struct Config {
   #[merge(strategy = merge::vec::overwrite_empty)]
   #[serde(default, deserialize_with = "deserialize_serial_number_vec")]
   pub serial_numbers: Vec<nitrokey::SerialNumber>,
+  /// The USB path of the device to connect to.
+  pub usb_path: Option<String>,
   /// Whether to bypass the cache for all secrets or not.
   #[merge(strategy = merge::bool::overwrite_false)]
   #[serde(default)]
@@ -73,6 +75,9 @@ impl Config {
     if !args.serial_numbers.is_empty() {
       // TODO: Don't clone.
       self.serial_numbers = args.serial_numbers.clone();
+    }
+    if args.usb_path.is_some() {
+      self.usb_path = args.usb_path.clone();
     }
     if args.no_cache {
       self.no_cache = true;

@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::collections;
+use std::ops;
 use std::path;
 
 use super::*;
@@ -116,7 +117,7 @@ fn connect_multiple(_model: nitrokey::Model) -> anyhow::Result<()> {
     let err = res.unwrap_err().to_string();
     assert_eq!(
       err,
-      "Multiple Nitrokey devices found.  Use the --model and --serial-number options to select one"
+      "Multiple Nitrokey devices found.  Use the --model, --serial-number, and --usb-path options to select one"
     );
   }
   Ok(())
@@ -139,6 +140,32 @@ fn connect_wrong_serial_number(_model: nitrokey::Model) {
   assert_eq!(
     err,
     "Nitrokey device not found (filter: serial number in [0xdeadbeef])"
+  );
+}
+
+#[test_device]
+fn connect_usb_path(_model: nitrokey::Model) -> anyhow::Result<()> {
+  for device in nitrokey::list_devices()? {
+    let res = Nitrocli::new().handle(&["status", &format!("--usb-path={}", device.path)]);
+    assert!(res.is_ok());
+    let res = res?;
+    if let Some(model) = device.model {
+      assert!(res.contains(&format!("model:             {}\n", model)));
+    }
+    if let Some(sn) = device.serial_number {
+      assert!(res.contains(&format!("serial number:     {}\n", sn)));
+    }
+  }
+  Ok(())
+}
+
+#[test_device]
+fn connect_wrong_usb_path(_model: nitrokey::Model) {
+  let res = Nitrocli::new().handle(&["status", "--usb-path=not-a-path"]);
+  let err = res.unwrap_err().to_string();
+  assert_eq!(
+    err,
+    "Nitrokey device not found (filter: usb path=not-a-path)"
   );
 }
 
@@ -172,10 +199,71 @@ fn connect_model(_model: nitrokey::Model) -> anyhow::Result<()> {
         format!(
           "Multiple Nitrokey devices found (filter: model={}).  ",
           model.to_lowercase()
-        ) + "Use the --model and --serial-number options to select one"
+        ) + "Use the --model, --serial-number, and --usb-path options to select one"
       );
     }
   }
 
+  Ok(())
+}
+
+#[test_device]
+fn connect_usb_path_model_serial(_model: nitrokey::Model) -> anyhow::Result<()> {
+  let devices = nitrokey::list_devices()?;
+  for device in devices {
+    let mut args = Vec::new();
+    args.push("status".to_owned());
+    args.push(format!("--usb-path={}", device.path));
+    if let Some(model) = device.model {
+      args.push(format!("--model={}", model.to_string().to_lowercase()));
+    }
+    if let Some(sn) = device.serial_number {
+      args.push(format!("--serial-number={}", sn));
+    }
+
+    let res = Nitrocli::new().handle(&args.iter().map(ops::Deref::deref).collect::<Vec<_>>())?;
+    if let Some(model) = device.model {
+      assert!(res.contains(&format!("model:             {}\n", model)));
+    }
+    if let Some(sn) = device.serial_number {
+      assert!(res.contains(&format!("serial number:     {}\n", sn)));
+    }
+  }
+  Ok(())
+}
+
+#[test_device]
+fn connect_usb_path_model_wrong_serial(_model: nitrokey::Model) -> anyhow::Result<()> {
+  let devices = nitrokey::list_devices()?;
+  for device in devices {
+    let mut args = Vec::new();
+    args.push("status".to_owned());
+    args.push(format!("--usb-path={}", device.path));
+    if let Some(model) = device.model {
+      args.push(format!("--model={}", model.to_string().to_lowercase()));
+    }
+    args.push("--serial-number=0xdeadbeef".to_owned());
+
+    let res = Nitrocli::new().handle(&args.iter().map(ops::Deref::deref).collect::<Vec<_>>());
+    let err = res.unwrap_err().to_string();
+    if let Some(model) = device.model {
+      assert_eq!(
+        err,
+        format!(
+          "Nitrokey device not found (filter: model={}, serial number in [0xdeadbeef], usb path={})",
+          model.to_string().to_lowercase(),
+          device.path
+        )
+      );
+    } else {
+      assert_eq!(
+        err,
+        format!(
+          "Nitrokey device not found (filter: serial number in [0xdeadbeef], usb path={})",
+          device.path
+        )
+      );
+    }
+  }
   Ok(())
 }
