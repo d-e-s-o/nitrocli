@@ -67,10 +67,12 @@ To omit the serial number of Nitrokey Storage devices instead of connecting to
 them, set the \fB\-\-no-connect\fR option.
 .TP
 .B nitrocli status
-Print the status of the connected Nitrokey device, including the stick serial
-number, the firmware version, and the PIN retry count. If the device is a
-Nitrokey Storage, also print storage related information including the SD card
-serial number, the encryption status, and the status of the volumes.
+Print the status of the attached Nitrokey devices that match the filter
+options (see the Device selection section), including the stick serial number,
+the firmware version, and the PIN retry count.
+For Nitrokey Storage devices, also print storage related information including
+the SD card serial number, the encryption status, and the status of the
+volumes.
 .TP
 .B nitrocli lock
 Lock the Nitrokey.

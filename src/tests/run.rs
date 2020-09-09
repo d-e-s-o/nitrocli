@@ -113,7 +113,7 @@ fn config_file() {
 fn connect_multiple(_model: nitrokey::Model) -> anyhow::Result<()> {
   let devices = nitrokey::list_devices()?;
   if devices.len() > 1 {
-    let res = Nitrocli::new().handle(&["status"]);
+    let res = Nitrocli::new().handle(&["lock"]);
     let err = res.unwrap_err().to_string();
     assert_eq!(
       err,
@@ -190,16 +190,12 @@ fn connect_model(_model: nitrokey::Model) -> anyhow::Result<()> {
           model.to_lowercase()
         )
       );
-    } else if count == 1 {
-      assert!(res?.contains(&format!("model:             {}\n", model)));
     } else {
-      let err = res.unwrap_err().to_string();
       assert_eq!(
-        err,
-        format!(
-          "Multiple Nitrokey devices found (filter: model={}).  ",
-          model.to_lowercase()
-        ) + "Use the --model, --serial-number, and --usb-path options to select one"
+        count,
+        res?
+          .matches(&format!("model:             {}\n", model))
+          .count()
       );
     }
   }
@@ -213,7 +209,7 @@ fn connect_usb_path_model_serial(_model: nitrokey::Model) -> anyhow::Result<()> 
   for device in devices {
     let mut args = Vec::new();
     args.push("status".to_owned());
-    args.push(format!("--usb-path={}", device.path));
+    args.push(format!("--usb-path={}", &device.path));
     if let Some(model) = device.model {
       args.push(format!("--model={}", model.to_string().to_lowercase()));
     }

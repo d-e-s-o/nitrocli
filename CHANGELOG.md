@@ -15,6 +15,8 @@ Unreleased
     device to connect to
   - Added `--usb-path` option that restricts the USB path of the device to
     connect to
+  - Changed the `status` command to print the status for all attached Nitrokey
+    devices that match the specified filter.
 - Bumped `structopt` dependency to `0.3.17`
 
 

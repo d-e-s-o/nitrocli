@@ -24,7 +24,7 @@ fn not_found() {
 #[test_device(pro)]
 fn output_pro(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
-    r#"^Status:
+    r#"^Device #0:
   model:             Pro
   serial number:     0x[[:xdigit:]]{8}
   firmware version:  v\d+\.\d+
@@ -42,7 +42,7 @@ $"#,
 #[test_device(storage)]
 fn output_storage(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
-    r#"^Status:
+    r#"^Device #0:
   model:             Storage
   serial number:     0x[[:xdigit:]]{8}
   firmware version:  v\d+\.\d+
@@ -62,5 +62,21 @@ $"#,
 
   let out = Nitrocli::new().model(model).handle(&["status"])?;
   assert!(re.is_match(&out), out);
+  Ok(())
+}
+
+#[test_device]
+fn output_multiple(_model: nitrokey::Model) -> anyhow::Result<()> {
+  let devices = nitrokey::list_devices()?;
+  let out = Nitrocli::new().handle(&["status"])?;
+  for (idx, device) in devices.iter().enumerate() {
+    assert!(out.contains(&format!("Device #{}:\n", idx)), out);
+    if let Some(model) = device.model {
+      assert!(out.contains(&format!("model:             {}\n", model)), out);
+    }
+    if let Some(sn) = device.serial_number {
+      assert!(out.contains(&format!("serial number:     {}\n", sn)), out);
+    }
+  }
   Ok(())
 }

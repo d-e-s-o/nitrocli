@@ -363,19 +363,24 @@ fn print_storage_status(
 }
 
 /// Query and pretty print the status that is common to all Nitrokey devices.
-fn print_status(ctx: &mut Context<'_>, device: &nitrokey::DeviceWrapper<'_>) -> anyhow::Result<()> {
+fn print_status(
+  ctx: &mut Context<'_>,
+  idx: usize,
+  device: &nitrokey::DeviceWrapper<'_>,
+) -> anyhow::Result<()> {
   let serial_number = device
     .get_serial_number()
     .context("Could not query the serial number")?;
 
   println!(
     ctx,
-    r#"Status:
+    r#"Device #{idx}:
   model:             {model}
   serial number:     {id}
   firmware version:  {fwv}
   user retry count:  {urc}
   admin retry count: {arc}"#,
+    idx = idx,
     model = args::DeviceModel::from(device.get_model()).as_user_facing_str(),
     id = serial_number,
     fwv = device
@@ -402,7 +407,27 @@ fn print_status(ctx: &mut Context<'_>, device: &nitrokey::DeviceWrapper<'_>) -> 
 
 /// Inquire the status of the nitrokey.
 pub fn status(ctx: &mut Context<'_>) -> anyhow::Result<()> {
-  with_device(ctx, |ctx, device| print_status(ctx, &device))
+  let device_infos = find_devices(&ctx.config)?;
+  anyhow::ensure!(
+    !device_infos.is_empty(),
+    "Nitrokey device not found{}",
+    format_filter(&ctx.config)
+  );
+
+  let mut manager =
+    nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
+  for (idx, device_info) in device_infos.iter().enumerate() {
+    let device = manager
+      .connect_path(device_info.path.deref())
+      .with_context(|| {
+        format!(
+          "Failed to connect to Nitrokey device at path {}",
+          device_info.path
+        )
+      })?;
+    print_status(ctx, idx, &device)?;
+  }
+  Ok(())
 }
 
 /// List the attached Nitrokey devices.
