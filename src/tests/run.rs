@@ -145,10 +145,16 @@ fn connect_wrong_serial_number(_model: nitrokey::Model) {
 
 #[test_device]
 fn connect_usb_path(_model: nitrokey::Model) -> anyhow::Result<()> {
-  let devices = nitrokey::list_devices()?;
-  for path in devices.iter().map(|d| &d.path) {
-    let res = Nitrocli::new().handle(&["status", &format!("--usb-path={}", path)]);
+  for device in nitrokey::list_devices()? {
+    let res = Nitrocli::new().handle(&["status", &format!("--usb-path={}", device.path)]);
     assert!(res.is_ok());
+    let res = res?;
+    if let Some(model) = device.model {
+      assert!(res.contains(&format!("model:             {}\n", model)));
+    }
+    if let Some(sn) = device.serial_number {
+      assert!(res.contains(&format!("serial number:     {}\n", sn)));
+    }
   }
   Ok(())
 }
