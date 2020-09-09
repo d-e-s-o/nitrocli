@@ -87,7 +87,7 @@ fn find_device(config: &config::Config) -> anyhow::Result<nitrokey::DeviceInfo> 
 
   anyhow::ensure!(
     iter.next().is_none(),
-    "Multiple Nitrokey devices found{}.  Use the --model, --serial-number and --usb-path options \
+    "Multiple Nitrokey devices found{}.  Use the --model, --serial-number, and --usb-path options \
     to select one",
     format_filter(config)
   );

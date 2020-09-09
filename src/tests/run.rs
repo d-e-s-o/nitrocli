@@ -117,7 +117,7 @@ fn connect_multiple(_model: nitrokey::Model) -> anyhow::Result<()> {
     let err = res.unwrap_err().to_string();
     assert_eq!(
       err,
-      "Multiple Nitrokey devices found.  Use the --model, --serial-number and --usb-path options to select one"
+      "Multiple Nitrokey devices found.  Use the --model, --serial-number, and --usb-path options to select one"
     );
   }
   Ok(())
@@ -193,7 +193,7 @@ fn connect_model(_model: nitrokey::Model) -> anyhow::Result<()> {
         format!(
           "Multiple Nitrokey devices found (filter: model={}).  ",
           model.to_lowercase()
-        ) + "Use the --model, --serial-number and --usb-path options to select one"
+        ) + "Use the --model, --serial-number, and --usb-path options to select one"
       );
     }
   }

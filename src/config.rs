@@ -31,7 +31,7 @@ pub struct Config {
   #[merge(strategy = merge::vec::overwrite_empty)]
   #[serde(default, deserialize_with = "deserialize_serial_number_vec")]
   pub serial_numbers: Vec<nitrokey::SerialNumber>,
-  /// The usb path of the device to connect to.
+  /// The USB path of the device to connect to.
   pub usb_path: Option<String>,
   /// Whether to bypass the cache for all secrets or not.
   #[merge(strategy = merge::bool::overwrite_false)]
