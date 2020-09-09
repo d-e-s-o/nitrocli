@@ -65,11 +65,11 @@ fn format_filter(config: &config::Config) -> String {
   }
 }
 
-/// Find a Nitrokey device that matches the given requirements
-fn find_device(config: &config::Config) -> anyhow::Result<nitrokey::DeviceInfo> {
+/// Find all Nitrokey devices that match the given requirements
+fn find_devices(config: &config::Config) -> anyhow::Result<Vec<nitrokey::DeviceInfo>> {
   let devices = nitrokey::list_devices().context("Failed to enumerate Nitrokey devices")?;
   let nkmodel = config.model.map(nitrokey::Model::from);
-  let mut iter = devices
+  let matching_devices = devices
     .into_iter()
     .filter(|device| nkmodel.is_none() || device.model == nkmodel)
     .filter(|device| {
@@ -79,19 +79,9 @@ fn find_device(config: &config::Config) -> anyhow::Result<nitrokey::DeviceInfo> 
           .map(|sn| config.serial_numbers.contains(&sn))
           .unwrap_or_default()
     })
-    .filter(|device| config.usb_path.is_none() || config.usb_path.as_ref() == Some(&device.path));
-
-  let device = iter
-    .next()
-    .with_context(|| format!("Nitrokey device not found{}", format_filter(config)))?;
-
-  anyhow::ensure!(
-    iter.next().is_none(),
-    "Multiple Nitrokey devices found{}.  Use the --model, --serial-number, and --usb-path options \
-    to select one",
-    format_filter(config)
-  );
-  Ok(device)
+    .filter(|device| config.usb_path.is_none() || config.usb_path.as_ref() == Some(&device.path))
+    .collect();
+  Ok(matching_devices)
 }
 
 /// Connect to a Nitrokey device that matches the given requirements
@@ -99,15 +89,24 @@ fn connect<'mgr>(
   manager: &'mgr mut nitrokey::Manager,
   config: &config::Config,
 ) -> anyhow::Result<nitrokey::DeviceWrapper<'mgr>> {
-  let device_info = find_device(config)?;
-  manager
-    .connect_path(device_info.path.deref())
-    .with_context(|| {
-      format!(
-        "Failed to connect to Nitrokey device at path {}",
-        device_info.path
-      )
-    })
+  let device_infos = find_devices(config)?;
+
+  anyhow::ensure!(
+    device_infos.len() < 2,
+    "Multiple Nitrokey devices found{}.  Use the --model, --serial-number, and --usb-path options \
+    to select one",
+    format_filter(config)
+  );
+
+  let device = device_infos
+    .first()
+    .with_context(|| format!("Nitrokey device not found{}", format_filter(config)))?;
+  manager.connect_path(device.path.deref()).with_context(|| {
+    format!(
+      "Failed to connect to Nitrokey device at path {}",
+      device.path
+    )
+  })
 }
 
 /// Connect to any Nitrokey device and do something with it.
