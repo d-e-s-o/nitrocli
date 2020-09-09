@@ -425,7 +425,7 @@ pub fn list(ctx: &mut Context<'_>, no_connect: bool) -> anyhow::Result<()> {
   if device_infos.is_empty() {
     println!(ctx, "No Nitrokey device connected")?;
   } else {
-    println!(ctx, "device path\tmodel\tserial number")?;
+    println!(ctx, "USB path\tmodel\tserial number")?;
     let mut manager =
       nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
 
