@@ -50,6 +50,7 @@ fn output_storage(model: nitrokey::Model) -> anyhow::Result<()> {
   admin retry count: [0-3]
   Storage:
     SD card ID:        0x[[:xdigit:]]{8}
+    SD card usage:     \d+% .. \d+% not accessed
     firmware:          (un)?locked
     storage keys:      (not )?created
     volumes:

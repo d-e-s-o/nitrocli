@@ -70,7 +70,8 @@ them, set the \fB\-\-no-connect\fR option.
 Print the status of the connected Nitrokey device, including the stick serial
 number, the firmware version, and the PIN retry count. If the device is a
 Nitrokey Storage, also print storage related information including the SD card
-serial number, the encryption status, and the status of the volumes.
+serial number, the SD card usage during this power cycle, the encryption
+status, and the status of the volumes.
 .TP
 .B nitrocli lock
 Lock the Nitrokey.
@@ -121,6 +122,10 @@ respectively, the start and end position of the hidden volume inside the
 encrypted volume, as a percentage of the encrypted volume's size.
 This command requires a password which is later used to look up the hidden
 volume to open. Unlike a PIN, this password is not cached by \fBgpg\-agent\fR(1).
+
+As a guide line for creating new hidden volumes, the \fBstatus\fR command
+provides a range of the SD card that has not been accessed during this power
+cycle.
 .TP
 \fBnitrocli hidden open
 Open a hidden volume. The volume to open is determined based on the password

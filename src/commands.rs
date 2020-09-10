@@ -6,6 +6,7 @@
 use std::convert::TryFrom as _;
 use std::fmt;
 use std::mem;
+use std::ops;
 use std::ops::Deref as _;
 use std::thread;
 use std::time;
@@ -334,11 +335,13 @@ where
 fn print_storage_status(
   ctx: &mut Context<'_>,
   status: &nitrokey::StorageStatus,
+  sd_card_usage: &ops::Range<u8>,
 ) -> anyhow::Result<()> {
   println!(
     ctx,
     r#"  Storage:
     SD card ID:        {id:#x}
+    SD card usage:     {usagestart}% .. {usageend}% not accessed
     firmware:          {fw}
     storage keys:      {sk}
     volumes:
@@ -346,6 +349,8 @@ fn print_storage_status(
       encrypted:       {ve}
       hidden:          {vh}"#,
     id = status.serial_number_sd_card,
+    usagestart = sd_card_usage.start,
+    usageend = sd_card_usage.end,
     fw = if status.firmware_locked {
       "locked"
     } else {
@@ -398,8 +403,11 @@ fn print_status(
     let status = device
       .get_storage_status()
       .context("Failed to retrieve storage status")?;
+    let sd_card_usage = device
+      .get_sd_card_usage()
+      .context("Failed to retrieve SD card usage")?;
 
-    print_storage_status(ctx, &status)
+    print_storage_status(ctx, &status, &sd_card_usage)
   } else {
     Ok(())
   }
