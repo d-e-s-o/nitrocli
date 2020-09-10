@@ -1,3 +1,9 @@
+Unreleased
+----------
+- Added SD card usage information to the output of the `status` command for
+  Storage devices
+
+
 0.3.5
 -----
 - Added support for configuration files
