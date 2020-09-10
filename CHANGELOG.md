@@ -16,6 +16,8 @@ Unreleased
   - Added `--usb-path` option that restricts the USB path of the device to
     connect to
 - Bumped `structopt` dependency to `0.3.17`
+- Added the `fill` command that fills the SD card of a Nitrokey Storage device
+  with random data
 
 
 0.3.4
