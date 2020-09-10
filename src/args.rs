@@ -79,6 +79,8 @@ Command! {
     Config(ConfigArgs) => |ctx, args: ConfigArgs| args.subcmd.execute(ctx),
     /// Interacts with the device's encrypted volume
     Encrypted(EncryptedArgs) => |ctx, args: EncryptedArgs| args.subcmd.execute(ctx),
+    /// Fills the SD card with random data
+    Fill => crate::commands::fill,
     /// Interacts with the device's hidden volume
     Hidden(HiddenArgs) => |ctx, args: HiddenArgs| args.subcmd.execute(ctx),
     /// Lists the attached Nitrokey devices

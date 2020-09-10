@@ -1,5 +1,7 @@
 Unreleased
 ----------
+- Added the `fill` command that fills the SD card of a Nitrokey Storage device
+  with random data
 - Added SD card usage information to the output of the `status` command for
   Storage devices
 
