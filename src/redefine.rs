@@ -14,6 +14,12 @@ macro_rules! println {
   };
 }
 
+macro_rules! print {
+  ($ctx:expr, $($arg:tt)*) => {
+    write!($ctx.stdout, $($arg)*)
+  };
+}
+
 macro_rules! eprintln {
   ($ctx:expr) => {
     writeln!($ctx.stderr, "")

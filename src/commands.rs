@@ -23,6 +23,7 @@ use nitrokey::GetPasswordSafe;
 
 use crate::args;
 use crate::config;
+use crate::output;
 use crate::pinentry;
 use crate::Context;
 
@@ -482,20 +483,20 @@ pub fn fill(ctx: &mut Context<'_>) -> anyhow::Result<()> {
       device.fill_sd_card(&pin).context("Failed to fill SD card")
     })?;
 
-    let mut last_progress = 0;
-    loop {
+    let mut progress_bar = output::ProgressBar::new();
+    progress_bar.draw(ctx)?;
+
+    while !progress_bar.is_finished() {
+      thread::sleep(time::Duration::from_secs(1));
+
       let status = device
         .get_operation_status()
         .context("Failed to query operation status")?;
       match status {
-        nitrokey::OperationStatus::Ongoing(progress) => {
-          if last_progress != progress {
-            println!(ctx, "{}/100", progress)?;
-          }
-          last_progress = progress;
-        }
-        nitrokey::OperationStatus::Idle => break,
+        nitrokey::OperationStatus::Ongoing(progress) => progress_bar.update(progress)?,
+        nitrokey::OperationStatus::Idle => progress_bar.finish(),
       };
+      progress_bar.draw(ctx)?;
     }
 
     Ok(())

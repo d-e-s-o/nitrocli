@@ -164,6 +164,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99e85c08494b21a9054e7fe1374a732aeadaff3980b6990b94bfd3a70f690005"
 
 [[package]]
+name = "log"
+version = "0.4.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fabed175da42fed1fa0746b0ea71f412aa9d35e76e95e59b192c64b9dc2bf8b"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "memchr"
 version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -204,6 +213,7 @@ dependencies = [
  "nitrokey",
  "nitrokey-test",
  "nitrokey-test-state",
+ "progressing",
  "regex",
  "serde",
  "structopt",
@@ -297,6 +307,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04f5f085b5d71e2188cb8271e5da0161ad52c3f227a661a3c135fdf28e258b12"
 dependencies = [
  "unicode-xid",
+]
+
+[[package]]
+name = "progressing"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97b7db19a74ba7c34de36558abed080568491d2b8999a34de914b1793b0b4b1b"
+dependencies = [
+ "log",
 ]
 
 [[package]]
