@@ -16,6 +16,8 @@ Unreleased
   - Added `--usb-path` option that restricts the USB path of the device to
     connect to
 - Bumped `structopt` dependency to `0.3.17`
+- Added SD card usage information to the output of the `status` command for
+  Storage devices
 
 
 0.3.4
