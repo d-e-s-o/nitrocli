@@ -99,6 +99,7 @@ impl Nitrocli {
     let ctx = &mut crate::Context {
       stdout: &mut stdout,
       stderr: &mut stderr,
+      is_tty: false,
       admin_pin: self.admin_pin.clone(),
       user_pin: self.user_pin.clone(),
       new_admin_pin: self.new_admin_pin.clone(),

@@ -98,6 +98,8 @@ pub struct Context<'io> {
   pub stdout: &'io mut dyn io::Write,
   /// The `Write` object used as standard error throughout the program.
   pub stderr: &'io mut dyn io::Write,
+  /// Whether `stdout` is a TTY.
+  pub is_tty: bool,
   /// The admin PIN, if provided through an environment variable.
   pub admin_pin: Option<ffi::OsString>,
   /// The user PIN, if provided through an environment variable.
@@ -118,7 +120,12 @@ pub struct Context<'io> {
 }
 
 impl<'io> Context<'io> {
-  fn from_env<O, E>(stdout: &'io mut O, stderr: &'io mut E, config: config::Config) -> Context<'io>
+  fn from_env<O, E>(
+    stdout: &'io mut O,
+    stderr: &'io mut E,
+    is_tty: bool,
+    config: config::Config,
+  ) -> Context<'io>
   where
     O: io::Write,
     E: io::Write,
@@ -126,6 +133,7 @@ impl<'io> Context<'io> {
     Context {
       stdout,
       stderr,
+      is_tty,
       admin_pin: env::var_os(NITROCLI_ADMIN_PIN),
       user_pin: env::var_os(NITROCLI_USER_PIN),
       new_admin_pin: env::var_os(NITROCLI_NEW_ADMIN_PIN),
@@ -154,8 +162,9 @@ fn main() {
 
   let rc = match config::Config::load() {
     Ok(config) => {
+      let is_tty = termion::is_tty(&stdout);
       let args = env::args().collect::<Vec<_>>();
-      let ctx = &mut Context::from_env(&mut stdout, &mut stderr, config);
+      let ctx = &mut Context::from_env(&mut stdout, &mut stderr, is_tty, config);
 
       run(ctx, args)
     }
