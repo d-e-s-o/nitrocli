@@ -15,6 +15,8 @@ Unreleased
     device to connect to
   - Added `--usb-path` option that restricts the USB path of the device to
     connect to
+- Added SD card usage information to the output of the `status` command for
+  Storage devices
 - Bumped `structopt` dependency to `0.3.17`
 
 

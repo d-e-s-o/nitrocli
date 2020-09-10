@@ -58,11 +58,12 @@ $ nitrocli status
 Status:
   model:             Storage
   serial number:     0x00053141
-  firmware version:  0.47
+  firmware version:  v0.54
   user retry count:  3
   admin retry count: 3
   Storage:
     SD card ID:        0x05dcad1d
+    SD card usage:     24% .. 99% not written
     firmware:          unlocked
     storage keys:      created
     volumes:
