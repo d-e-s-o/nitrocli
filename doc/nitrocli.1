@@ -136,6 +136,16 @@ open.
 .TP
 \fBnitrocli hidden close
 Close a hidden volume.
+.TP
+\fBnitrocli fill\fR
+Fills the SD card with random data, overwriting all existing data.
+This operation takes about one hour to finish for a 16 GB SD card.
+It cannot be cancelled, even if the \fBnitrocli\fR process is terminated before
+it finishes.
+
+This command requires the admin PIN.
+To avoid accidental calls of this command, the user has to enter the PIN even
+if it has been cached.
 
 .SS One-time passwords
 The Nitrokey Pro and the Nitrokey Storage support the generation of one-time
