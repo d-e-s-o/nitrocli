@@ -56,6 +56,7 @@ mod arg_util;
 mod args;
 mod commands;
 mod config;
+mod output;
 mod pinentry;
 #[cfg(test)]
 mod tests;
