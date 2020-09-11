@@ -72,7 +72,10 @@ fn output_multiple(_model: nitrokey::Model) -> anyhow::Result<()> {
   for (idx, device) in devices.iter().enumerate() {
     assert!(out.contains(&format!("Device #{}:\n", idx)), out);
     if let Some(model) = device.model {
-      assert!(out.contains(&format!("model:             {}\n", model)), out);
+      assert!(
+        out.contains(&format!("model:             {}\n", model)),
+        out
+      );
     }
     if let Some(sn) = device.serial_number {
       assert!(out.contains(&format!("serial number:     {}\n", sn)), out);
