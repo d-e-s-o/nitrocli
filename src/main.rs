@@ -163,9 +163,7 @@ fn main() {
 
   let rc = match config::Config::load() {
     Ok(config) => {
-      use crossterm::tty::IsTty as _;
-
-      let is_tty = stdout.is_tty();
+      let is_tty = termion::is_tty(&stdout);
       let args = env::args().collect::<Vec<_>>();
       let ctx = &mut Context::from_env(&mut stdout, &mut stderr, is_tty, config);
 

@@ -18,7 +18,7 @@ Unreleased
 - Bumped `structopt` dependency to `0.3.17`
 - Added the `fill` command that fills the SD card of a Nitrokey Storage device
   with random data
-  - Added the `crossterm` dependency in version `0.17.8`
+  - Added the `termion` dependency in version `1.5.5`
 
 
 0.3.4

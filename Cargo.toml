@@ -38,9 +38,6 @@ version = "1.0"
 [dependencies.base32]
 version = "0.4.0"
 
-[dependencies.crossterm]
-version = "0.17.7"
-
 [dependencies.envy]
 version = "0.4.1"
 
@@ -66,6 +63,9 @@ features = ["derive"]
 [dependencies.structopt]
 version = "0.3.17"
 default-features = false
+
+[dependencies.termion]
+version = "1.5.5"
 
 [dependencies.toml]
 version = "0.5.6"
