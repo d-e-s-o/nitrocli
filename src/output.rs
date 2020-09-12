@@ -65,31 +65,39 @@ impl ProgressBar {
   /// the last call to `draw`, or if this is the first call, this function will also print the
   /// progress bar itself.
   pub fn draw(&self, ctx: &mut Context<'_>) -> anyhow::Result<()> {
-    use crossterm::{cursor, terminal};
+    use anyhow::Context as _;
+    use termion::cursor::DetectCursorPos as _;
+    use termion::raw::IntoRawMode as _;
 
     if !ctx.is_tty {
       return Ok(());
     }
 
+    let pos = ctx
+      .stdout
+      .into_raw_mode()
+      .context("Failed to activate raw mode")?
+      .cursor_pos()
+      .context("Failed to query cursor position")?;
     let progress_char = if self.toggle && !self.finished {
       "."
     } else {
       " "
     };
     if self.redraw {
-      use progressing::Baring;
+      use progressing::Baring as _;;
 
       let mut progress_bar = progressing::mapping::Bar::with_range(0, 100);
       progress_bar.set(self.progress);
 
-      print!(ctx, "{}", terminal::Clear(terminal::ClearType::CurrentLine))?;
-      print!(ctx, "{}", cursor::MoveToColumn(0))?;
+      print!(ctx, "{}", termion::clear::CurrentLine)?;
+      print!(ctx, "{}", termion::cursor::Goto(1, pos.1))?;
       print!(ctx, " {} {}", progress_char, progress_bar)?;
       if self.finished {
         println!(ctx)?;
       }
     } else {
-      print!(ctx, "{}{}", cursor::MoveToColumn(1), progress_char)?;
+      print!(ctx, "{}{}", termion::cursor::Goto(2, pos.1), progress_char)?;
     }
 
     ctx.stdout.flush()?;
