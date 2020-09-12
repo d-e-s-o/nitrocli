@@ -7,13 +7,18 @@ use crate::Context;
 
 /// A progress bar that can be printed to an interactive output.
 pub struct ProgressBar {
+  /// Whether to redraw the entire progress bar in the next call to `draw`.
   redraw: bool,
+  /// The current progress of the progress bar (0 <= progress <= 100).
   progress: u8,
+  /// Toogled on every call to `draw` to print a pulsing indicator.
   toggle: bool,
+  /// Whether this progress bar finished.
   finished: bool,
 }
 
 impl ProgressBar {
+  /// Creates a new empty progress bar.
   pub fn new() -> ProgressBar {
     ProgressBar {
       redraw: true,
@@ -23,10 +28,12 @@ impl ProgressBar {
     }
   }
 
+  /// Whether this progress bar is finished.
   pub fn is_finished(&self) -> bool {
     self.finished
   }
 
+  /// Updates the progress bar with the given progress (0 <= progress <= 100).
   pub fn update(&mut self, progress: u8) -> anyhow::Result<()> {
     anyhow::ensure!(!self.finished, "Tried to update finished progress bar");
     anyhow::ensure!(
@@ -42,12 +49,21 @@ impl ProgressBar {
     Ok(())
   }
 
+  /// Finish this progress bar.
+  ///
+  /// A finished progress bar may no longer be updated.
   pub fn finish(&mut self) {
     self.finished = true;
     self.redraw = true;
     self.progress = 100;
   }
 
+  /// Print the progress bar to the stdout set in the given context.
+  ///
+  /// On every call of this method (as long as the progress bar is not finished), a pulsing
+  /// indicator is printed to show that the process is still running.  If there was progress since
+  /// the last call to `draw`, or if this is the first call, this function will also print the
+  /// progress bar itself.
   pub fn draw(&self, ctx: &mut Context<'_>) -> anyhow::Result<()> {
     use crossterm::{cursor, terminal};
 
