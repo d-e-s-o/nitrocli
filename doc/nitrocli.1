@@ -137,7 +137,7 @@ open.
 \fBnitrocli hidden close
 Close a hidden volume.
 .TP
-\fBnitrocli fill\fR
+\fBnitrocli fill \fR[\fB\-a\fR|\fB\-\-attach\fR
 Fills the SD card with random data, overwriting all existing data.
 This operation takes about one hour to finish for a 16 GiB SD card.
 It cannot be canceled, even if the \fBnitrocli\fR process is terminated before
@@ -146,6 +146,11 @@ it finishes.
 This command requires the admin PIN.
 To avoid accidental calls of this command, the user has to enter the PIN even
 if it has been cached.
+
+If the \fB\-\-attach\fR option is set, this command will not start a new fill
+operation.
+Instead it checks whether a fill operation is currently running on the device
+and shows its progress.
 
 .SS One-time passwords
 The Nitrokey Pro and the Nitrokey Storage support the generation of one-time
