@@ -18,6 +18,8 @@ Unreleased
 - Added the `fill` command that fills the SD card of a Nitrokey Storage device
   with random data
   - Added the `termion` dependency in version `1.5.5`
+  - Added the `--progress` option to the `fill` command to show the progress of
+    a running operation instead of starting one.
 - Added SD card usage information to the output of the `status` command for
   Storage devices
 - Bumped `structopt` dependency to `0.3.17`

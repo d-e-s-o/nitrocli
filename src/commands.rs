@@ -471,19 +471,30 @@ pub fn list(ctx: &mut Context<'_>, no_connect: bool) -> anyhow::Result<()> {
 }
 
 /// Fill the SD card with random data
-pub fn fill(ctx: &mut Context<'_>) -> anyhow::Result<()> {
+pub fn fill(ctx: &mut Context<'_>, progress: bool) -> anyhow::Result<()> {
   with_storage_device(ctx, |ctx, mut device| {
-    let pin_entry = pinentry::PinEntry::from(args::PinType::Admin, &device)?;
+    let mut initial_progress = 0;
+    if progress {
+      let status = device
+        .get_operation_status()
+        .context("Failed to query operation status")?;
+      match status {
+        nitrokey::OperationStatus::Ongoing(progress) => initial_progress = progress,
+        nitrokey::OperationStatus::Idle => anyhow::bail!("No fill operation in progress"),
+      }
+    } else {
+      let pin_entry = pinentry::PinEntry::from(args::PinType::Admin, &device)?;
 
-    // Similar to reset, we want the user to re-enter the admin PIN even if is cached to avoid
-    // accidental data loss.
-    pinentry::clear(&pin_entry).context("Failed to clear cached secret")?;
+      // Similar to reset, we want the user to re-enter the admin PIN even if is cached to avoid
+      // accidental data loss.
+      pinentry::clear(&pin_entry).context("Failed to clear cached secret")?;
 
-    try_with_pin(ctx, &pin_entry, |pin| {
-      device.fill_sd_card(&pin).context("Failed to fill SD card")
-    })?;
+      try_with_pin(ctx, &pin_entry, |pin| {
+        device.fill_sd_card(&pin).context("Failed to fill SD card")
+      })?;
+    }
 
-    let mut progress_bar = output::ProgressBar::new();
+    let mut progress_bar = output::ProgressBar::new(initial_progress);
     progress_bar.draw(ctx)?;
 
     while !progress_bar.is_finished() {
