@@ -26,10 +26,10 @@ pub struct ProgressBar {
 
 impl ProgressBar {
   /// Creates a new empty progress bar.
-  pub fn new() -> ProgressBar {
+  pub fn new(progress: u8) -> ProgressBar {
     ProgressBar {
       redraw: true,
-      progress: 0,
+      progress,
       toggle: false,
       finished: false,
     }
