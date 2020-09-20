@@ -80,7 +80,7 @@ Command! {
     /// Interacts with the device's encrypted volume
     Encrypted(EncryptedArgs) => |ctx, args: EncryptedArgs| args.subcmd.execute(ctx),
     /// Fills the SD card with random data
-    Fill(FillArgs) => |ctx, args: FillArgs| crate::commands::fill(ctx, args.progress),
+    Fill(FillArgs) => |ctx, args: FillArgs| crate::commands::fill(ctx, args.attach),
     /// Interacts with the device's hidden volume
     Hidden(HiddenArgs) => |ctx, args: HiddenArgs| args.subcmd.execute(ctx),
     /// Lists the attached Nitrokey devices
@@ -194,7 +194,7 @@ pub struct FillArgs {
   /// Checks if a fill operation is already running and show its progress instead of starting a new
   /// operation.
   #[structopt(short, long)]
-  progress: bool,
+  attach: bool,
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]

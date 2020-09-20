@@ -471,10 +471,10 @@ pub fn list(ctx: &mut Context<'_>, no_connect: bool) -> anyhow::Result<()> {
 }
 
 /// Fill the SD card with random data
-pub fn fill(ctx: &mut Context<'_>, progress: bool) -> anyhow::Result<()> {
+pub fn fill(ctx: &mut Context<'_>, attach: bool) -> anyhow::Result<()> {
   with_storage_device(ctx, |ctx, mut device| {
     let mut initial_progress = 0;
-    if progress {
+    if attach {
       let status = device
         .get_operation_status()
         .context("Failed to query operation status")?;
