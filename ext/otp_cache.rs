@@ -6,6 +6,7 @@
 use std::fs;
 use std::io::Write as _;
 use std::path;
+use std::process;
 
 use anyhow::Context as _;
 use structopt::StructOpt as _;
@@ -167,6 +168,16 @@ fn get_otp_slots(device: &impl nitrokey::GenerateOtp) -> anyhow::Result<Cache> {
 }
 
 fn generate_otp(ctx: &ext::Context, algorithm: &str, slot: u8) -> anyhow::Result<()> {
+  // Attempt to prevent a "hang" of the Nitrokey by killing any scdaemon
+  // that could currently have the device opened itself
+  // (https://github.com/Nitrokey/libnitrokey/issues/137).
+  let _ = process::Command::new("gpg-connect-agent")
+    .stdout(process::Stdio::null())
+    .stderr(process::Stdio::null())
+    .arg("SCD KILLSCD")
+    .arg("/bye")
+    .output();
+
   ctx
     .nitrocli()
     .args(["otp", "get"].iter())
