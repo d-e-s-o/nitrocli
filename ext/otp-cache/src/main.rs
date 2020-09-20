@@ -9,6 +9,7 @@ use std::collections;
 use std::fs;
 use std::io::Write as _;
 use std::path;
+use std::process;
 
 use anyhow::Context as _;
 
@@ -153,6 +154,16 @@ fn load_cache(path: &path::Path) -> anyhow::Result<Cache> {
 }
 
 fn generate_otp(ctx: &ext::Context, args: &Args, slot: u8) -> anyhow::Result<String> {
+  // Attempt to prevent a "hang" of the Nitrokey by killing any scdaemon
+  // that could currently have the device opened itself
+  // (https://github.com/Nitrokey/libnitrokey/issues/137).
+  let _ = process::Command::new("gpg-connect-agent")
+    .stdout(process::Stdio::null())
+    .stderr(process::Stdio::null())
+    .arg("SCD KILLSCD")
+    .arg("/bye")
+    .output();
+
   ext::Nitrocli::from_context(ctx)
     .args(&["otp", "get"])
     .arg(slot.to_string())
