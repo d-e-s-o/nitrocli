@@ -54,7 +54,7 @@ macro_rules! Command {
 macro_rules! Enum {
   ( $(#[$docs:meta])* $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
     $(#[$docs])*
-    #[derive(Clone, Copy, Debug, PartialEq)]
+    #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
     pub enum $name {
       $(
         $var,

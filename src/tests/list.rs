@@ -17,7 +17,7 @@ fn not_connected() -> anyhow::Result<()> {
 fn connected(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^USB path\tmodel\tserial number
-([[:^space:]]+\t(Pro|Storage|unknown)\t0x[[:xdigit:]]+
+([[:^space:]]+\t(Nitrokey Pro|Nitrokey Storage|unknown)\t0x[[:xdigit:]]+
 )+$"#,
   )
   .unwrap();

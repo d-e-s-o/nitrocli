@@ -78,6 +78,7 @@ impl Nitrocli {
     match model {
       nitrokey::Model::Pro => "--model=pro",
       nitrokey::Model::Storage => "--model=storage",
+      _ => panic!("Unexpected model in test suite: {}", model),
     }
   }
 

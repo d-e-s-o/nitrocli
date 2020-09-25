@@ -25,7 +25,7 @@ fn not_found() {
 fn output_pro(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^Status:
-  model:             Pro
+  model:             Nitrokey Pro
   serial number:     0x[[:xdigit:]]{8}
   firmware version:  v\d+\.\d+
   user retry count:  [0-3]
@@ -43,7 +43,7 @@ $"#,
 fn output_storage(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^Status:
-  model:             Storage
+  model:             Nitrokey Storage
   serial number:     0x[[:xdigit:]]{8}
   firmware version:  v\d+\.\d+
   user retry count:  [0-3]

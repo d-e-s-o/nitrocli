@@ -4,10 +4,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::collections;
+use std::convert;
+use std::convert::TryInto as _;
 use std::ops;
 use std::path;
 
 use super::*;
+use crate::args;
 
 #[test]
 fn no_command_or_option() {
@@ -173,32 +176,33 @@ fn connect_wrong_usb_path(_model: nitrokey::Model) {
 fn connect_model(_model: nitrokey::Model) -> anyhow::Result<()> {
   let devices = nitrokey::list_devices()?;
   let mut model_counts = collections::BTreeMap::new();
-  let _ = model_counts.insert(nitrokey::Model::Pro.to_string(), 0);
-  let _ = model_counts.insert(nitrokey::Model::Storage.to_string(), 0);
-  for model in devices.iter().filter_map(|d| d.model) {
-    *model_counts.entry(model.to_string()).or_default() += 1;
+  let _ = model_counts.insert(args::DeviceModel::Pro, 0);
+  let _ = model_counts.insert(args::DeviceModel::Storage, 0);
+  for nkmodel in devices.iter().filter_map(|d| d.model) {
+    let model = nkmodel.try_into().expect("Unexpected Nitrokey model");
+    *model_counts.entry(model).or_default() += 1;
   }
 
   for (model, count) in model_counts {
-    let res = Nitrocli::new().handle(&["status", &format!("--model={}", model.to_lowercase())]);
+    let res = Nitrocli::new().handle(&["status", &format!("--model={}", model)]);
     if count == 0 {
       let err = res.unwrap_err().to_string();
       assert_eq!(
         err,
-        format!(
-          "Nitrokey device not found (filter: model={})",
-          model.to_lowercase()
-        )
+        format!("Nitrokey device not found (filter: model={})", model)
       );
     } else if count == 1 {
-      assert!(res?.contains(&format!("model:             {}\n", model)));
+      assert!(res?.contains(&format!(
+        "model:             {}\n",
+        nitrokey::Model::from(model)
+      )));
     } else {
       let err = res.unwrap_err().to_string();
       assert_eq!(
         err,
         format!(
           "Multiple Nitrokey devices found (filter: model={}).  ",
-          model.to_lowercase()
+          model
         ) + "Use the --model, --serial-number, and --usb-path options to select one"
       );
     }
@@ -211,11 +215,14 @@ fn connect_model(_model: nitrokey::Model) -> anyhow::Result<()> {
 fn connect_usb_path_model_serial(_model: nitrokey::Model) -> anyhow::Result<()> {
   let devices = nitrokey::list_devices()?;
   for device in devices {
+    let model = device.model.map(|nkmodel| {
+      convert::TryInto::<args::DeviceModel>::try_into(nkmodel).expect("Unexpected Nitrokey model")
+    });
     let mut args = Vec::new();
     args.push("status".to_owned());
     args.push(format!("--usb-path={}", device.path));
-    if let Some(model) = device.model {
-      args.push(format!("--model={}", model.to_string().to_lowercase()));
+    if let Some(model) = model {
+      args.push(format!("--model={}", model));
     }
     if let Some(sn) = device.serial_number {
       args.push(format!("--serial-number={}", sn));
@@ -236,22 +243,25 @@ fn connect_usb_path_model_serial(_model: nitrokey::Model) -> anyhow::Result<()> 
 fn connect_usb_path_model_wrong_serial(_model: nitrokey::Model) -> anyhow::Result<()> {
   let devices = nitrokey::list_devices()?;
   for device in devices {
+    let model = device.model.map(|nkmodel| {
+      convert::TryInto::<args::DeviceModel>::try_into(nkmodel).expect("Unexpected Nitrokey model")
+    });
     let mut args = Vec::new();
     args.push("status".to_owned());
     args.push(format!("--usb-path={}", device.path));
-    if let Some(model) = device.model {
-      args.push(format!("--model={}", model.to_string().to_lowercase()));
+    if let Some(model) = model {
+      args.push(format!("--model={}", model));
     }
     args.push("--serial-number=0xdeadbeef".to_owned());
 
     let res = Nitrocli::new().handle(&args.iter().map(ops::Deref::deref).collect::<Vec<_>>());
     let err = res.unwrap_err().to_string();
-    if let Some(model) = device.model {
+    if let Some(model) = model {
       assert_eq!(
         err,
         format!(
           "Nitrokey device not found (filter: model={}, serial number in [0xdeadbeef], usb path={})",
-          model.to_string().to_lowercase(),
+          model,
           device.path
         )
       );
