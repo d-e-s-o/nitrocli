@@ -21,6 +21,7 @@ Unreleased
 - Added SD card usage information to the output of the `status` command for
   Storage devices
 - Bumped `structopt` dependency to `0.3.17`
+- Bumped `nitrokey` dependency to `0.8.0`
 
 
 0.3.4

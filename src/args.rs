@@ -3,6 +3,8 @@
 // Copyright (C) 2020 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use std::convert;
+
 /// Provides access to a Nitrokey device
 #[derive(Debug, structopt::StructOpt)]
 #[structopt(name = "nitrocli")]
@@ -55,6 +57,18 @@ impl From<DeviceModel> for nitrokey::Model {
     match model {
       DeviceModel::Pro => nitrokey::Model::Pro,
       DeviceModel::Storage => nitrokey::Model::Storage,
+    }
+  }
+}
+
+impl convert::TryFrom<nitrokey::Model> for DeviceModel {
+  type Error = anyhow::Error;
+
+  fn try_from(model: nitrokey::Model) -> Result<DeviceModel, anyhow::Error> {
+    match model {
+      nitrokey::Model::Pro => Ok(DeviceModel::Pro),
+      nitrokey::Model::Storage => Ok(DeviceModel::Storage),
+      _ => Err(anyhow::anyhow!("Unsupported device model: {}", model)),
     }
   }
 }
