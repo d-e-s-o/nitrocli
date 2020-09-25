@@ -76,6 +76,7 @@ impl Nitrocli {
 
   fn model_to_arg(model: nitrokey::Model) -> &'static str {
     match model {
+      nitrokey::Model::Librem => "--model=librem",
       nitrokey::Model::Pro => "--model=pro",
       nitrokey::Model::Storage => "--model=storage",
       _ => panic!("Unexpected model in test suite: {}", model),
