@@ -22,6 +22,7 @@ Unreleased
   Storage devices
 - Bumped `structopt` dependency to `0.3.17`
 - Bumped `nitrokey` dependency to `0.8.0`
+  - Added the `librem` device model
 
 
 0.3.4

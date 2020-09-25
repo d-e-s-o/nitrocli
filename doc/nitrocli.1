@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2020-09-19
+.TH NITROCLI 1 2020-09-29
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -7,7 +7,7 @@ nitrocli \- access Nitrokey devices
 [\fIarguments\fR]
 .SH DESCRIPTION
 \fBnitrocli\fR provides access to Nitrokey devices.
-It supports the Nitrokey Pro and the Nitrokey Storage.
+It supports the Nitrokey Pro, the Nitrokey Storage, and the Librem Key.
 It can be used to access the encrypted volume, the one-time password generator,
 and the password safe.
 .SS Device selection
@@ -21,7 +21,7 @@ Use the \fBlist\fR command to list all attached devices with their USB path,
 model, and serial number (if available).
 .SH OPTIONS
 .TP
-\fB\-m\fR, \fB\-\-model pro\fR|\fBstorage\fR
+\fB\-m\fR, \fB\-\-model librem\fR|\fBpro\fR|\fBstorage\fR
 Restrict connections to the given device model, see the Device selection
 section.
 .TP
@@ -153,9 +153,9 @@ Instead it checks whether a fill operation is currently running on the device
 and shows its progress.
 
 .SS One-time passwords
-The Nitrokey Pro and the Nitrokey Storage support the generation of one-time
-passwords using the HOTP algorithm according to RFC 4226 or the TOTP algorithm
-according to RFC 6238.
+The Nitrokey Pro, the Nitrokey Storage, and the Librem Key support the
+generation of one-time passwords using the HOTP algorithm according to RFC 4226
+or the TOTP algorithm according to RFC 6238.
 The required data \(en a name and the secret \(en is stored in slots.
 Currently, the Nitrokey devices provide three HOTP slots and 15 TOTP slots.
 The slots are numbered per algorithm starting at zero.
@@ -245,8 +245,8 @@ If \fB\-\-no\-otp\-pin\fR is set, OTP generation can be performed without PIN.
 These two options are mutually exclusive.
 
 .SS Password safe
-The Nitrokey Pro and the Nitrokey Storage provide a password safe (PWS) with 20
-slots.
+The Nitrokey Pro, the Nitrokey Storage, and the Librem Key provide a password
+safe (PWS) with 20 slots.
 In each of these slots you can store a name, a login, and a password.
 The PWS is not encrypted, but it is protected with the user PIN by the firmware.
 Once the PWS is unlocked by one of the commands listed below, it can be

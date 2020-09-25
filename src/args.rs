@@ -38,6 +38,7 @@ pub struct Args {
 Enum! {
   /// The available Nitrokey models.
   DeviceModel, [
+    Librem => "librem",
     Pro => "pro",
     Storage => "storage",
   ]
@@ -46,6 +47,7 @@ Enum! {
 impl DeviceModel {
   pub fn as_user_facing_str(&self) -> &str {
     match self {
+      DeviceModel::Librem => "Librem",
       DeviceModel::Pro => "Pro",
       DeviceModel::Storage => "Storage",
     }
@@ -55,6 +57,7 @@ impl DeviceModel {
 impl From<DeviceModel> for nitrokey::Model {
   fn from(model: DeviceModel) -> nitrokey::Model {
     match model {
+      DeviceModel::Librem => nitrokey::Model::Librem,
       DeviceModel::Pro => nitrokey::Model::Pro,
       DeviceModel::Storage => nitrokey::Model::Storage,
     }
@@ -66,6 +69,7 @@ impl convert::TryFrom<nitrokey::Model> for DeviceModel {
 
   fn try_from(model: nitrokey::Model) -> Result<DeviceModel, anyhow::Error> {
     match model {
+      nitrokey::Model::Librem => Ok(DeviceModel::Librem),
       nitrokey::Model::Pro => Ok(DeviceModel::Pro),
       nitrokey::Model::Storage => Ok(DeviceModel::Storage),
       _ => Err(anyhow::anyhow!("Unsupported device model: {}", model)),
