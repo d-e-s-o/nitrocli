@@ -5,6 +5,7 @@ Unreleased
   - Added the `termion` dependency in version `1.5.5`
 - Added SD card usage information to the output of the `status` command for
   Storage devices
+- Bumped `nitrokey` dependency to `0.8.0`
 
 
 0.3.5

@@ -77,7 +77,7 @@ impl SecretEntry for PinEntry {
 
   fn description(&self, mode: Mode) -> CowStr {
     format!(
-      "{} for\rNitrokey {} {}",
+      "{} for\r {} {}",
       match self.pin_type {
         args::PinType::Admin => match mode {
           Mode::Choose => "Please enter a new admin PIN",
@@ -135,7 +135,7 @@ impl SecretEntry for PwdEntry {
 
   fn description(&self, mode: Mode) -> CowStr {
     format!(
-      "{} for\rNitrokey {} {}",
+      "{} for\r {} {}",
       match mode {
         Mode::Choose => "Please enter a new hidden volume password",
         Mode::Confirm => "Please confirm the new hidden volume password",

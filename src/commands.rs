@@ -370,11 +370,7 @@ fn print_storage_status(
 }
 
 /// Query and pretty print the status that is common to all Nitrokey devices.
-fn print_status(
-  ctx: &mut Context<'_>,
-  model: &'static str,
-  device: &nitrokey::DeviceWrapper<'_>,
-) -> anyhow::Result<()> {
+fn print_status(ctx: &mut Context<'_>, device: &nitrokey::DeviceWrapper<'_>) -> anyhow::Result<()> {
   let serial_number = device
     .get_serial_number()
     .context("Could not query the serial number")?;
@@ -387,7 +383,7 @@ fn print_status(
   firmware version:  {fwv}
   user retry count:  {urc}
   admin retry count: {arc}"#,
-    model = model,
+    model = device.get_model(),
     id = serial_number,
     fwv = device
       .get_firmware_version()
@@ -416,13 +412,7 @@ fn print_status(
 
 /// Inquire the status of the nitrokey.
 pub fn status(ctx: &mut Context<'_>) -> anyhow::Result<()> {
-  with_device(ctx, |ctx, device| {
-    let model = match device {
-      nitrokey::DeviceWrapper::Pro(_) => "Pro",
-      nitrokey::DeviceWrapper::Storage(_) => "Storage",
-    };
-    print_status(ctx, model, &device)
-  })
+  with_device(ctx, |ctx, device| print_status(ctx, &device))
 }
 
 /// List the attached Nitrokey devices.
@@ -671,9 +661,9 @@ pub fn config_get(ctx: &mut Context<'_>) -> anyhow::Result<()> {
   capslock binding:         {cl}
   scrollock binding:        {sl}
   require user PIN for OTP: {otp}"#,
-      nl = format_option(config.numlock),
-      cl = format_option(config.capslock),
-      sl = format_option(config.scrollock),
+      nl = format_option(config.num_lock),
+      cl = format_option(config.caps_lock),
+      sl = format_option(config.scroll_lock),
       otp = config.user_password,
     )?;
     Ok(())
@@ -702,9 +692,9 @@ pub fn config_set(ctx: &mut Context<'_>, args: args::ConfigSetArgs) -> anyhow::R
       .get_config()
       .context("Failed to get current configuration")?;
     let config = nitrokey::Config {
-      numlock: numlock.or(config.numlock),
-      capslock: capslock.or(config.capslock),
-      scrollock: scrollock.or(config.scrollock),
+      num_lock: numlock.or(config.num_lock),
+      caps_lock: capslock.or(config.caps_lock),
+      scroll_lock: scrollock.or(config.scroll_lock),
       user_password: otp_pin.unwrap_or(config.user_password),
     };
     device
