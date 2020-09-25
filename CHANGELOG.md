@@ -1,5 +1,6 @@
 Unreleased
 ----------
+- Added support for the Librem Key
 - Added the `fill` command that fills the SD card of a Nitrokey Storage device
   with random data
   - Added the `termion` dependency in version `1.5.5`

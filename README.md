@@ -8,8 +8,8 @@ nitrocli
 - [Changelog](CHANGELOG.md)
 
 **nitrocli** is a program that provides a command line interface for
-interaction with [Nitrokey Pro][nitrokey-pro] and [Nitrokey
-Storage][nitrokey-storage] devices.
+interaction with [Nitrokey Pro][nitrokey-pro], [Nitrokey
+Storage][nitrokey-storage], and [Librem Key][librem-key] devices.
 
 
 The following commands are currently supported:
@@ -181,6 +181,7 @@ the full text of the license.
 [nitrokey-gmbh]: https://www.nitrokey.com
 [nitrokey-pro]: https://shop.nitrokey.com/shop/product/nitrokey-pro-2-3
 [nitrokey-storage]: https://shop.nitrokey.com/shop/product/nitrokey-storage-2-56
+[librem-key]: https://puri.sm/products/librem-key/
 [nitrocli-arch]: https://aur.archlinux.org/packages/nitrocli
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
 [nitrocli-debian]: https://packages.debian.org/stable/nitrocli
