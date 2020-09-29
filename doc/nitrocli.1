@@ -217,26 +217,26 @@ List all OTP slots.
 If \fB\-\-all\fR is not set, empty slots are ignored.
 
 .SS Configuration
-Nitrokey devices have four configuration settings:  the numlock, capslock and
-scrollock keys can be mapped to an HOTP slot, and OTP generation can be set to
-require the user PIN.
+Nitrokey devices have four configuration settings:  the Num Lock, Caps Lock and
+Scroll Lock keys can be mapped to an HOTP slot, and OTP generation can be set
+to require the user PIN.
 .TP
 \fBnitrocli config get\fR
 Print the current Nitrokey configuration.
 .TP
 \fBnitrocli config set \fR\
-[[\fB\-n\fR|\fB\-\-numlock \fIslot\fR] | [\fB\-N\fR|\fB\-\-no\-numlock\fR]] \
-[[\fB\-c\fR|\fB\-\-capslock \fIslot\fR] | [\fB\-C\fR|\fB\-\-no\-capslock\fR]] \
-[[\fB\-s\fR|\fB\-\-scrollock \fIslot\fR] | [\fB\-S\fR|\fB\-\-no\-scrollock\fR]] \
+[[\fB\-n\fR|\fB\-\-num-lock \fIslot\fR] | [\fB\-N\fR|\fB\-\-no\-num-lock\fR]] \
+[[\fB\-c\fR|\fB\-\-caps-lock \fIslot\fR] | [\fB\-C\fR|\fB\-\-no\-caps-lock\fR]] \
+[[\fB\-s\fR|\fB\-\-scroll-lock \fIslot\fR] | [\fB\-S\fR|\fB\-\-no\-scroll-lock\fR]] \
 [[\fB\-o\fR|\fB\-\-otp\-pin\fR] | [\fB\-O\fR|\fB\-\-no\-otp\-pin\fR]]
 Update the Nitrokey configuration.
 This command requires the admin PIN.
 
-With the \fB\-\-numlock\fR, \fB\-\-capslock\fR and \fB\-\-scrollock\fR options,
-the respective bindings can be set.
+With the \fB\-\-num-lock\fR, \fB\-\-caps-lock\fR and \fB\-\-scroll-lock\fR
+options, the respective bindings can be set.
 \fIslot\fR is the number of the HOTP slot to bind the key to.
-If \fB\-\-no\-numlock\fR, \fB\-\-no\-capslock\fR or \fB\-\-no\-scrollock\fR is
-set, the respective binding is disabled.
+If \fB\-\-no\-num-lock\fR, \fB\-\-no\-caps-lock\fR or \fB\-\-no\-scroll-lock\fR
+is set, the respective binding is disabled.
 The two corresponding options are mutually exclusive.
 
 If \fB\-\-otp\-pin\fR is set, the user PIN will be required to generate one-time

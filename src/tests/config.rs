@@ -26,9 +26,9 @@ fn mutually_exclusive_set_options() {
 fn get(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^Config:
-  numlock binding:          (not set|\d+)
-  capslock binding:         (not set|\d+)
-  scrollock binding:        (not set|\d+)
+  num lock binding:         (not set|\d+)
+  caps lock binding:        (not set|\d+)
+  scroll lock binding:      (not set|\d+)
   require user PIN for OTP: (true|false)
 $"#,
   )
@@ -44,12 +44,12 @@ $"#,
 fn set_wrong_usage(model: nitrokey::Model) {
   let err = Nitrocli::new()
     .model(model)
-    .handle(&["config", "set", "--numlock", "2", "-N"])
+    .handle(&["config", "set", "--num-lock", "2", "-N"])
     .unwrap_err()
     .to_string();
 
   assert!(
-    err.contains("The argument '--numlock <numlock>' cannot be used with '--no-numlock'"),
+    err.contains("The argument '--num-lock <num-lock>' cannot be used with '--no-num-lock'"),
     err,
   );
 }
@@ -61,9 +61,9 @@ fn set_get(model: nitrokey::Model) -> anyhow::Result<()> {
 
   let re = regex::Regex::new(
     r#"^Config:
-  numlock binding:          not set
-  capslock binding:         0
-  scrollock binding:        1
+  num lock binding:         not set
+  caps lock binding:        0
+  scroll lock binding:      1
   require user PIN for OTP: (true|false)
 $"#,
   )
