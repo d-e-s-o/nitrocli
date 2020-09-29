@@ -125,24 +125,24 @@ Command! {ConfigCommand, [
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct ConfigSetArgs {
-  /// Sets the numlock option to the given HOTP slot
+  /// Sets the Num Lock option to the given HOTP slot
   #[structopt(short = "n", long)]
-  pub numlock: Option<u8>,
-  /// Unsets the numlock option
-  #[structopt(short = "N", long, conflicts_with("numlock"))]
-  pub no_numlock: bool,
-  /// Sets the capslock option to the given HOTP slot
+  pub num_lock: Option<u8>,
+  /// Unsets the Num Lock option
+  #[structopt(short = "N", long, conflicts_with("num-lock"))]
+  pub no_num_lock: bool,
+  /// Sets the Cap Lock option to the given HOTP slot
   #[structopt(short = "c", long)]
-  pub capslock: Option<u8>,
-  /// Unsets the capslock option
-  #[structopt(short = "C", long, conflicts_with("capslock"))]
-  pub no_capslock: bool,
-  /// Sets the scrollock option to the given HOTP slot
+  pub caps_lock: Option<u8>,
+  /// Unsets the Caps Lock option
+  #[structopt(short = "C", long, conflicts_with("caps-lock"))]
+  pub no_caps_lock: bool,
+  /// Sets the Scroll Lock option to the given HOTP slot
   #[structopt(short = "s", long)]
-  pub scrollock: Option<u8>,
-  /// Unsets the scrollock option
-  #[structopt(short = "S", long, conflicts_with("scrollock"))]
-  pub no_scrollock: bool,
+  pub scroll_lock: Option<u8>,
+  /// Unsets the Scroll Lock option
+  #[structopt(short = "S", long, conflicts_with("scroll-lock"))]
+  pub no_scroll_lock: bool,
   /// Requires the user PIN to generate one-time passwords
   #[structopt(short = "o", long)]
   pub otp_pin: bool,

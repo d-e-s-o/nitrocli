@@ -657,9 +657,9 @@ pub fn config_get(ctx: &mut Context<'_>) -> anyhow::Result<()> {
     println!(
       ctx,
       r#"Config:
-  numlock binding:          {nl}
-  capslock binding:         {cl}
-  scrollock binding:        {sl}
+  num lock binding:         {nl}
+  caps lock binding:        {cl}
+  scroll lock binding:      {sl}
   require user PIN for OTP: {otp}"#,
       nl = format_option(config.num_lock),
       cl = format_option(config.caps_lock),
@@ -672,12 +672,13 @@ pub fn config_get(ctx: &mut Context<'_>) -> anyhow::Result<()> {
 
 /// Write the Nitrokey configuration.
 pub fn config_set(ctx: &mut Context<'_>, args: args::ConfigSetArgs) -> anyhow::Result<()> {
-  let numlock = args::ConfigOption::try_from(args.no_numlock, args.numlock, "numlock")
-    .context("Failed to apply numlock configuration")?;
-  let capslock = args::ConfigOption::try_from(args.no_capslock, args.capslock, "capslock")
-    .context("Failed to apply capslock configuration")?;
-  let scrollock = args::ConfigOption::try_from(args.no_scrollock, args.scrollock, "scrollock")
-    .context("Failed to apply scrollock configuration")?;
+  let num_lock = args::ConfigOption::try_from(args.no_num_lock, args.num_lock, "numlock")
+    .context("Failed to apply num lock configuration")?;
+  let caps_lock = args::ConfigOption::try_from(args.no_caps_lock, args.caps_lock, "capslock")
+    .context("Failed to apply caps lock configuration")?;
+  let scroll_lock =
+    args::ConfigOption::try_from(args.no_scroll_lock, args.scroll_lock, "scrollock")
+      .context("Failed to apply scroll lock configuration")?;
   let otp_pin = if args.otp_pin {
     Some(true)
   } else if args.no_otp_pin {
@@ -692,9 +693,9 @@ pub fn config_set(ctx: &mut Context<'_>, args: args::ConfigSetArgs) -> anyhow::R
       .get_config()
       .context("Failed to get current configuration")?;
     let config = nitrokey::Config {
-      num_lock: numlock.or(config.num_lock),
-      caps_lock: capslock.or(config.caps_lock),
-      scroll_lock: scrollock.or(config.scroll_lock),
+      num_lock: num_lock.or(config.num_lock),
+      caps_lock: caps_lock.or(config.caps_lock),
+      scroll_lock: scroll_lock.or(config.scroll_lock),
       user_password: otp_pin.unwrap_or(config.user_password),
     };
     device

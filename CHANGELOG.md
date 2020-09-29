@@ -6,6 +6,8 @@ Unreleased
   - Added the `termion` dependency in version `1.5.5`
 - Added SD card usage information to the output of the `status` command for
   Storage devices
+- Renamed the `--{no-,}{numlock,capslock,scrollock}` options of the `config
+  set` command to `--{no-,}{num-lock,caps-lock,scroll-lock}`
 - Bumped `nitrokey` dependency to `0.8.0`
 
 
