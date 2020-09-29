@@ -23,6 +23,8 @@ Unreleased
 - Bumped `structopt` dependency to `0.3.17`
 - Bumped `nitrokey` dependency to `0.8.0`
   - Added the `librem` device model
+  - Renamed the `--{no-,}{numlock,capslock,scrollock}` options of the `config
+    set` command to `--{no-,}{num-lock,caps-lock,scroll-lock}`
 
 
 0.3.4
