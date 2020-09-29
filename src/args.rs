@@ -44,16 +44,6 @@ Enum! {
   ]
 }
 
-impl DeviceModel {
-  pub fn as_user_facing_str(&self) -> &str {
-    match self {
-      DeviceModel::Librem => "Librem",
-      DeviceModel::Pro => "Pro",
-      DeviceModel::Storage => "Storage",
-    }
-  }
-}
-
 impl From<DeviceModel> for nitrokey::Model {
   fn from(model: DeviceModel) -> nitrokey::Model {
     match model {
