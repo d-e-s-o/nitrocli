@@ -51,6 +51,7 @@ where
   let strings = Vec::<String>::deserialize(d).map_err(D::Error::custom)?;
   let result = strings
     .iter()
+    .filter(|s| !s.is_empty())
     .map(|s| nitrokey::SerialNumber::from_str(s))
     .collect::<Result<_, _>>();
   result.map_err(D::Error::custom)
