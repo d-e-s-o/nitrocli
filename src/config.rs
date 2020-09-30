@@ -8,6 +8,7 @@ use std::path;
 use std::str::FromStr as _;
 
 use serde::de::Error as _;
+use serde::Deserialize as _;
 
 use crate::args;
 
@@ -47,11 +48,11 @@ fn deserialize_serial_number_vec<'de, D>(d: D) -> Result<Vec<nitrokey::SerialNum
 where
   D: serde::Deserializer<'de>,
 {
-  let strings: Vec<String> = serde::Deserialize::deserialize(d).map_err(D::Error::custom)?;
-  let result: Result<Vec<_>, _> = strings
+  let strings = Vec::<String>::deserialize(d).map_err(D::Error::custom)?;
+  let result = strings
     .iter()
     .map(|s| nitrokey::SerialNumber::from_str(s))
-    .collect();
+    .collect::<Result<_, _>>();
   result.map_err(D::Error::custom)
 }
 
@@ -73,7 +74,6 @@ impl Config {
       self.model = args.model;
     }
     if !args.serial_numbers.is_empty() {
-      // TODO: Don't clone.
       self.serial_numbers = args.serial_numbers.clone();
     }
     if args.usb_path.is_some() {
