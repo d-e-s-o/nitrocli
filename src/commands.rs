@@ -308,7 +308,7 @@ where
   if let Some(pin) = pin {
     let pin = pin
       .to_str()
-      .ok_or_else(|| anyhow::anyhow!("Failed to read PIN: Invalid Unicode data found"))?;
+      .context("Failed to read PIN: Invalid Unicode data found")?;
     op(ctx, data, &pin).map_err(|(_, err)| err)
   } else {
     try_with_pin_and_data_with_pinentry(ctx, pin_entry, data, op)
@@ -605,7 +605,7 @@ pub fn hidden_create(ctx: &mut Context<'_>, slot: u8, start: u8, end: u8) -> any
     let pwd = if let Some(pwd) = &ctx.password {
       pwd
         .to_str()
-        .ok_or_else(|| anyhow::anyhow!("Failed to read password: invalid unicode data found"))
+        .context("Failed to read password: Invalid Unicode data found")
         .map(ToOwned::to_owned)
     } else {
       pinentry::choose(ctx, &pwd_entry).context("Failed to select new PIN")
@@ -624,7 +624,7 @@ pub fn hidden_open(ctx: &mut Context<'_>) -> anyhow::Result<()> {
     let pwd = if let Some(pwd) = &ctx.password {
       pwd
         .to_str()
-        .ok_or_else(|| anyhow::anyhow!("Failed to read password: Invalid Unicode data found"))
+        .context("Failed to read password: Invalid Unicode data found")
         .map(ToOwned::to_owned)
     } else {
       pinentry::inquire(ctx, &pwd_entry, pinentry::Mode::Query, None)
@@ -797,7 +797,7 @@ fn prepare_ascii_secret(secret: &str) -> anyhow::Result<String> {
 fn prepare_base32_secret(secret: &str) -> anyhow::Result<String> {
   base32::decode(base32::Alphabet::RFC4648 { padding: false }, secret)
     .map(|vec| format_bytes(&vec))
-    .ok_or_else(|| anyhow::anyhow!("Failed to parse base32 secret"))
+    .context("Failed to parse base32 secret")
 }
 
 /// Configure a one-time password slot on the Nitrokey device.
@@ -870,7 +870,7 @@ fn print_otp_status(
     };
     slot = slot
       .checked_add(1)
-      .ok_or_else(|| anyhow::anyhow!("Encountered integer overflow when iterating OTP slots"))?;
+      .context("Encountered integer overflow when iterating OTP slots")?;
     let name = match result {
       Ok(name) => name,
       Err(nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot)) => return Ok(()),
@@ -937,7 +937,7 @@ fn choose_pin(
   if let Some(new_pin) = new_pin {
     new_pin
       .to_str()
-      .ok_or_else(|| anyhow::anyhow!("Failed to read PIN: Invalid Unicode data found"))
+      .context("Failed to read PIN: Invalid Unicode data found")
       .map(ToOwned::to_owned)
   } else {
     pinentry::choose(ctx, pin_entry).context("Failed to select PIN")
