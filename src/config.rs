@@ -90,7 +90,7 @@ impl Config {
 
 fn load_user_config() -> anyhow::Result<Option<Config>> {
   let project_dirs = directories::ProjectDirs::from("", "", "nitrocli")
-    .ok_or_else(|| anyhow::anyhow!("Could not determine the nitrocli application directory"))?;
+    .context("Could not determine the nitrocli application directory")?;
   let path = project_dirs.config_dir().join(CONFIG_FILE);
   if path.is_file() {
     read_config_file(&path).map(Some)
