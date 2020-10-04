@@ -289,7 +289,11 @@ print("success")
   }
 
   let path = ext_dir.path().as_os_str().to_os_string();
-  let out = Nitrocli::new().path(path).handle(&["ext"])?;
+  // Make sure that the extension appears in the help text.
+  let out = Nitrocli::new().path(&path).handle(&["--help"])?;
+  assert!(out.contains("ext            Run the ext extension\n"), out);
+  // And, of course, that we can invoke it.
+  let out = Nitrocli::new().path(&path).handle(&["ext"])?;
   assert_eq!(out, "success\n");
   Ok(())
 }

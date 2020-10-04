@@ -8,6 +8,7 @@ use std::convert::TryFrom as _;
 use std::env;
 use std::ffi;
 use std::fmt;
+use std::fs;
 use std::io;
 use std::mem;
 use std::ops;
@@ -32,6 +33,8 @@ use crate::config;
 use crate::output;
 use crate::pinentry;
 use crate::Context;
+
+const NITROCLI_EXT_PREFIX: &str = "nitrocli-";
 
 /// Set `libnitrokey`'s log level based on the execution context's verbosity.
 fn set_log_level(ctx: &mut Context<'_>) {
@@ -1096,15 +1099,52 @@ pub fn pws_status(ctx: &mut Context<'_>, all: bool) -> anyhow::Result<()> {
   })
 }
 
+/// Find and list all available extensions.
+///
+/// The logic used in this function should use the same criteria as
+/// `resolve_extension`.
+pub(crate) fn discover_extensions(path_var: &ffi::OsStr) -> anyhow::Result<Vec<String>> {
+  let dirs = env::split_paths(path_var);
+  let mut commands = Vec::new();
+
+  for dir in dirs {
+    match fs::read_dir(&dir) {
+      Ok(entries) => {
+        for entry in entries {
+          let entry = entry?;
+          let path = entry.path();
+          if path.is_file() {
+            let name = entry.file_name();
+            let file = name.to_string_lossy();
+            if file.starts_with(NITROCLI_EXT_PREFIX) {
+              let mut file = file.into_owned();
+              file.replace_range(..NITROCLI_EXT_PREFIX.len(), "");
+              commands.push(file);
+            }
+          }
+        }
+      }
+      Err(ref err) if err.kind() == io::ErrorKind::NotFound => (),
+      x => x
+        .map(|_| ())
+        .with_context(|| format!("Failed to iterate entries of directory {}", dir.display()))?,
+    }
+  }
+  Ok(commands)
+}
+
 /// Resolve an extension provided by name to an actual path.
 ///
 /// Extensions are (executable) files that have the "nitrocli-" prefix
 /// and are discoverable via the `PATH` environment variable.
+///
+/// The logic used in this function should use the same criteria as
+/// `discover_extensions`.
 pub(crate) fn resolve_extension(
   path_var: &ffi::OsStr,
   ext_name: &ffi::OsStr,
 ) -> anyhow::Result<path::PathBuf> {
-  let mut bin_name = ffi::OsString::from("nitrocli-");
+  let mut bin_name = ffi::OsString::from(NITROCLI_EXT_PREFIX);
   bin_name.push(ext_name);
 
   for dir in env::split_paths(path_var) {
