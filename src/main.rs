@@ -69,6 +69,10 @@ use std::io;
 use std::process;
 use std::str;
 
+use structopt::clap::ErrorKind;
+use structopt::clap::SubCommand;
+use structopt::StructOpt;
+
 const NITROCLI_BINARY: &str = "NITROCLI_BINARY";
 const NITROCLI_MODEL: &str = "NITROCLI_MODEL";
 const NITROCLI_USB_PATH: &str = "NITROCLI_USB_PATH";
@@ -105,15 +109,44 @@ impl fmt::Display for DirectExitError {
 impl error::Error for DirectExitError {}
 
 /// Parse the command-line arguments and execute the selected command.
-fn handle_arguments(ctx: &mut Context<'_>, args: Vec<String>) -> anyhow::Result<()> {
-  use structopt::StructOpt;
-
-  match args::Args::from_iter_safe(args.iter()) {
+fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<()> {
+  match args::Args::from_iter_safe(argv.iter()) {
     Ok(args) => {
       ctx.config.update(&args);
       args.cmd.execute(ctx)
     }
-    Err(err) => {
+    Err(mut err) => {
+      if err.kind == ErrorKind::HelpDisplayed {
+        // For the convenience of the user we'd like to list the
+        // available extensions in the help text. At the same time, we
+        // don't want to unconditionally iterate through PATH (which may
+        // contain directories with loads of files that need scanning)
+        // for every command invoked. So we do that listing only if a
+        // help text is actually displayed.
+        let path = ctx.path.clone().unwrap_or_else(ffi::OsString::new);
+        if let Ok(extensions) = commands::discover_extensions(&path) {
+          let mut clap = args::Args::clap();
+          for name in extensions {
+            // Because of clap's brain dead API, we see no other way
+            // but to leak the string we created here. That's okay,
+            // though, because we exit in a moment anyway.
+            let about = Box::leak(format!("Run the {} extension", name).into_boxed_str());
+            clap = clap.subcommand(
+              SubCommand::with_name(&name)
+                // Use some magic number here that causes all
+                // extensions to be listed after all other
+                // subcommands.
+                .display_order(1000)
+                .about(about as &'static str),
+            );
+          }
+          // At this point we are *pretty* sure that repeated invocation
+          // will result in another error. So should be fine to unwrap
+          // here.
+          err = clap.get_matches_from_safe(argv.iter()).unwrap_err();
+        }
+      }
+
       if err.use_stderr() {
         Err(err.into())
       } else {
