@@ -417,9 +417,9 @@ the encrypted volume (i.e., 50%) and stretching all the way to its end (100%):
 
 .SS One-time passwords
 Configure a one-time password slot with a hexadecimal secret representation:
-    $ \fBnitrocli otp set 0 test\-rfc4226 3132333435363738393031323334353637383930 \-\-algorithm hotp\fR
-    $ \fBnitrocli otp set 1 test\-foobar 666F6F626172 \-\-algorithm hotp\fR
-    $ \fBnitrocli otp set 0 test\-rfc6238 3132333435363738393031323334353637383930 \-\-algorithm totp \-\-digits 8\fR
+    $ \fBnitrocli otp set 0 test\-rfc4226 3132333435363738393031323334353637383930 \-\-format hex \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 1 test\-foobar 666F6F626172 \-\-format hex \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 0 test\-rfc6238 3132333435363738393031323334353637383930 \-\-format hex \-\-algorithm totp \-\-digits 8\fR
 .P
 Configure a one-time password slot with an ASCII secret representation:
     $ \fBnitrocli otp set 0 test\-rfc4226 12345678901234567890 \-\-format ascii \-\-algorithm hotp\fR
@@ -427,9 +427,9 @@ Configure a one-time password slot with an ASCII secret representation:
     $ \fBnitrocli otp set 0 test\-rfc6238 12345678901234567890 \-\-format ascii \-\-algorithm totp \-\-digits 8\fR
 .P
 Configure a one-time password slot with a base32 secret representation:
-    $ \fBnitrocli otp set 0 test\-rfc4226 gezdgnbvgy3tqojqgezdgnbvgy3tqojq \-\-format base32 \-\-algorithm hotp\fR
-    $ \fBnitrocli otp set 1 test\-foobar mzxw6ytboi====== \-\-format base32 \-\-algorithm hotp\fR
-    $ \fBnitrocli otp set 0 test\-rfc6238 gezdgnbvgy3tqojqgezdgnbvgy3tqojq \-\-format base32 \-\-algorithm totp \-\-digits 8\fR
+    $ \fBnitrocli otp set 0 test\-rfc4226 gezdgnbvgy3tqojqgezdgnbvgy3tqojq \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 1 test\-foobar mzxw6ytboi====== \-\-algorithm hotp\fR
+    $ \fBnitrocli otp set 0 test\-rfc6238 gezdgnbvgy3tqojqgezdgnbvgy3tqojq \-\-algorithm totp \-\-digits 8\fR
 .P
 Generate a one-time password:
     $ \fBnitrocli otp get 0 \-\-algorithm hotp\fR
