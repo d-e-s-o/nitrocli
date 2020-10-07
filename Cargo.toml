@@ -23,6 +23,10 @@ exclude = ["ci/*", "rustfmt.toml"]
 gitlab = { repository = "d-e-s-o/nitrocli", branch = "master" }
 
 [[bin]]
+name = "clipboard"
+path = "var/clipboard.rs"
+
+[[bin]]
 name = "shell-complete"
 path = "var/shell-complete.rs"
 
