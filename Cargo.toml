@@ -22,6 +22,10 @@ exclude = ["rustfmt.toml"]
 default-run = "nitrocli"
 
 [[bin]]
+name = "clipboard"
+path = "var/clipboard.rs"
+
+[[bin]]
 name = "shell-complete"
 path = "var/shell-complete.rs"
 
