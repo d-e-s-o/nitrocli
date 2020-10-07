@@ -3,6 +3,7 @@
 // Copyright (C) 2020-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use std::ffi;
 use std::fs;
 use std::io::Write as _;
 use std::path;
@@ -50,6 +51,10 @@ enum Command {
   Get {
     /// The name of the OTP slot to generate a OTP from
     name: String,
+    /// Whether or not to directly copy the one-time password to the
+    /// clipboard.
+    #[structopt(short, long)]
+    copy: bool,
   },
   /// Lists the cached slots and their names
   List,
@@ -61,13 +66,13 @@ fn main() -> anyhow::Result<()> {
 
   let cache = get_cache(&ctx, args.force_update)?;
   match &args.cmd {
-    Command::Get { name } => cmd_get(&ctx, &cache, name)?,
+    Command::Get { name, copy } => cmd_get(&ctx, &cache, name, *copy)?,
     Command::List => cmd_list(&cache),
   }
   Ok(())
 }
 
-fn cmd_get(ctx: &ext::Context, cache: &Cache, slot_name: &str) -> anyhow::Result<()> {
+fn cmd_get(ctx: &ext::Context, cache: &Cache, slot_name: &str, copy: bool) -> anyhow::Result<()> {
   let totp_slots = cache
     .totp
     .iter()
@@ -83,9 +88,9 @@ fn cmd_get(ctx: &ext::Context, cache: &Cache, slot_name: &str) -> anyhow::Result
       "Found multiple OTP slots with the given name"
     ))
   } else if let Some(slot) = totp_slots.first() {
-    generate_otp(ctx, "totp", slot.id)
+    generate_otp(ctx, "totp", slot.id, copy)
   } else if let Some(slot) = hotp_slots.first() {
-    generate_otp(ctx, "hotp", slot.id)
+    generate_otp(ctx, "hotp", slot.id, copy)
   } else {
     Err(anyhow::anyhow!("Found no OTP slot with the given name"))
   }
@@ -167,7 +172,26 @@ fn get_otp_slots(device: &impl nitrokey::GenerateOtp) -> anyhow::Result<Cache> {
   })
 }
 
-fn generate_otp(ctx: &ext::Context, algorithm: &str, slot: u8) -> anyhow::Result<()> {
+/// Copy the provided OTP to the clipboard.
+fn copy_otp(otp: &ffi::OsStr) -> anyhow::Result<()> {
+  // TODO: Binary and arguments should be made configurable through a
+  //       config file.
+  let status = process::Command::new("clipboard")
+    .stdin(process::Stdio::null())
+    .stdout(process::Stdio::null())
+    .stderr(process::Stdio::null())
+    .arg("--selection=clipboard")
+    .arg("--revert-after=1min")
+    .arg(otp)
+    .spawn()
+    .context("Failed to execute clipboard")?
+    .wait()?;
+
+  anyhow::ensure!(status.success(), "clipboard invocation failed");
+  Ok(())
+}
+
+fn generate_otp(ctx: &ext::Context, algorithm: &str, slot: u8, copy: bool) -> anyhow::Result<()> {
   // Attempt to prevent a "hang" of the Nitrokey by killing any scdaemon
   // that could currently have the device opened itself
   // (https://github.com/Nitrokey/libnitrokey/issues/137).
@@ -178,11 +202,17 @@ fn generate_otp(ctx: &ext::Context, algorithm: &str, slot: u8) -> anyhow::Result
     .arg("/bye")
     .output();
 
-  ctx
-    .nitrocli()
-    .args(["otp", "get"].iter())
+  let mut ncli = ctx.nitrocli();
+  let ncli = ncli
+    .args(&["otp", "get"])
     .arg(slot.to_string())
     .arg("--algorithm")
-    .arg(algorithm)
-    .spawn()
+    .arg(algorithm);
+
+  if copy {
+    let otp = ncli.text()?;
+    copy_otp(otp.trim_end().as_ref())
+  } else {
+    ncli.spawn()
+  }
 }
