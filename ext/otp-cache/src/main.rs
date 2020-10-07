@@ -6,6 +6,7 @@
 mod ext;
 
 use std::collections;
+use std::ffi;
 use std::fs;
 use std::io::Write as _;
 use std::path;
@@ -46,6 +47,10 @@ enum Command {
   Get {
     /// The name of the OTP slot to generate a OTP from
     name: String,
+    /// Whether or not to directly copy the one-time password to the
+    /// clipboard.
+    #[structopt(short, long)]
+    copy: bool,
   },
   /// Lists the cached slots and their ID
   List,
@@ -58,8 +63,15 @@ fn main() -> anyhow::Result<()> {
   let slots = cache.remove(&args.algorithm).unwrap_or_default();
 
   match &args.cmd {
-    Command::Get { name } => match slots.iter().find(|s| &s.name == name) {
-      Some(slot) => print!("{}", generate_otp(&ctx, &args, slot.index)?),
+    Command::Get { name, copy } => match slots.iter().find(|s| &s.name == name) {
+      Some(slot) => {
+        let otp = generate_otp(&ctx, &args, slot.index)?;
+        if *copy {
+          copy_otp(otp.trim_end().as_ref())?
+        } else {
+          print!("{}", otp)
+        }
+      }
       None => anyhow::bail!("No OTP slot with the given name!"),
     },
     Command::List => {
@@ -151,6 +163,25 @@ fn save_cache(cache: &Cache, path: &path::Path) -> anyhow::Result<()> {
 fn load_cache(path: &path::Path) -> anyhow::Result<Cache> {
   let s = fs::read_to_string(path)?;
   toml::from_str(&s).map_err(From::from)
+}
+
+/// Copy the provided OTP to the clipboard.
+fn copy_otp(otp: &ffi::OsStr) -> anyhow::Result<()> {
+  // TODO: Binary and arguments should be made configurable through a
+  //       config file.
+  let status = process::Command::new("clipboard")
+    .stdin(process::Stdio::null())
+    .stdout(process::Stdio::null())
+    .stderr(process::Stdio::null())
+    .arg("--selection=clipboard")
+    .arg("--revert-after=1min")
+    .arg(otp)
+    .spawn()
+    .context("Failed to execute clipboard")?
+    .wait()?;
+
+  anyhow::ensure!(status.success(), "clipboard invocation failed");
+  Ok(())
 }
 
 fn generate_otp(ctx: &ext::Context, args: &Args, slot: u8) -> anyhow::Result<String> {
