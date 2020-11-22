@@ -10,7 +10,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1"
 directories = "3"
-nitrokey = "0.7.1"
+nitrokey = "0.8.0"
 serde = { version = "1", features = ["derive"] }
 structopt = { version = "0.3.17", default-features = false }
 toml = "0.5"
