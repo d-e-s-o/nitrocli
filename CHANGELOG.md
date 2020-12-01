@@ -25,7 +25,7 @@ Unreleased
   Storage devices
 - Renamed the `--{no-,}{numlock,capslock,scrollock}` options of the `config
   set` command to `--{no-,}{num-lock,caps-lock,scroll-lock}`
-- Bumped `structopt` dependency to `0.3.17`
+- Bumped `structopt` dependency to `0.3.21`
 - Bumped `nitrokey` dependency to `0.8.0`
 
 
