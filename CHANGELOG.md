@@ -9,6 +9,7 @@ Unreleased
 - Renamed the `--{no-,}{numlock,capslock,scrollock}` options of the `config
   set` command to `--{no-,}{num-lock,caps-lock,scroll-lock}`
 - Bumped `nitrokey` dependency to `0.8.0`
+- Bumped `structopt` dependency to `0.3.21`
 
 
 0.3.5
