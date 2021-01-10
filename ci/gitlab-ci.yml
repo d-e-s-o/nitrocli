@@ -16,6 +16,7 @@ build-test:cargo:
   - apt-get install --assume-yes libudev-dev libhidapi-dev
   - rustc --version && cargo --version
   - cargo build --bins --tests --verbose
+  - cargo build --bins --tests --verbose --release
   - cargo test --verbose
 
 lint:clippy:
