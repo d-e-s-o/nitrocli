@@ -1,4 +1,4 @@
-# Copyright (C) 2020 The Nitrocli Developers
+# Copyright (C) 2020-2021 The Nitrocli Developers
 # SPDX-License-Identifier: CC0-1.0
 
 # The documentation for the contents of this file can be found at:
@@ -15,8 +15,8 @@ build-test:cargo:
   - apt-get update
   - apt-get install --assume-yes libudev-dev libhidapi-dev
   - rustc --version && cargo --version
-  - cargo build --all --verbose
-  - cargo test --all --verbose
+  - cargo build --bins --tests --verbose
+  - cargo test --verbose
 
 lint:clippy:
   script:
@@ -33,4 +33,4 @@ lint:reuse:
 format:rustfmt:
   script:
   - rustup component add rustfmt
-  - cargo fmt --all -- --check
+  - cargo fmt -- --check
