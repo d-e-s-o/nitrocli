@@ -1,6 +1,6 @@
 # Cargo.toml
 
-# Copyright (C) 2017-2020 The Nitrocli Developers
+# Copyright (C) 2017-2021 The Nitrocli Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [package]
@@ -18,6 +18,7 @@ description = """
 A command line tool for interacting with Nitrokey devices.
 """
 exclude = ["ci/*", "rustfmt.toml"]
+default-run = "nitrocli"
 
 [badges]
 gitlab = { repository = "d-e-s-o/nitrocli", branch = "master" }
