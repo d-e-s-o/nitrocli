@@ -1,6 +1,6 @@
 // args.rs
 
-// Copyright (C) 2020 The Nitrocli Developers
+// Copyright (C) 2020-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::convert;
@@ -311,8 +311,8 @@ pub struct OtpSetArgs {
   pub slot: u8,
   /// The name of the slot
   pub name: String,
-  /// The secret to store on the slot as a hexadecimal string (or in the format set with the
-  /// --format option)
+  /// The secret to store on the slot as a base32 encoded string (or in
+  /// the format set with the --format option)
   pub secret: String,
 }
 
