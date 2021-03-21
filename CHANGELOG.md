@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.4.0
+-----
 - Added support for the Librem Key
 - Added support for user provided extensions through lookup via the
   `PATH` environment variable
