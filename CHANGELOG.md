@@ -18,6 +18,7 @@ Unreleased
 - Bumped `serde` dependency to `1.0.118`
 - Bumped `structopt` dependency to `0.3.21`
 - Bumped `toml` dependency to `0.5.8`
+- Bumped various transitive dependencies to most recent versions
 
 
 0.3.5
