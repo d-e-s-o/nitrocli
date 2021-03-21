@@ -1,6 +1,6 @@
 // list.rs
 
-// Copyright (C) 2020 The Nitrocli Developers
+// Copyright (C) 2020-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use super::*;
@@ -17,7 +17,7 @@ fn not_connected() -> anyhow::Result<()> {
 fn connected(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^USB path\tmodel\tserial number
-([[:^space:]]+\t(Nitrokey Pro|Nitrokey Storage|unknown)\t0x[[:xdigit:]]+
+([[:^space:]]+\t(Nitrokey Pro|Nitrokey Storage|Librem Key|unknown)\t0x[[:xdigit:]]+
 )+$"#,
   )
   .unwrap();

@@ -1,6 +1,6 @@
 // status.rs
 
-// Copyright (C) 2019-2020 The Nitrocli Developers
+// Copyright (C) 2019-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use super::*;
@@ -19,6 +19,24 @@ fn not_found() {
   let res = Nitrocli::new().handle(&["status"]);
   let err = res.unwrap_err().to_string();
   assert_eq!(err, "Nitrokey device not found");
+}
+
+#[test_device(librem)]
+fn output_librem(model: nitrokey::Model) -> anyhow::Result<()> {
+  let re = regex::Regex::new(
+    r#"^Status:
+  model:             Librem Key
+  serial number:     0x[[:xdigit:]]{8}
+  firmware version:  v\d+\.\d+
+  user retry count:  [0-3]
+  admin retry count: [0-3]
+$"#,
+  )
+  .unwrap();
+
+  let out = Nitrocli::new().model(model).handle(&["status"])?;
+  assert!(re.is_match(&out), out);
+  Ok(())
 }
 
 #[test_device(pro)]

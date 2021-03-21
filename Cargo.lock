@@ -245,9 +245,9 @@ dependencies = [
 
 [[package]]
 name = "nitrokey-test"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c28f853f1bc4a1c0e3f03614c7dcd0e686c487196f4a8c3b694b280defaf12e"
+checksum = "e651e412a94d7285f525bfc52b93684fb357c3d846fde61d5ebf79a2454ef2a4"
 dependencies = [
  "proc-macro2",
  "quote",
