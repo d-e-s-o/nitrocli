@@ -13,6 +13,7 @@ Unreleased
 - Added support for generating completion scripts for shells other than
   `bash`
 - Bumped `anyhow` dependency to `1.0.39`
+- Bumped `libc` dependency to `0.2.90`
 - Bumped `nitrokey` dependency to `0.8.0`
 - Bumped `structopt` dependency to `0.3.21`
 
