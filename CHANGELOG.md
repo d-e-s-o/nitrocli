@@ -12,6 +12,7 @@ Unreleased
   set` command to `--{no-,}{num-lock,caps-lock,scroll-lock}`
 - Added support for generating completion scripts for shells other than
   `bash`
+- Bumped `anyhow` dependency to `1.0.39`
 - Bumped `nitrokey` dependency to `0.8.0`
 - Bumped `structopt` dependency to `0.3.21`
 
