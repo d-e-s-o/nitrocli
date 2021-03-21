@@ -31,12 +31,15 @@ mod nitrocli {
   include!("../src/args.rs");
 }
 
-/// Generate a bash completion script for nitrocli.
+/// Generate a shell completion script for nitrocli.
 ///
 /// The script will be emitted to standard output.
 #[derive(Debug, structopt::StructOpt)]
 struct Args {
-  /// The command for which to generate the bash completion script.
+  /// The shell for which to generate a completion script for.
+  #[structopt(possible_values = &clap::Shell::variants())]
+  shell: clap::Shell,
+  /// The command for which to generate the shell completion script.
   #[structopt(default_value = "nitrocli")]
   command: String,
 }
@@ -51,7 +54,7 @@ where
 
 fn main() {
   let args = Args::from_args();
-  generate_for_shell(&args.command, clap::Shell::Bash, &mut io::stdout())
+  generate_for_shell(&args.command, args.shell, &mut io::stdout())
 }
 
 #[cfg(test)]

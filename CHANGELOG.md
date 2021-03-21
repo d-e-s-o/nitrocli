@@ -10,6 +10,8 @@ Unreleased
   Storage devices
 - Renamed the `--{no-,}{numlock,capslock,scrollock}` options of the `config
   set` command to `--{no-,}{num-lock,caps-lock,scroll-lock}`
+- Added support for generating completion scripts for shells other than
+  `bash`
 - Bumped `nitrokey` dependency to `0.8.0`
 - Bumped `structopt` dependency to `0.3.21`
 
