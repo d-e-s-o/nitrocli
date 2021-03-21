@@ -41,17 +41,17 @@ struct Args {
   command: String,
 }
 
-fn generate_bash<W>(command: &str, output: &mut W)
+fn generate_for_shell<W>(command: &str, shell: clap::Shell, output: &mut W)
 where
   W: io::Write,
 {
   let mut app = nitrocli::Args::clap();
-  app.gen_completions_to(command, clap::Shell::Bash, output);
+  app.gen_completions_to(command, shell, output);
 }
 
 fn main() {
   let args = Args::from_args();
-  generate_bash(&args.command, &mut io::stdout())
+  generate_for_shell(&args.command, clap::Shell::Bash, &mut io::stdout())
 }
 
 #[cfg(test)]
@@ -92,7 +92,7 @@ mod tests {
     W: ExactSizeIterator<Item = &'w str>,
   {
     let mut buffer = Vec::new();
-    generate_bash("nitrocli", &mut buffer);
+    generate_for_shell("nitrocli", clap::Shell::Bash, &mut buffer);
 
     let script = String::from_utf8(buffer).unwrap();
     let command = format!(
