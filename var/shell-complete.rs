@@ -1,6 +1,6 @@
 // shell-complete.rs
 
-// Copyright (C) 2020 The Nitrocli Developers
+// Copyright (C) 2020-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::io;
@@ -35,10 +35,10 @@ mod nitrocli {
 ///
 /// The script will be emitted to standard output.
 #[derive(Debug, structopt::StructOpt)]
-pub struct Args {
+struct Args {
   /// The command for which to generate the bash completion script.
   #[structopt(default_value = "nitrocli")]
-  pub command: String,
+  command: String,
 }
 
 fn generate_bash<W>(command: &str, output: &mut W)
