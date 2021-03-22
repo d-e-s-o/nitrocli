@@ -163,7 +163,11 @@ Robin Krahl ([@robinkrahl](https://github.com/robinkrahl)) has been
 a crucial help for the development of **nitrocli**.
 
 The [Nitrokey GmbH][nitrokey-gmbh] has generously provided the necessary
-hardware for developing and testing the program.
+hardware in the form of Nitrokey Pro and Nitrokey Storage devices for
+developing and testing the program.
+
+[Purism][purism] was kind enough to help development of support for
+Librem Keys by providing the necessary hardware devices to test on.
 
 
 License
@@ -190,5 +194,6 @@ the full text of the license.
 [gplv3-tldr]: https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
 [libnitrokey#32]: https://github.com/Nitrokey/libnitrokey/issues/32
 [libnitrokey#137]: https://github.com/Nitrokey/libnitrokey/issues/137
+[purism]: https://puri.sm/
 [reuse]: https://reuse.software/practices/3.0/
 [semver]: https://semver.org
