@@ -236,8 +236,7 @@ dependencies = [
 [[package]]
 name = "nitrokey"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48059f1f469143fd371228e33893e6c76419daa9dcb8c0fac2bc1ef2fdfbb7b1"
+source = "git+https://git.sr.ht/~ireas/nitrokey-rs?branch=pws-slots#0bc857cf3a450988005e3a92749c9d256dbe7729"
 dependencies = [
  "lazy_static",
  "libc",

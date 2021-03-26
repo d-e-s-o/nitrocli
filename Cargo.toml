@@ -52,7 +52,8 @@ version = "0.2"
 version = "0.1"
 
 [dependencies.nitrokey]
-version = "0.8"
+git = "https://git.sr.ht/~ireas/nitrokey-rs"
+branch = "pws-slots"
 
 [dependencies.progressing]
 version = "3.0.2"

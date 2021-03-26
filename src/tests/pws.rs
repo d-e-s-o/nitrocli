@@ -67,6 +67,31 @@ fn set_get(model: nitrokey::Model) -> anyhow::Result<()> {
 }
 
 #[test_device]
+fn set_empty(model: nitrokey::Model) -> anyhow::Result<()> {
+  let mut ncli = Nitrocli::new().model(model);
+  let _ = ncli.handle(&["pws", "set", "1", "", "", ""])?;
+
+  let out = ncli.handle(&["pws", "get", "1", "--quiet", "--name"])?;
+  assert_eq!(out, "\n");
+
+  let out = ncli.handle(&["pws", "get", "1", "--quiet", "--login"])?;
+  assert_eq!(out, "\n");
+
+  let out = ncli.handle(&["pws", "get", "1", "--quiet", "--password"])?;
+  assert_eq!(out, "\n");
+
+  let out = ncli.handle(&["pws", "get", "1", "--quiet"])?;
+  assert_eq!(out, "\n\n\n");
+
+  let out = ncli.handle(&["pws", "get", "1"])?;
+  assert_eq!(
+    out,
+    "name:     \nlogin:    \npassword: \n",
+  );
+  Ok(())
+}
+
+#[test_device]
 fn set_reset_get(model: nitrokey::Model) -> anyhow::Result<()> {
   const NAME: &str = "some/svc";
   const LOGIN: &str = "a\\user";
