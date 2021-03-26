@@ -1,6 +1,6 @@
 // pws.rs
 
-// Copyright (C) 2019-2020 The Nitrocli Developers
+// Copyright (C) 2019-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use super::*;
@@ -63,6 +63,28 @@ fn set_get(model: nitrokey::Model) -> anyhow::Result<()> {
       NAME, LOGIN, PASSWORD
     ),
   );
+  Ok(())
+}
+
+#[test_device]
+fn set_empty(model: nitrokey::Model) -> anyhow::Result<()> {
+  let mut ncli = Nitrocli::new().model(model);
+  let _ = ncli.handle(&["pws", "set", "1", "", "", ""])?;
+
+  let out = ncli.handle(&["pws", "get", "1", "--quiet", "--name"])?;
+  assert_eq!(out, "\n");
+
+  let out = ncli.handle(&["pws", "get", "1", "--quiet", "--login"])?;
+  assert_eq!(out, "\n");
+
+  let out = ncli.handle(&["pws", "get", "1", "--quiet", "--password"])?;
+  assert_eq!(out, "\n");
+
+  let out = ncli.handle(&["pws", "get", "1", "--quiet"])?;
+  assert_eq!(out, "\n\n\n");
+
+  let out = ncli.handle(&["pws", "get", "1"])?;
+  assert_eq!(out, "name:     \nlogin:    \npassword: \n",);
   Ok(())
 }
 

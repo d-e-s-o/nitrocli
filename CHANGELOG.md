@@ -1,3 +1,9 @@
+Unreleased
+----------
+- Enabled usage of empty PWS slot fields
+- Bumped `nitrokey` dependency to `0.9.0`
+
+
 0.4.0
 -----
 - Added support for the Librem Key

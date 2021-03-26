@@ -4,7 +4,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
-use std::convert::TryFrom as _;
 use std::env;
 use std::ffi;
 use std::fmt;
@@ -996,20 +995,6 @@ fn print_pws_data(
   Ok(())
 }
 
-fn check_slot(pws: &nitrokey::PasswordSafe<'_, '_>, slot: u8) -> anyhow::Result<()> {
-  if slot >= nitrokey::SLOT_COUNT {
-    anyhow::bail!("Slot {} is not valid", slot);
-  }
-  let status = pws
-    .get_slot_status()
-    .context("Failed to read PWS slot status")?;
-  if status[slot as usize] {
-    Ok(())
-  } else {
-    anyhow::bail!("Slot {} is not programmed", slot)
-  }
-}
-
 /// Read a PWS slot.
 pub fn pws_get(
   ctx: &mut Context<'_>,
@@ -1020,17 +1005,17 @@ pub fn pws_get(
   quiet: bool,
 ) -> anyhow::Result<()> {
   with_password_safe(ctx, |ctx, pws| {
-    check_slot(&pws, slot).context("Failed to access PWS slot")?;
+    let slot = pws.get_slot(slot).context("Failed to access PWS slot")?;
 
     let show_all = !show_name && !show_login && !show_password;
     if show_all || show_name {
-      print_pws_data(ctx, "name:    ", pws.get_slot_name(slot), quiet)?;
+      print_pws_data(ctx, "name:    ", slot.get_name(), quiet)?;
     }
     if show_all || show_login {
-      print_pws_data(ctx, "login:   ", pws.get_slot_login(slot), quiet)?;
+      print_pws_data(ctx, "login:   ", slot.get_login(), quiet)?;
     }
     if show_all || show_password {
-      print_pws_data(ctx, "password:", pws.get_slot_password(slot), quiet)?;
+      print_pws_data(ctx, "password:", slot.get_password(), quiet)?;
     }
     Ok(())
   })
@@ -1060,31 +1045,29 @@ pub fn pws_clear(ctx: &mut Context<'_>, slot: u8) -> anyhow::Result<()> {
 
 fn print_pws_slot(
   ctx: &mut Context<'_>,
-  pws: &nitrokey::PasswordSafe<'_, '_>,
-  slot: usize,
-  programmed: bool,
+  index: usize,
+  slot: Option<nitrokey::PasswordSlot<'_, '_, '_>>,
 ) -> anyhow::Result<()> {
-  let slot = u8::try_from(slot).map_err(|_| anyhow::anyhow!("Invalid PWS slot number"))?;
-  let name = if programmed {
-    pws
-      .get_slot_name(slot)
-      .context("Failed to read PWS slot name")?
+  let name = if let Some(slot) = slot {
+    slot.get_name().context("Failed to read PWS slot name")?
   } else {
     "[not programmed]".to_string()
   };
-  println!(ctx, "{}\t{}", slot, name)?;
+  println!(ctx, "{}\t{}", index, name)?;
   Ok(())
 }
 
 /// Print the status of all PWS slots.
 pub fn pws_status(ctx: &mut Context<'_>, all: bool) -> anyhow::Result<()> {
   with_password_safe(ctx, |ctx, pws| {
-    let slots = pws
-      .get_slot_status()
-      .context("Failed to read PWS slot status")?;
+    let slots = pws.get_slots().context("Failed to read PWS slot status")?;
     println!(ctx, "slot\tname")?;
-    for (i, &value) in slots.iter().enumerate().filter(|(_, &value)| all || value) {
-      print_pws_slot(ctx, &pws, i, value)?;
+    for (i, &slot) in slots
+      .iter()
+      .enumerate()
+      .filter(|(_, &slot)| all || slot.is_some())
+    {
+      print_pws_slot(ctx, i, slot)?;
     }
     Ok(())
   })
