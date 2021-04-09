@@ -794,7 +794,9 @@ fn prepare_ascii_secret(secret: &str) -> anyhow::Result<String> {
 
 /// Prepare a base32 secret string for libnitrokey.
 fn prepare_base32_secret(secret: &str) -> anyhow::Result<String> {
-  base32::decode(base32::Alphabet::RFC4648 { padding: false }, secret)
+  // Some sites display the base32 secret in groups separated by spaces, we want to ignore them.
+  let secret = secret.replace(" ", "");
+  base32::decode(base32::Alphabet::RFC4648 { padding: false }, &secret)
     .map(|vec| format_bytes(&vec))
     .context("Failed to parse base32 secret")
 }
@@ -1224,6 +1226,17 @@ mod tests {
   fn prepare_secret_non_ascii() {
     let result = prepare_ascii_secret("Österreich");
     assert!(result.is_err());
+  }
+
+  #[test]
+  fn prepare_secret_base32() {
+    let result = prepare_base32_secret("gezdgnbvgy3tqojqgezdgnbvgy3tqojq").unwrap();
+    assert_eq!(
+      "3132333435363738393031323334353637383930".to_string(),
+      result
+    );
+    let result2 = prepare_base32_secret("gezd gnbv     gy3t qojq gezd gnbv gy3t qojq").unwrap();
+    assert_eq!(result, result2);
   }
 
   #[test]
