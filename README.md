@@ -119,7 +119,7 @@ arguments to them. A completion script can be generated via the
 `shell-complete` utility program and then only needs to be sourced to
 make the current shell provide context-sensitive tab completion support.
 ```bash
-$ cargo run --bin=shell-complete > nitrocli.bash
+$ cargo run --bin=shell-complete bash > nitrocli.bash
 $ source nitrocli.bash
 ```
 
