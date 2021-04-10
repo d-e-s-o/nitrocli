@@ -113,9 +113,9 @@ It is recommended that the resulting executable be installed in a
 directory accessible via the `PATH` environment variable.
 
 
-#### Bash Completion
-**nitrocli** comes with Bash completion support for options and
-arguments to them. A completion script can be generated via the
+#### Shell Completion
+**nitrocli** comes with completion support for options and arguments to
+them (for various shells). A completion script can be generated via the
 `shell-complete` utility program and then only needs to be sourced to
 make the current shell provide context-sensitive tab completion support.
 ```bash
@@ -123,8 +123,13 @@ $ cargo run --bin=shell-complete bash > nitrocli.bash
 $ source nitrocli.bash
 ```
 
-The generated completion script can be installed system-wide as usual
-and sourced through Bash initialization files, such as `~/.bashrc`.
+The generated completion script (`bash` specific, in this case) can be
+installed system-wide as usual and sourced through Bash initialization
+files, such as `~/.bashrc`.
+
+Completion scripts for other shells work in a similar manner. Please
+refer to the help text (`--help`) of the `shell-complete` program for
+the list of supported shells.
 
 
 Known Problems
