@@ -1,0 +1,21 @@
+# Cargo.toml
+
+# Copyright (C) 2020-2021 The Nitrocli Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "nitrocli-otp-cache"
+version = "0.1.0"
+authors = ["Robin Krahl <robin.krahl@ireas.org>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1"
+nitrokey = "0.9"
+serde = { version = "1", features = ["derive"] }
+structopt = { version = "0.3.17", default-features = false }
+toml = "0.5"
+
+[dependencies.nitrocli-ext]
+version = "0.1"
+path = "../ext"
