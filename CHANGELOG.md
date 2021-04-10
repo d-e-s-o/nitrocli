@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Introduced extension support crate, `nitrocli-ext`
+- Introduced `otp-cache` core extension
 
 
 0.4.1
