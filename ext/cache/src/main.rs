@@ -25,7 +25,7 @@ struct Slot {
   id: usize,
 }
 
-/// Access Nitrokey OTP slots by name
+/// Access Nitrokey OTP and PWS slots by name
 #[derive(Debug, structopt::StructOpt)]
 #[structopt(bin_name = "nitrocli cache")]
 struct Args {
