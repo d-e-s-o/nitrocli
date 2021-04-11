@@ -23,7 +23,7 @@ impl Context {
       .context("Failed to retrieve nitrocli path")?;
 
     let verbosity = env::var_os("NITROCLI_VERBOSITY")
-      .context("NITROCLI_VERBOSITY environment variablenot present")
+      .context("NITROCLI_VERBOSITY environment variable not present")
       .context("Failed to retrieve nitrocli verbosity")?;
     let verbosity = if verbosity.len() == 0 {
       None
