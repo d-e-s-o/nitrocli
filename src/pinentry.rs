@@ -58,7 +58,12 @@ impl PinEntry {
 
 impl SecretEntry for PinEntry {
   fn cache_id(&self) -> Option<CowStr> {
-    let model = self.model.to_string().to_lowercase();
+    let model = match self.model {
+      nitrokey::Model::Librem => "librem",
+      nitrokey::Model::Pro => "pro",
+      nitrokey::Model::Storage => "storage",
+      _ => "unknown",
+    };
     let suffix = format!("{}:{}", model, self.serial);
     let cache_id = match self.pin_type {
       args::PinType::Admin => format!("nitrocli:admin:{}", suffix),
@@ -77,7 +82,7 @@ impl SecretEntry for PinEntry {
 
   fn description(&self, mode: Mode) -> CowStr {
     format!(
-      "{} for\r {} {}",
+      "{} for\r{} {}",
       match self.pin_type {
         args::PinType::Admin => match mode {
           Mode::Choose => "Please enter a new admin PIN",
@@ -135,7 +140,7 @@ impl SecretEntry for PwdEntry {
 
   fn description(&self, mode: Mode) -> CowStr {
     format!(
-      "{} for\r {} {}",
+      "{} for\r{} {}",
       match mode {
         Mode::Choose => "Please enter a new hidden volume password",
         Mode::Confirm => "Please confirm the new hidden volume password",
