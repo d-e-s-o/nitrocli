@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Introduced extension support crate, `nitrocli-ext`
+
+
 0.4.1
 -----
 - Enabled usage of empty PWS slot fields
