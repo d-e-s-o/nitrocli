@@ -79,3 +79,6 @@ version = "1"
 
 [dev-dependencies.tempfile]
 version = "3.1"
+
+[workspace]
+members = ["ext/*"]
