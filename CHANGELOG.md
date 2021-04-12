@@ -1,6 +1,8 @@
 Unreleased
 ----------
 - Enabled usage of empty PWS slot fields
+- Added `NITROCLI_RESOLVED_USB_PATH` environment variable to be used by
+  extensions
 - Allowed entering of `base32` encoded strings containing spaces
 - Fixed pinentry dialog highlighting some messages incorrectly as errors
 - Bumped `nitrokey` dependency to `0.9.0`

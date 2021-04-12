@@ -74,6 +74,7 @@ use structopt::clap::SubCommand;
 use structopt::StructOpt;
 
 const NITROCLI_BINARY: &str = "NITROCLI_BINARY";
+const NITROCLI_RESOLVED_USB_PATH: &str = "NITROCLI_RESOLVED_USB_PATH";
 const NITROCLI_MODEL: &str = "NITROCLI_MODEL";
 const NITROCLI_USB_PATH: &str = "NITROCLI_USB_PATH";
 const NITROCLI_VERBOSITY: &str = "NITROCLI_VERBOSITY";
