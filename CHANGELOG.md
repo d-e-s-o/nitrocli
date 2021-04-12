@@ -1,5 +1,6 @@
 Unreleased
 ----------
+- Introduced extension support crate, `nitrocli-ext`
 - Enabled usage of empty PWS slot fields
 - Added `NITROCLI_RESOLVED_USB_PATH` environment variable to be used by
   extensions
