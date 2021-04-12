@@ -427,12 +427,18 @@ The program conveys basic configuration information to any extension being
 started this way. Specifically, it will set each environment variable as
 described in the Configuration subsection of the Environment section above, if
 the corresponding \fBnitrocli\fR program configuration was set. In addition, the
-following variable will be set unconditionally:
+following variable will be set:
 .TP
 .B NITROCLI_BINARY
 The absolute path to the \fBnitrocli\fR binary through which the extension was
 invoked. This path may be used to recursively invoke \fBnitrocli\fR to implement
 certain functionality.
+.TP
+.B NITROCLI_RESOLVED_USB_PATH
+The USB path of the device that \fBnitrocli\fR would connect to based on the
+\fB\-\-model\fR, \fB\-\-serial-number\fR and \fB\-\-usb-path\fR options.
+If there is no matching Nitrokey device, or if multiple devices match the
+options, the environment variable is not set.
 
 .P
 All other variables present in the environment will be passed through to the

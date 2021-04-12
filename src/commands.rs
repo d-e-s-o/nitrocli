@@ -1170,6 +1170,10 @@ pub fn extension(ctx: &mut Context<'_>, args: Vec<ffi::OsString>) -> anyhow::Res
   // a cargo test context.
   let mut cmd = process::Command::new(&ext_path);
 
+  if let Ok(device_info) = find_device(&ctx.config) {
+    let _ = cmd.env(crate::NITROCLI_RESOLVED_USB_PATH, device_info.path);
+  }
+
   if let Some(model) = ctx.config.model {
     let _ = cmd.env(crate::NITROCLI_MODEL, model.to_string());
   }
