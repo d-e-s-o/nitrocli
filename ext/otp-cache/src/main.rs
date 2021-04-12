@@ -141,9 +141,6 @@ where
   let mut slot: u8 = 0;
   loop {
     let result = f(device, slot);
-    slot = slot
-      .checked_add(1)
-      .context("Encountered integer overflow when iterating OTP slots")?;
     match result {
       Ok(name) => {
         slots.push(Slot { name, id: slot });
@@ -152,6 +149,9 @@ where
       Err(nitrokey::Error::CommandError(nitrokey::CommandError::SlotNotProgrammed)) => {}
       Err(err) => return Err(err).context("Failed to check OTP slot"),
     }
+    slot = slot
+      .checked_add(1)
+      .context("Encountered integer overflow when iterating OTP slots")?;
   }
   Ok(slots)
 }
