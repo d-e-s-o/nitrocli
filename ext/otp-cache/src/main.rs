@@ -46,16 +46,13 @@ fn main() -> anyhow::Result<()> {
   use structopt::StructOpt as _;
 
   let args = Args::from_args();
-  let ctx = nitrocli_ext::Context::from_env("nitrocli-otp-cache")?;
+  let ctx = nitrocli_ext::Context::from_env()?;
 
   let mut mgr = nitrokey::take()?;
   let device = ctx.connect(&mut mgr)?;
 
   let serial_number = get_serial_number(&device)?;
-  let cache_file = ctx
-    .project_dirs
-    .cache_dir()
-    .join(&format!("{}.toml", serial_number));
+  let cache_file = ctx.cache_dir().join(&format!("{}.toml", serial_number));
 
   match &args.cmd {
     Command::Get { name } => {
@@ -77,7 +74,9 @@ fn cmd_get(
   let totp_slots: Vec<_> = cache.totp.iter().filter(|s| s.name == slot_name).collect();
   let hotp_slots: Vec<_> = cache.hotp.iter().filter(|s| s.name == slot_name).collect();
   if totp_slots.len() + hotp_slots.len() > 1 {
-    Err(anyhow::anyhow!("Found multiple OTP slots with the given name"))
+    Err(anyhow::anyhow!(
+      "Found multiple OTP slots with the given name"
+    ))
   } else if let Some(slot) = totp_slots.first() {
     generate_otp(&ctx, "totp", slot.id)
   } else if let Some(slot) = hotp_slots.first() {
