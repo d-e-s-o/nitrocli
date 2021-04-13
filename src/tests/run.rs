@@ -100,7 +100,7 @@ fn version_option() {
     assert!(re.is_match(&s), out);
   }
 
-  let re = regex::Regex::new(r"^nitrocli \d+.\d+.\d+(-[^-]+)*\n$").unwrap();
+  let re = regex::Regex::new(r"^nitrocli \d+.\d+.\d+(-[^-]+)* using libnitrokey .*\n$").unwrap();
 
   test(&re, "--version");
   test(&re, "-V");
