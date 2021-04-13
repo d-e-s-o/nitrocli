@@ -107,13 +107,9 @@ pub struct Nitrocli {
 
 impl Nitrocli {
   pub fn from_context(ctx: &Context) -> Nitrocli {
-    let mut cmd = process::Command::new(&ctx.nitrocli);
-    if let Some(verbosity) = ctx.verbosity {
-      for _ in 0..verbosity {
-        cmd.arg("--verbose");
-      }
+    Self {
+      cmd: process::Command::new(&ctx.nitrocli),
     }
-    Self { cmd }
   }
 
   pub fn arg(&mut self, arg: impl AsRef<ffi::OsStr>) -> &mut Nitrocli {
