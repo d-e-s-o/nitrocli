@@ -5,20 +5,21 @@
 
 use std::env;
 use std::ffi;
+use std::path;
 use std::process;
 
 use anyhow::Context as _;
 
 #[derive(Debug)]
 pub struct Context {
-  pub nitrocli: ffi::OsString,
-  pub resolved_usb_path: Option<String>,
-  pub verbosity: Option<u8>,
-  pub project_dirs: directories::ProjectDirs,
+  nitrocli: ffi::OsString,
+  resolved_usb_path: Option<String>,
+  verbosity: Option<u8>,
+  project_dirs: directories::ProjectDirs,
 }
 
 impl Context {
-  pub fn from_env(name: &str) -> anyhow::Result<Self> {
+  pub fn from_env() -> anyhow::Result<Self> {
     let nitrocli = env::var_os("NITROCLI_BINARY")
       .context("NITROCLI_BINARY environment variable not present")
       .context("Failed to retrieve nitrocli path")?;
@@ -39,6 +40,13 @@ impl Context {
       Some(verbosity)
     };
 
+    let exe =
+      env::current_exe().context("Failed to determine the path of the extension executable")?;
+    let name = exe
+      .file_name()
+      .context("Failed to extract the name of the extension executable")?
+      .to_str()
+      .context("The name of the extension executable contains non-UTF-8 characters")?;
     let project_dirs = directories::ProjectDirs::from("", "", name).with_context(|| {
       format!(
         "Could not determine the application directories for the {} extension",
@@ -69,6 +77,10 @@ impl Context {
       // or more than one (matching) device.
       Err(anyhow::anyhow!("Could not connect to Nitrokey device"))
     }
+  }
+
+  pub fn cache_dir(&self) -> &path::Path {
+    self.project_dirs.cache_dir()
   }
 }
 
