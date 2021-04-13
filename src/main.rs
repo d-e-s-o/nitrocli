@@ -110,8 +110,11 @@ impl error::Error for DirectExitError {}
 
 /// Parse the command-line arguments and execute the selected command.
 fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<()> {
-  match args::Args::from_iter_safe(argv.iter()) {
-    Ok(args) => {
+  let version = get_version_string();
+  let clap = args::Args::clap().version(version.as_str());
+  match clap.get_matches_from_safe(argv.iter()) {
+    Ok(matches) => {
+      let args = args::Args::from_clap(&matches);
       ctx.config.update(&args);
       args.cmd.execute(ctx)
     }
@@ -154,6 +157,15 @@ fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<
         Ok(())
       }
     }
+  }
+}
+
+fn get_version_string() -> String {
+  let version = env!("CARGO_PKG_VERSION");
+  if let Ok(library_version) = nitrokey::get_library_version() {
+    format!("{} using libnitrokey {}", version, library_version)
+  } else {
+    format!("{} using an undetectable libnitrokey version", version)
   }
 }
 

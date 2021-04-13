@@ -8,7 +8,7 @@ use std::ffi;
 
 /// Provides access to a Nitrokey device
 #[derive(Debug, structopt::StructOpt)]
-#[structopt(name = "nitrocli")]
+#[structopt(name = "nitrocli", no_version)]
 pub struct Args {
   /// Increases the log level (can be supplied multiple times)
   #[structopt(short, long, global = true, parse(from_occurrences))]
