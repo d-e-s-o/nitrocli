@@ -23,7 +23,7 @@ struct Slot {
 
 /// Access Nitrokey OTP slots by name
 #[derive(Debug, structopt::StructOpt)]
-#[structopt(bin_name = "nitrocli cache")]
+#[structopt(bin_name = "nitrocli otp-cache")]
 struct Args {
   #[structopt(subcommand)]
   cmd: Command,
@@ -77,13 +77,13 @@ fn cmd_get(
   let totp_slots: Vec<_> = cache.totp.iter().filter(|s| s.name == slot_name).collect();
   let hotp_slots: Vec<_> = cache.hotp.iter().filter(|s| s.name == slot_name).collect();
   if totp_slots.len() + hotp_slots.len() > 1 {
-    Err(anyhow::anyhow!("Multiple OTP slots with the given name"))
+    Err(anyhow::anyhow!("Found multiple OTP slots with the given name"))
   } else if let Some(slot) = totp_slots.first() {
     generate_otp(&ctx, "totp", slot.id)
   } else if let Some(slot) = hotp_slots.first() {
     generate_otp(&ctx, "hotp", slot.id)
   } else {
-    Err(anyhow::anyhow!("No OTP slot with the given name"))
+    Err(anyhow::anyhow!("Found no OTP slot with the given name"))
   }
 }
 
