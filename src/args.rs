@@ -103,7 +103,7 @@ Command! {
     /// Accesses the password safe
     Pws(PwsArgs) => |ctx, args: PwsArgs| args.subcmd.execute(ctx),
     /// Performs a factory reset
-    Reset => crate::commands::reset,
+    Reset(ResetArgs) => |ctx, args: ResetArgs| crate::commands::reset(ctx, args.only_aes_key),
     /// Prints the status of the connected Nitrokey device
     Status => crate::commands::status,
     /// Interacts with the device's unencrypted volume
@@ -443,6 +443,13 @@ pub struct PwsStatusArgs {
   /// Shows slots that are not programmed
   #[structopt(short, long)]
   pub all: bool,
+}
+
+#[derive(Debug, PartialEq, structopt::StructOpt)]
+pub struct ResetArgs {
+  /// Only build a new AES key instead of performing a full factory reset.
+  #[structopt(long)]
+  pub only_aes_key: bool,
 }
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]

@@ -10,6 +10,8 @@ Unreleased
 - Fixed pinentry dialog highlighting some messages incorrectly as errors
 - Switched to using GitHub Actions as the project's CI pipeline
 - Bumped `nitrokey` dependency to `0.9.0`
+- Added the `--only-aes-key` option to the `reset` command to build a new AES
+  key without performing a factory reset
 
 
 0.4.0
