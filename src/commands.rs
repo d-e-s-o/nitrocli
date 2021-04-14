@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
+use std::convert::TryFrom as _;
 use std::env;
 use std::ffi;
 use std::fmt;
@@ -1043,6 +1044,28 @@ pub fn pws_set(
     pws
       .write_slot(slot, name, login, password)
       .context("Failed to write PWS slot")
+  })
+}
+
+/// Write data to the first unprogrammed PWS slot.
+pub fn pws_add(
+  ctx: &mut Context<'_>,
+  name: &str,
+  login: &str,
+  password: &str,
+) -> anyhow::Result<()> {
+  with_password_safe(ctx, |ctx, mut pws| {
+    let slots = pws.get_slots()?;
+    if let Some(slot) = slots.iter().position(Option::is_none) {
+      let slot = u8::try_from(slot).context("Unexpected number of password slots")?;
+      pws
+        .write_slot(slot, name, login, password)
+        .context("Failed to write PWS slot")?;
+      println!(ctx, "Added PWS slot {}", slot)?;
+      Ok(())
+    } else {
+      Err(anyhow::anyhow!("All PWS slots are already programmed"))
+    }
   })
 }
 

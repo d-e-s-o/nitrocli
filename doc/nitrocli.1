@@ -279,6 +279,12 @@ Set the content of a PWS slot.
 \fIname\fR, \fIlogin\fR, and \fIpassword\fR represent the data to write to the
 slot.
 .TP
+\fBnitrocli pws add \fIslot name login password\fR
+Add a new PWS slot.
+This command locates the first free PWS slot and sets its content to the given
+values.
+It fails if all PWS slots are programmed.
+.TP
 \fBnitrocli pws update \fIslot\fR \
 [\fB\-n\fR|\fB\-\-name \fIname\fR] \
 [\fB\-l\fR|\fB\-\-login \fIlogin\fR] \
