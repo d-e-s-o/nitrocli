@@ -289,6 +289,12 @@ This command only sets the data given with the \fB\-\-name\fR, \fB\-\-login\fR,
 and \fB\-\-password\fR options and does not overwrite the other fields of the
 slot.
 .TP
+\fBnitrocli pws add \fIslot name login password\fR
+Add a new PWS slot.
+This command locates the first free PWS slot and sets its content to the given
+values.
+It fails if all PWS slots are programmed.
+.TP
 \fBnitrocli pws clear \fIslot\fR
 Delete the data stored in a PWS slot.
 \fIslot\fR is the number of the slot clear.

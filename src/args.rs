@@ -398,6 +398,10 @@ Command! {PwsCommand, [
   Set(PwsSetArgs) => |ctx, args: PwsSetArgs| {
     crate::commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password)
   },
+  /// Writes data to the first free password safe slot
+  Add(PwsAddArgs) => |ctx, args: PwsAddArgs| {
+    crate::commands::pws_add(ctx, &args.name, &args.login, &args.password)
+  },
   /// Updates a password safe slot
   Update(PwsUpdateArgs) => |ctx, args: PwsUpdateArgs| {
     crate::commands::pws_update(
@@ -440,6 +444,16 @@ pub struct PwsGetArgs {
 pub struct PwsSetArgs {
   /// The PWS slot to write
   pub slot: u8,
+  /// The name to store on the slot
+  pub name: String,
+  /// The login to store on the slot
+  pub login: String,
+  /// The password to store on the slot
+  pub password: String,
+}
+
+#[derive(Debug, PartialEq, structopt::StructOpt)]
+pub struct PwsAddArgs {
   /// The name to store on the slot
   pub name: String,
   /// The login to store on the slot

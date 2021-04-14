@@ -199,3 +199,62 @@ fn update(model: nitrokey::Model) -> anyhow::Result<()> {
 
   Ok(())
 }
+
+#[test_device]
+fn add_full(model: nitrokey::Model) -> anyhow::Result<()> {
+  let mut ncli = Nitrocli::new().model(model);
+
+  // Fill all PWS slots
+  for slot in u8::MIN..=u8::MAX {
+    let res = ncli.handle(&["pws", "set", &slot.to_string(), "name", "login", "passw0rd"]);
+    match res {
+      Ok(_) => {}
+      Err(err) => match err.downcast::<nitrokey::Error>() {
+        Ok(err) => match err {
+          nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot) => break,
+          err => anyhow::bail!(err),
+        },
+        Err(err) => anyhow::bail!(err),
+      },
+    }
+  }
+
+  // Try to add another one
+  let res = ncli.handle(&["pws", "add", "name", "login", "passw0rd"]);
+
+  let err = res.unwrap_err().to_string();
+  assert_eq!(err, "All PWS slots are already programmed");
+  Ok(())
+}
+
+#[test_device]
+fn add(model: nitrokey::Model) -> anyhow::Result<()> {
+  let mut ncli = Nitrocli::new().model(model);
+
+  // Clear all PWS slots
+  for slot in u8::MIN..=u8::MAX {
+    let res = ncli.handle(&["pws", "clear", &slot.to_string()]);
+    match res {
+      Ok(_) => {}
+      Err(err) => match err.downcast::<nitrokey::Error>() {
+        Ok(err) => match err {
+          nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot) => break,
+          err => anyhow::bail!(err),
+        },
+        Err(err) => anyhow::bail!(err),
+      },
+    }
+  }
+
+  // Fill slots 0 and 5
+  let _ = ncli.handle(&["pws", "set", "0", "name0", "login0", "pass0rd"])?;
+  let _ = ncli.handle(&["pws", "set", "5", "name5", "login5", "pass5rd"])?;
+
+  // Try to add another one
+  let out = ncli.handle(&["pws", "add", "name1", "login1", "passw1rd"])?;
+  assert_eq!("Added PWS slot 1\n", out);
+
+  assert_slot(model, 1, "name1", "login1", "passw1rd")?;
+
+  Ok(())
+}

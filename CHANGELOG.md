@@ -4,6 +4,7 @@ Unreleased
 - Introduced `otp-cache` core extension
 - Enabled usage of empty PWS slot fields
 - Changed error reporting format to make up only a single line
+- Added the `pws add` subcommand to write to the first unprogrammed slot
 - Added the `pws update` subcommand to update an existing PWS slot
 - Added the `--only-aes-key` option to the `reset` command to build a new AES
   key without performing a factory reset
