@@ -1038,6 +1038,37 @@ pub fn pws_set(
   })
 }
 
+/// Update a PWS slot.
+pub fn pws_update(
+  ctx: &mut Context<'_>,
+  slot_idx: u8,
+  name: Option<&str>,
+  login: Option<&str>,
+  password: Option<&str>,
+) -> anyhow::Result<()> {
+  if name.is_none() && login.is_none() && password.is_none() {
+    anyhow::bail!("You have to set at least one of --name, --login and --password");
+  }
+  with_password_safe(ctx, |_ctx, mut pws| {
+    let slot = pws.get_slot(slot_idx).context("Failed to query PWS slot")?;
+    let name = name
+      .map(|s| Ok(borrow::Cow::from(s)))
+      .unwrap_or_else(|| slot.get_name().map(borrow::Cow::from))
+      .context("Failed to query current slot name")?;
+    let login = login
+      .map(|s| Ok(borrow::Cow::from(s)))
+      .unwrap_or_else(|| slot.get_login().map(borrow::Cow::from))
+      .context("Failed to query current slot login")?;
+    let password = password
+      .map(|s| Ok(borrow::Cow::from(s)))
+      .unwrap_or_else(|| slot.get_password().map(borrow::Cow::from))
+      .context("Failed to query current slot password")?;
+    pws
+      .write_slot(slot_idx, name.as_ref(), login.as_ref(), password.as_ref())
+      .context("Failed to write PWS slot")
+  })
+}
+
 /// Clear a PWS slot.
 pub fn pws_clear(ctx: &mut Context<'_>, slot: u8) -> anyhow::Result<()> {
   with_password_safe(ctx, |_ctx, mut pws| {

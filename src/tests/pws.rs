@@ -5,6 +5,19 @@
 
 use super::*;
 
+fn assert_slot(
+  model: nitrokey::Model,
+  slot: u8,
+  name: &str,
+  login: &str,
+  password: &str,
+) -> anyhow::Result<()> {
+  let mut ncli = Nitrocli::new().model(model);
+  let out = ncli.handle(&["pws", "get", &slot.to_string(), "--quiet"])?;
+  assert_eq!(format!("{}\n{}\n{}\n", name, login, password), out);
+  Ok(())
+}
+
 #[test_device]
 fn set_invalid_slot(model: nitrokey::Model) {
   let err = Nitrocli::new()
@@ -52,8 +65,7 @@ fn set_get(model: nitrokey::Model) -> anyhow::Result<()> {
   let out = ncli.handle(&["pws", "get", "1", "--quiet", "--password"])?;
   assert_eq!(out, format!("{}\n", PASSWORD));
 
-  let out = ncli.handle(&["pws", "get", "1", "--quiet"])?;
-  assert_eq!(out, format!("{}\n{}\n{}\n", NAME, LOGIN, PASSWORD));
+  assert_slot(model, 1, NAME, LOGIN, PASSWORD)?;
 
   let out = ncli.handle(&["pws", "get", "1"])?;
   assert_eq!(
@@ -80,8 +92,7 @@ fn set_empty(model: nitrokey::Model) -> anyhow::Result<()> {
   let out = ncli.handle(&["pws", "get", "1", "--quiet", "--password"])?;
   assert_eq!(out, "\n");
 
-  let out = ncli.handle(&["pws", "get", "1", "--quiet"])?;
-  assert_eq!(out, "\n\n\n");
+  assert_slot(model, 1, "", "", "")?;
 
   let out = ncli.handle(&["pws", "get", "1"])?;
   assert_eq!(out, "name:     \nlogin:    \npassword: \n",);
@@ -115,5 +126,76 @@ fn clear(model: nitrokey::Model) -> anyhow::Result<()> {
 
   let err = res.unwrap_err().to_string();
   assert_eq!(err, "Failed to access PWS slot");
+  Ok(())
+}
+
+#[test_device]
+fn update_unprogrammed(model: nitrokey::Model) -> anyhow::Result<()> {
+  let mut ncli = Nitrocli::new().model(model);
+  let _ = ncli.handle(&["pws", "set", "10", "clear-test", "some-login", "abcdef"])?;
+  let _ = ncli.handle(&["pws", "clear", "10"])?;
+  let res = ncli.handle(&["pws", "update", "10", "--name", "test"]);
+
+  let err = res.unwrap_err().to_string();
+  assert_eq!(err, "Failed to query PWS slot");
+  Ok(())
+}
+
+#[test_device]
+fn update_no_options(model: nitrokey::Model) -> anyhow::Result<()> {
+  let mut ncli = Nitrocli::new().model(model);
+  let res = ncli.handle(&["pws", "update", "10"]);
+
+  let err = res.unwrap_err().to_string();
+  assert_eq!(
+    err,
+    "You have to set at least one of --name, --login and --password"
+  );
+  Ok(())
+}
+
+#[test_device]
+fn update(model: nitrokey::Model) -> anyhow::Result<()> {
+  const NAME_BEFORE: &str = "name-before";
+  const NAME_AFTER: &str = "name-after";
+  const LOGIN_BEFORE: &str = "login-before";
+  const LOGIN_AFTER: &str = "login-after";
+  const PASSWORD_BEFORE: &str = "password-before";
+  const PASSWORD_AFTER: &str = "password-after";
+
+  let mut ncli = Nitrocli::new().model(model);
+  let _ = ncli.handle(&[
+    "pws",
+    "set",
+    "10",
+    NAME_BEFORE,
+    LOGIN_BEFORE,
+    PASSWORD_BEFORE,
+  ])?;
+
+  assert_slot(model, 10, NAME_BEFORE, LOGIN_BEFORE, PASSWORD_BEFORE)?;
+
+  let _ = ncli.handle(&["pws", "update", "10", "--name", NAME_AFTER])?;
+  assert_slot(model, 10, NAME_AFTER, LOGIN_BEFORE, PASSWORD_BEFORE)?;
+
+  let _ = ncli.handle(&["pws", "update", "10", "--login", LOGIN_AFTER])?;
+  assert_slot(model, 10, NAME_AFTER, LOGIN_AFTER, PASSWORD_BEFORE)?;
+
+  let _ = ncli.handle(&["pws", "update", "10", "--password", PASSWORD_AFTER])?;
+  assert_slot(model, 10, NAME_AFTER, LOGIN_AFTER, PASSWORD_AFTER)?;
+
+  let _ = ncli.handle(&[
+    "pws",
+    "update",
+    "10",
+    "--name",
+    NAME_BEFORE,
+    "--login",
+    LOGIN_BEFORE,
+    "--password",
+    PASSWORD_BEFORE,
+  ])?;
+  assert_slot(model, 10, NAME_BEFORE, LOGIN_BEFORE, PASSWORD_BEFORE)?;
+
   Ok(())
 }
