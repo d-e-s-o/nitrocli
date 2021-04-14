@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2021-04-14
+.TH NITROCLI 1 2021-04-17
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -79,11 +79,15 @@ This command locks the password safe (see the Password safe section). On the
 Nitrokey Storage, it will also close any active encrypted or hidden volumes (see
 the Storage section).
 .TP
-.B nitrocli reset
+.B nitrocli reset \fR[\fB\-\-only-aes-key\fR]
 Perform a factory reset on the Nitrokey.
 This command performs a factory reset on the OpenPGP smart card, clears the
 flash storage and builds a new AES key.
 The user PIN is reset to 123456, the admin PIN to 12345678.
+
+If the \fB\-\-only-aes-key\fR option is set, the command does not perform a
+full factory reset but only creates a new AES key.
+The AES key is for example used to encrypt the password safe.
 
 This command requires the admin PIN.
 To avoid accidental calls of this command, the user has to enter the PIN even
