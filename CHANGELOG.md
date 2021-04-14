@@ -4,6 +4,7 @@ Unreleased
 - Allowed entering of `base32` encoded strings containing spaces
 - Fixed pinentry dialog highlighting some messages incorrectly as errors
 - Bumped `nitrokey` dependency to `0.9.0`
+- Added the `pws add` subcommand to write to the first unprogrammed slot
 
 
 0.4.0
