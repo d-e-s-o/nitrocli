@@ -1,6 +1,6 @@
 // commands.rs
 
-// Copyright (C) 2018-2020 The Nitrocli Developers
+// Copyright (C) 2018-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
@@ -1042,6 +1042,37 @@ pub fn pws_set(
   with_password_safe(ctx, |_ctx, mut pws| {
     pws
       .write_slot(slot, name, login, password)
+      .context("Failed to write PWS slot")
+  })
+}
+
+/// Update a PWS slot.
+pub fn pws_update(
+  ctx: &mut Context<'_>,
+  slot_idx: u8,
+  name: Option<&str>,
+  login: Option<&str>,
+  password: Option<&str>,
+) -> anyhow::Result<()> {
+  if name.is_none() && login.is_none() && password.is_none() {
+    anyhow::bail!("You have to set at least one of --name, --login, or --password");
+  }
+  with_password_safe(ctx, |_ctx, mut pws| {
+    let slot = pws.get_slot(slot_idx).context("Failed to query PWS slot")?;
+    let name = name
+      .map(|s| Ok(borrow::Cow::from(s)))
+      .unwrap_or_else(|| slot.get_name().map(borrow::Cow::from))
+      .context("Failed to query current slot name")?;
+    let login = login
+      .map(|s| Ok(borrow::Cow::from(s)))
+      .unwrap_or_else(|| slot.get_login().map(borrow::Cow::from))
+      .context("Failed to query current slot login")?;
+    let password = password
+      .map(|s| Ok(borrow::Cow::from(s)))
+      .unwrap_or_else(|| slot.get_password().map(borrow::Cow::from))
+      .context("Failed to query current slot password")?;
+    pws
+      .write_slot(slot_idx, name.as_ref(), login.as_ref(), password.as_ref())
       .context("Failed to write PWS slot")
   })
 }
