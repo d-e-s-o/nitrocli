@@ -513,7 +513,7 @@ pub fn fill(ctx: &mut Context<'_>, attach: bool) -> anyhow::Result<()> {
 }
 
 /// Perform a factory reset.
-pub fn reset(ctx: &mut Context<'_>) -> anyhow::Result<()> {
+pub fn reset(ctx: &mut Context<'_>, only_aes_key: bool) -> anyhow::Result<()> {
   with_device(ctx, |ctx, mut device| {
     let pin_entry = pinentry::PinEntry::from(args::PinType::Admin, &device)?;
 
@@ -522,20 +522,26 @@ pub fn reset(ctx: &mut Context<'_>) -> anyhow::Result<()> {
     pinentry::clear(&pin_entry).context("Failed to clear cached secret")?;
 
     try_with_pin(ctx, &pin_entry, |pin| {
-      device
-        .factory_reset(&pin)
-        .context("Failed to reset to factory settings")?;
-      // Work around for a timing issue between factory_reset and
-      // build_aes_key, see
-      // https://github.com/Nitrokey/nitrokey-storage-firmware/issues/80
-      thread::sleep(time::Duration::from_secs(3));
-      // Another work around for spurious WrongPassword returns of
-      // build_aes_key after a factory reset on Pro devices.
-      // https://github.com/Nitrokey/nitrokey-pro-firmware/issues/57
-      let _ = device.get_user_retry_count();
-      device
-        .build_aes_key(nitrokey::DEFAULT_ADMIN_PIN)
-        .context("Failed to rebuild AES key")
+      if only_aes_key {
+        device
+          .build_aes_key(&pin)
+          .context("Failed to rebuild AES key")
+      } else {
+        device
+          .factory_reset(&pin)
+          .context("Failed to reset to factory settings")?;
+        // Work around for a timing issue between factory_reset and
+        // build_aes_key, see
+        // https://github.com/Nitrokey/nitrokey-storage-firmware/issues/80
+        thread::sleep(time::Duration::from_secs(3));
+        // Another work around for spurious WrongPassword returns of
+        // build_aes_key after a factory reset on Pro devices.
+        // https://github.com/Nitrokey/nitrokey-pro-firmware/issues/57
+        let _ = device.get_user_retry_count();
+        device
+          .build_aes_key(nitrokey::DEFAULT_ADMIN_PIN)
+          .context("Failed to rebuild AES key")
+      }
     })
   })
 }
