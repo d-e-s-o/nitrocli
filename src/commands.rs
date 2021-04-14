@@ -1069,6 +1069,29 @@ pub fn pws_update(
   })
 }
 
+/// Write data to the first unprogrammed PWS slot.
+pub fn pws_add(
+  ctx: &mut Context<'_>,
+  name: &str,
+  login: &str,
+  password: &str,
+) -> anyhow::Result<()> {
+  with_password_safe(ctx, |ctx, mut pws| {
+    let slots = pws.get_slots()?;
+    if let Some(slot) = slots.iter().position(Option::is_none) {
+      use std::convert::TryFrom as _;
+      let slot = u8::try_from(slot).context("Unexpected number of password slots")?;
+      pws
+        .write_slot(slot, name, login, password)
+        .context("Failed to write PWS slot")?;
+      println!(ctx, "Added PWS slot {}", slot)?;
+      Ok(())
+    } else {
+      Err(anyhow::anyhow!("All PWS slots are already programmed"))
+    }
+  })
+}
+
 /// Clear a PWS slot.
 pub fn pws_clear(ctx: &mut Context<'_>, slot: u8) -> anyhow::Result<()> {
   with_password_safe(ctx, |_ctx, mut pws| {
