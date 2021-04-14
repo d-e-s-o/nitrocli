@@ -523,6 +523,8 @@ pub fn reset(ctx: &mut Context<'_>, only_aes_key: bool) -> anyhow::Result<()> {
 
     try_with_pin(ctx, &pin_entry, |pin| {
       if only_aes_key {
+        // Similar to the else arm, we have to execute this command to avoid WrongPassword errors
+        let _ = device.get_user_retry_count();
         device
           .build_aes_key(&pin)
           .context("Failed to rebuild AES key")
