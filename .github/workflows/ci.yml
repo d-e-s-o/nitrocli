@@ -1,0 +1,68 @@
+# Copyright (C) 2021 The Nitrocli Developers
+# SPDX-License-Identifier: CC0-1.0
+
+# TODO:
+# - Test with system libnitrokey (USE_SYSTEM_LIBNITROKEY=1)?
+# - Add support for macos and windows
+
+name: CI
+
+on: [push, pull_request]
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Compile and test Rust ${{ matrix.rust }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [1.42.0, stable, beta, nightly]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - run: sudo apt-get install libhidapi-dev
+      - run: cargo build --workspace --bins --tests --verbose
+      - run: cargo build --workspace --bins --tests --verbose --release
+      - run: cargo test --workspace --verbose
+
+  clippy:
+    name: Lint with clippy
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.42.0
+          components: clippy
+          override: true
+      - run: cargo clippy --workspace --all-targets --all-features --verbose -- -A unknown_lints -D warnings
+
+  reuse:
+    name: Check license annotations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - run: pip3 install reuse
+      - run: reuse lint
+
+  rustfmt:
+    name: Verify code formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.42.0
+          components: rustfmt
+          override: true
+      - run: cargo fmt --all -- --check
