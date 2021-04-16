@@ -10,8 +10,13 @@ fn not_found_raw() {
   let (rc, out, err) = Nitrocli::new().run(&["status"]);
 
   assert_ne!(rc, 0);
-  assert_eq!(out, b"");
-  assert_eq!(err, b"Nitrokey device not found\n");
+  assert_eq!(out, b"", "{}", String::from_utf8_lossy(&out));
+  assert_eq!(
+    err,
+    b"Nitrokey device not found\n",
+    "{}",
+    String::from_utf8_lossy(&err)
+  );
 }
 
 #[test_device]

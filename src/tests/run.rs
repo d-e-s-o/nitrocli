@@ -1,6 +1,6 @@
 // run.rs
 
-// Copyright (C) 2019-2020 The Nitrocli Developers
+// Copyright (C) 2019-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::collections;
@@ -21,7 +21,7 @@ fn no_command_or_option() {
   let (rc, out, err) = Nitrocli::new().run(&[]);
 
   assert_ne!(rc, 0);
-  assert_eq!(out, b"");
+  assert_eq!(out, b"", "{}", String::from_utf8_lossy(&out));
 
   let s = String::from_utf8_lossy(&err).into_owned();
   assert!(s.starts_with("nitrocli"), "{}", s);
@@ -37,7 +37,7 @@ fn help_options() {
     let (rc, out, err) = Nitrocli::new().run(&all);
 
     assert_eq!(rc, 0);
-    assert_eq!(err, b"");
+    assert_eq!(err, b"", "{}", String::from_utf8_lossy(&err));
 
     let s = String::from_utf8_lossy(&out).into_owned();
     let mut args = args.to_vec();
@@ -93,7 +93,7 @@ fn version_option() {
     let (rc, out, err) = Nitrocli::new().run(&[opt]);
 
     assert_eq!(rc, 0);
-    assert_eq!(err, b"");
+    assert_eq!(err, b"", "{}", String::from_utf8_lossy(&err));
 
     let s = String::from_utf8_lossy(&out).into_owned();
     let _ = re;
@@ -346,8 +346,8 @@ sys.exit(42);
 
   let (rc, out, err) = ncli.run(&["ext"]);
   assert_eq!(rc, 42);
-  assert_eq!(out, b"");
-  assert_eq!(err, b"");
+  assert_eq!(out, b"", "{}", String::from_utf8_lossy(&out));
+  assert_eq!(err, b"", "{}", String::from_utf8_lossy(&err));
   Ok(())
 }
 

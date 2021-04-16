@@ -1,6 +1,6 @@
 // otp.rs
 
-// Copyright (C) 2019-2020 The Nitrocli Developers
+// Copyright (C) 2019-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use super::*;
@@ -14,8 +14,13 @@ fn set_invalid_slot_raw(model: nitrokey::Model) {
     .run(&["otp", "set", "100", "name", "1234", "-f", "hex"]);
 
   assert_ne!(rc, 0);
-  assert_eq!(out, b"");
-  assert_eq!(&err[..24], b"Failed to write OTP slot");
+  assert_eq!(out, b"", "{}", String::from_utf8_lossy(&out));
+  assert_eq!(
+    &err[..24],
+    b"Failed to write OTP slot",
+    "{}",
+    String::from_utf8_lossy(&err)
+  );
 }
 
 #[test_device]
