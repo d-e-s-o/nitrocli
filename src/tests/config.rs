@@ -11,7 +11,7 @@ fn mutually_exclusive_set_options() {
     let (rc, out, err) = Nitrocli::new().run(&["config", "set", option1, option2]);
 
     assert_ne!(rc, 0);
-    assert_eq!(out, b"");
+    assert_eq!(out, b"", "{}", String::from_utf8_lossy(&out));
 
     let err = String::from_utf8(err).unwrap();
     assert!(err.contains("cannot be used with"), "{}", err);
