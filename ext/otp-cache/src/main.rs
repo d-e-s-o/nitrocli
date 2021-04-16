@@ -22,24 +22,31 @@ struct Slot {
 }
 
 /// Access Nitrokey OTP slots by name
+///
+/// This command caches the names of the OTP slots on a Nitrokey device and makes it possible to
+/// generate a one-time password from a slot with a given name without knowing its index.  It only
+/// queries the names of the OTP slots if there is no cached data or if the --force-update option
+/// is set.  The cache includes the Nitrokey’s serial number so that it is possible to use it with
+/// multiple devices.
 #[derive(Debug, structopt::StructOpt)]
 #[structopt(bin_name = "nitrocli otp-cache")]
 struct Args {
+  /// Always query the slot data even if it is already cached
+  #[structopt(short, long)]
+  force_update: bool,
   #[structopt(subcommand)]
   cmd: Command,
 }
 
 #[derive(Debug, structopt::StructOpt)]
 enum Command {
-  /// Generates a one-time passwords
+  /// Generates a one-time password
   Get {
     /// The name of the OTP slot to generate a OTP from
     name: String,
   },
   /// Lists the cached slots and their names
   List,
-  /// Updates the cached slot data
-  Update,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -48,29 +55,15 @@ fn main() -> anyhow::Result<()> {
   let args = Args::from_args();
   let ctx = nitrocli_ext::Context::from_env()?;
 
-  let mut mgr = nitrokey::take()?;
-  let device = ctx.connect(&mut mgr)?;
-
-  let serial_number = get_serial_number(&device)?;
-  let cache_file = ctx.cache_dir().join(&format!("{}.toml", serial_number));
-
+  let cache = get_cache(&ctx, args.force_update)?;
   match &args.cmd {
-    Command::Get { name } => {
-      drop(device);
-      drop(mgr);
-      cmd_get(&ctx, &cache_file, name)
-    }
-    Command::List => cmd_list(&cache_file),
-    Command::Update => cmd_update(&cache_file, &device),
+    Command::Get { name } => cmd_get(&ctx, &cache, name)?,
+    Command::List => cmd_list(&cache),
   }
+  Ok(())
 }
 
-fn cmd_get(
-  ctx: &nitrocli_ext::Context,
-  cache_file: &path::Path,
-  slot_name: &str,
-) -> anyhow::Result<()> {
-  let cache = get_cache(cache_file)?;
+fn cmd_get(ctx: &nitrocli_ext::Context, cache: &Cache, slot_name: &str) -> anyhow::Result<()> {
   let totp_slots: Vec<_> = cache.totp.iter().filter(|s| s.name == slot_name).collect();
   let hotp_slots: Vec<_> = cache.hotp.iter().filter(|s| s.name == slot_name).collect();
   if totp_slots.len() + hotp_slots.len() > 1 {
@@ -86,27 +79,29 @@ fn cmd_get(
   }
 }
 
-fn cmd_list(cache_file: &path::Path) -> anyhow::Result<()> {
-  let cache = get_cache(&cache_file)?;
+fn cmd_list(cache: &Cache) {
   println!("alg\tslot\tname");
-  for slot in cache.totp {
+  for slot in &cache.totp {
     println!("totp\t{}\t{}", slot.id, slot.name);
   }
-  for slot in cache.hotp {
+  for slot in &cache.hotp {
     println!("hotp\t{}\t{}", slot.id, slot.name);
   }
-  Ok(())
 }
 
-fn cmd_update(cache_file: &path::Path, device: &impl nitrokey::GenerateOtp) -> anyhow::Result<()> {
-  save_cache(&get_otp_slots(device)?, &cache_file)
-}
+fn get_cache(ctx: &nitrocli_ext::Context, force_update: bool) -> anyhow::Result<Cache> {
+  let mut mgr = nitrokey::take().context("Failed to obtain Nitrokey manager instance")?;
+  let device = ctx.connect(&mut mgr)?;
+  let serial_number = get_serial_number(&device)?;
+  let cache_file = ctx.cache_dir().join(&format!("{}.toml", serial_number));
 
-fn get_cache(file: &path::Path) -> anyhow::Result<Cache> {
-  if !file.is_file() {
-    anyhow::bail!("There is no cached slot data.  Run the update command to initialize the cache.");
+  if cache_file.is_file() && !force_update {
+    load_cache(&cache_file)
+  } else {
+    let cache = get_otp_slots(&device)?;
+    save_cache(&cache, &cache_file)?;
+    Ok(cache)
   }
-  load_cache(&file)
 }
 
 fn load_cache(path: &path::Path) -> anyhow::Result<Cache> {
