@@ -14,8 +14,13 @@ fn set_invalid_slot_raw(model: nitrokey::Model) {
     .run(&["otp", "set", "100", "name", "1234", "-f", "hex"]);
 
   assert_ne!(rc, 0);
-  assert_eq!(out, b"");
-  assert_eq!(&err[..24], b"Failed to write OTP slot");
+  assert_eq!(out, b"", "{}", String::from_utf8_lossy(&out));
+  assert_eq!(
+    &err[..24],
+    b"Failed to write OTP slot",
+    "{}",
+    String::from_utf8_lossy(&out)
+  );
 }
 
 #[test_device]
