@@ -43,7 +43,7 @@ fn status(model: nitrokey::Model) -> anyhow::Result<()> {
   let _ = ncli.handle(&["otp", "set", "0", "the-name", "123456", "-f", "hex"])?;
 
   let out = ncli.handle(&["otp", "status"])?;
-  assert!(re.is_match(&out), out);
+  assert!(re.is_match(&out), "{}", out);
   Ok(())
 }
 
