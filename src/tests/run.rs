@@ -24,8 +24,8 @@ fn no_command_or_option() {
   assert_eq!(out, b"");
 
   let s = String::from_utf8_lossy(&err).into_owned();
-  assert!(s.starts_with("nitrocli"), s);
-  assert!(s.contains("USAGE:\n"), s);
+  assert!(s.starts_with("nitrocli"), "{}", s);
+  assert!(s.contains("USAGE:\n"), "{}", s);
 }
 
 #[test]
@@ -42,8 +42,8 @@ fn help_options() {
     let s = String::from_utf8_lossy(&out).into_owned();
     let mut args = args.to_vec();
     args.insert(0, "nitrocli");
-    assert!(s.starts_with(&args.join("-")), s);
-    assert!(s.contains("USAGE:\n"), s);
+    assert!(s.starts_with(&args.join("-")), "{}", s);
+    assert!(s.contains("USAGE:\n"), "{}", s);
   }
 
   fn test(args: &[&str]) {
@@ -97,7 +97,7 @@ fn version_option() {
 
     let s = String::from_utf8_lossy(&out).into_owned();
     let _ = re;
-    assert!(re.is_match(&s), out);
+    assert!(re.is_match(&s), "{}", s);
   }
 
   let re = regex::Regex::new(r"^nitrocli \d+.\d+.\d+(-[^-]+)* using libnitrokey .*\n$").unwrap();
@@ -302,7 +302,11 @@ print("success")
   let path = ext_dir.path().as_os_str().to_os_string();
   // Make sure that the extension appears in the help text.
   let out = Nitrocli::new().path(&path).handle(&["--help"])?;
-  assert!(out.contains("ext            Run the ext extension\n"), out);
+  assert!(
+    out.contains("ext            Run the ext extension\n"),
+    "{}",
+    out
+  );
   // And, of course, that we can invoke it.
   let out = Nitrocli::new().path(&path).handle(&["ext"])?;
   assert_eq!(out, "success\n");
@@ -370,7 +374,7 @@ fn extension_arguments(model: nitrokey::Model) -> anyhow::Result<()> {
     let path = ext_dir.path().as_os_str().to_os_string();
     let out = Nitrocli::new().model(model).path(path).handle(&args)?;
 
-    assert!(check(&out), out);
+    assert!(check(&out), "{}", out);
     Ok(())
   }
 
