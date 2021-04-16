@@ -30,7 +30,7 @@ fn status(model: nitrokey::Model) -> anyhow::Result<()> {
   let _ = ncli.handle(&["pws", "set", "0", "the-name", "the-login", "123456"])?;
 
   let out = ncli.handle(&["pws", "status"])?;
-  assert!(re.is_match(&out), out);
+  assert!(re.is_match(&out), "{}", out);
   Ok(())
 }
 

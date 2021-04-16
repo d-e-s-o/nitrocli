@@ -32,15 +32,15 @@ $"#,
 
   let mut ncli = Nitrocli::new().model(model);
   let out = ncli.handle(&["status"])?;
-  assert!(make_re(None).is_match(&out), out);
+  assert!(make_re(None).is_match(&out), "{}", out);
 
   let _ = ncli.handle(&["encrypted", "open"])?;
   let out = ncli.handle(&["status"])?;
-  assert!(make_re(Some(true)).is_match(&out), out);
+  assert!(make_re(Some(true)).is_match(&out), "{}", out);
 
   let _ = ncli.handle(&["encrypted", "close"])?;
   let out = ncli.handle(&["status"])?;
-  assert!(make_re(Some(false)).is_match(&out), out);
+  assert!(make_re(Some(false)).is_match(&out), "{}", out);
 
   Ok(())
 }

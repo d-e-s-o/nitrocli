@@ -35,7 +35,7 @@ $"#,
   .unwrap();
 
   let out = Nitrocli::new().model(model).handle(&["status"])?;
-  assert!(re.is_match(&out), out);
+  assert!(re.is_match(&out), "{}", out);
   Ok(())
 }
 
@@ -53,7 +53,7 @@ $"#,
   .unwrap();
 
   let out = Nitrocli::new().model(model).handle(&["status"])?;
-  assert!(re.is_match(&out), out);
+  assert!(re.is_match(&out), "{}", out);
   Ok(())
 }
 
@@ -80,6 +80,6 @@ $"#,
   .unwrap();
 
   let out = Nitrocli::new().model(model).handle(&["status"])?;
-  assert!(re.is_match(&out), out);
+  assert!(re.is_match(&out), "{}", out);
   Ok(())
 }

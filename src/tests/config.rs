@@ -14,7 +14,7 @@ fn mutually_exclusive_set_options() {
     assert_eq!(out, b"");
 
     let err = String::from_utf8(err).unwrap();
-    assert!(err.contains("cannot be used with"), err);
+    assert!(err.contains("cannot be used with"), "{}", err);
   }
 
   test("-c", "-C");
@@ -36,7 +36,7 @@ $"#,
 
   let out = Nitrocli::new().model(model).handle(&["config", "get"])?;
 
-  assert!(re.is_match(&out), out);
+  assert!(re.is_match(&out), "{}", out);
   Ok(())
 }
 
@@ -50,6 +50,7 @@ fn set_wrong_usage(model: nitrokey::Model) {
 
   assert!(
     err.contains("The argument '--num-lock <num-lock>' cannot be used with '--no-num-lock'"),
+    "{}",
     err,
   );
 }
@@ -70,6 +71,6 @@ $"#,
   .unwrap();
 
   let out = ncli.handle(&["config", "get"])?;
-  assert!(re.is_match(&out), out);
+  assert!(re.is_match(&out), "{}", out);
   Ok(())
 }
