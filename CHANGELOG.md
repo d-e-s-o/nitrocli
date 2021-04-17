@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Enabled usage of empty PWS slot fields
+- Changed error reporting format to make up only a single line
 - Added `NITROCLI_RESOLVED_USB_PATH` environment variable to be used by
   extensions
 - Allowed entering of `base32` encoded strings containing spaces
