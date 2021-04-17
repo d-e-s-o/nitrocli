@@ -8,6 +8,7 @@ Unreleased
   extensions
 - Allowed entering of `base32` encoded strings containing spaces
 - Fixed pinentry dialog highlighting some messages incorrectly as errors
+- Switched to using GitHub Actions as the project's CI pipeline
 - Bumped `nitrokey` dependency to `0.9.0`
 
 
