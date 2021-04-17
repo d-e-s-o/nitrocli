@@ -273,11 +273,15 @@ The fields are printed together with a label.
 Use the \fB\-\-quiet\fR option to suppress the labels and to only output the
 values stored in the PWS slot.
 .TP
-\fBnitrocli pws set \fIslot name login password\fR
+\fBnitrocli pws set \fR[\fB\-o\fR|\fB\-\-overwrite\fR] \
+\fIslot name login password\fR
 Set the content of a PWS slot.
 \fIslot\fR is the number of the slot to write.
 \fIname\fR, \fIlogin\fR, and \fIpassword\fR represent the data to write to the
 slot.
+Per default, this command refuses to overwrite programmed slots.
+Set the \fB\-\-overwrite\fR option or use the \fBpws update\fR command if you
+want to overwrite a slot.
 .TP
 \fBnitrocli pws clear \fIslot\fR
 Delete the data stored in a PWS slot.

@@ -396,7 +396,7 @@ Command! {PwsCommand, [
   },
   /// Writes a password safe slot
   Set(PwsSetArgs) => |ctx, args: PwsSetArgs| {
-    crate::commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password)
+    crate::commands::pws_set(ctx, args.slot, &args.name, &args.login, &args.password, args.overwrite)
   },
   /// Prints the status of the password safe slots
   Status(PwsStatusArgs) => |ctx, args: PwsStatusArgs| crate::commands::pws_status(ctx, args.all),
@@ -428,6 +428,9 @@ pub struct PwsGetArgs {
 
 #[derive(Debug, PartialEq, structopt::StructOpt)]
 pub struct PwsSetArgs {
+  /// Overwrite the slot if it is currently programmed
+  #[structopt(short, long)]
+  pub overwrite: bool,
   /// The PWS slot to write
   pub slot: u8,
   /// The name to store on the slot

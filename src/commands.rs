@@ -1038,8 +1038,21 @@ pub fn pws_set(
   name: &str,
   login: &str,
   password: &str,
+  overwrite: bool,
 ) -> anyhow::Result<()> {
   with_password_safe(ctx, |_ctx, mut pws| {
+    if !overwrite {
+      match pws.get_slot(slot) {
+        Ok(_) => anyhow::bail!(
+          "The PWS slot is already programmed.  Set the --overwrite flag or use the update \
+           command if you want to overwrite the slot data."
+        ),
+        Err(nitrokey::Error::CommandError(nitrokey::CommandError::SlotNotProgrammed)) => {}
+        Err(err) => {
+          return Err(anyhow::Error::new(err).context("Failed to query password safe slot"));
+        }
+      }
+    }
     pws
       .write_slot(slot, name, login, password)
       .context("Failed to write PWS slot")
