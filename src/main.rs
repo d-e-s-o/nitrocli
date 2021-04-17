@@ -233,7 +233,7 @@ fn evaluate_err(err: anyhow::Error, stderr: &mut dyn io::Write) -> i32 {
   if let Some(err) = err.root_cause().downcast_ref::<DirectExitError>() {
     err.0
   } else {
-    let _ = writeln!(stderr, "{:?}", err);
+    let _ = writeln!(stderr, "{:#}", err);
     1
   }
 }
