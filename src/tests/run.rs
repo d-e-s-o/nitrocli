@@ -1,6 +1,6 @@
 // run.rs
 
-// Copyright (C) 2019-2020 The Nitrocli Developers
+// Copyright (C) 2019-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::collections;
@@ -347,7 +347,7 @@ sys.exit(42);
   let (rc, out, err) = ncli.run(&["ext"]);
   assert_eq!(rc, 42);
   assert_eq!(out, b"", "{}", String::from_utf8_lossy(&out));
-  assert_eq!(err, b"", "{}", String::from_utf8_lossy(&out));
+  assert_eq!(err, b"", "{}", String::from_utf8_lossy(&err));
   Ok(())
 }
 
