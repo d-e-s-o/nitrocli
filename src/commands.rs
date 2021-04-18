@@ -1047,25 +1047,45 @@ pub fn pws_set(
   })
 }
 
-/// Write data to the first unprogrammed PWS slot.
+/// Add a new PWS slot.
 pub fn pws_add(
   ctx: &mut Context<'_>,
+  slot_idx: Option<u8>,
   name: &str,
   login: &str,
   password: &str,
 ) -> anyhow::Result<()> {
   with_password_safe(ctx, |ctx, mut pws| {
     let slots = pws.get_slots()?;
-    if let Some(slot) = slots.iter().position(Option::is_none) {
-      let slot = u8::try_from(slot).context("Unexpected number of password slots")?;
-      pws
-        .write_slot(slot, name, login, password)
-        .context("Failed to write PWS slot")?;
-      println!(ctx, "Added PWS slot {}", slot)?;
-      Ok(())
+
+    let slot_idx = if let Some(slot_idx) = slot_idx {
+      // If the user specified a slot, make sure that it is not programmed
+      if let Some(slot) = slots.get(usize::from(slot_idx)) {
+        if slot.is_some() {
+          Err(anyhow::anyhow!(
+            "The PWS slot {} is already programmed",
+            slot_idx
+          ))
+        } else {
+          Ok(slot_idx)
+        }
+      } else {
+        Err(anyhow::anyhow!("Invalid slot index: {}", slot_idx))
+      }
     } else {
-      Err(anyhow::anyhow!("All PWS slots are already programmed"))
-    }
+      // If the user did not specify a slot, we try to find the first unprogrammed slot
+      if let Some(slot_idx) = slots.iter().position(Option::is_none) {
+        u8::try_from(slot_idx).context("Unexpected number of PWS slots")
+      } else {
+        Err(anyhow::anyhow!("All PWS slots are already programmed"))
+      }
+    }?;
+
+    pws
+      .write_slot(slot_idx, name, login, password)
+      .context("Failed to write PWS slot")?;
+    println!(ctx, "Added PWS slot {}", slot_idx)?;
+    Ok(())
   })
 }
 
