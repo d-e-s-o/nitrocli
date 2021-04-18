@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2021-04-17
+.TH NITROCLI 1 2021-04-18
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -279,10 +279,13 @@ Set the content of a PWS slot.
 \fIname\fR, \fIlogin\fR, and \fIpassword\fR represent the data to write to the
 slot.
 .TP
-\fBnitrocli pws add \fIslot name login password\fR
+\fBnitrocli pws add \fR[\fB\-s\fR|\fB\-\-slot \fIslot\fR] \
+\fIname login password\fR
 Add a new PWS slot.
-This command locates the first free PWS slot and sets its content to the given
-values.
+If the \fB\-\-slot\fR option is set, this command writes the data to the given
+slot and fails if the slot is already programmed.
+If the \fB\-\-slot\fR option is not set, this command locates the first free
+PWS slot and sets its content to the given values.
 It fails if all PWS slots are programmed.
 .TP
 \fBnitrocli pws update \fIslot\fR \
