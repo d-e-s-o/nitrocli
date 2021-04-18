@@ -1,6 +1,6 @@
 # Makefile
 
-# Copyright (C) 2017-2019 The Nitrocli Developers
+# Copyright (C) 2017-2021 The Nitrocli Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 SHELL := bash
@@ -11,7 +11,7 @@ NITROCLI_MAN := doc/nitrocli.1
 NITROCLI_PDF := $(addsuffix .pdf,$(NITROCLI_MAN))
 
 .PHONY: doc
-doc: $(NITROCLI_PDF) $(NITROCLI_HTML)
+doc: $(NITROCLI_PDF)
 
 # We assume and do not check existence of man, which, false, and echo
 # commands.
