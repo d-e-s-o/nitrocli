@@ -30,6 +30,17 @@ fn set_invalid_slot(model: nitrokey::Model) {
 }
 
 #[test_device]
+fn add_invalid_slot(model: nitrokey::Model) {
+  let err = Nitrocli::new()
+    .model(model)
+    .handle(&["pws", "add", "--slot", "100", "name", "login", "1234"])
+    .unwrap_err()
+    .to_string();
+
+  assert_eq!(err, "Encountered invalid slot index: 100");
+}
+
+#[test_device]
 fn status(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^slot\tname
@@ -224,6 +235,43 @@ fn add_full(model: nitrokey::Model) -> anyhow::Result<()> {
 
   let err = res.unwrap_err().to_string();
   assert_eq!(err, "All PWS slots are already programmed");
+  Ok(())
+}
+
+#[test_device]
+fn add_existing(model: nitrokey::Model) -> anyhow::Result<()> {
+  let mut ncli = Nitrocli::new().model(model);
+
+  // Fill slot 0
+  let _ = ncli.handle(&["pws", "set", "0", "name0", "login0", "pass0rd"])?;
+
+  // Try to add slot 0
+  let res = ncli.handle(&["pws", "add", "--slot", "0", "name", "login", "passw0rd"]);
+
+  let err = res.unwrap_err().to_string();
+  assert_eq!(err, "The PWS slot 0 is already programmed");
+  Ok(())
+}
+
+#[test_device]
+fn add_slot(model: nitrokey::Model) -> anyhow::Result<()> {
+  let mut ncli = Nitrocli::new().model(model);
+
+  // Fill slots 0 and 5
+  let _ = ncli.handle(&["pws", "set", "0", "name0", "login0", "passw0rd"])?;
+  let _ = ncli.handle(&["pws", "set", "5", "name5", "login5", "passw5rd"])?;
+
+  // Clear slot 1 (in case it was written to by other slots)
+  let _ = ncli.handle(&["pws", "clear", "1"])?;
+
+  // Try to add slot 1
+  let out = ncli.handle(&["pws", "add", "--slot", "1", "name1", "login1", "passw1rd"])?;
+  assert_eq!("Added PWS slot 1\n", out);
+
+  assert_slot(model, 0, "name0", "login0", "passw0rd")?;
+  assert_slot(model, 1, "name1", "login1", "passw1rd")?;
+  assert_slot(model, 5, "name5", "login5", "passw5rd")?;
+
   Ok(())
 }
 
