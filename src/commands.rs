@@ -76,25 +76,68 @@ fn format_filter(config: &config::Config) -> String {
   }
 }
 
+/// Retrieve the serial number for a device.
+///
+/// This function is mostly meant to be used for devices that don't
+/// report a serial number in their device information (e.g., Nitrokey
+/// Storage keys).
+pub fn get_device_serial_number(
+  manager: &mut nitrokey::Manager,
+  device_info: &nitrokey::DeviceInfo,
+) -> anyhow::Result<nitrokey::SerialNumber> {
+  let device = manager
+    .connect_path(device_info.path.clone())
+    .with_context(|| format!("Failed to connect to Nitrokey at {}", device_info.path))?;
+  let serial = device.get_serial_number().with_context(|| {
+    format!(
+      "Failed to retrieve device serial number for device at {}",
+      device_info.path
+    )
+  })?;
+  Ok(serial)
+}
+
+/// Check if the device represented by the given `DeviceInfo` has one of
+/// the provided serial numbers.
+fn device_has_serial_number(
+  manager: &mut nitrokey::Manager,
+  device: &nitrokey::DeviceInfo,
+  serial_numbers: &[nitrokey::SerialNumber],
+) -> anyhow::Result<bool> {
+  if let Some(serial_number) = device.serial_number {
+    Ok(serial_numbers.contains(&serial_number))
+  } else {
+    let serial_number = get_device_serial_number(manager, device)?;
+    Ok(serial_numbers.contains(&serial_number))
+  }
+}
+
 /// Find a Nitrokey device that matches the given requirements
-fn find_device(config: &config::Config) -> anyhow::Result<nitrokey::DeviceInfo> {
+fn find_device(
+  manager: &mut nitrokey::Manager,
+  config: &config::Config,
+) -> anyhow::Result<nitrokey::DeviceInfo> {
   let devices = nitrokey::list_devices().context("Failed to enumerate Nitrokey devices")?;
   let nkmodel = config.model.map(nitrokey::Model::from);
   let mut iter = devices
     .into_iter()
     .filter(|device| nkmodel.is_none() || device.model == nkmodel)
-    .filter(|device| {
-      config.serial_numbers.is_empty()
-        || device
-          .serial_number
-          .map(|sn| config.serial_numbers.contains(&sn))
-          .unwrap_or_default()
-    })
-    .filter(|device| config.usb_path.is_none() || config.usb_path.as_ref() == Some(&device.path));
+    .filter(|device| config.usb_path.is_none() || config.usb_path.as_ref() == Some(&device.path))
+    .filter_map(|device| {
+      if config.serial_numbers.is_empty() {
+        Some(Ok(device))
+      } else {
+        match device_has_serial_number(manager, &device, &config.serial_numbers) {
+          Ok(true) => Some(Ok(device)),
+          Ok(false) => None,
+          Err(err) => Some(Err(err)),
+        }
+      }
+    });
 
   let device = iter
     .next()
-    .with_context(|| format!("Nitrokey device not found{}", format_filter(config)))?;
+    .with_context(|| format!("Nitrokey device not found{}", format_filter(config)))??;
 
   anyhow::ensure!(
     iter.next().is_none(),
@@ -110,7 +153,7 @@ fn connect<'mgr>(
   manager: &'mgr mut nitrokey::Manager,
   config: &config::Config,
 ) -> anyhow::Result<nitrokey::DeviceWrapper<'mgr>> {
-  let device_info = find_device(config)?;
+  let device_info = find_device(manager, config)?;
   manager
     .connect_path(device_info.path.deref())
     .with_context(|| {
@@ -451,13 +494,7 @@ pub fn list(ctx: &mut Context<'_>, no_connect: bool) -> anyhow::Result<()> {
           if no_connect {
             "N/A".to_string()
           } else {
-            let device = manager
-              .connect_path(device_info.path.clone())
-              .context("Failed to connect to Nitrokey")?;
-            device
-              .get_serial_number()
-              .context("Failed to retrieve device serial number")?
-              .to_string()
+            get_device_serial_number(&mut *manager, &device_info).map(|sn| sn.to_string())?
           }
         }
       };
@@ -1255,9 +1292,12 @@ pub fn extension(ctx: &mut Context<'_>, args: Vec<ffi::OsString>) -> anyhow::Res
   // a cargo test context.
   let mut cmd = process::Command::new(&ext_path);
 
-  if let Ok(device_info) = find_device(&ctx.config) {
+  let mut manager =
+    nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
+  if let Ok(device_info) = find_device(&mut manager, &ctx.config) {
     let _ = cmd.env(crate::NITROCLI_RESOLVED_USB_PATH, device_info.path);
   }
+  drop(manager);
 
   if let Some(model) = ctx.config.model {
     let _ = cmd.env(crate::NITROCLI_MODEL, model.to_string());

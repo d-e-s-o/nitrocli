@@ -15,6 +15,7 @@ use std::path;
 
 use super::*;
 use crate::args;
+use crate::commands;
 
 #[test]
 fn no_command_or_option() {
@@ -133,7 +134,15 @@ fn connect_multiple(_model: nitrokey::Model) -> anyhow::Result<()> {
 #[test_device]
 fn connect_serial_number(_model: nitrokey::Model) -> anyhow::Result<()> {
   let devices = nitrokey::list_devices()?;
-  for serial_number in devices.iter().filter_map(|d| d.serial_number) {
+  let serial_numbers = devices.iter().map(|device| {
+    device.serial_number.unwrap_or_else(|| {
+      let mut manager =
+        nitrokey::take().expect("Failed to acquire access to Nitrokey device manager");
+      commands::get_device_serial_number(&mut manager, device).unwrap()
+    })
+  });
+
+  for serial_number in serial_numbers {
     let res = Nitrocli::new().handle(&["status", &format!("--serial-number={}", serial_number)])?;
     assert!(res.contains(&format!("serial number:     {}\n", serial_number)));
   }

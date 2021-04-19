@@ -3,6 +3,7 @@ Unreleased
 - Introduced extension support crate, `nitrocli-ext`
 - Introduced `otp-cache` core extension
 - Enabled usage of empty PWS slot fields
+- Enabled serial number based device filtering for Nitrokey Storage
 - Changed error reporting format to make up only a single line
 - Added the `pws add` subcommand to write to a new slot
 - Added the `pws update` subcommand to update an existing PWS slot
