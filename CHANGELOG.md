@@ -4,6 +4,7 @@ Unreleased
 - Changed error reporting format to make up only a single line
 - Added the `pws add` subcommand to write to a new slot
 - Added the `pws update` subcommand to update an existing PWS slot
+- Removed the `pws set` subcommand
 - Added the `--only-aes-key` option to the `reset` command to build a new AES
   key without performing a factory reset
 - Added `NITROCLI_RESOLVED_USB_PATH` environment variable to be used by
