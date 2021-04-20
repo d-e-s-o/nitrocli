@@ -150,7 +150,15 @@ fn clear(model: nitrokey::Model) -> anyhow::Result<()> {
 
   let mut ncli = Nitrocli::new().model(model);
   let _ = ncli.handle(&["pws", "clear", "10"])?;
-  let _ = ncli.handle(&["pws", "add", "--slot", "10", "clear-test", "some-login", "abcdef"])?;
+  let _ = ncli.handle(&[
+    "pws",
+    "add",
+    "--slot",
+    "10",
+    "clear-test",
+    "some-login",
+    "abcdef",
+  ])?;
   let _ = ncli.handle(&["pws", "clear", "10"])?;
   let res = ncli.handle(&["pws", "get", "10"]);
 
