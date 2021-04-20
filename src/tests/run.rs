@@ -75,7 +75,8 @@ fn help_options() {
   test(&["pws"]);
   test(&["pws", "clear"]);
   test(&["pws", "get"]);
-  test(&["pws", "set"]);
+  test(&["pws", "add"]);
+  test(&["pws", "update"]);
   test(&["pws", "status"]);
   test(&["reset"]);
   test(&["status"]);
