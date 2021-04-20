@@ -1032,21 +1032,6 @@ pub fn pws_get(
   })
 }
 
-/// Write a PWS slot.
-pub fn pws_set(
-  ctx: &mut Context<'_>,
-  slot: u8,
-  name: &str,
-  login: &str,
-  password: &str,
-) -> anyhow::Result<()> {
-  with_password_safe(ctx, |_ctx, mut pws| {
-    pws
-      .write_slot(slot, name, login, password)
-      .context("Failed to write PWS slot")
-  })
-}
-
 /// Add a new PWS slot.
 pub fn pws_add(
   ctx: &mut Context<'_>,

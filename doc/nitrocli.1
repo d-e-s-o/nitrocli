@@ -1,4 +1,4 @@
-.TH NITROCLI 1 2021-04-18
+.TH NITROCLI 1 2021-04-20
 .SH NAME
 nitrocli \- access Nitrokey devices
 .SH SYNOPSIS
@@ -273,12 +273,6 @@ The fields are printed together with a label.
 Use the \fB\-\-quiet\fR option to suppress the labels and to only output the
 values stored in the PWS slot.
 .TP
-\fBnitrocli pws set \fIslot name login password\fR
-Set the content of a PWS slot.
-\fIslot\fR is the number of the slot to write.
-\fIname\fR, \fIlogin\fR, and \fIpassword\fR represent the data to write to the
-slot.
-.TP
 \fBnitrocli pws add \fR[\fB\-s\fR|\fB\-\-slot \fIslot\fR] \
 \fIname login password\fR
 Add a new PWS slot.
@@ -540,7 +534,8 @@ Change the configuration:
 
 .SS Password safe
 Configure a PWS slot:
-    $ \fBnitrocli pws set 0 example.org john.doe passw0rd\fR
+    $ \fBnitrocli pws add example.org john.doe passw0rd\fR
+    Added PWS slot 0
 
 Get the data from a slot:
     $ \fBnitrocli pws get 0\fR

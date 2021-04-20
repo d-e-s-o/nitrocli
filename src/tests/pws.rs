@@ -5,6 +5,24 @@
 
 use super::*;
 
+fn clear_pws(model: nitrokey::Model) -> anyhow::Result<()> {
+  use nitrokey::GetPasswordSafe as _;
+
+  let mut manager = nitrokey::force_take()?;
+  let mut device = manager.connect_model(model)?;
+  let mut pws = device.get_password_safe(nitrokey::DEFAULT_USER_PIN)?;
+  let slots_to_clear: Vec<_> = pws
+    .get_slots()?
+    .into_iter()
+    .flatten()
+    .map(|s| s.index())
+    .collect();
+  for slot in slots_to_clear {
+    pws.erase_slot(slot)?;
+  }
+  Ok(())
+}
+
 fn assert_slot(
   model: nitrokey::Model,
   slot: u8,
@@ -16,17 +34,6 @@ fn assert_slot(
   let out = ncli.handle(&["pws", "get", &slot.to_string(), "--quiet"])?;
   assert_eq!(format!("{}\n{}\n{}\n", name, login, password), out);
   Ok(())
-}
-
-#[test_device]
-fn set_invalid_slot(model: nitrokey::Model) {
-  let err = Nitrocli::new()
-    .model(model)
-    .handle(&["pws", "set", "100", "name", "login", "1234"])
-    .unwrap_err()
-    .to_string();
-
-  assert_eq!(err, "Failed to write PWS slot");
 }
 
 #[test_device]
@@ -48,10 +55,12 @@ fn status(model: nitrokey::Model) -> anyhow::Result<()> {
   )
   .unwrap();
 
+  clear_pws(model)?;
+
   let mut ncli = Nitrocli::new().model(model);
   // Make sure that we have at least something to display by ensuring
   // that there are there is one slot programmed.
-  let _ = ncli.handle(&["pws", "set", "0", "the-name", "the-login", "123456"])?;
+  let _ = ncli.handle(&["pws", "add", "the-name", "the-login", "123456"])?;
 
   let out = ncli.handle(&["pws", "status"])?;
   assert!(re.is_match(&out), "{}", out);
@@ -59,13 +68,15 @@ fn status(model: nitrokey::Model) -> anyhow::Result<()> {
 }
 
 #[test_device]
-fn set_get(model: nitrokey::Model) -> anyhow::Result<()> {
+fn add_get(model: nitrokey::Model) -> anyhow::Result<()> {
   const NAME: &str = "dropbox";
   const LOGIN: &str = "d-e-s-o";
   const PASSWORD: &str = "my-secret-password";
 
+  clear_pws(model)?;
+
   let mut ncli = Nitrocli::new().model(model);
-  let _ = ncli.handle(&["pws", "set", "1", &NAME, &LOGIN, &PASSWORD])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "1", &NAME, &LOGIN, &PASSWORD])?;
 
   let out = ncli.handle(&["pws", "get", "1", "--quiet", "--name"])?;
   assert_eq!(out, format!("{}\n", NAME));
@@ -90,9 +101,12 @@ fn set_get(model: nitrokey::Model) -> anyhow::Result<()> {
 }
 
 #[test_device]
-fn set_empty(model: nitrokey::Model) -> anyhow::Result<()> {
+fn add_empty(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::new().model(model);
-  let _ = ncli.handle(&["pws", "set", "1", "", "", ""])?;
+
+  clear_pws(model)?;
+
+  let _ = ncli.handle(&["pws", "add", "--slot", "1", "", "", ""])?;
 
   let out = ncli.handle(&["pws", "get", "1", "--quiet", "--name"])?;
   assert_eq!(out, "\n");
@@ -111,13 +125,15 @@ fn set_empty(model: nitrokey::Model) -> anyhow::Result<()> {
 }
 
 #[test_device]
-fn set_reset_get(model: nitrokey::Model) -> anyhow::Result<()> {
+fn add_reset_get(model: nitrokey::Model) -> anyhow::Result<()> {
   const NAME: &str = "some/svc";
   const LOGIN: &str = "a\\user";
   const PASSWORD: &str = "!@&-)*(&+%^@";
 
+  clear_pws(model)?;
+
   let mut ncli = Nitrocli::new().model(model);
-  let _ = ncli.handle(&["pws", "set", "2", &NAME, &LOGIN, &PASSWORD])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "2", &NAME, &LOGIN, &PASSWORD])?;
 
   let out = ncli.handle(&["reset"])?;
   assert_eq!(out, "");
@@ -130,8 +146,11 @@ fn set_reset_get(model: nitrokey::Model) -> anyhow::Result<()> {
 
 #[test_device]
 fn clear(model: nitrokey::Model) -> anyhow::Result<()> {
+  clear_pws(model)?;
+
   let mut ncli = Nitrocli::new().model(model);
-  let _ = ncli.handle(&["pws", "set", "10", "clear-test", "some-login", "abcdef"])?;
+  let _ = ncli.handle(&["pws", "clear", "10"])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "10", "clear-test", "some-login", "abcdef"])?;
   let _ = ncli.handle(&["pws", "clear", "10"])?;
   let res = ncli.handle(&["pws", "get", "10"]);
 
@@ -142,9 +161,9 @@ fn clear(model: nitrokey::Model) -> anyhow::Result<()> {
 
 #[test_device]
 fn update_unprogrammed(model: nitrokey::Model) -> anyhow::Result<()> {
+  clear_pws(model)?;
+
   let mut ncli = Nitrocli::new().model(model);
-  let _ = ncli.handle(&["pws", "set", "10", "clear-test", "some-login", "abcdef"])?;
-  let _ = ncli.handle(&["pws", "clear", "10"])?;
   let res = ncli.handle(&["pws", "update", "10", "--name", "test"]);
 
   let err = res.unwrap_err().to_string();
@@ -174,10 +193,13 @@ fn update(model: nitrokey::Model) -> anyhow::Result<()> {
   const PASSWORD_BEFORE: &str = "password-before";
   const PASSWORD_AFTER: &str = "password-after";
 
+  clear_pws(model)?;
+
   let mut ncli = Nitrocli::new().model(model);
   let _ = ncli.handle(&[
     "pws",
-    "set",
+    "add",
+    "--slot",
     "10",
     NAME_BEFORE,
     LOGIN_BEFORE,
@@ -215,18 +237,17 @@ fn update(model: nitrokey::Model) -> anyhow::Result<()> {
 fn add_full(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::new().model(model);
 
+  clear_pws(model)?;
+
   // Fill all PWS slots
-  for slot in u8::MIN..=u8::MAX {
-    let res = ncli.handle(&["pws", "set", &slot.to_string(), "name", "login", "passw0rd"]);
-    match res {
-      Ok(_) => {}
-      Err(err) => match err.downcast::<nitrokey::Error>() {
-        Ok(err) => match err {
-          nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot) => break,
-          err => anyhow::bail!(err),
-        },
-        Err(err) => anyhow::bail!(err),
-      },
+  {
+    use nitrokey::GetPasswordSafe as _;
+
+    let mut manager = nitrokey::force_take()?;
+    let mut device = manager.connect_model(model)?;
+    let mut pws = device.get_password_safe(nitrokey::DEFAULT_USER_PIN)?;
+    for slot in 0..pws.get_slot_count() {
+      pws.write_slot(slot, "name", "login", "passw0rd")?;
     }
   }
 
@@ -240,10 +261,12 @@ fn add_full(model: nitrokey::Model) -> anyhow::Result<()> {
 
 #[test_device]
 fn add_existing(model: nitrokey::Model) -> anyhow::Result<()> {
+  clear_pws(model)?;
+
   let mut ncli = Nitrocli::new().model(model);
 
   // Fill slot 0
-  let _ = ncli.handle(&["pws", "set", "0", "name0", "login0", "pass0rd"])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "0", "name0", "login0", "pass0rd"])?;
 
   // Try to add slot 0
   let res = ncli.handle(&["pws", "add", "--slot", "0", "name", "login", "passw0rd"]);
@@ -255,14 +278,13 @@ fn add_existing(model: nitrokey::Model) -> anyhow::Result<()> {
 
 #[test_device]
 fn add_slot(model: nitrokey::Model) -> anyhow::Result<()> {
+  clear_pws(model)?;
+
   let mut ncli = Nitrocli::new().model(model);
 
   // Fill slots 0 and 5
-  let _ = ncli.handle(&["pws", "set", "0", "name0", "login0", "passw0rd"])?;
-  let _ = ncli.handle(&["pws", "set", "5", "name5", "login5", "passw5rd"])?;
-
-  // Clear slot 1 (in case it was written to by other slots)
-  let _ = ncli.handle(&["pws", "clear", "1"])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "0", "name0", "login0", "passw0rd"])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "5", "name5", "login5", "passw5rd"])?;
 
   // Try to add slot 1
   let out = ncli.handle(&["pws", "add", "--slot", "1", "name1", "login1", "passw1rd"])?;
@@ -277,26 +299,13 @@ fn add_slot(model: nitrokey::Model) -> anyhow::Result<()> {
 
 #[test_device]
 fn add(model: nitrokey::Model) -> anyhow::Result<()> {
+  clear_pws(model)?;
+
   let mut ncli = Nitrocli::new().model(model);
 
-  // Clear all PWS slots
-  for slot in u8::MIN..=u8::MAX {
-    let res = ncli.handle(&["pws", "clear", &slot.to_string()]);
-    match res {
-      Ok(_) => {}
-      Err(err) => match err.downcast::<nitrokey::Error>() {
-        Ok(err) => match err {
-          nitrokey::Error::LibraryError(nitrokey::LibraryError::InvalidSlot) => break,
-          err => anyhow::bail!(err),
-        },
-        Err(err) => anyhow::bail!(err),
-      },
-    }
-  }
-
   // Fill slots 0 and 5
-  let _ = ncli.handle(&["pws", "set", "0", "name0", "login0", "pass0rd"])?;
-  let _ = ncli.handle(&["pws", "set", "5", "name5", "login5", "pass5rd"])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "0", "name0", "login0", "pass0rd"])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "5", "name5", "login5", "pass5rd"])?;
 
   // Try to add another one
   let out = ncli.handle(&["pws", "add", "name1", "login1", "passw1rd"])?;
