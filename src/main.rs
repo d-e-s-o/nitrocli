@@ -173,6 +173,8 @@ fn get_version_string() -> String {
 /// The context used when running the program.
 #[allow(missing_debug_implementations)]
 pub struct Context<'io> {
+  /// The `Read` object used as standard input throughout the program.
+  pub stdin: &'io mut dyn io::Read,
   /// The `Write` object used as standard output throughout the program.
   pub stdout: &'io mut dyn io::Write,
   /// The `Write` object used as standard error throughout the program.
@@ -201,17 +203,20 @@ pub struct Context<'io> {
 }
 
 impl<'io> Context<'io> {
-  fn from_env<O, E>(
+  fn from_env<I, O, E>(
+    stdin: &'io mut I,
     stdout: &'io mut O,
     stderr: &'io mut E,
     is_tty: bool,
     config: config::Config,
   ) -> Context<'io>
   where
+    I: io::Read,
     O: io::Write,
     E: io::Write,
   {
     Context {
+      stdin,
       stdout,
       stderr,
       is_tty,
@@ -247,6 +252,7 @@ fn run<'ctx, 'io: 'ctx>(ctx: &'ctx mut Context<'io>, args: Vec<String>) -> i32 {
 fn main() {
   use std::io::Write;
 
+  let mut stdin = io::stdin();
   let mut stdout = io::stdout();
   let mut stderr = io::stderr();
 
@@ -254,7 +260,7 @@ fn main() {
     Ok(config) => {
       let is_tty = termion::is_tty(&stdout);
       let args = env::args().collect::<Vec<_>>();
-      let ctx = &mut Context::from_env(&mut stdout, &mut stderr, is_tty, config);
+      let ctx = &mut Context::from_env(&mut stdin, &mut stdout, &mut stderr, is_tty, config);
 
       run(ctx, args)
     }
