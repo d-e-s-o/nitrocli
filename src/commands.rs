@@ -382,7 +382,10 @@ fn print_storage_status(
 fn value_or_stdin<'s>(ctx: &mut Context<'_>, s: &'s str) -> anyhow::Result<borrow::Cow<'s, str>> {
   if s == "-" {
     let mut s = String::new();
-    let _ = ctx.stdin.read_to_string(&mut s).context("Failed to read from stdin")?;
+    let _ = ctx
+      .stdin
+      .read_to_string(&mut s)
+      .context("Failed to read from stdin")?;
     Ok(borrow::Cow::from(s))
   } else {
     Ok(borrow::Cow::from(s))
