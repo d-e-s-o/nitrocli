@@ -23,6 +23,7 @@ mod status;
 mod unencrypted;
 
 struct Nitrocli {
+  stdin: String,
   model: Option<nitrokey::Model>,
   path: Option<ffi::OsString>,
   admin_pin: Option<ffi::OsString>,
@@ -35,6 +36,7 @@ struct Nitrocli {
 impl Nitrocli {
   pub fn new() -> Self {
     Self {
+      stdin: String::new(),
       model: None,
       path: None,
       admin_pin: Some(nitrokey::DEFAULT_ADMIN_PIN.into()),
@@ -60,6 +62,11 @@ impl Nitrocli {
   /// Set the `PATH` used for looking up extensions.
   fn path(mut self, path: impl Into<ffi::OsString>) -> Self {
     self.path = Some(path.into());
+    self
+  }
+
+  pub fn stdin(mut self, stdin: impl Into<String>) -> Self {
+    self.stdin = stdin.into();
     self
   }
 
@@ -104,10 +111,12 @@ impl Nitrocli {
       .map(ToOwned::to_owned)
       .collect();
 
+    let mut stdin = self.stdin.as_bytes();
     let mut stdout = Vec::new();
     let mut stderr = Vec::new();
 
     let ctx = &mut crate::Context {
+      stdin: &mut stdin,
       stdout: &mut stdout,
       stderr: &mut stderr,
       is_tty: false,
