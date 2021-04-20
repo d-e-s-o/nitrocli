@@ -378,6 +378,17 @@ fn print_storage_status(
   Ok(())
 }
 
+/// Read a value from stdin if the given string is set to "-".
+fn value_or_stdin<'s>(ctx: &mut Context<'_>, s: &'s str) -> anyhow::Result<borrow::Cow<'s, str>> {
+  if s == "-" {
+    let mut s = String::new();
+    let _ = ctx.stdin.read_to_string(&mut s).context("Failed to read from stdin")?;
+    Ok(borrow::Cow::from(s))
+  } else {
+    Ok(borrow::Cow::from(s))
+  }
+}
+
 /// Query and pretty print the status that is common to all Nitrokey devices.
 fn print_status(ctx: &mut Context<'_>, device: &nitrokey::DeviceWrapper<'_>) -> anyhow::Result<()> {
   let serial_number = device
@@ -1040,6 +1051,7 @@ pub fn pws_add(
   password: &str,
   slot_idx: Option<u8>,
 ) -> anyhow::Result<()> {
+  let password = value_or_stdin(ctx, password)?;
   with_password_safe(ctx, |ctx, mut pws| {
     let slots = pws.get_slots()?;
 
@@ -1070,7 +1082,7 @@ pub fn pws_add(
     }?;
 
     pws
-      .write_slot(slot_idx, name, login, password)
+      .write_slot(slot_idx, name, login, password.as_ref())
       .context("Failed to write PWS slot")?;
     println!(ctx, "Added PWS slot {}", slot_idx)?;
     Ok(())
@@ -1088,6 +1100,9 @@ pub fn pws_update(
   if name.is_none() && login.is_none() && password.is_none() {
     anyhow::bail!("You have to set at least one of --name, --login, or --password");
   }
+
+  let password = password.map(|s| value_or_stdin(ctx, s)).transpose()?;
+
   with_password_safe(ctx, |_ctx, mut pws| {
     let slot = pws.get_slot(slot_idx).context("Failed to query PWS slot")?;
     let name = name
@@ -1099,7 +1114,8 @@ pub fn pws_update(
       .unwrap_or_else(|| slot.get_login().map(borrow::Cow::from))
       .context("Failed to query current slot login")?;
     let password = password
-      .map(|s| Ok(borrow::Cow::from(s)))
+      .as_ref()
+      .map(|s| Ok(borrow::Cow::Borrowed(s.as_ref())))
       .unwrap_or_else(|| slot.get_password().map(borrow::Cow::from))
       .context("Failed to query current slot password")?;
     pws

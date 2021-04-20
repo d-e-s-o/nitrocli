@@ -323,3 +323,36 @@ fn add(model: nitrokey::Model) -> anyhow::Result<()> {
 
   Ok(())
 }
+
+#[test_device]
+fn add_stdin(model: nitrokey::Model) -> anyhow::Result<()> {
+  clear_pws(model)?;
+
+  let mut ncli = Nitrocli::new().model(model);
+
+  // Fill slots 0 and 5
+  let _ = ncli.handle(&["pws", "add", "--slot", "0", "name0", "login0", "pass0rd"])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "5", "name5", "login5", "pass5rd"])?;
+
+  // Try to add another one
+  let out = ncli.stdin("passw1rd").handle(&["pws", "add", "name1", "login1", "-"])?;
+  assert_eq!("Added PWS slot 1\n", out);
+
+  assert_slot(model, 1, "name1", "login1", "passw1rd")?;
+
+  Ok(())
+}
+
+#[test_device]
+fn update_stdin(model: nitrokey::Model) -> anyhow::Result<()> {
+  clear_pws(model)?;
+
+  let mut ncli = Nitrocli::new().model(model);
+
+  let _ = ncli.handle(&["pws", "add", "--slot", "0", "name0", "login0", "pass0rd"])?;
+  let _ = ncli.stdin("passw1rd").handle(&["pws", "update", "0", "--password", "-"])?;
+
+  assert_slot(model, 0, "name0", "login0", "passw1rd")?;
+
+  Ok(())
+}
