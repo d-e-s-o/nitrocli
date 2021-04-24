@@ -114,7 +114,9 @@ fn set_stdin(model: nitrokey::Model) -> anyhow::Result<()> {
     .stdin(SECRET)
     .handle(&["otp", "set", "-d", "8", "-f", "ascii", "2", "name", "-"])?;
 
-  let out = Nitrocli::new().model(model).handle(&["otp", "get", "-t", TIME, "2"])?;
+  let out = Nitrocli::new()
+    .model(model)
+    .handle(&["otp", "get", "-t", TIME, "2"])?;
   assert_eq!(out, OTP);
   Ok(())
 }
