@@ -143,8 +143,10 @@ Known Problems
   accessed by `nitrokey-app` ([upstream issue][libnitrokey#32]). To
   prevent this problem, quit `nitrokey-app` before using `nitrocli`.
 - Applications using the Nitrokey device (such as `nitrocli` or
-  `nitrokey-app`) cannot easily share access with an instance of GnuPG
-  running shortly afterwards ([upstream issue][libnitrokey#137]).
+  `nitrokey-app`) cannot easily share access with an instance of
+  scdaemon/GnuPG running shortly afterwards ([upstream
+  issue][libnitrokey#137]). As a workaround, users can kill `scdaemon`
+  after calling `nitrocli` with `gpg-connect-agent 'SCD KILLSCD' /bye`.
 
 
 Public API and Stability
