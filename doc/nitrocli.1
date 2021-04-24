@@ -182,7 +182,7 @@ If \fB\-\-time\fR is set, it is set to \fItime\fR instead, which must be a Unix
 timestamp (i.e., the number of seconds since 1970-01-01 00:00:00 UTC).
 This command might require the user PIN (see the Configuration section).
 .TP
-\fBnitrocli otp set \fIslot name secret \
+\fBnitrocli otp set \fIslot name secret\fR|\fB- \
 \fR[\fB\-a\fR|\fB\-\-algorithm \fIalgorithm\fR] \
 [\fB\-d\fR|\fB\-\-digits \fIdigits\fR] [\fB\-c\fR|\fB\-\-counter \fIcounter\fR] \
 [\fB\-t\fR|\fB\-\-time-window \fItime-window\fR] \
@@ -191,6 +191,8 @@ Configure a one-time password slot.
 \fIslot\fR is the number of the slot to configure.
 \fIname\fR is the name of the slot (may not be empty).
 \fIsecret\fR is the secret value to store in that slot.
+If \fIsecret\fR is set to \fB-\fR, the secret is read from the standard
+input.
 
 The \fB\-\-format\fR option specifies the format of the secret.
 If it is set to \fBascii\fR, each character of the given secret is interpreted

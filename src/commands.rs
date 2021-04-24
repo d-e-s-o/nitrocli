@@ -824,7 +824,10 @@ fn prepare_base32_secret(secret: &str) -> anyhow::Result<String> {
 }
 
 /// Prepare a secret string in the given format for libnitrokey.
-fn prepare_secret(secret: String, format: args::OtpSecretFormat) -> anyhow::Result<String> {
+fn prepare_secret(
+  secret: borrow::Cow<'_, str>,
+  format: args::OtpSecretFormat,
+) -> anyhow::Result<String> {
   match format {
     args::OtpSecretFormat::Ascii => prepare_ascii_secret(&secret),
     args::OtpSecretFormat::Base32 => prepare_base32_secret(&secret),
@@ -835,7 +838,7 @@ fn prepare_secret(secret: String, format: args::OtpSecretFormat) -> anyhow::Resu
       // TODO: This code can be removed once upstream issue #164
       //       (https://github.com/Nitrokey/libnitrokey/issues/164) is
       //       addressed.
-      let mut secret = secret;
+      let mut secret = secret.into_owned();
       if secret.len() % 2 != 0 {
         secret.insert(0, '0')
       }
@@ -846,7 +849,8 @@ fn prepare_secret(secret: String, format: args::OtpSecretFormat) -> anyhow::Resu
 
 /// Configure a one-time password slot on the Nitrokey device.
 pub fn otp_set(ctx: &mut Context<'_>, args: args::OtpSetArgs) -> anyhow::Result<()> {
-  let secret = prepare_secret(args.secret, args.format)?;
+  let secret = value_or_stdin(ctx, &args.secret)?;
+  let secret = prepare_secret(secret, args.format)?;
   let data = nitrokey::OtpSlotData::new(args.slot, args.name, secret, args.digits.into());
   let (algorithm, counter, time_window) = (args.algorithm, args.counter, args.time_window);
   with_device(ctx, |ctx, device| {

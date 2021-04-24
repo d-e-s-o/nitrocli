@@ -104,6 +104,22 @@ fn set_totp_uneven_chars(model: nitrokey::Model) -> anyhow::Result<()> {
 }
 
 #[test_device]
+fn set_stdin(model: nitrokey::Model) -> anyhow::Result<()> {
+  const SECRET: &str = "12345678901234567890";
+  const TIME: &str = stringify!(1111111111);
+  const OTP: &str = concat!(14050471, "\n");
+
+  let _ = Nitrocli::new()
+    .model(model)
+    .stdin(SECRET)
+    .handle(&["otp", "set", "-d", "8", "-f", "ascii", "2", "name", "-"])?;
+
+  let out = Nitrocli::new().model(model).handle(&["otp", "get", "-t", TIME, "2"])?;
+  assert_eq!(out, OTP);
+  Ok(())
+}
+
+#[test_device]
 fn clear(model: nitrokey::Model) -> anyhow::Result<()> {
   let mut ncli = Nitrocli::new().model(model);
   let _ = ncli.handle(&["otp", "set", "3", "hotp-test", "abcdef"])?;
