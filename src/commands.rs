@@ -843,9 +843,6 @@ pub fn otp_set(ctx: &mut Context<'_>, mut args: args::OtpSetArgs) -> anyhow::Res
         // We need to ensure to provide a string with an even number of
         // characters in it, just because that's what libnitrokey
         // expects. So prepend a '0' if that is not the case.
-        // TODO: This code can be removed once upstream issue #164
-        //       (https://github.com/Nitrokey/libnitrokey/issues/164) is
-        //       addressed.
         if data.secret.len() % 2 != 0 {
           data.secret.insert(0, '0')
         }
