@@ -10,7 +10,6 @@ use std::ffi;
 use std::fmt;
 use std::fs;
 use std::io;
-use std::mem;
 use std::ops;
 use std::ops::Deref as _;
 use std::path;
@@ -824,36 +823,34 @@ fn prepare_base32_secret(secret: &str) -> anyhow::Result<String> {
     .context("Failed to parse base32 secret")
 }
 
-/// Configure a one-time password slot on the Nitrokey device.
-pub fn otp_set(ctx: &mut Context<'_>, mut args: args::OtpSetArgs) -> anyhow::Result<()> {
-  let mut data = nitrokey::OtpSlotData {
-    number: args.slot,
-    name: mem::take(&mut args.name),
-    secret: mem::take(&mut args.secret),
-    mode: args.digits.into(),
-    use_enter: false,
-    token_id: None,
-  };
-
-  with_device(ctx, |ctx, device| {
-    let secret = match args.format {
-      args::OtpSecretFormat::Ascii => prepare_ascii_secret(&data.secret)?,
-      args::OtpSecretFormat::Base32 => prepare_base32_secret(&data.secret)?,
-      args::OtpSecretFormat::Hex => {
-        // We need to ensure to provide a string with an even number of
-        // characters in it, just because that's what libnitrokey
-        // expects. So prepend a '0' if that is not the case.
-        if data.secret.len() % 2 != 0 {
-          data.secret.insert(0, '0')
-        }
-        data.secret
+/// Prepare a secret string in the given format for libnitrokey.
+fn prepare_secret(secret: String, format: args::OtpSecretFormat) -> anyhow::Result<String> {
+  match format {
+    args::OtpSecretFormat::Ascii => prepare_ascii_secret(&secret),
+    args::OtpSecretFormat::Base32 => prepare_base32_secret(&secret),
+    args::OtpSecretFormat::Hex => {
+      // We need to ensure to provide a string with an even number of
+      // characters in it, just because that's what libnitrokey
+      // expects. So prepend a '0' if that is not the case.
+      let mut secret = secret;
+      if secret.len() % 2 != 0 {
+        secret.insert(0, '0')
       }
-    };
-    let data = nitrokey::OtpSlotData { secret, ..data };
+      Ok(secret)
+    }
+  }
+}
+
+/// Configure a one-time password slot on the Nitrokey device.
+pub fn otp_set(ctx: &mut Context<'_>, args: args::OtpSetArgs) -> anyhow::Result<()> {
+  let secret = prepare_secret(args.secret, args.format)?;
+  let data = nitrokey::OtpSlotData::new(args.slot, args.name, secret, args.digits.into());
+  let (algorithm, counter, time_window) = (args.algorithm, args.counter, args.time_window);
+  with_device(ctx, |ctx, device| {
     let mut device = authenticate_admin(ctx, device)?;
-    match args.algorithm {
-      args::OtpAlgorithm::Hotp => device.write_hotp_slot(data, args.counter),
-      args::OtpAlgorithm::Totp => device.write_totp_slot(data, args.time_window),
+    match algorithm {
+      args::OtpAlgorithm::Hotp => device.write_hotp_slot(data, counter),
+      args::OtpAlgorithm::Totp => device.write_totp_slot(data, time_window),
     }
     .context("Failed to write OTP slot")?;
     Ok(())
