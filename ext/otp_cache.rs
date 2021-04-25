@@ -1,4 +1,4 @@
-// main.rs
+// otp_cache.rs
 
 // Copyright (C) 2020-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -8,8 +8,9 @@ use std::io::Write as _;
 use std::path;
 
 use anyhow::Context as _;
-
 use structopt::StructOpt as _;
+
+mod ext;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct Cache {
@@ -55,7 +56,7 @@ enum Command {
 
 fn main() -> anyhow::Result<()> {
   let args = Args::from_args();
-  let ctx = nitrocli_ext::Context::from_env()?;
+  let ctx = ext::Context::from_env()?;
 
   let cache = get_cache(&ctx, args.force_update)?;
   match &args.cmd {
@@ -65,7 +66,7 @@ fn main() -> anyhow::Result<()> {
   Ok(())
 }
 
-fn cmd_get(ctx: &nitrocli_ext::Context, cache: &Cache, slot_name: &str) -> anyhow::Result<()> {
+fn cmd_get(ctx: &ext::Context, cache: &Cache, slot_name: &str) -> anyhow::Result<()> {
   let totp_slots = cache
     .totp
     .iter()
@@ -99,7 +100,7 @@ fn cmd_list(cache: &Cache) {
   }
 }
 
-fn get_cache(ctx: &nitrocli_ext::Context, force_update: bool) -> anyhow::Result<Cache> {
+fn get_cache(ctx: &ext::Context, force_update: bool) -> anyhow::Result<Cache> {
   let mut mgr = nitrokey::take().context("Failed to obtain Nitrokey manager instance")?;
   let device = ctx.connect(&mut mgr)?;
   let serial_number = get_serial_number(&device)?;
@@ -165,7 +166,7 @@ fn get_otp_slots(device: &impl nitrokey::GenerateOtp) -> anyhow::Result<Cache> {
   })
 }
 
-fn generate_otp(ctx: &nitrocli_ext::Context, algorithm: &str, slot: u8) -> anyhow::Result<()> {
+fn generate_otp(ctx: &ext::Context, algorithm: &str, slot: u8) -> anyhow::Result<()> {
   ctx
     .nitrocli()
     .args(&["otp", "get"])

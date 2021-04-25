@@ -1,4 +1,4 @@
-// lib.rs
+// ext.rs
 
 // Copyright (C) 2020-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -146,26 +146,6 @@ impl Nitrocli {
   {
     self.cmd.args(args);
     self
-  }
-
-  /// Invoke `nitrocli` and retrieve its output as a string.
-  ///
-  /// Note that any error messages emitted by `nitrocli` will not be
-  /// intercepted/captured but will directly be passed through. It is
-  /// recommended that extensions terminate on failure.
-  pub fn text(&mut self) -> anyhow::Result<String> {
-    let output = self.cmd.output().context("Failed to invoke nitrocli")?;
-    // We want additional nitrocli emitted output to be visible to the
-    // user (typically controlled through -v/--verbose below). Note that
-    // this means that we will not be able to access this output for
-    // error reporting purposes.
-    self.cmd.stderr(process::Stdio::inherit());
-
-    if output.status.success() {
-      String::from_utf8(output.stdout).map_err(From::from)
-    } else {
-      Err(anyhow::anyhow!("nitrocli call failed"))
-    }
   }
 
   /// Invoke `nitrocli`.
