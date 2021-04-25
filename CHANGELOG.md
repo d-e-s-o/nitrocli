@@ -8,6 +8,8 @@ Unreleased
 - Added the `--only-aes-key` option to the `reset` command to build a new AES
   key without performing a factory reset
 - Added support for reading PWS passwords and OTP secrets from stdin
+- Changed the `otp set`, `pws add` and `pws update` commands to check the
+  length of the input data to improve the error messages
 - Added `NITROCLI_RESOLVED_USB_PATH` environment variable to be used by
   extensions
 - Allowed entering of `base32` encoded strings containing spaces

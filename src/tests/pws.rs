@@ -48,6 +48,84 @@ fn add_invalid_slot(model: nitrokey::Model) {
 }
 
 #[test_device]
+fn add_overlong_data(model: nitrokey::Model) {
+  let err = Nitrocli::new()
+    .model(model)
+    .handle(&[
+      "pws",
+      "add",
+      "--slot",
+      "1",
+      "123456789012",
+      "123456789012345678901234567890123",
+      "123456789012345678901",
+    ])
+    .unwrap_err()
+    .to_string();
+  assert_eq!(
+    err,
+    "Multiple provided strings are too long:
+  slot name (actual length: 12 bytes, maximum length: 11 bytes)
+  login (actual length: 33 bytes, maximum length: 32 bytes)
+  password (actual length: 21 bytes, maximum length: 20 bytes)"
+  );
+
+  let err = Nitrocli::new()
+    .model(model)
+    .handle(&[
+      "pws",
+      "add",
+      "--slot",
+      "1",
+      "123456789012",
+      "12345678901234567890123456789012",
+      "12345678901234567890",
+    ])
+    .unwrap_err()
+    .to_string();
+  assert_eq!(
+    err,
+    "The provided slot name is too long (actual length: 12 bytes, maximum length: 11 bytes)"
+  );
+}
+
+#[test_device]
+fn update_overlong_data(model: nitrokey::Model) {
+  let err = Nitrocli::new()
+    .model(model)
+    .handle(&[
+      "pws",
+      "update",
+      "1",
+      "--name",
+      "123456789012",
+      "--login",
+      "123456789012345678901234567890123",
+      "--password",
+      "123456789012345678901",
+    ])
+    .unwrap_err()
+    .to_string();
+  assert_eq!(
+    err,
+    "Multiple provided strings are too long:
+  slot name (actual length: 12 bytes, maximum length: 11 bytes)
+  login (actual length: 33 bytes, maximum length: 32 bytes)
+  password (actual length: 21 bytes, maximum length: 20 bytes)"
+  );
+
+  let err = Nitrocli::new()
+    .model(model)
+    .handle(&["pws", "update", "1", "--name", "123456789012"])
+    .unwrap_err()
+    .to_string();
+  assert_eq!(
+    err,
+    "The provided slot name is too long (actual length: 12 bytes, maximum length: 11 bytes)"
+  );
+}
+
+#[test_device]
 fn status(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^slot\tname
