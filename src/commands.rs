@@ -35,6 +35,12 @@ use crate::Context;
 
 const NITROCLI_EXT_PREFIX: &str = "nitrocli-";
 
+const OTP_NAME_LENGTH: usize = 15;
+
+const PWS_NAME_LENGTH: usize = 11;
+const PWS_LOGIN_LENGTH: usize = 32;
+const PWS_PASSWORD_LENGTH: usize = 20;
+
 /// Set `libnitrokey`'s log level based on the execution context's verbosity.
 fn set_log_level(ctx: &mut Context<'_>) {
   let log_lvl = match ctx.config.verbosity {
@@ -388,6 +394,42 @@ fn value_or_stdin<'s>(ctx: &mut Context<'_>, s: &'s str) -> anyhow::Result<borro
     Ok(borrow::Cow::from(s))
   } else {
     Ok(borrow::Cow::from(s))
+  }
+}
+
+/// Validate the length of strings provided by the user.
+///
+/// The input must be a slice of tuples of the name of the string, the string itself and the
+/// maximum length.
+fn ensure_string_lengths(data: &[(&str, &str, usize)]) -> anyhow::Result<()> {
+  let mut invalid_strings = Vec::new();
+  for (label, value, max_length) in data {
+    let length = value.as_bytes().len();
+    if length > *max_length {
+      invalid_strings.push((label, length, max_length));
+    }
+  }
+  match invalid_strings.len() {
+    0 => Ok(()),
+    1 => {
+      let (label, length, max_length) = invalid_strings[0];
+      Err(anyhow::anyhow!(
+        "The provided {} is too long (actual length: {} bytes, maximum length: {} bytes)",
+        label,
+        length,
+        max_length
+      ))
+    }
+    _ => {
+      let mut msg = String::from("Multiple provided strings are too long:");
+      for (label, length, max_length) in invalid_strings {
+        msg.push_str(&format!(
+          "\n  {} (actual length: {} bytes, maximum length: {} bytes)",
+          label, length, max_length
+        ));
+      }
+      Err(anyhow::anyhow!(msg))
+    }
   }
 }
 
@@ -846,8 +888,14 @@ fn prepare_secret(
 
 /// Configure a one-time password slot on the Nitrokey device.
 pub fn otp_set(ctx: &mut Context<'_>, args: args::OtpSetArgs) -> anyhow::Result<()> {
+  // Ideally, we would also like to verify the length of the secret. But the maximum length is
+  // determined by the firmware version of the device and we don't want to run an additional
+  // command just to determine the firmware version.
+  ensure_string_lengths(&[("slot name", &args.name, OTP_NAME_LENGTH)])?;
+
   let secret = value_or_stdin(ctx, &args.secret)?;
   let secret = prepare_secret(secret, args.format)?;
+
   let data = nitrokey::OtpSlotData::new(args.slot, args.name, secret, args.digits.into());
   let (algorithm, counter, time_window) = (args.algorithm, args.counter, args.time_window);
   with_device(ctx, |ctx, device| {
@@ -1044,6 +1092,24 @@ pub fn pws_get(
   })
 }
 
+fn ensure_pws_string_lengths(
+  name: Option<&str>,
+  login: Option<&str>,
+  password: Option<&str>,
+) -> anyhow::Result<()> {
+  let mut data = Vec::new();
+  if let Some(name) = name {
+    data.push(("slot name", name, PWS_NAME_LENGTH));
+  }
+  if let Some(login) = login {
+    data.push(("login", login, PWS_LOGIN_LENGTH));
+  }
+  if let Some(password) = password {
+    data.push(("password", password, PWS_PASSWORD_LENGTH));
+  }
+  ensure_string_lengths(&data)
+}
+
 /// Add a new PWS slot.
 pub fn pws_add(
   ctx: &mut Context<'_>,
@@ -1053,6 +1119,7 @@ pub fn pws_add(
   slot_idx: Option<u8>,
 ) -> anyhow::Result<()> {
   let password = value_or_stdin(ctx, password)?;
+  ensure_pws_string_lengths(Some(name), Some(login), Some(&password))?;
   with_password_safe(ctx, |ctx, mut pws| {
     let slots = pws.get_slots()?;
 
@@ -1103,6 +1170,7 @@ pub fn pws_update(
   }
 
   let password = password.map(|s| value_or_stdin(ctx, s)).transpose()?;
+  ensure_pws_string_lengths(name, login, password.as_deref())?;
 
   with_password_safe(ctx, |_ctx, mut pws| {
     let slot = pws.get_slot(slot_idx).context("Failed to query PWS slot")?;
