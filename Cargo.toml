@@ -24,6 +24,10 @@ default-run = "nitrocli"
 name = "shell-complete"
 path = "var/shell-complete.rs"
 
+[[bin]]
+name = "nitrocli-otp-cache"
+path = "ext/otp_cache.rs"
+
 [profile.release]
 opt-level = "z"
 lto = true
@@ -79,6 +83,3 @@ version = "1"
 
 [dev-dependencies.tempfile]
 version = "3.1"
-
-[workspace]
-members = ["ext/*"]

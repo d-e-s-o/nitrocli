@@ -188,27 +188,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nitrocli-ext"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "directories",
- "nitrokey",
-]
-
-[[package]]
-name = "nitrocli-otp-cache"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "nitrocli-ext",
- "nitrokey",
- "serde",
- "structopt",
- "toml",
-]
-
-[[package]]
 name = "nitrokey"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
