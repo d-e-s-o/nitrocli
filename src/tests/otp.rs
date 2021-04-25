@@ -35,6 +35,39 @@ fn set_invalid_slot(model: nitrokey::Model) {
 }
 
 #[test_device]
+fn set_overlong_name(model: nitrokey::Model) {
+  let err = Nitrocli::new()
+    .model(model)
+    .handle(&["otp", "set", "0", "1234567890123456", "1234"])
+    .unwrap_err()
+    .to_string();
+  assert_eq!(
+    err,
+    "The provided slot name is too long (actual length: 16 bytes, maximum length: 15 bytes)"
+  );
+
+  let err = Nitrocli::new()
+    .model(model)
+    .handle(&["otp", "set", "0", "ö23456789012345", "1234"])
+    .unwrap_err()
+    .to_string();
+  assert_eq!(
+    err,
+    "The provided slot name is too long (actual length: 16 bytes, maximum length: 15 bytes)"
+  );
+
+  let err = Nitrocli::new()
+    .model(model)
+    .handle(&["otp", "set", "0", "1234567890123456789012345", "1234"])
+    .unwrap_err()
+    .to_string();
+  assert_eq!(
+    err,
+    "The provided slot name is too long (actual length: 25 bytes, maximum length: 15 bytes)"
+  );
+}
+
+#[test_device]
 fn status(model: nitrokey::Model) -> anyhow::Result<()> {
   let re = regex::Regex::new(
     r#"^alg\tslot\tname
