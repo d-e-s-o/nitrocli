@@ -1,4 +1,4 @@
-// lib.rs
+// ext.rs
 
 // Copyright (C) 2020-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -153,6 +153,8 @@ impl Nitrocli {
   /// Note that any error messages emitted by `nitrocli` will not be
   /// intercepted/captured but will directly be passed through. It is
   /// recommended that extensions terminate on failure.
+  // TODO: remove once we determined that we don’t need this
+  #[allow(unused)]
   pub fn text(&mut self) -> anyhow::Result<String> {
     let output = self.cmd.output().context("Failed to invoke nitrocli")?;
     // We want additional nitrocli emitted output to be visible to the
