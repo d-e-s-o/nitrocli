@@ -1,6 +1,6 @@
 // pinentry.rs
 
-// Copyright (C) 2017-2020 The Nitrocli Developers
+// Copyright (C) 2017-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
@@ -187,6 +187,9 @@ fn parse_pinentry_pin<R>(response: R) -> anyhow::Result<String>
 where
   R: AsRef<str>,
 {
+  const DATA_PREFIX: &str = "D ";
+  const ERR_PREFIX: &str = "ERR ";
+
   let string = response.as_ref();
   let lines: Vec<&str> = string.lines().collect();
 
@@ -195,19 +198,20 @@ where
   // > OK
   // or potentially:
   // > ERR 83886179 Operation cancelled <Pinentry>
-  if lines.len() == 2 && lines[1] == "OK" && lines[0].starts_with("D ") {
-    // We got the only valid answer we accept.
-    let (_, pass) = lines[0].split_at(2);
-    return Ok(pass.to_string());
+  //
+  // Furthermore, in case of an empty password we'd get just an OK.
+  match lines.as_slice() {
+    ["OK"] => Ok(String::new()),
+    [line, "OK"] if line.starts_with(DATA_PREFIX) => {
+      let (_, pass) = line.split_at(DATA_PREFIX.len());
+      Ok(pass.to_string())
+    }
+    [line] if line.starts_with(ERR_PREFIX) => {
+      let (_, error) = line.split_at(ERR_PREFIX.len());
+      anyhow::bail!("{}", error);
+    }
+    _ => anyhow::bail!("Unexpected response: {}", string),
   }
-
-  // Check if we are dealing with a special "ERR " line and report that
-  // specially.
-  if !lines.is_empty() && lines[0].starts_with("ERR ") {
-    let (_, error) = lines[0].split_at(4);
-    anyhow::bail!("{}", error);
-  }
-  anyhow::bail!("Unexpected response: {}", string)
 }
 
 /// Inquire a secret from the user.
@@ -332,6 +336,14 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn parse_pinentry_pin_empty() {
+    let response = "OK\n";
+    let expected = "";
+
+    assert_eq!(parse_pinentry_pin(response).unwrap(), expected)
+  }
 
   #[test]
   fn parse_pinentry_pin_good() {
