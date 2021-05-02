@@ -204,7 +204,7 @@ where
     ["OK"] => Ok(String::new()),
     [line, "OK"] if line.starts_with(OK_PREFIX) => {
       let (_, pass) = line.split_at(OK_PREFIX.len());
-      return Ok(pass.to_string());
+      Ok(pass.to_string())
     }
     [line] if line.starts_with(ERR_PREFIX) => {
       let (_, error) = line.split_at(ERR_PREFIX.len());
