@@ -433,12 +433,15 @@ fn ensure_string_lengths(data: &[(&str, &str, usize)]) -> anyhow::Result<()> {
   }
 }
 
-/// Query and pretty print the status that is common to all Nitrokey devices.
-fn print_status(ctx: &mut Context<'_>, device: &nitrokey::DeviceWrapper<'_>) -> anyhow::Result<()> {
-  let serial_number = device
-    .get_serial_number()
-    .context("Could not query the serial number")?;
-
+/// Pretty print the status that is common to all Nitrokey devices.
+fn print_status(
+  ctx: &mut Context<'_>,
+  model: nitrokey::Model,
+  serial_number: nitrokey::SerialNumber,
+  firmware_version: nitrokey::FirmwareVersion,
+  user_retry_count: u8,
+  admin_retry_count: u8,
+) -> anyhow::Result<()> {
   println!(
     ctx,
     r#"Status:
@@ -447,36 +450,62 @@ fn print_status(ctx: &mut Context<'_>, device: &nitrokey::DeviceWrapper<'_>) -> 
   firmware version:  {fwv}
   user retry count:  {urc}
   admin retry count: {arc}"#,
-    model = device.get_model(),
+    model = model,
     id = serial_number,
-    fwv = device
-      .get_firmware_version()
-      .context("Failed to retrieve firmware version")?,
-    urc = device
-      .get_user_retry_count()
-      .context("Failed to retrieve user retry count")?,
-    arc = device
-      .get_admin_retry_count()
-      .context("Failed to retrieve admin retry count")?,
+    fwv = firmware_version,
+    urc = user_retry_count,
+    arc = admin_retry_count,
   )?;
 
-  if let nitrokey::DeviceWrapper::Storage(device) = device {
-    let status = device
-      .get_storage_status()
-      .context("Failed to retrieve storage status")?;
-    let sd_card_usage = device
-      .get_sd_card_usage()
-      .context("Failed to retrieve SD card usage")?;
-
-    print_storage_status(ctx, &status, &sd_card_usage)
-  } else {
-    Ok(())
-  }
+  Ok(())
 }
 
 /// Inquire the status of the nitrokey.
 pub fn status(ctx: &mut Context<'_>) -> anyhow::Result<()> {
-  with_device(ctx, |ctx, device| print_status(ctx, &device))
+  with_device(ctx, |ctx, device| {
+    if let nitrokey::DeviceWrapper::Storage(device) = device {
+      // TODO: Extract serial number from storage status, see
+      //       https://todo.sr.ht/~ireas/nitrokey-rs/1
+      let serial_number = device
+        .get_serial_number()
+        .context("Failed to retrieve serial number")?;
+      let status = device
+        .get_storage_status()
+        .context("Failed to retrieve storage status")?;
+
+      print_status(
+        ctx,
+        device.get_model(),
+        serial_number,
+        status.firmware_version,
+        status.user_retry_count,
+        status.admin_retry_count,
+      )?;
+
+      let sd_card_usage = device
+        .get_sd_card_usage()
+        .context("Failed to retrieve SD card usage")?;
+      print_storage_status(ctx, &status, &sd_card_usage)
+    } else {
+      let status = device
+        .get_status()
+        .context("Could not query the device status")?;
+      let user_retry_count = device
+        .get_user_retry_count()
+        .context("Failed to retrieve user retry count")?;
+      let admin_retry_count = device
+        .get_admin_retry_count()
+        .context("Failed to retrieve admin retry count")?;
+      print_status(
+        ctx,
+        device.get_model(),
+        status.serial_number,
+        status.firmware_version,
+        user_retry_count,
+        admin_retry_count,
+      )
+    }
+  })
 }
 
 /// List the attached Nitrokey devices.
