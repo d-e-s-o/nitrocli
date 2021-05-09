@@ -21,6 +21,7 @@ Unreleased
 - Bumped `anyhow` dependency to `1.0.40`
 - Bumped `directories` dependency to `3.0.2`
 - Bumped `libc` dependency to `0.2.94`
+- Bumped `serde` dependency to `1.0.125`
 
 
 0.4.0
