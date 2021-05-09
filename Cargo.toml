@@ -20,9 +20,6 @@ A command line tool for interacting with Nitrokey devices.
 exclude = ["ci/*", "rustfmt.toml"]
 default-run = "nitrocli"
 
-[badges]
-gitlab = { repository = "d-e-s-o/nitrocli", branch = "master" }
-
 [[bin]]
 name = "shell-complete"
 path = "var/shell-complete.rs"
