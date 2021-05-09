@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.4.1
+-----
 - Enabled usage of empty PWS slot fields
 - Changed error reporting format to make up only a single line
 - Added the `pws add` subcommand to write to a new slot
