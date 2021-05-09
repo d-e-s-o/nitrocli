@@ -1,4 +1,4 @@
-[![pipeline](https://gitlab.com/d-e-s-o/nitrocli/badges/master/pipeline.svg)](https://gitlab.com/d-e-s-o/nitrocli/commits/master)
+[![pipeline](https://github.com/d-e-s-o/nitrocli/actions/workflows/.github/workflows/ci.yml/badge.svg)](https://github.com/d-e-s-o/nitrocli/commits/master)
 [![crates.io](https://img.shields.io/crates/v/nitrocli.svg)](https://crates.io/crates/nitrocli)
 [![rustc](https://img.shields.io/badge/rustc-1.43+-blue.svg)](https://blog.rust-lang.org/2020/04/23/Rust-1.43.0.html)
 
