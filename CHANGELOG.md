@@ -19,6 +19,7 @@ Unreleased
 - Updated minimum supported Rust version to `1.43.0`
 - Bumped `nitrokey` dependency to `0.9.0`
 - Bumped `anyhow` dependency to `1.0.40`
+- Bumped `directories` dependency to `3.0.2`
 
 
 0.4.0
