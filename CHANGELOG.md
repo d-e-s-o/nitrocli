@@ -20,6 +20,7 @@ Unreleased
 - Bumped `nitrokey` dependency to `0.9.0`
 - Bumped `anyhow` dependency to `1.0.40`
 - Bumped `directories` dependency to `3.0.2`
+- Bumped `libc` dependency to `0.2.94`
 
 
 0.4.0
