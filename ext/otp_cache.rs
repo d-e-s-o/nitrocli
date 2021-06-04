@@ -37,7 +37,7 @@ struct Slot {
 #[structopt(bin_name = "nitrocli otp-cache")]
 struct Args {
   /// Always query the slot data even if it is already cached
-  #[structopt(short, long)]
+  #[structopt(short, long, global = true)]
   force_update: bool,
   #[structopt(subcommand)]
   cmd: Command,
