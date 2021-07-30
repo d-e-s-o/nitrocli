@@ -6,24 +6,7 @@ This document describes how to update the packaged versions of nitrocli.
 Arch Linux
 ----------
 
-1. Clone the Git repository at ssh://aur@aur.archlinux.org/nitrocli.git.
-2. Edit the `PKGBUILD` file:
-   - Update the `pkgver` variable to the current nitrocli version.
-   - If the `pkgrel` variable is not 1, set it to 1.
-   - Update the SHA512 hash in the `sha512sums` variable for the new tarball.
-3. Update the `.SRCINFO` file by running `makepkg --printsrcinfo > .SRCINFO`.
-4. Verify that the package builds successfully by running `makepkg`.
-5. Verify that the package was built as expected by running `pacman -Qlp $f`
-   and `pacman -Qip $f`, where `$f` is `nitrocli-$pkgver.pkg.tar.gz`.
-6. Check the package for errors by running `namcap PKGBUILD` and `namcap
-   nitrocli-$pkgver.pkg.tar.gz`.
-7. Add, commit, and push your changes to publish them in the AUR.
-
-If you have to release a new package version without a new nitrocli version,
-do not change the `pkgver` variable and instead increment the `pkgrel`
-variable.
-
-For more information, see the [Arch User Repository][] page in the Arch Wiki.
+The Arch Linux package is now maintained as part of the community repository.
 
 Debian
 ------
