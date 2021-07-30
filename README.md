@@ -91,7 +91,7 @@ following dependencies are required:
 
 #### Via Packages
 Packages are available for:
-- Arch Linux: [`nitrocli`][nitrocli-arch] in the Arch User Repository
+- Arch Linux: [`nitrocli`][nitrocli-arch]
 - Debian: [`nitrocli`][nitrocli-debian] (since Debian Buster)
 - Gentoo Linux: [`app-crypt/nitrocli`][nitrocli-gentoo] ebuild
 - Ubuntu: [`nitrocli`][nitrocli-ubuntu] (since Ubuntu 19.04)
@@ -193,7 +193,7 @@ the full text of the license.
 [nitrokey-pro]: https://shop.nitrokey.com/shop/product/nitrokey-pro-2-3
 [nitrokey-storage]: https://shop.nitrokey.com/shop/product/nitrokey-storage-2-56
 [librem-key]: https://puri.sm/products/librem-key/
-[nitrocli-arch]: https://aur.archlinux.org/packages/nitrocli
+[nitrocli-arch]: https://archlinux.org/packages/community/x86_64/nitrocli/
 [nitrocli-cratesio]: https://crates.io/crates/nitrocli
 [nitrocli-debian]: https://packages.debian.org/stable/nitrocli
 [nitrocli-gentoo]: https://packages.gentoo.org/packages/app-crypt/nitrocli
