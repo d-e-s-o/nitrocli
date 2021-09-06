@@ -95,7 +95,7 @@ fn set_get_hotp(model: nitrokey::Model) -> anyhow::Result<()> {
 
   let mut ncli = Nitrocli::new().model(model);
   let _ = ncli.handle(&[
-    "otp", "set", "-a", "hotp", "-f", "ascii", "1", "name", &SECRET,
+    "otp", "set", "-a", "hotp", "-f", "ascii", "1", "name", SECRET,
   ])?;
 
   let out = ncli.handle(&["otp", "get", "-a", "hotp", "1"])?;
@@ -115,7 +115,7 @@ fn set_get_totp(model: nitrokey::Model) -> anyhow::Result<()> {
   const OTP: &str = concat!(14050471, "\n");
 
   let mut ncli = Nitrocli::new().model(model);
-  let _ = ncli.handle(&["otp", "set", "-d", "8", "-f", "ascii", "2", "name", &SECRET])?;
+  let _ = ncli.handle(&["otp", "set", "-d", "8", "-f", "ascii", "2", "name", SECRET])?;
 
   let out = ncli.handle(&["otp", "get", "-t", TIME, "2"])?;
   assert_eq!(out, OTP);
@@ -131,7 +131,7 @@ fn set_totp_uneven_chars(model: nitrokey::Model) -> anyhow::Result<()> {
 
   for (format, secret) in &secrets {
     let mut ncli = Nitrocli::new().model(model);
-    let _ = ncli.handle(&["otp", "set", "-f", format.as_ref(), "3", "foobar", &secret])?;
+    let _ = ncli.handle(&["otp", "set", "-f", format.as_ref(), "3", "foobar", secret])?;
   }
   Ok(())
 }

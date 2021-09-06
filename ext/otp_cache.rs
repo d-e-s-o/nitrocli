@@ -82,9 +82,9 @@ fn cmd_get(ctx: &ext::Context, cache: &Cache, slot_name: &str) -> anyhow::Result
       "Found multiple OTP slots with the given name"
     ))
   } else if let Some(slot) = totp_slots.first() {
-    generate_otp(&ctx, "totp", slot.id)
+    generate_otp(ctx, "totp", slot.id)
   } else if let Some(slot) = hotp_slots.first() {
-    generate_otp(&ctx, "hotp", slot.id)
+    generate_otp(ctx, "hotp", slot.id)
   } else {
     Err(anyhow::anyhow!("Found no OTP slot with the given name"))
   }
