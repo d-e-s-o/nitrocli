@@ -44,7 +44,7 @@ impl Context {
       let verbosity = verbosity
         .to_str()
         .context("Provided verbosity string is not valid UTF-8")?;
-      let verbosity = u8::from_str_radix(verbosity, 10).context("Failed to parse verbosity")?;
+      let verbosity = verbosity.parse().context("Failed to parse verbosity")?;
       set_log_level(verbosity);
       Some(verbosity)
     };

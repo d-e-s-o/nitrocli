@@ -323,7 +323,7 @@ where
     let pin = pin
       .to_str()
       .context("Failed to read PIN: Invalid Unicode data found")?;
-    op(ctx, data, &pin).map_err(|(_, err)| err)
+    op(ctx, data, pin).map_err(|(_, err)| err)
   } else {
     try_with_pin_and_data_with_pinentry(ctx, pin_entry, data, op)
   }
@@ -573,7 +573,7 @@ pub fn fill(ctx: &mut Context<'_>, attach: bool) -> anyhow::Result<()> {
       pinentry::clear(&pin_entry).context("Failed to clear cached secret")?;
 
       try_with_pin(ctx, &pin_entry, |pin| {
-        device.fill_sd_card(&pin).context("Failed to fill SD card")
+        device.fill_sd_card(pin).context("Failed to fill SD card")
       })?;
     }
 
@@ -611,11 +611,11 @@ pub fn reset(ctx: &mut Context<'_>, only_aes_key: bool) -> anyhow::Result<()> {
         // Similar to the else arm, we have to execute this command to avoid WrongPassword errors
         let _ = device.get_user_retry_count();
         device
-          .build_aes_key(&pin)
+          .build_aes_key(pin)
           .context("Failed to rebuild AES key")
       } else {
         device
-          .factory_reset(&pin)
+          .factory_reset(pin)
           .context("Failed to reset to factory settings")?;
         // Work around for a timing issue between factory_reset and
         // build_aes_key, see
@@ -651,7 +651,7 @@ pub fn unencrypted_set(
 
     try_with_pin(ctx, &pin_entry, |pin| {
       device
-        .set_unencrypted_volume_mode(&pin, mode)
+        .set_unencrypted_volume_mode(pin, mode)
         .context("Failed to change unencrypted volume mode")
     })
   })
@@ -668,7 +668,7 @@ pub fn encrypted_open(ctx: &mut Context<'_>) -> anyhow::Result<()> {
 
     try_with_pin(ctx, &pin_entry, |pin| {
       device
-        .enable_encrypted_volume(&pin)
+        .enable_encrypted_volume(pin)
         .context("Failed to open encrypted volume")
     })
   })
@@ -879,7 +879,7 @@ fn format_bytes(bytes: &[u8]) -> String {
 /// characters.
 fn prepare_ascii_secret(secret: &str) -> anyhow::Result<String> {
   if secret.is_ascii() {
-    Ok(format_bytes(&secret.as_bytes()))
+    Ok(format_bytes(secret.as_bytes()))
   } else {
     anyhow::bail!("The given secret is not an ASCII string as expected")
   }
@@ -1051,10 +1051,10 @@ pub fn pin_set(ctx: &mut Context<'_>, pin_type: args::PinType) -> anyhow::Result
 
     try_with_pin(ctx, &pin_entry, |current_pin| match pin_type {
       args::PinType::Admin => device
-        .change_admin_pin(&current_pin, &new_pin)
+        .change_admin_pin(current_pin, &new_pin)
         .context("Failed to change admin PIN"),
       args::PinType::User => device
-        .change_user_pin(&current_pin, &new_pin)
+        .change_user_pin(current_pin, &new_pin)
         .context("Failed to change user PIN"),
     })?;
 
@@ -1074,7 +1074,7 @@ pub fn pin_unblock(ctx: &mut Context<'_>) -> anyhow::Result<()> {
 
     try_with_pin(ctx, &pin_entry, |admin_pin| {
       device
-        .unlock_user_pin(&admin_pin, &user_pin)
+        .unlock_user_pin(admin_pin, &user_pin)
         .context("Failed to unblock user PIN")
     })
   })
@@ -1344,7 +1344,7 @@ pub fn extension(ctx: &mut Context<'_>, args: Vec<ffi::OsString>) -> anyhow::Res
   let mut args = args.into_iter();
   let ext_name = args.next().context("No extension specified")?;
   let path_var = ctx.path.as_ref().context("PATH variable not present")?;
-  let ext_path = resolve_extension(&path_var, &ext_name)?;
+  let ext_path = resolve_extension(path_var, &ext_name)?;
 
   // Note that theoretically we could just exec the extension and be
   // done. However, the problem with that approach is that it makes

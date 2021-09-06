@@ -1,6 +1,6 @@
 // extensions.rs
 
-// Copyright (C) 2020 The Nitrocli Developers
+// Copyright (C) 2020-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::env;
@@ -65,8 +65,8 @@ fn resolve_extensions() -> anyhow::Result<()> {
       ext3_path
     );
 
-    let err = crate::commands::resolve_extension(&ffi::OsStr::new(""), ffi::OsStr::new("ext1"))
-      .unwrap_err();
+    let err =
+      crate::commands::resolve_extension(ffi::OsStr::new(""), ffi::OsStr::new("ext1")).unwrap_err();
     assert_eq!(err.to_string(), "Extension nitrocli-ext1 not found");
   }
   Ok(())

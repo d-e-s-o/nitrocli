@@ -154,7 +154,7 @@ fn add_get(model: nitrokey::Model) -> anyhow::Result<()> {
   clear_pws(model)?;
 
   let mut ncli = Nitrocli::new().model(model);
-  let _ = ncli.handle(&["pws", "add", "--slot", "1", &NAME, &LOGIN, &PASSWORD])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "1", NAME, LOGIN, PASSWORD])?;
 
   let out = ncli.handle(&["pws", "get", "1", "--quiet", "--name"])?;
   assert_eq!(out, format!("{}\n", NAME));
@@ -210,7 +210,7 @@ fn add_reset_get(model: nitrokey::Model) -> anyhow::Result<()> {
   clear_pws(model)?;
 
   let mut ncli = Nitrocli::new().model(model);
-  let _ = ncli.handle(&["pws", "add", "--slot", "2", &NAME, &LOGIN, &PASSWORD])?;
+  let _ = ncli.handle(&["pws", "add", "--slot", "2", NAME, LOGIN, PASSWORD])?;
 
   let out = ncli.handle(&["reset"])?;
   assert_eq!(out, "");

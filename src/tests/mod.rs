@@ -1,6 +1,6 @@
 // mod.rs
 
-// Copyright (C) 2019-2020 The Nitrocli Developers
+// Copyright (C) 2019-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::ffi;
@@ -142,7 +142,7 @@ impl Nitrocli {
 
   /// Run `nitrocli`'s `handle_arguments` function.
   pub fn handle(&mut self, args: &[&str]) -> anyhow::Result<String> {
-    let (res, out, _) = self.do_run(args, |c, a| crate::handle_arguments(c, a));
+    let (res, out, _) = self.do_run(args, crate::handle_arguments);
     res.map(|_| String::from_utf8_lossy(&out).into_owned())
   }
 }
