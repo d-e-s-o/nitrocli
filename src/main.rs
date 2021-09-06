@@ -1,6 +1,6 @@
 // main.rs
 
-// Copyright (C) 2017-2020 The Nitrocli Developers
+// Copyright (C) 2017-2021 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #![warn(
@@ -24,12 +24,12 @@
   renamed_and_removed_lints,
   rust_2018_compatibility,
   rust_2018_idioms,
-  safe_packed_borrows,
   stable_features,
   trivial_bounds,
   trivial_numeric_casts,
   type_alias_bounds,
   tyvar_behind_raw_pointer,
+  unaligned_references,
   unconditional_recursion,
   unreachable_code,
   unreachable_patterns,
