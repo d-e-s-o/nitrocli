@@ -1,6 +1,6 @@
 // run.rs
 
-// Copyright (C) 2019-2021 The Nitrocli Developers
+// Copyright (C) 2019-2022 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::collections;
@@ -378,7 +378,7 @@ fn extension_arguments(model: nitrokey::Model) -> anyhow::Result<()> {
     Ok(())
   }
 
-  test(model, "binary", &[], |out| {
+  test(model, "NITROCLI_BINARY", &[], |out| {
     path::Path::new(out)
       .file_stem()
       .unwrap()
@@ -387,16 +387,18 @@ fn extension_arguments(model: nitrokey::Model) -> anyhow::Result<()> {
       .trim()
       .contains("nitrocli")
   })?;
-  test(model, "model", &[], |out| {
+  test(model, "NITROCLI_MODEL", &[], |out| {
     out == args::DeviceModel::try_from(model).unwrap().to_string() + "\n"
   })?;
-  test(model, "no-cache", &[], |out| out == "true\n")?;
-  test(model, "serial-numbers", &[], |out| out == "\n")?;
-  test(model, "verbosity", &[], |out| out == "0\n")?;
-  test(model, "verbosity", &["-v"], |out| out == "1\n")?;
-  test(model, "verbosity", &["-v", "--verbose"], |out| out == "2\n")?;
+  test(model, "NITROCLI_NO_CACHE", &[], |out| out == "true\n")?;
+  test(model, "NITROCLI_SERIAL_NUMBERS", &[], |out| out == "\n")?;
+  test(model, "NITROCLI_VERBOSITY", &[], |out| out == "0\n")?;
+  test(model, "NITROCLI_VERBOSITY", &["-v"], |out| out == "1\n")?;
+  test(model, "NITROCLI_VERBOSITY", &["-v", "--verbose"], |out| {
+    out == "2\n"
+  })?;
 
   // NITROCLI_USB_PATH should not be set, so the program errors out.
-  let _ = test(model, "usb-path", &[], |out| out == "\n").unwrap_err();
+  let _ = test(model, "NITROCLI_USB_PATH", &[], |out| out == "\n").unwrap_err();
   Ok(())
 }
