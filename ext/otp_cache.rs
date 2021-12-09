@@ -8,7 +8,7 @@ use std::io::Write as _;
 use std::path;
 
 use anyhow::Context as _;
-use structopt::StructOpt as _;
+use clap::StructOpt as _;
 
 mod ext;
 
@@ -33,7 +33,7 @@ struct Slot {
 /// `--force-update` option is set. The cache includes the Nitrokey's
 /// serial number so that it is possible to use it with multiple
 /// devices.
-#[derive(Debug, structopt::StructOpt)]
+#[derive(Debug, clap::StructOpt)]
 #[structopt(bin_name = "nitrocli otp-cache")]
 struct Args {
   /// Always query the slot data even if it is already cached
@@ -43,7 +43,7 @@ struct Args {
   cmd: Command,
 }
 
-#[derive(Debug, structopt::StructOpt)]
+#[derive(Debug, clap::StructOpt)]
 enum Command {
   /// Generates a one-time password
   Get {

@@ -3,27 +3,22 @@
 // Copyright (C) 2020-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use std::ffi;
+use std::ffi::OsString;
 
 /// Provides access to a Nitrokey device
-#[derive(Debug, structopt::StructOpt)]
-#[structopt(name = "nitrocli", no_version)]
+#[derive(Debug, clap::StructOpt)]
+#[structopt(name = "nitrocli")]
 pub struct Args {
   /// Increases the log level (can be supplied multiple times)
   #[structopt(short, long, global = true, parse(from_occurrences))]
   pub verbose: u8,
   /// Selects the device model to connect to
-  #[structopt(short, long, global = true, possible_values = &DeviceModel::all_str())]
+  #[structopt(short, long, global = true, possible_values = DeviceModel::all_str())]
   pub model: Option<DeviceModel>,
   /// Sets the serial number of the device to connect to. Can be set
   /// multiple times to allow multiple serial numbers
   // TODO: Add short options (avoid collisions).
-  #[structopt(
-    long = "serial-number",
-    global = true,
-    multiple = true,
-    number_of_values = 1
-  )]
+  #[structopt(long = "serial-number", global = true, multiple_occurrences = true)]
   pub serial_numbers: Vec<nitrokey::SerialNumber>,
   /// Sets the USB path of the device to connect to
   #[structopt(long, global = true)]
@@ -109,11 +104,11 @@ Command! {
     Unencrypted(UnencryptedArgs) => |ctx, args: UnencryptedArgs| args.subcmd.execute(ctx),
     /// An extension and its arguments.
     #[structopt(external_subcommand)]
-    Extension(Vec<ffi::OsString>) => crate::commands::extension,
+    Extension(Vec<OsString>) => crate::commands::extension,
   ]
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct ConfigArgs {
   #[structopt(subcommand)]
   subcmd: ConfigCommand,
@@ -126,31 +121,31 @@ Command! {ConfigCommand, [
   Set(ConfigSetArgs) => crate::commands::config_set,
 ]}
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct ConfigSetArgs {
   /// Sets the Num Lock option to the given HOTP slot
-  #[structopt(short = "n", long)]
+  #[structopt(short = 'n', long)]
   pub num_lock: Option<u8>,
   /// Unsets the Num Lock option
-  #[structopt(short = "N", long, conflicts_with("num-lock"))]
+  #[structopt(short = 'N', long, conflicts_with("num-lock"))]
   pub no_num_lock: bool,
   /// Sets the Cap Lock option to the given HOTP slot
-  #[structopt(short = "c", long)]
+  #[structopt(short = 'c', long)]
   pub caps_lock: Option<u8>,
   /// Unsets the Caps Lock option
-  #[structopt(short = "C", long, conflicts_with("caps-lock"))]
+  #[structopt(short = 'C', long, conflicts_with("caps-lock"))]
   pub no_caps_lock: bool,
   /// Sets the Scroll Lock option to the given HOTP slot
-  #[structopt(short = "s", long)]
+  #[structopt(short = 's', long)]
   pub scroll_lock: Option<u8>,
   /// Unsets the Scroll Lock option
-  #[structopt(short = "S", long, conflicts_with("scroll-lock"))]
+  #[structopt(short = 'S', long, conflicts_with("scroll-lock"))]
   pub no_scroll_lock: bool,
   /// Requires the user PIN to generate one-time passwords
-  #[structopt(short = "o", long)]
+  #[structopt(short = 'o', long)]
   pub otp_pin: bool,
   /// Allows one-time password generation without PIN
-  #[structopt(short = "O", long, conflicts_with("otp-pin"))]
+  #[structopt(short = 'O', long, conflicts_with("otp-pin"))]
   pub no_otp_pin: bool,
 }
 
@@ -187,7 +182,7 @@ impl<T> ConfigOption<T> {
   }
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct EncryptedArgs {
   #[structopt(subcommand)]
   subcmd: EncryptedCommand,
@@ -200,7 +195,7 @@ Command! {EncryptedCommand, [
   Open => crate::commands::encrypted_open,
 ]}
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct FillArgs {
   /// Checks if a fill operation is already running and show its progress instead of starting a new
   /// operation.
@@ -208,7 +203,7 @@ pub struct FillArgs {
   attach: bool,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct HiddenArgs {
   #[structopt(subcommand)]
   subcmd: HiddenCommand,
@@ -225,7 +220,7 @@ Command! {HiddenCommand, [
   Open => crate::commands::hidden_open,
 ]}
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct HiddenCreateArgs {
   /// The hidden volume slot to use
   pub slot: u8,
@@ -235,14 +230,14 @@ pub struct HiddenCreateArgs {
   pub end: u8,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct ListArgs {
   /// Only print the information that is available without connecting to a device
   #[structopt(short, long)]
   pub no_connect: bool,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct OtpArgs {
   #[structopt(subcommand)]
   subcmd: OtpCommand,
@@ -263,21 +258,21 @@ Command! {OtpCommand, [
   Status(OtpStatusArgs) => |ctx, args: OtpStatusArgs| crate::commands::otp_status(ctx, args.all),
 ]}
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct OtpClearArgs {
   /// The OTP algorithm to use
   #[structopt(short, long, default_value = OtpAlgorithm::Totp.as_ref(),
-              possible_values = &OtpAlgorithm::all_str())]
+              possible_values = OtpAlgorithm::all_str())]
   pub algorithm: OtpAlgorithm,
   /// The OTP slot to clear
   pub slot: u8,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct OtpGetArgs {
   /// The OTP algorithm to use
   #[structopt(short, long, default_value = OtpAlgorithm::Totp.as_ref(),
-              possible_values = &OtpAlgorithm::all_str())]
+              possible_values = OtpAlgorithm::all_str())]
   pub algorithm: OtpAlgorithm,
   /// The time to use for TOTP generation (Unix timestamp) [default: system time]
   #[structopt(short, long)]
@@ -286,15 +281,15 @@ pub struct OtpGetArgs {
   pub slot: u8,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct OtpSetArgs {
   /// The OTP algorithm to use
   #[structopt(short, long, default_value = OtpAlgorithm::Totp.as_ref(),
-              possible_values = &OtpAlgorithm::all_str())]
+              possible_values = OtpAlgorithm::all_str())]
   pub algorithm: OtpAlgorithm,
   /// The number of digits to use for the one-time password
   #[structopt(short, long, default_value = OtpMode::SixDigits.as_ref(),
-              possible_values = &OtpMode::all_str())]
+              possible_values = OtpMode::all_str())]
   pub digits: OtpMode,
   /// The counter value for HOTP
   #[structopt(short, long, default_value = "0")]
@@ -304,7 +299,7 @@ pub struct OtpSetArgs {
   pub time_window: u16,
   /// The format of the secret
   #[structopt(short, long, default_value = OtpSecretFormat::Base32.as_ref(),
-              possible_values = &OtpSecretFormat::all_str())]
+              possible_values = OtpSecretFormat::all_str())]
   pub format: OtpSecretFormat,
   /// The OTP slot to use
   pub slot: u8,
@@ -315,7 +310,7 @@ pub struct OtpSetArgs {
   pub secret: String,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct OtpStatusArgs {
   /// Shows slots that are not programmed
   #[structopt(short, long)]
@@ -347,7 +342,7 @@ Enum! {OtpSecretFormat, [
   Hex => "hex",
 ]}
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct PinArgs {
   #[structopt(subcommand)]
   subcmd: PinCommand,
@@ -373,14 +368,14 @@ Enum! {
   ]
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct PinSetArgs {
   /// The PIN type to change
-  #[structopt(name = "type", possible_values = &PinType::all_str())]
+  #[structopt(name = "type", possible_values = PinType::all_str())]
   pub pintype: PinType,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct PwsArgs {
   #[structopt(subcommand)]
   subcmd: PwsCommand,
@@ -411,13 +406,13 @@ Command! {PwsCommand, [
   Status(PwsStatusArgs) => |ctx, args: PwsStatusArgs| crate::commands::pws_status(ctx, args.all),
 ]}
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct PwsClearArgs {
   /// The PWS slot to clear
   pub slot: u8,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct PwsGetArgs {
   /// Shows the name stored on the slot
   #[structopt(short, long)]
@@ -435,7 +430,7 @@ pub struct PwsGetArgs {
   pub slot: u8,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct PwsAddArgs {
   /// The name to store on the slot
   pub name: String,
@@ -450,7 +445,7 @@ pub struct PwsAddArgs {
   pub slot: Option<u8>,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct PwsUpdateArgs {
   /// The PWS slot to update
   pub slot: u8,
@@ -465,21 +460,21 @@ pub struct PwsUpdateArgs {
   pub password: Option<String>,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct PwsStatusArgs {
   /// Shows slots that are not programmed
   #[structopt(short, long)]
   pub all: bool,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct ResetArgs {
   /// Only build a new AES key instead of performing a full factory reset.
   #[structopt(long)]
   pub only_aes_key: bool,
 }
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct UnencryptedArgs {
   #[structopt(subcommand)]
   subcmd: UnencryptedCommand,
@@ -492,10 +487,10 @@ Command! {UnencryptedCommand, [
   },
 ]}
 
-#[derive(Debug, PartialEq, structopt::StructOpt)]
+#[derive(Debug, PartialEq, clap::StructOpt)]
 pub struct UnencryptedSetArgs {
   /// The mode to change to
-  #[structopt(name = "type", possible_values = &UnencryptedVolumeMode::all_str())]
+  #[structopt(name = "type", possible_values = UnencryptedVolumeMode::all_str())]
   pub mode: UnencryptedVolumeMode,
 }
 
