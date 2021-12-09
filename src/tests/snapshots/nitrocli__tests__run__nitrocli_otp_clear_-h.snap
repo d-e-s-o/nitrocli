@@ -3,26 +3,37 @@ source: src/tests/run.rs
 expression: s
 
 ---
-nitrocli-otp-clear 0.4.1
+nitrocli-otp-clear 
+
 Clears a one-time password slot
 
 USAGE:
-    nitrocli otp clear [FLAGS] [OPTIONS] <slot>
-
-FLAGS:
-    -h, --help        Prints help information
-        --no-cache    Disables the cache for all secrets
-    -V, --version     Prints version information
-    -v, --verbose     Increases the log level (can be supplied multiple times)
-
-OPTIONS:
-    -a, --algorithm <algorithm>                The OTP algorithm to use [default: totp]  [possible values: hotp, totp]
-    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
-                                               storage]
-        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
-                                               times to allow multiple serial numbers
-        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+    nitrocli otp clear [OPTIONS] <SLOT>
 
 ARGS:
-    <slot>    The OTP slot to clear
+    <SLOT>    The OTP slot to clear
+
+OPTIONS:
+    -a, --algorithm <ALGORITHM>
+            The OTP algorithm to use [default: totp] [possible values: hotp, totp]
+
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
 

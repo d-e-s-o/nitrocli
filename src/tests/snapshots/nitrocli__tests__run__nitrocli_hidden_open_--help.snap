@@ -3,22 +3,31 @@ source: src/tests/run.rs
 expression: s
 
 ---
-nitrocli-hidden-open 0.4.1
+nitrocli-hidden-open 
+
 Opens the hidden volume on a Nitrokey Storage
 
 USAGE:
-    nitrocli hidden open [FLAGS] [OPTIONS]
-
-FLAGS:
-    -h, --help        Prints help information
-        --no-cache    Disables the cache for all secrets
-    -V, --version     Prints version information
-    -v, --verbose     Increases the log level (can be supplied multiple times)
+    nitrocli hidden open [OPTIONS]
 
 OPTIONS:
-    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
-                                               storage]
-        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
-                                               times to allow multiple serial numbers
-        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
 

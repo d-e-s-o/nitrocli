@@ -3,49 +3,48 @@ source: src/tests/run.rs
 expression: s
 
 ---
-nitrocli-pws-add 0.4.1
+nitrocli-pws-add 
+
 Adds a new password safe slot
 
 USAGE:
-    nitrocli pws add [FLAGS] [OPTIONS] <name> <login> <password>
+    nitrocli pws add [OPTIONS] <NAME> <LOGIN> <PASSWORD>
 
-FLAGS:
-    -h, --help        
-            Prints help information
+ARGS:
+    <NAME>
+            The name to store on the slot
 
-        --no-cache    
-            Disables the cache for all secrets
+    <LOGIN>
+            The login to store on the slot
 
-    -V, --version     
-            Prints version information
-
-    -v, --verbose     
-            Increases the log level (can be supplied multiple times)
-
+    <PASSWORD>
+            The password to store on the slot
 
 OPTIONS:
-    -m, --model <model>                        
-            Selects the device model to connect to [possible values: librem, pro, storage]
+    -h, --help
+            Print help information
 
-        --serial-number <serial-numbers>...    
-            Sets the serial number of the device to connect to. Can be set multiple times to allow multiple serial
-            numbers
-    -s, --slot <slot>                          
+    -m, --model <MODEL>
+            Selects the device model to connect to
+            
+            [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+    -s, --slot <SLOT>
             The number of the slot to write
             
             If this option is not set, the first unprogrammed slot is used.
-        --usb-path <usb-path>                  
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
             Sets the USB path of the device to connect to
 
-
-ARGS:
-    <name>        
-            The name to store on the slot
-
-    <login>       
-            The login to store on the slot
-
-    <password>    
-            The password to store on the slot
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
 
 

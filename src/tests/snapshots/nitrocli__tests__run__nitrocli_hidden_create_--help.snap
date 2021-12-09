@@ -3,27 +3,38 @@ source: src/tests/run.rs
 expression: s
 
 ---
-nitrocli-hidden-create 0.4.1
+nitrocli-hidden-create 
+
 Creates a hidden volume on a Nitrokey Storage
 
 USAGE:
-    nitrocli hidden create [FLAGS] [OPTIONS] <slot> <start> <end>
-
-FLAGS:
-    -h, --help        Prints help information
-        --no-cache    Disables the cache for all secrets
-    -V, --version     Prints version information
-    -v, --verbose     Increases the log level (can be supplied multiple times)
-
-OPTIONS:
-    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
-                                               storage]
-        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
-                                               times to allow multiple serial numbers
-        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+    nitrocli hidden create [OPTIONS] <SLOT> <START> <END>
 
 ARGS:
-    <slot>     The hidden volume slot to use
-    <start>    The start location of the hidden volume as a percentage of the encrypted volume's size (0-99)
-    <end>      The end location of the hidden volume as a percentage of the encrypted volume's size (1-100)
+    <SLOT>     The hidden volume slot to use
+    <START>    The start location of the hidden volume as a percentage of the encrypted volume's
+               size (0-99)
+    <END>      The end location of the hidden volume as a percentage of the encrypted volume's
+               size (1-100)
+
+OPTIONS:
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
 

@@ -3,30 +3,55 @@ source: src/tests/run.rs
 expression: s
 
 ---
-nitrocli-config-set 0.4.1
+nitrocli-config-set 
+
 Changes the Nitrokey configuration
 
 USAGE:
-    nitrocli config set [FLAGS] [OPTIONS]
-
-FLAGS:
-    -h, --help              Prints help information
-        --no-cache          Disables the cache for all secrets
-    -C, --no-caps-lock      Unsets the Caps Lock option
-    -N, --no-num-lock       Unsets the Num Lock option
-    -O, --no-otp-pin        Allows one-time password generation without PIN
-    -S, --no-scroll-lock    Unsets the Scroll Lock option
-    -o, --otp-pin           Requires the user PIN to generate one-time passwords
-    -V, --version           Prints version information
-    -v, --verbose           Increases the log level (can be supplied multiple times)
+    nitrocli config set [OPTIONS]
 
 OPTIONS:
-    -c, --caps-lock <caps-lock>                Sets the Cap Lock option to the given HOTP slot
-    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
-                                               storage]
-    -n, --num-lock <num-lock>                  Sets the Num Lock option to the given HOTP slot
-    -s, --scroll-lock <scroll-lock>            Sets the Scroll Lock option to the given HOTP slot
-        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
-                                               times to allow multiple serial numbers
-        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+    -c, --caps-lock <CAPS_LOCK>
+            Sets the Cap Lock option to the given HOTP slot
+
+    -C, --no-caps-lock
+            Unsets the Caps Lock option
+
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+    -n, --num-lock <NUM_LOCK>
+            Sets the Num Lock option to the given HOTP slot
+
+    -N, --no-num-lock
+            Unsets the Num Lock option
+
+        --no-cache
+            Disables the cache for all secrets
+
+    -o, --otp-pin
+            Requires the user PIN to generate one-time passwords
+
+    -O, --no-otp-pin
+            Allows one-time password generation without PIN
+
+    -s, --scroll-lock <SCROLL_LOCK>
+            Sets the Scroll Lock option to the given HOTP slot
+
+    -S, --no-scroll-lock
+            Unsets the Scroll Lock option
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
 

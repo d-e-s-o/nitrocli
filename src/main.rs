@@ -69,9 +69,9 @@ use std::io;
 use std::process;
 use std::str;
 
-use structopt::clap::ErrorKind;
-use structopt::clap::SubCommand;
-use structopt::StructOpt;
+use clap::ErrorKind;
+use clap::FromArgMatches;
+use clap::IntoApp;
 
 const NITROCLI_BINARY: &str = "NITROCLI_BINARY";
 const NITROCLI_RESOLVED_USB_PATH: &str = "NITROCLI_RESOLVED_USB_PATH";
@@ -112,15 +112,16 @@ impl error::Error for DirectExitError {}
 /// Parse the command-line arguments and execute the selected command.
 fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<()> {
   let version = get_version_string();
-  let clap = args::Args::clap().version(version.as_str());
-  match clap.get_matches_from_safe(argv.iter()) {
-    Ok(matches) => {
-      let args = args::Args::from_clap(&matches);
+  let clap = args::Args::into_app().version(version.as_str());
+  let matches = clap.try_get_matches_from(argv.iter());
+  let args = matches.and_then(|matches| args::Args::from_arg_matches(&matches));
+  match args {
+    Ok(args) => {
       ctx.config.update(&args);
       args.cmd.execute(ctx)
     }
     Err(mut err) => {
-      if err.kind == ErrorKind::HelpDisplayed {
+      if err.kind == ErrorKind::DisplayHelp {
         // For the convenience of the user we'd like to list the
         // available extensions in the help text. At the same time, we
         // don't want to unconditionally iterate through PATH (which may
@@ -129,14 +130,14 @@ fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<
         // help text is actually displayed.
         let path = ctx.path.clone().unwrap_or_else(ffi::OsString::new);
         if let Ok(extensions) = commands::discover_extensions(&path) {
-          let mut clap = args::Args::clap();
+          let mut clap = args::Args::into_app();
           for name in extensions {
             // Because of clap's brain dead API, we see no other way
             // but to leak the string we created here. That's okay,
             // though, because we exit in a moment anyway.
             let about = Box::leak(format!("Run the {} extension", name).into_boxed_str());
             clap = clap.subcommand(
-              SubCommand::with_name(&name)
+              clap::App::new(name)
                 // Use some magic number here that causes all
                 // extensions to be listed after all other
                 // subcommands.
@@ -147,14 +148,15 @@ fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<
           // At this point we are *pretty* sure that repeated invocation
           // will result in another error. So should be fine to unwrap
           // here.
-          err = clap.get_matches_from_safe(argv.iter()).unwrap_err();
+          err = clap.try_get_matches_from(argv.iter()).unwrap_err();
         }
       }
 
       if err.use_stderr() {
         Err(err.into())
       } else {
-        println!(ctx, "{}", err.message)?;
+        // TODO: check
+        println!(ctx, "{}", err)?;
         Ok(())
       }
     }

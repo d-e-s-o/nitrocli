@@ -3,28 +3,39 @@ source: src/tests/run.rs
 expression: s
 
 ---
-nitrocli-pws-add 0.4.1
+nitrocli-pws-add 
+
 Adds a new password safe slot
 
 USAGE:
-    nitrocli pws add [FLAGS] [OPTIONS] <name> <login> <password>
-
-FLAGS:
-    -h, --help        Prints help information
-        --no-cache    Disables the cache for all secrets
-    -V, --version     Prints version information
-    -v, --verbose     Increases the log level (can be supplied multiple times)
-
-OPTIONS:
-    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
-                                               storage]
-        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
-                                               times to allow multiple serial numbers
-    -s, --slot <slot>                          The number of the slot to write
-        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+    nitrocli pws add [OPTIONS] <NAME> <LOGIN> <PASSWORD>
 
 ARGS:
-    <name>        The name to store on the slot
-    <login>       The login to store on the slot
-    <password>    The password to store on the slot
+    <NAME>        The name to store on the slot
+    <LOGIN>       The login to store on the slot
+    <PASSWORD>    The password to store on the slot
+
+OPTIONS:
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+    -s, --slot <SLOT>
+            The number of the slot to write
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
 
