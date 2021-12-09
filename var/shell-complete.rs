@@ -5,8 +5,8 @@
 
 use std::io;
 
-use structopt::clap;
-use structopt::StructOpt as _;
+use clap::IntoApp as _;
+use clap::Parser as _;
 
 #[allow(unused)]
 mod nitrocli {
@@ -18,7 +18,7 @@ mod nitrocli {
       $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *
     ] ) => {
       $(#[$docs])*
-      #[derive(Debug, PartialEq, structopt::StructOpt)]
+      #[derive(Debug, PartialEq, clap::StructOpt)]
       pub enum $name {
         $(
           $(#[$doc])*
@@ -34,26 +34,26 @@ mod nitrocli {
 /// Generate a shell completion script for nitrocli.
 ///
 /// The script will be emitted to standard output.
-#[derive(Debug, structopt::StructOpt)]
+#[derive(Debug, clap::StructOpt)]
 struct Args {
   /// The shell for which to generate a completion script for.
-  #[structopt(possible_values = &clap::Shell::variants())]
-  shell: clap::Shell,
+  #[structopt(arg_enum)]
+  shell: clap_complete::Shell,
   /// The command for which to generate the shell completion script.
   #[structopt(default_value = "nitrocli")]
   command: String,
 }
 
-fn generate_for_shell<W>(command: &str, shell: clap::Shell, output: &mut W)
+fn generate_for_shell<W>(command: &str, shell: clap_complete::Shell, output: &mut W)
 where
   W: io::Write,
 {
-  let mut app = nitrocli::Args::clap();
-  app.gen_completions_to(command, shell, output);
+  let mut app = nitrocli::Args::into_app();
+  clap_complete::generate(shell, &mut app, command, output);
 }
 
 fn main() {
-  let args = Args::from_args();
+  let args = Args::parse();
   generate_for_shell(&args.command, args.shell, &mut io::stdout())
 }
 
@@ -95,7 +95,7 @@ mod tests {
     W: ExactSizeIterator<Item = &'w str>,
   {
     let mut buffer = Vec::new();
-    generate_for_shell("nitrocli", clap::Shell::Bash, &mut buffer);
+    generate_for_shell("nitrocli", clap_complete::Shell::Bash, &mut buffer);
 
     let script = String::from_utf8(buffer).unwrap();
     let command = format!(

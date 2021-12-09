@@ -22,7 +22,7 @@ macro_rules! Command {
     $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *
   ] ) => {
     $(#[$docs])*
-    #[derive(Debug, PartialEq, structopt::StructOpt)]
+    #[derive(Debug, PartialEq, clap::StructOpt)]
     pub enum $name {
       $(
         $(#[$doc])*
