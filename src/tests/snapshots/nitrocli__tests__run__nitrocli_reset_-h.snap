@@ -1,0 +1,25 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-reset 0.4.1
+Performs a factory reset
+
+USAGE:
+    nitrocli reset [FLAGS] [OPTIONS]
+
+FLAGS:
+    -h, --help            Prints help information
+        --no-cache        Disables the cache for all secrets
+        --only-aes-key    Only build a new AES key instead of performing a full factory reset
+    -V, --version         Prints version information
+    -v, --verbose         Increases the log level (can be supplied multiple times)
+
+OPTIONS:
+    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
+                                               storage]
+        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
+                                               times to allow multiple serial numbers
+        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+

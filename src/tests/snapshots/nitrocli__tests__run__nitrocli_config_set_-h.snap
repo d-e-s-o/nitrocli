@@ -1,0 +1,32 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-config-set 0.4.1
+Changes the Nitrokey configuration
+
+USAGE:
+    nitrocli config set [FLAGS] [OPTIONS]
+
+FLAGS:
+    -h, --help              Prints help information
+        --no-cache          Disables the cache for all secrets
+    -C, --no-caps-lock      Unsets the Caps Lock option
+    -N, --no-num-lock       Unsets the Num Lock option
+    -O, --no-otp-pin        Allows one-time password generation without PIN
+    -S, --no-scroll-lock    Unsets the Scroll Lock option
+    -o, --otp-pin           Requires the user PIN to generate one-time passwords
+    -V, --version           Prints version information
+    -v, --verbose           Increases the log level (can be supplied multiple times)
+
+OPTIONS:
+    -c, --caps-lock <caps-lock>                Sets the Cap Lock option to the given HOTP slot
+    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
+                                               storage]
+    -n, --num-lock <num-lock>                  Sets the Num Lock option to the given HOTP slot
+    -s, --scroll-lock <scroll-lock>            Sets the Scroll Lock option to the given HOTP slot
+        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
+                                               times to allow multiple serial numbers
+        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+

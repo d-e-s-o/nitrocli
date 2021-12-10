@@ -44,6 +44,8 @@ fn help_options() {
     args.insert(0, "nitrocli");
     assert!(s.starts_with(&args.join("-")), "{}", s);
     assert!(s.contains("USAGE:\n"), "{}", s);
+
+    insta::assert_snapshot!(format!("{}_{}", args.join("_"), help), s);
   }
 
   fn test(args: &[&str]) {

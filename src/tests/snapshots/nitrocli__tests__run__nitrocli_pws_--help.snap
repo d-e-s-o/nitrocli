@@ -1,0 +1,32 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-pws 0.4.1
+Accesses the password safe
+
+USAGE:
+    nitrocli pws [FLAGS] [OPTIONS] <SUBCOMMAND>
+
+FLAGS:
+    -h, --help        Prints help information
+        --no-cache    Disables the cache for all secrets
+    -V, --version     Prints version information
+    -v, --verbose     Increases the log level (can be supplied multiple times)
+
+OPTIONS:
+    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
+                                               storage]
+        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
+                                               times to allow multiple serial numbers
+        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+
+SUBCOMMANDS:
+    add       Adds a new password safe slot
+    clear     Clears a password safe slot
+    get       Reads a password safe slot
+    help      Prints this message or the help of the given subcommand(s)
+    status    Prints the status of the password safe slots
+    update    Updates a password safe slot
+

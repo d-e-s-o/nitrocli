@@ -1,0 +1,27 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-pin-set 0.4.1
+Changes a PIN
+
+USAGE:
+    nitrocli pin set [FLAGS] [OPTIONS] <type>
+
+FLAGS:
+    -h, --help        Prints help information
+        --no-cache    Disables the cache for all secrets
+    -V, --version     Prints version information
+    -v, --verbose     Increases the log level (can be supplied multiple times)
+
+OPTIONS:
+    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
+                                               storage]
+        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
+                                               times to allow multiple serial numbers
+        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+
+ARGS:
+    <type>    The PIN type to change [possible values: admin, user]
+

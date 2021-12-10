@@ -1,0 +1,31 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-pws-get 0.4.1
+Reads a password safe slot
+
+USAGE:
+    nitrocli pws get [FLAGS] [OPTIONS] <slot>
+
+FLAGS:
+    -h, --help        Prints help information
+    -l, --login       Shows the login stored on the slot
+    -n, --name        Shows the name stored on the slot
+        --no-cache    Disables the cache for all secrets
+    -p, --password    Shows the password stored on the slot
+    -q, --quiet       Prints the stored data without description
+    -V, --version     Prints version information
+    -v, --verbose     Increases the log level (can be supplied multiple times)
+
+OPTIONS:
+    -m, --model <model>                        Selects the device model to connect to [possible values: librem, pro,
+                                               storage]
+        --serial-number <serial-numbers>...    Sets the serial number of the device to connect to. Can be set multiple
+                                               times to allow multiple serial numbers
+        --usb-path <usb-path>                  Sets the USB path of the device to connect to
+
+ARGS:
+    <slot>    The PWS slot to read
+
