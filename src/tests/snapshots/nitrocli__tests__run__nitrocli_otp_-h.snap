@@ -1,0 +1,40 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-otp 
+
+Accesses one-time passwords
+
+USAGE:
+    nitrocli otp [OPTIONS] <SUBCOMMAND>
+
+OPTIONS:
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
+SUBCOMMANDS:
+    clear     Clears a one-time password slot
+    get       Generates a one-time password
+    help      Print this message or the help of the given subcommand(s)
+    set       Configures a one-time password slot
+    status    Prints the status of the one-time password slots
+
+

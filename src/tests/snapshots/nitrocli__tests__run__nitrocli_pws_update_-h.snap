@@ -1,0 +1,45 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-pws-update 
+
+Updates a password safe slot
+
+USAGE:
+    nitrocli pws update [OPTIONS] <SLOT>
+
+ARGS:
+    <SLOT>    The PWS slot to update
+
+OPTIONS:
+    -h, --help
+            Print help information
+
+    -l, --login <LOGIN>
+            The new login to store on the slot
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+    -n, --name <NAME>
+            The new name to store on the slot
+
+        --no-cache
+            Disables the cache for all secrets
+
+    -p, --password <PASSWORD>
+            The new password to store on the slot
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
+

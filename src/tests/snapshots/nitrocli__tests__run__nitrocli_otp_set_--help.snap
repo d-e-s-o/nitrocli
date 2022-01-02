@@ -1,0 +1,55 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-otp-set 
+
+Configures a one-time password slot
+
+USAGE:
+    nitrocli otp set [OPTIONS] <SLOT> <NAME> <SECRET>
+
+ARGS:
+    <SLOT>      The OTP slot to use
+    <NAME>      The name of the slot
+    <SECRET>    The secret to store on the slot as a base32 encoded string (or in the format set
+                with the --format option)
+
+OPTIONS:
+    -a, --algorithm <ALGORITHM>
+            The OTP algorithm to use [default: totp] [possible values: hotp, totp]
+
+    -c, --counter <COUNTER>
+            The counter value for HOTP [default: 0]
+
+    -d, --digits <DIGITS>
+            The number of digits to use for the one-time password [default: 6] [possible values: 6,
+            8]
+
+    -f, --format <FORMAT>
+            The format of the secret [default: base32] [possible values: ascii, base32, hex]
+
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+    -t, --time-window <TIME_WINDOW>
+            The time window for TOTP [default: 30]
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
+

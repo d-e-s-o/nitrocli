@@ -1,0 +1,39 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-pin 
+
+Manages the Nitrokey PINs
+
+USAGE:
+    nitrocli pin [OPTIONS] <SUBCOMMAND>
+
+OPTIONS:
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
+SUBCOMMANDS:
+    clear      Clears the cached PINs
+    help       Print this message or the help of the given subcommand(s)
+    set        Changes a PIN
+    unblock    Unblocks and resets the user PIN
+
+

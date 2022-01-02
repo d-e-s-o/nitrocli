@@ -1,0 +1,48 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli 
+
+Provides access to a Nitrokey device
+
+USAGE:
+    nitrocli [OPTIONS] <SUBCOMMAND>
+
+OPTIONS:
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
+SUBCOMMANDS:
+    config         Reads or writes the device configuration
+    encrypted      Interacts with the device's encrypted volume
+    fill           Fills the SD card with random data
+    help           Print this message or the help of the given subcommand(s)
+    hidden         Interacts with the device's hidden volume
+    list           Lists the attached Nitrokey devices
+    lock           Locks the connected Nitrokey device
+    otp            Accesses one-time passwords
+    pin            Manages the Nitrokey PINs
+    pws            Accesses the password safe
+    reset          Performs a factory reset
+    status         Prints the status of the connected Nitrokey device
+    unencrypted    Interacts with the device's unencrypted volume
+
+

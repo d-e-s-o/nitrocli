@@ -1,0 +1,50 @@
+---
+source: src/tests/run.rs
+expression: s
+
+---
+nitrocli-pws-add 
+
+Adds a new password safe slot
+
+USAGE:
+    nitrocli pws add [OPTIONS] <NAME> <LOGIN> <PASSWORD>
+
+ARGS:
+    <NAME>
+            The name to store on the slot
+
+    <LOGIN>
+            The login to store on the slot
+
+    <PASSWORD>
+            The password to store on the slot
+
+OPTIONS:
+    -h, --help
+            Print help information
+
+    -m, --model <MODEL>
+            Selects the device model to connect to
+            
+            [possible values: librem, pro, storage]
+
+        --no-cache
+            Disables the cache for all secrets
+
+    -s, --slot <SLOT>
+            The number of the slot to write
+            
+            If this option is not set, the first unprogrammed slot is used.
+
+        --serial-number <SERIAL_NUMBERS>
+            Sets the serial number of the device to connect to. Can be set multiple times to allow
+            multiple serial numbers
+
+        --usb-path <USB_PATH>
+            Sets the USB path of the device to connect to
+
+    -v, --verbose
+            Increases the log level (can be supplied multiple times)
+
+
