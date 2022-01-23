@@ -1,6 +1,6 @@
 // main.rs
 
-// Copyright (C) 2017-2021 The Nitrocli Developers
+// Copyright (C) 2017-2022 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #![warn(
@@ -163,11 +163,18 @@ fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<
 
 fn get_version_string() -> String {
   let version = env!("CARGO_PKG_VERSION");
-  if let Ok(library_version) = nitrokey::get_library_version() {
-    format!("{} using libnitrokey {}", version, library_version)
+  let built_from = if let Some(git_revision) = option_env!("NITROCLI_GIT_REVISION") {
+    format!(" (built from {})", git_revision)
   } else {
-    format!("{} using an undetectable libnitrokey version", version)
-  }
+    "".to_string()
+  };
+  let libnitrokey = if let Ok(library_version) = nitrokey::get_library_version() {
+    format!("libnitrokey {}", library_version)
+  } else {
+    "an undetectable libnitrokey version".to_string()
+  };
+
+  format!("{}{} using {}", version, built_from, libnitrokey)
 }
 
 /// The context used when running the program.

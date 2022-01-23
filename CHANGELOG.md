@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Introduced `otp-cache` core extension
+- Included `git` tag/revision in `-V`/`--version` output
 
 
 0.4.1
