@@ -28,6 +28,9 @@ path = "var/shell-complete.rs"
 name = "nitrocli-otp-cache"
 path = "ext/otp_cache.rs"
 
+[build-dependencies]
+anyhow = "1.0"
+
 [profile.release]
 opt-level = "z"
 lto = true
