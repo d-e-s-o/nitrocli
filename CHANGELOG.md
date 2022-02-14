@@ -5,6 +5,7 @@ Unreleased
 - Bumped `anyhow` dependency to `1.0.53`
 - Bumped `directories` dependency to `4.0.1`
 - Bumped `libc` dependency to `0.2.117`
+- Bumped `serde` dependency to `1.0.136`
 
 
 0.4.1
