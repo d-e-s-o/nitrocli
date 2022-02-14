@@ -2,6 +2,7 @@ Unreleased
 ----------
 - Introduced `otp-cache` core extension
 - Included `git` tag/revision in `-V`/`--version` output
+- Bumped `libc` dependency to `0.2.117`
 
 
 0.4.1
