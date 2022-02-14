@@ -1,6 +1,6 @@
 # Cargo.toml
 
-# Copyright (C) 2017-2021 The Nitrocli Developers
+# Copyright (C) 2017-2022 The Nitrocli Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [package]
@@ -44,7 +44,7 @@ version = "1.0"
 version = "0.4.0"
 
 [dependencies.directories]
-version = "3"
+version = "4"
 
 [dependencies.envy]
 version = "0.4.2"
