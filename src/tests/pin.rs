@@ -11,7 +11,7 @@ use super::*;
 #[test_device]
 fn unblock(model: nitrokey::Model) -> anyhow::Result<()> {
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let device = manager.connect_model(model)?;
     let (device, err) = device.authenticate_user("wrong-pin").unwrap_err();
     match err {
@@ -24,7 +24,7 @@ fn unblock(model: nitrokey::Model) -> anyhow::Result<()> {
   let _ = Nitrocli::new().model(model).handle(&["pin", "unblock"])?;
 
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let device = manager.connect_model(model)?;
     assert_eq!(device.get_user_retry_count()?, 3);
   }
@@ -40,7 +40,7 @@ fn set_user(model: nitrokey::Model) -> anyhow::Result<()> {
   assert!(out.is_empty());
 
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let device = manager.connect_model(model)?;
     let (_, err) = device
       .authenticate_user(nitrokey::DEFAULT_USER_PIN)
@@ -61,7 +61,7 @@ fn set_user(model: nitrokey::Model) -> anyhow::Result<()> {
   assert!(out.is_empty());
 
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let device = manager.connect_model(model)?;
     let _ = device
       .authenticate_user(nitrokey::DEFAULT_USER_PIN)
