@@ -2,6 +2,7 @@ Unreleased
 ----------
 - Introduced `otp-cache` core extension
 - Included `git` tag/revision in `-V`/`--version` output
+- Updated minimum supported Rust version to `1.46.0`
 - Bumped `anyhow` dependency to `1.0.53`
 - Bumped `directories` dependency to `4.0.1`
 - Bumped `libc` dependency to `0.2.117`
