@@ -7,6 +7,7 @@ Unreleased
 - Bumped `directories` dependency to `4.0.1`
 - Bumped `libc` dependency to `0.2.117`
 - Bumped `serde` dependency to `1.0.136`
+- Bumped `structopt` dependency to `0.3.26`
 
 
 0.4.1
