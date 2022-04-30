@@ -2,6 +2,7 @@ Unreleased
 ----------
 - Introduced `otp-cache` core extension
 - Included `git` tag/revision in `-V`/`--version` output
+- Fixed endless loop when a Nitrokey FIDO2 device is present
 - Updated minimum supported Rust version to `1.47.0`
 - Bumped `anyhow` dependency to `1.0.57`
 - Bumped `directories` dependency to `4.0.1`

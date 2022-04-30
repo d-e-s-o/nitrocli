@@ -221,9 +221,9 @@ dependencies = [
 
 [[package]]
 name = "nitrokey-sys"
-version = "3.6.0"
+version = "3.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a6f2fab053a9ac25b0818e9d107f71246b277cbfbe7d22400a0e38896a58321"
+checksum = "d88466a33516e986e87aeb072307356605bb9ac5b13cd95647ee53a6c5d09641"
 dependencies = [
  "cc",
 ]
