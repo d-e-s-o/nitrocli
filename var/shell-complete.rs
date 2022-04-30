@@ -1,6 +1,6 @@
 // shell-complete.rs
 
-// Copyright (C) 2020-2021 The Nitrocli Developers
+// Copyright (C) 2020-2022 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::io;
@@ -80,13 +80,13 @@ mod tests {
 
   /// Check if `bash` is present on the system.
   fn has_bash() -> bool {
-    match process::Command::new("bash").arg("-c").arg("exit").spawn() {
-      // We deliberately only indicate that bash does not exist if we
-      // get a file-not-found error. We don't expect any other error but
-      // should there be one things will blow up later.
-      Err(ref err) if err.kind() == io::ErrorKind::NotFound => false,
-      _ => true,
-    }
+    // We deliberately only indicate that bash does not exist if we
+    // get a file-not-found error. We don't expect any other error but
+    // should there be one things will blow up later.
+    !matches!(
+      process::Command::new("bash").arg("-c").arg("exit").spawn(),
+      Err(ref err) if err.kind() == io::ErrorKind::NotFound
+    )
   }
 
   /// Perform a bash completion of the given arguments to nitrocli.
