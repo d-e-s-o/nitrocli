@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
+use std::env;
 use std::ffi;
 use std::fmt;
 use std::process;
@@ -215,13 +216,78 @@ where
   }
 }
 
+/// Retrieve a path to the TTY used for stdin, if any.
+///
+/// This function works on a best effort basis and skips any advanced
+/// error reporting, knowing that callers do not care.
+#[cfg(target_os = "linux")]
+pub(crate) fn retrieve_tty() -> Result<ffi::OsString, ()> {
+  use std::io;
+  use std::os::unix::ffi::OsStringExt as _;
+  use std::os::unix::io::AsRawFd as _;
+
+  let fd = io::stdin().as_raw_fd();
+  let fd_path = format!("/proc/self/fd/{}\0", fd);
+  let fd_path = ffi::CStr::from_bytes_with_nul(fd_path.as_bytes()).unwrap();
+
+  let mut buffer = Vec::<u8>::with_capacity(56);
+  // SAFETY: We provide valid pointers, `fd_path` is NUL terminated, and
+  //         the provided capacity reflects the actual length of the
+  //         buffer.
+  let rc = unsafe {
+    libc::readlink(
+      fd_path.as_ptr(),
+      buffer.as_mut_ptr() as *mut libc::c_char,
+      buffer.capacity(),
+    )
+  };
+  if rc <= 0 {
+    return Err(());
+  }
+
+  let rc = rc as usize;
+  // If `readlink` filled the entire buffer we could have experienced
+  // silent truncation. So we just bail out out of precaution.
+  if rc == buffer.capacity() {
+    return Err(());
+  }
+
+  // SAFETY: At this point we know that `readlink` has written `rc`
+  //         bytes to `buffer`.
+  unsafe { buffer.set_len(rc) };
+
+  Ok(ffi::OsString::from_vec(buffer))
+}
+
+#[cfg(not(target_os = "linux"))]
+pub(crate) fn retrieve_tty() -> Result<OsString, ()> {
+  Err(())
+}
+
+/// Ensure that the `GPG_TTY` environment variable is present in the
+/// environment, setting it as appropriate if that is not currently the
+/// case.
+fn ensure_gpg_tty(command: &mut process::Command) -> &mut process::Command {
+  const GPG_TTY: &str = "GPG_TTY";
+
+  if let Some(tty) = env::var_os(GPG_TTY) {
+    // We don't strictly speaking need to set the variable here, because
+    // it would be inherited anyway. But we want to make that explicit.
+    command.env(GPG_TTY, tty)
+  } else if let Ok(tty) = retrieve_tty() {
+    command.env(GPG_TTY, tty)
+  } else {
+    command
+  }
+}
+
 /// Connect to `gpg-agent`, run the provided command, and return the
 /// output it emitted.
 fn gpg_agent<C>(command: C) -> anyhow::Result<process::Output>
 where
   C: AsRef<ffi::OsStr>,
 {
-  process::Command::new("gpg-connect-agent")
+  ensure_gpg_tty(&mut process::Command::new("gpg-connect-agent"))
     .arg(command)
     .arg("/bye")
     .output()
@@ -341,6 +407,8 @@ where
 mod tests {
   use super::*;
 
+  use std::fs;
+
   #[test]
   fn parse_pinentry_pin_empty() {
     let response = "OK\n";
@@ -391,5 +459,29 @@ mod tests {
     let expected = format!("Unexpected response: {}", response);
     let error = parse_pinentry_response(response).unwrap_err();
     assert_eq!(error.to_string(), expected)
+  }
+
+  /// Check that we can retrieve the path to the TTY used for stdin.
+  #[cfg(target_os = "linux")]
+  #[test]
+  fn tty_retrieval() {
+    use std::os::unix::io::AsRawFd as _;
+
+    // We may be run with stdin not referring to a TTY in CI.
+    if unsafe { libc::isatty(std::io::stdin().as_raw_fd()) } == 0 {
+      return;
+    }
+
+    let tty = retrieve_tty().unwrap();
+    // To check sanity of the reported path at least somewhat, we just
+    // try opening the file, which should be possible. Note that we open
+    // in write mode, because for one reason or another we would not
+    // actually fail opening a *directory* in read-only mode.
+    let _file = fs::OpenOptions::new()
+      .create(false)
+      .write(true)
+      .read(true)
+      .open(tty)
+      .unwrap();
   }
 }

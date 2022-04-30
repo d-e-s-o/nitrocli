@@ -2,6 +2,8 @@ Unreleased
 ----------
 - Introduced `otp-cache` core extension
 - Included `git` tag/revision in `-V`/`--version` output
+- Automatically set `GPG_TTY` environment variable when running
+  `gpg-connect-agent` unless it is already set
 - Fixed endless loop when a Nitrokey FIDO2 device is present
 - Updated minimum supported Rust version to `1.47.0`
 - Bumped `anyhow` dependency to `1.0.57`
