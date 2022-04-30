@@ -1,9 +1,10 @@
 // pinentry.rs
 
-// Copyright (C) 2017-2021 The Nitrocli Developers
+// Copyright (C) 2017-2022 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
+use std::ffi;
 use std::fmt;
 use std::process;
 use std::str;
@@ -214,6 +215,19 @@ where
   }
 }
 
+/// Connect to `gpg-agent`, run the provided command, and return the
+/// output it emitted.
+fn gpg_agent<C>(command: C) -> anyhow::Result<process::Output>
+where
+  C: AsRef<ffi::OsStr>,
+{
+  process::Command::new("gpg-connect-agent")
+    .arg(command)
+    .arg("/bye")
+    .output()
+    .context("Failed to invoke gpg-connect-agent")
+}
+
 /// Inquire a secret from the user.
 ///
 /// This function inquires a secret from the user or returns a cached
@@ -244,21 +258,16 @@ where
   let prompt = entry.prompt().replace(" ", "+");
   let description = entry.description(mode).replace(" ", "+");
 
-  let args = vec![cache_id, error_msg, prompt, description].join(" ");
   let mut command = "GET_PASSPHRASE --data ".to_string();
   if mode.show_quality_bar() {
     command += "--qualitybar ";
   }
-  command += &args;
+  command += &[cache_id, error_msg, prompt, description].join(" ");
+
   // An error reported for the GET_PASSPHRASE command does not actually
   // cause gpg-connect-agent to exit with a non-zero error code, we have
   // to evaluate the output to determine success/failure.
-  let output = process::Command::new("gpg-connect-agent")
-    .arg(command)
-    .arg("/bye")
-    .output()
-    .context("Failed to invoke gpg-connect-agent")?;
-
+  let output = gpg_agent(command)?;
   let response =
     str::from_utf8(&output.stdout).context("Failed to parse gpg-connect-agent output as UTF-8")?;
   parse_pinentry_pin(response).context("Failed to parse pinentry secret")
@@ -318,12 +327,7 @@ where
 {
   if let Some(cache_id) = entry.cache_id() {
     let command = format!("CLEAR_PASSPHRASE {}", cache_id);
-    let output = process::Command::new("gpg-connect-agent")
-      .arg(command)
-      .arg("/bye")
-      .output()
-      .context("Failed to invoke gpg-connect-agent")?;
-
+    let output = gpg_agent(command)?;
     let response = str::from_utf8(&output.stdout)
       .context("Failed to parse gpg-connect-agent output as UTF-8")?;
 
