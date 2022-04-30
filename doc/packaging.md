@@ -6,7 +6,7 @@ This document describes how to update the packaged versions of nitrocli.
 Arch Linux
 ----------
 
-The Arch Linux package is now maintained as part of the community repository.
+The Arch Linux package is maintained as part of the community repository.
 
 Debian
 ------
