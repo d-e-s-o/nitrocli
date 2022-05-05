@@ -227,7 +227,7 @@ pub(crate) fn retrieve_tty() -> Result<ffi::OsString, ()> {
   use std::os::unix::io::AsRawFd as _;
 
   let fd = io::stdin().as_raw_fd();
-  let fd_path = format!("/proc/self/fd/{}", fd);
+  let fd_path = format!("/proc/self/fd/{}\0", fd);
 
   let mut buffer = Vec::<u8>::with_capacity(56);
   // SAFETY: We provide valid pointers and the provided size reflects
