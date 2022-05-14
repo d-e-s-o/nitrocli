@@ -1,6 +1,6 @@
 // commands.rs
 
-// Copyright (C) 2018-2021 The Nitrocli Developers
+// Copyright (C) 2018-2022 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
@@ -888,7 +888,7 @@ fn prepare_ascii_secret(secret: &str) -> anyhow::Result<String> {
 /// Prepare a base32 secret string for libnitrokey.
 fn prepare_base32_secret(secret: &str) -> anyhow::Result<String> {
   // Some sites display the base32 secret in groups separated by spaces, we want to ignore them.
-  let secret = secret.replace(" ", "");
+  let secret = secret.replace(' ', "");
   base32::decode(base32::Alphabet::RFC4648 { padding: false }, &secret)
     .map(|vec| format_bytes(&vec))
     .context("Failed to parse base32 secret")

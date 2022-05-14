@@ -319,10 +319,10 @@ where
     .into();
 
   let error_msg = error_msg
-    .map(|msg| msg.replace(" ", "+"))
+    .map(|msg| msg.replace(' ', "+"))
     .unwrap_or_else(|| String::from("+"));
-  let prompt = entry.prompt().replace(" ", "+");
-  let description = entry.description(mode).replace(" ", "+");
+  let prompt = entry.prompt().replace(' ', "+");
+  let description = entry.description(mode).replace(' ', "+");
 
   let mut command = "GET_PASSPHRASE --data ".to_string();
   if mode.show_quality_bar() {
