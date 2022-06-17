@@ -406,7 +406,7 @@ fn extension_arguments(model: nitrokey::Model) -> anyhow::Result<()> {
     // It's conceivable that this check fails if the user has set
     // GPG_TTY to a different TTY than the current one. We declare that
     // as not supported for testing purposes.
-    out.trim() == tty
+    out.trim() == tty.as_os_str()
   })?;
   Ok(())
 }
