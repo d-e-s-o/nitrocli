@@ -3,9 +3,8 @@
 // Copyright (C) 2022 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use std::ffi;
+use std::fs;
 use std::io;
-use std::os::unix::ffi::OsStringExt as _;
 use std::os::unix::io::AsRawFd as _;
 use std::path;
 
@@ -15,36 +14,8 @@ use std::path;
 /// error reporting, knowing that callers do not care.
 pub(crate) fn retrieve_tty() -> Result<path::PathBuf, ()> {
   let fd = io::stdin().as_raw_fd();
-  let fd_path = format!("/proc/self/fd/{}\0", fd);
-  let fd_path = ffi::CStr::from_bytes_with_nul(fd_path.as_bytes()).unwrap();
-
-  let mut buffer = Vec::<u8>::with_capacity(56);
-  // SAFETY: We provide valid pointers, `fd_path` is NUL terminated, and
-  //         the provided capacity reflects the actual length of the
-  //         buffer.
-  let rc = unsafe {
-    libc::readlink(
-      fd_path.as_ptr(),
-      buffer.as_mut_ptr() as *mut libc::c_char,
-      buffer.capacity(),
-    )
-  };
-  if rc <= 0 {
-    return Err(());
-  }
-
-  let rc = rc as usize;
-  // If `readlink` filled the entire buffer we could have experienced
-  // silent truncation. So we just bail out out of precaution.
-  if rc == buffer.capacity() {
-    return Err(());
-  }
-
-  // SAFETY: At this point we know that `readlink` has written `rc`
-  //         bytes to `buffer`.
-  unsafe { buffer.set_len(rc) };
-
-  Ok(ffi::OsString::from_vec(buffer).into())
+  let fd_path = format!("/proc/self/fd/{}", fd);
+  fs::read_link(fd_path).map_err(|_| ())
 }
 
 #[cfg(test)]
