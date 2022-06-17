@@ -5,6 +5,6 @@
 
 use std::path;
 
-pub(crate) fn retrieve_tty() -> Result<path::PathBuf, ()> {
+pub(crate) fn retrieve_tty() -> anyhow::Result<path::PathBuf> {
   Err(())
 }

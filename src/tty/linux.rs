@@ -8,14 +8,13 @@ use std::io;
 use std::os::unix::io::AsRawFd as _;
 use std::path;
 
+use anyhow::Context as _;
+
 /// Retrieve a path to the TTY used for stdin, if any.
-///
-/// This function works on a best effort basis and skips any advanced
-/// error reporting, knowing that callers do not care.
-pub(crate) fn retrieve_tty() -> Result<path::PathBuf, ()> {
+pub(crate) fn retrieve_tty() -> anyhow::Result<path::PathBuf> {
   let fd = io::stdin().as_raw_fd();
   let fd_path = format!("/proc/self/fd/{}", fd);
-  fs::read_link(fd_path).map_err(|_| ())
+  fs::read_link(&fd_path).with_context(|| format!("Failed to read symbolic link {}", fd_path))
 }
 
 #[cfg(test)]
