@@ -7,12 +7,13 @@ use std::ffi;
 use std::io;
 use std::os::unix::ffi::OsStringExt as _;
 use std::os::unix::io::AsRawFd as _;
+use std::path;
 
 /// Retrieve a path to the TTY used for stdin, if any.
 ///
 /// This function works on a best effort basis and skips any advanced
 /// error reporting, knowing that callers do not care.
-pub(crate) fn retrieve_tty() -> Result<ffi::OsString, ()> {
+pub(crate) fn retrieve_tty() -> Result<path::PathBuf, ()> {
   let fd = io::stdin().as_raw_fd();
   let fd_path = format!("/proc/self/fd/{}\0", fd);
   let fd_path = ffi::CStr::from_bytes_with_nul(fd_path.as_bytes()).unwrap();
@@ -43,7 +44,7 @@ pub(crate) fn retrieve_tty() -> Result<ffi::OsString, ()> {
   //         bytes to `buffer`.
   unsafe { buffer.set_len(rc) };
 
-  Ok(ffi::OsString::from_vec(buffer))
+  Ok(ffi::OsString::from_vec(buffer).into())
 }
 
 #[cfg(test)]
