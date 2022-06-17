@@ -401,7 +401,7 @@ fn extension_arguments(model: nitrokey::Model) -> anyhow::Result<()> {
   // NITROCLI_USB_PATH should not be set, so the program errors out.
   let _ = test(model, "NITROCLI_USB_PATH", &[], |out| out == "\n").unwrap_err();
 
-  let tty = crate::pinentry::retrieve_tty().unwrap();
+  let tty = crate::tty::retrieve_tty().unwrap();
   test(model, "GPG_TTY", &[], |out| {
     // It's conceivable that this check fails if the user has set
     // GPG_TTY to a different TTY than the current one. We declare that

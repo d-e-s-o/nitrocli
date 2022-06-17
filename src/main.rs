@@ -60,6 +60,7 @@ mod output;
 mod pinentry;
 #[cfg(test)]
 mod tests;
+mod tty;
 
 use std::env;
 use std::error;
