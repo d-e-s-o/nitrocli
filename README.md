@@ -112,6 +112,39 @@ $ cargo build --release
 It is recommended that the resulting executable be installed in a
 directory accessible via the `PATH` environment variable.
 
+#### With Nix flakes
+##### Running nitrocli
+
+Repository comes with a `flake.nix` file, so it can be run directly:
+
+``` sh
+$ nix run d-e-s-o/nitrocli
+```
+##### Installing system-wide
+
+`nitrocli` can be installed by adding the repository flake as an input:
+
+``` nix
+{
+  inputs = {
+    nitrocli.url = "github:d-e-s-o/nitrocli?dir=contrib/nix";
+    ...
+  };
+
+  outputs = {
+    nitrocli,
+    ...
+  }:
+  {
+    # ...
+    # Where modules are defined
+    environment.systemPackages = [ nitrocli.defaultPackage ];
+    };
+    # ...
+}
+```
+
+
 
 #### Shell Completion
 **nitrocli** comes with completion support for options and arguments to
