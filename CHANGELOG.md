@@ -5,6 +5,7 @@ Unreleased
 - Automatically set `GPG_TTY` environment variable when running
   `gpg-connect-agent` unless it is already set
 - Fixed endless loop when a Nitrokey FIDO2 device is present
+- Added community maintained Nix flake to the repository
 - Updated minimum supported Rust version to `1.47.0`
 - Bumped `anyhow` dependency to `1.0.57`
 - Bumped `directories` dependency to `4.0.1`
