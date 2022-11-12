@@ -50,7 +50,7 @@ Usage
 Usage is as simple as providing the name of the respective command as a
 parameter (note that some commands are organized through subcommands,
 which are required as well), e.g.:
-```bash
+```sh
 # Open the nitrokey's encrypted volume.
 $ nitrocli storage open
 
@@ -99,13 +99,13 @@ Packages are available for:
 #### From Crates.io
 **nitrocli** is [published][nitrocli-cratesio] on crates.io and can
 directly be installed from there:
-```bash
+```sh
 $ cargo install nitrocli --root=$PWD/nitrocli
 ```
 
 #### From Source
 After cloning the repository the build is as simple as running:
-```bash
+```sh
 $ cargo build --release
 ```
 
@@ -147,7 +147,7 @@ $ nix run d-e-s-o/nitrocli
 them (for various shells). A completion script can be generated via the
 `shell-complete` utility program and then only needs to be sourced to
 make the current shell provide context-sensitive tab completion support.
-```bash
+```sh
 $ cargo run --bin=shell-complete bash > nitrocli.bash
 $ source nitrocli.bash
 ```
