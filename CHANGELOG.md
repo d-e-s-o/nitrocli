@@ -7,7 +7,7 @@ Unreleased
 - Fixed endless loop when a Nitrokey FIDO2 device is present
 - Added community maintained Nix flake to the repository
 - Updated minimum supported Rust version to `1.47.0`
-- Bumped `anyhow` dependency to `1.0.57`
+- Bumped `anyhow` dependency to `1.0.68`
 - Bumped `directories` dependency to `4.0.1`
 - Bumped `libc` dependency to `0.2.125`
 - Bumped `serde` dependency to `1.0.136`
