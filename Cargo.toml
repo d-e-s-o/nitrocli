@@ -30,6 +30,7 @@ path = "ext/otp_cache.rs"
 
 [build-dependencies]
 anyhow = "1.0"
+grev = "0.1.1"
 
 [profile.release]
 opt-level = "z"
