@@ -119,6 +119,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "grev"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ede2915326879a4e37201ad9b59c3e3dab3bb5e9be9c8b73f07e3f3f9f442c3"
+dependencies = [
+ "anyhow",
+]
+
+[[package]]
 name = "heck"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -193,6 +202,7 @@ dependencies = [
  "base32",
  "directories",
  "envy",
+ "grev",
  "libc",
  "merge",
  "nitrokey",
