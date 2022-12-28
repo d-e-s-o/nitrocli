@@ -12,11 +12,8 @@ fn main() -> Result<()> {
   if let Some(git_revision) = get_git_revision(directory, stdout().lock())? {
     println!("cargo:rustc-env=NITROCLI_GIT_REVISION={}", git_revision);
   }
-  // Make sure to run this script again if any of our sources files or
-  // any relevant version control files changes (e.g., when creating a
-  // commit or a tag).
-  println!("cargo:rerun-if-changed=.git/index");
-  println!("cargo:rerun-if-changed=.git/refs/");
+  // Make sure to run this script again if any of our sources files
+  // changes.
   println!("cargo:rerun-if-changed=Cargo.lock");
   println!("cargo:rerun-if-changed=Cargo.toml");
   println!("cargo:rerun-if-changed=ext/");
