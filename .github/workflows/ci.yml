@@ -21,7 +21,7 @@ jobs:
       matrix:
         rust: [1.47.0, stable, beta, nightly]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
@@ -38,7 +38,7 @@ jobs:
     env:
       RUSTFLAGS: -Dwarnings
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: 1.47.0
@@ -50,7 +50,7 @@ jobs:
     name: Check license annotations
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
       - run: pip3 install reuse
       - run: reuse lint
@@ -59,7 +59,7 @@ jobs:
     name: Verify code formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: 1.47.0
