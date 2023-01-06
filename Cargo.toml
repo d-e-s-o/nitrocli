@@ -1,6 +1,6 @@
 # Cargo.toml
 
-# Copyright (C) 2017-2022 The Nitrocli Developers
+# Copyright (C) 2017-2023 The Nitrocli Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [package]
@@ -30,7 +30,7 @@ path = "ext/otp_cache.rs"
 
 [build-dependencies]
 anyhow = "1.0"
-grev = "0.1.1"
+grev = "0.1.3"
 
 [profile.release]
 opt-level = "z"
