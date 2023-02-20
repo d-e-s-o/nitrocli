@@ -1,0 +1,41 @@
+# Copyright (C) 2023 The Nitrocli Developers
+# SPDX-License-Identifier: CC0-1.0
+
+name: Binary
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build statically linked binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          sudo apt-get install libhidapi-dev musl-tools
+          #sudo ln -s /bin/g++ /bin/musl-g++
+          #sudo cp /usr/lib/x86_64-linux-gnu/libhidapi-libusb.a /rust/lib/rustlib/x86_64-unknown-linux-musl/lib/
+          #- uses: actions-rs/toolchain@v1
+          #  with:
+          #    toolchain: stable
+          #    profile: minimal
+          #    override: true
+          #    target: x86_64-unknown-linux-musl
+          #- run: cargo build --bin=nitrocli --release --target x86_64-unknown-linux-musl
+      - name: Build target
+        env:
+          # Unlikely to work given that, even if evaluated, those paths
+          # are unlikely to have meaning inside the container.
+          LDFLAGS: -L/usr/lib/x86_64-linux-gnu/
+          LIBRARY_PATH: /usr/lib/x86_64-linux-gnu/
+          SEARCH_PATH: /usr/lib/x86_64-linux-gnu/
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --target x86_64-unknown-linux-musl
+      - uses: actions/upload-artifact@v3
+        with:
+          path: target/release/nitrocli
