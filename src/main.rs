@@ -126,7 +126,7 @@ fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<
         // contain directories with loads of files that need scanning)
         // for every command invoked. So we do that listing only if a
         // help text is actually displayed.
-        let path = ctx.path.clone().unwrap_or_else(ffi::OsString::new);
+        let path = ctx.path.clone().unwrap_or_default();
         if let Ok(extensions) = commands::discover_extensions(&path) {
           let mut clap = args::Args::clap();
           for name in extensions {

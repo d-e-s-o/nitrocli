@@ -1,6 +1,6 @@
 // linux.rs
 
-// Copyright (C) 2022 The Nitrocli Developers
+// Copyright (C) 2022-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::fmt;
@@ -78,7 +78,7 @@ fn represents_tty(path: &path::Path) -> anyhow::Result<bool> {
     .write(false)
     .read(true)
     .create(false)
-    .open(&path)
+    .open(path)
     .with_context(|| format!("Failed to open file {}", path.display()))?;
 
   // We could evaluate `errno` on failure, but we do not actually care

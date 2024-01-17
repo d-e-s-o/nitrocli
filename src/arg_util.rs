@@ -1,6 +1,6 @@
 // arg_util.rs
 
-// Copyright (C) 2019-2020 The Nitrocli Developers
+// Copyright (C) 2019-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 macro_rules! count {
@@ -15,7 +15,6 @@ macro_rules! tr {
   ($dst:tt, $src:tt) => {
     $dst
   };
-  ($dst:tt) => {};
 }
 
 macro_rules! Command {
@@ -31,12 +30,12 @@ macro_rules! Command {
       )*
     }
 
-    #[allow(unused_qualifications)]
     impl $name {
       pub fn execute(
         self,
         ctx: &mut crate::Context<'_>,
       ) -> anyhow::Result<()> {
+        #[allow(clippy::redundant_closure_call)]
         match self {
           $(
             $name::$var$((tr!(args, $inner)))? => $exec(ctx $(,tr!(args, $inner))?),
