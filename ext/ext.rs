@@ -1,6 +1,6 @@
 // ext.rs
 
-// Copyright (C) 2020-2021 The Nitrocli Developers
+// Copyright (C) 2020-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::env;
@@ -19,6 +19,7 @@ pub struct Context {
   /// any.
   resolved_usb_path: Option<String>,
   /// The verbosity that `nitrocli` should use.
+  #[allow(dead_code)]
   verbosity: Option<u8>,
   /// The project directory root to use for the extension in question.
   project_dirs: directories::ProjectDirs,

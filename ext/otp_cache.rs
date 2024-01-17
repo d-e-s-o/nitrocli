@@ -1,6 +1,6 @@
 // otp_cache.rs
 
-// Copyright (C) 2020-2021 The Nitrocli Developers
+// Copyright (C) 2020-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::fs;
@@ -104,7 +104,7 @@ fn get_cache(ctx: &ext::Context, force_update: bool) -> anyhow::Result<Cache> {
   let mut mgr = nitrokey::take().context("Failed to obtain Nitrokey manager instance")?;
   let device = ctx.connect(&mut mgr)?;
   let serial_number = get_serial_number(&device)?;
-  let cache_file = ctx.cache_dir().join(&format!("{}.toml", serial_number));
+  let cache_file = ctx.cache_dir().join(format!("{}.toml", serial_number));
 
   if cache_file.is_file() && !force_update {
     load_cache(&cache_file)
@@ -169,7 +169,7 @@ fn get_otp_slots(device: &impl nitrokey::GenerateOtp) -> anyhow::Result<Cache> {
 fn generate_otp(ctx: &ext::Context, algorithm: &str, slot: u8) -> anyhow::Result<()> {
   ctx
     .nitrocli()
-    .args(&["otp", "get"])
+    .args(["otp", "get"].iter())
     .arg(slot.to_string())
     .arg("--algorithm")
     .arg(algorithm)

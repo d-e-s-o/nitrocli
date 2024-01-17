@@ -1,6 +1,6 @@
 // extensions.rs
 
-// Copyright (C) 2020-2021 The Nitrocli Developers
+// Copyright (C) 2020-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::env;
@@ -24,11 +24,11 @@ fn extension_discovery() -> anyhow::Result<()> {
     let ext1_path = dir1.path().join("nitrocli-ext1");
     let ext2_path = dir1.path().join("nitrocli-ext2");
     let ext3_path = dir2.path().join("nitrocli-super-1337-extensions111one");
-    let _ext1 = fs::File::create(&ext1_path)?;
-    let _ext2 = fs::File::create(&ext2_path)?;
-    let _ext3 = fs::File::create(&ext3_path)?;
+    let _ext1 = fs::File::create(ext1_path)?;
+    let _ext2 = fs::File::create(ext2_path)?;
+    let _ext3 = fs::File::create(ext3_path)?;
 
-    let path = env::join_paths(&[dir1.path(), dir2.path()])?;
+    let path = env::join_paths([dir1.path(), dir2.path()].iter())?;
     let mut exts = crate::commands::discover_extensions(&path)?;
     // We can't assume a fixed ordering of extensions, because that is
     // platform/file system dependent. So sort here to fix it.
@@ -51,7 +51,7 @@ fn resolve_extensions() -> anyhow::Result<()> {
     let _ext2 = fs::File::create(&ext2_path)?;
     let _ext3 = fs::File::create(&ext3_path)?;
 
-    let path = env::join_paths(&[dir1.path(), dir2.path()])?;
+    let path = env::join_paths([dir1.path(), dir2.path()].iter())?;
     assert_eq!(
       crate::commands::resolve_extension(&path, ffi::OsStr::new("ext1"))?,
       ext1_path
