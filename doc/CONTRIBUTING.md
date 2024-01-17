@@ -3,7 +3,7 @@ The following rules generally apply for pull requests and code changes:
 **Submit Pull Requests to the `devel` branch**
 
 The `devel` branch is where experimental features reside. After some
-soak time they may be ported over to `master` and a release will be cut
+soak time they may be ported over to `main` and a release will be cut
 that includes them.
 
 **Keep documentation up-to-date**
