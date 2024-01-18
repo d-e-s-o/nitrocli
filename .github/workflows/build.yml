@@ -1,0 +1,29 @@
+# Copyright (C) 2023-2024 Daniel Mueller <deso@posteo.net>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build statically linked binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get install musl-tools
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          target: x86_64-unknown-linux-musl
+      - run: |
+          cargo install --bin=nitrocli --path=. --root=. --target x86_64-unknown-linux-musl
+          strip bin/nitrocli
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nitrocli
+          path: bin/nitrocli
