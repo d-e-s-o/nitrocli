@@ -17,7 +17,7 @@ fn reset(model: nitrokey::Model) -> anyhow::Result<()> {
   let _ = ncli.handle(&["pin", "set", "admin"])?;
 
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     // Check that the admin PIN has been changed.
     let device = manager.connect_model(model)?;
     let _ = device.authenticate_admin(new_admin_pin).unwrap();
@@ -29,7 +29,7 @@ fn reset(model: nitrokey::Model) -> anyhow::Result<()> {
   assert!(out.is_empty());
 
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     // Check that the admin PIN has been reset.
     let device = manager.connect_model(model)?;
     let mut device = device
@@ -58,7 +58,7 @@ fn reset_only_aes_key(model: nitrokey::Model) -> anyhow::Result<()> {
 
   // Add an entry to the PWS
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let mut device = manager.connect_model(model)?;
     let mut pws = device.get_password_safe(NEW_USER_PIN)?;
     pws.write_slot(0, NAME, LOGIN, PASSWORD)?;
@@ -74,7 +74,7 @@ fn reset_only_aes_key(model: nitrokey::Model) -> anyhow::Result<()> {
   // been replaced, and that 3) the changed user PIN still works, i.e.,
   // we did not perform a factory reset.
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let mut device = manager.connect_model(model)?;
     let pws = device.get_password_safe(NEW_USER_PIN)?;
     let slot = pws.get_slot_unchecked(0)?;

@@ -15,7 +15,7 @@ fn hidden_create_open_close(model: nitrokey::Model) -> anyhow::Result<()> {
   assert!(out.is_empty());
 
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let device = manager.connect_storage()?;
     assert!(!device.get_storage_status()?.encrypted_volume.active);
     assert!(device.get_storage_status()?.hidden_volume.active);
@@ -25,7 +25,7 @@ fn hidden_create_open_close(model: nitrokey::Model) -> anyhow::Result<()> {
   assert!(out.is_empty());
 
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let device = manager.connect_storage()?;
     assert!(!device.get_storage_status()?.encrypted_volume.active);
     assert!(!device.get_storage_status()?.hidden_volume.active);

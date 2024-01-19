@@ -22,7 +22,7 @@ fn lock_storage(model: nitrokey::Model) -> anyhow::Result<()> {
   let out = ncli.handle(&["lock"])?;
   assert!(out.is_empty());
 
-  let mut manager = nitrokey::force_take()?;
+  let manager = nitrokey::force_take()?;
   let device = manager.connect_storage()?;
   assert!(!device.get_storage_status()?.encrypted_volume.active);
 

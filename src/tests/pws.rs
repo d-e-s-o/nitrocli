@@ -8,7 +8,7 @@ use nitrokey::GetPasswordSafe as _;
 use super::*;
 
 fn clear_pws(model: nitrokey::Model) -> anyhow::Result<()> {
-  let mut manager = nitrokey::force_take()?;
+  let manager = nitrokey::force_take()?;
   let mut device = manager.connect_model(model)?;
   let mut pws = device.get_password_safe(nitrokey::DEFAULT_USER_PIN)?;
   let slots_to_clear = pws
@@ -342,7 +342,7 @@ fn add_full(model: nitrokey::Model) -> anyhow::Result<()> {
 
   // Fill all PWS slots
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let mut device = manager.connect_model(model)?;
     let mut pws = device.get_password_safe(nitrokey::DEFAULT_USER_PIN)?;
     for slot in 0..pws.get_slot_count() {

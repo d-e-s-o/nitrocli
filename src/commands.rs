@@ -112,7 +112,7 @@ fn find_device(config: &config::Config) -> anyhow::Result<nitrokey::DeviceInfo> 
 
 /// Connect to a Nitrokey device that matches the given requirements
 fn connect<'mgr>(
-  manager: &'mgr mut nitrokey::Manager,
+  manager: &'mgr nitrokey::Manager,
   config: &config::Config,
 ) -> anyhow::Result<nitrokey::DeviceWrapper<'mgr>> {
   let device_info = find_device(config)?;
@@ -131,12 +131,11 @@ fn with_device<F>(ctx: &mut Context<'_>, op: F) -> anyhow::Result<()>
 where
   F: FnOnce(&mut Context<'_>, nitrokey::DeviceWrapper<'_>) -> anyhow::Result<()>,
 {
-  let mut manager =
-    nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
+  let manager = nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
 
   set_log_level(ctx);
 
-  let device = connect(&mut manager, &ctx.config)?;
+  let device = connect(&manager, &ctx.config)?;
   op(ctx, device)
 }
 
@@ -145,8 +144,7 @@ fn with_storage_device<F>(ctx: &mut Context<'_>, op: F) -> anyhow::Result<()>
 where
   F: FnOnce(&mut Context<'_>, nitrokey::Storage<'_>) -> anyhow::Result<()>,
 {
-  let mut manager =
-    nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
+  let manager = nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
 
   set_log_level(ctx);
 
@@ -158,7 +156,7 @@ where
     ctx.config.model = Some(args::DeviceModel::Storage);
   }
 
-  let device = connect(&mut manager, &ctx.config)?;
+  let device = connect(&manager, &ctx.config)?;
   if let nitrokey::DeviceWrapper::Storage(storage) = device {
     op(ctx, storage)
   } else {
@@ -518,7 +516,7 @@ pub fn list(ctx: &mut Context<'_>, no_connect: bool) -> anyhow::Result<()> {
     println!(ctx, "No Nitrokey device connected")?;
   } else {
     println!(ctx, "USB path\tmodel\tserial number")?;
-    let mut manager =
+    let manager =
       nitrokey::take().context("Failed to acquire access to Nitrokey device manager")?;
 
     for device_info in device_infos {

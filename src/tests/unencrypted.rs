@@ -12,7 +12,7 @@ fn unencrypted_set_read_write(model: nitrokey::Model) -> anyhow::Result<()> {
   assert!(out.is_empty());
 
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let device = manager.connect_storage()?;
     assert!(device.get_storage_status()?.unencrypted_volume.active);
     assert!(!device.get_storage_status()?.unencrypted_volume.read_only);
@@ -22,7 +22,7 @@ fn unencrypted_set_read_write(model: nitrokey::Model) -> anyhow::Result<()> {
   assert!(out.is_empty());
 
   {
-    let mut manager = nitrokey::force_take()?;
+    let manager = nitrokey::force_take()?;
     let device = manager.connect_storage()?;
     assert!(device.get_storage_status()?.unencrypted_volume.active);
     assert!(device.get_storage_status()?.unencrypted_volume.read_only);
