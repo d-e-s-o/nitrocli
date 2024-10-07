@@ -7,6 +7,7 @@
 name = "nitrocli"
 version = "0.4.1"
 edition = "2021"
+rust-version = "1.56"
 authors = ["Daniel Mueller <deso@posteo.net>"]
 license = "GPL-3.0-or-later"
 homepage = "https://github.com/d-e-s-o/nitrocli"
@@ -63,7 +64,7 @@ version = "0.9.0"
 version = "3.0.2"
 
 [dependencies.serde]
-version = "1.0"
+version = "1.0.103"
 features = ["derive"]
 
 [dependencies.structopt]
@@ -87,3 +88,12 @@ version = "1"
 
 [dev-dependencies.tempfile]
 version = "3.1"
+
+[dev-dependencies]
+# A set of unused dependencies that we require to force correct minimum versions
+# of transitive dependencies, for cases where our dependencies have incorrect
+# dependency specifications themselves.
+# error: cannot find macro `log` in this scope
+_log_unused = { package = "log", version = "0.4.4" }
+# error[E0635]: unknown feature `proc_macro_span_shrink`
+_proc_macro2_unused = { package = "proc-macro2", version = "1.0.60" }
