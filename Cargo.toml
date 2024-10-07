@@ -45,7 +45,7 @@ version = "1.0"
 version = "0.4.0"
 
 [dependencies.directories]
-version = "4"
+version = "5"
 
 [dependencies.envy]
 version = "0.4.2"
