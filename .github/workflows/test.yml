@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [1.47.0, stable, beta, nightly]
+        rust: [stable, beta, nightly]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -39,6 +39,22 @@ jobs:
       - run: cargo build --workspace --bins --tests --verbose
       - run: cargo build --workspace --bins --tests --verbose --release
       - run: cargo test --workspace --verbose
+
+  build-minimum:
+    name: Build with minimum supported Rust version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install libhidapi-dev
+      - name: Install minimum Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          # Please adjust README file when bumping version.
+          toolchain: 1.47
+      - name: Build
+        run: |
+          cargo build --locked --workspace
+          cargo build --locked --workspace --release
 
   clippy:
     name: Lint with clippy
