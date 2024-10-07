@@ -50,11 +50,9 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           # Please adjust README file when bumping version.
-          toolchain: 1.47
+          toolchain: 1.56
       - name: Build
-        run: |
-          cargo build --locked --workspace
-          cargo build --locked --workspace --release
+        run: cargo build --bins --locked --ignore-rust-version
 
   clippy:
     name: Lint with clippy
