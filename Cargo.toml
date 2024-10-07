@@ -71,7 +71,7 @@ version = "0.3.21"
 default-features = false
 
 [dependencies.termion]
-version = "1.5.5"
+version = "4.0.3"
 
 [dependencies.toml]
 version = "0.5.6"
