@@ -38,7 +38,6 @@
   unused_lifetimes,
   unused_qualifications,
   unused_results,
-  where_clauses_object_safety,
   while_true
 )]
 
