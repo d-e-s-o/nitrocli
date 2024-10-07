@@ -1,6 +1,6 @@
 // commands.rs
 
-// Copyright (C) 2018-2022 The Nitrocli Developers
+// Copyright (C) 2018-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
@@ -16,7 +16,6 @@ use std::path;
 use std::process;
 use std::thread;
 use std::time;
-use std::u8;
 
 use anyhow::Context as _;
 
@@ -1429,8 +1428,8 @@ mod tests {
 
   #[test]
   fn hex_string() {
-    assert_eq!(format_bytes(&[b' ']), "20");
-    assert_eq!(format_bytes(&[b' ', b' ']), "2020");
-    assert_eq!(format_bytes(&[b'\n', b'\n']), "0a0a");
+    assert_eq!(format_bytes(b" "), "20");
+    assert_eq!(format_bytes(b"  "), "2020");
+    assert_eq!(format_bytes(b"\n\n"), "0a0a");
   }
 }

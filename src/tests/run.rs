@@ -1,6 +1,6 @@
 // run.rs
 
-// Copyright (C) 2019-2022 The Nitrocli Developers
+// Copyright (C) 2019-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::collections;
@@ -111,7 +111,7 @@ fn version_option() {
 fn config_file() {
   let config = crate::config::read_config_file(path::Path::new("doc/config.example.toml")).unwrap();
 
-  assert_eq!(Some(crate::args::DeviceModel::Pro), config.model);
+  assert_eq!(Some(args::DeviceModel::Pro), config.model);
   assert!(config.no_cache);
   assert_eq!(2, config.verbosity);
 }
@@ -288,6 +288,7 @@ fn extension() -> anyhow::Result<()> {
   {
     let mut ext = fs::OpenOptions::new()
       .create(true)
+      .truncate(true)
       .mode(0o755)
       .write(true)
       .open(ext_dir.path().join("nitrocli-ext"))?;
@@ -319,6 +320,7 @@ fn extension_failure() -> anyhow::Result<()> {
   {
     let mut ext = fs::OpenOptions::new()
       .create(true)
+      .truncate(true)
       .mode(0o755)
       .write(true)
       .open(ext_dir.path().join("nitrocli-ext"))?;
@@ -361,6 +363,7 @@ fn extension_arguments(model: nitrokey::Model) -> anyhow::Result<()> {
     {
       let mut ext = fs::OpenOptions::new()
         .create(true)
+        .truncate(true)
         .mode(0o755)
         .write(true)
         .open(ext_dir.path().join("nitrocli-ext"))?;
