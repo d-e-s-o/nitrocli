@@ -14,7 +14,7 @@ Unreleased
 - Bumped `libc` dependency to `0.2.159`
 - Bumped `serde` dependency to `1.0.147`
 - Bumped `structopt` dependency to `0.3.26`
-- Bumped `toml` dependency to `0.5.9`
+- Bumped `toml` dependency to `0.7.6`
 
 
 0.4.1
