@@ -887,8 +887,10 @@ fn prepare_ascii_secret(secret: &str) -> anyhow::Result<String> {
 /// Prepare a base32 secret string for libnitrokey.
 fn prepare_base32_secret(secret: &str) -> anyhow::Result<String> {
   // Some sites display the base32 secret in groups separated by spaces, we want to ignore them.
-  let secret = secret.replace(' ', "");
-  base32::decode(base32::Alphabet::RFC4648 { padding: false }, &secret)
+  let mut secret = secret.replace(' ', "");
+  let () = secret.make_ascii_lowercase();
+
+  base32::decode(base32::Alphabet::Rfc4648Lower { padding: false }, &secret)
     .map(|vec| format_bytes(&vec))
     .context("Failed to parse base32 secret")
 }
