@@ -1,9 +1,8 @@
 // args.rs
 
-// Copyright (C) 2020-2021 The Nitrocli Developers
+// Copyright (C) 2020-2024 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use std::convert;
 use std::ffi;
 
 /// Provides access to a Nitrokey device
@@ -55,7 +54,7 @@ impl From<DeviceModel> for nitrokey::Model {
   }
 }
 
-impl convert::TryFrom<nitrokey::Model> for DeviceModel {
+impl TryFrom<nitrokey::Model> for DeviceModel {
   type Error = anyhow::Error;
 
   fn try_from(model: nitrokey::Model) -> Result<DeviceModel, anyhow::Error> {
