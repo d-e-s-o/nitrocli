@@ -4,7 +4,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::collections;
-use std::convert;
 use std::convert::TryFrom as _;
 use std::convert::TryInto as _;
 use std::fs;
@@ -220,7 +219,7 @@ fn connect_usb_path_model_serial(_model: nitrokey::Model) -> anyhow::Result<()> 
   let devices = nitrokey::list_devices()?;
   for device in devices {
     let model = device.model.map(|nkmodel| {
-      convert::TryInto::<args::DeviceModel>::try_into(nkmodel).expect("Unexpected Nitrokey model")
+      TryInto::<args::DeviceModel>::try_into(nkmodel).expect("Unexpected Nitrokey model")
     });
     let mut args = Vec::new();
     args.push("status".to_owned());
@@ -248,7 +247,7 @@ fn connect_usb_path_model_wrong_serial(_model: nitrokey::Model) -> anyhow::Resul
   let devices = nitrokey::list_devices()?;
   for device in devices {
     let model = device.model.map(|nkmodel| {
-      convert::TryInto::<args::DeviceModel>::try_into(nkmodel).expect("Unexpected Nitrokey model")
+      TryInto::<args::DeviceModel>::try_into(nkmodel).expect("Unexpected Nitrokey model")
     });
     let mut args = Vec::new();
     args.push("status".to_owned());

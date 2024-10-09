@@ -1,6 +1,6 @@
 [![pipeline](https://github.com/d-e-s-o/nitrocli/actions/workflows/.github/workflows/test.yml/badge.svg)](https://github.com/d-e-s-o/nitrocli/commits/main)
 [![crates.io](https://img.shields.io/crates/v/nitrocli.svg)](https://crates.io/crates/nitrocli)
-[![rustc](https://img.shields.io/badge/rustc-1.47+-blue.svg)](https://blog.rust-lang.org/2020/10/08/Rust-1.47.html)
+[![rustc](https://img.shields.io/badge/rustc-1.56+-blue.svg)](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html)
 
 nitrocli
 ========
