@@ -9,6 +9,7 @@ Unreleased
 - Adjusted program to use Rust Edition 2021
 - Updated minimum supported Rust version to `1.56.0`
 - Bumped `anyhow` dependency to `1.0.89`
+- Bumped `base32` dependency to `0.5.1`
 - Bumped `directories` dependency to `5.0.1`
 - Bumped `libc` dependency to `0.2.159`
 - Bumped `serde` dependency to `1.0.147`
