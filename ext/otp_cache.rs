@@ -125,8 +125,9 @@ fn save_cache(cache: &Cache, path: &path::Path) -> anyhow::Result<()> {
     fs::create_dir_all(parent).context("Failed to create cache parent directory")?;
   }
   let mut f = fs::File::create(path).context("Failed to create cache file")?;
-  let data = toml::to_vec(cache).context("Failed to serialize cache")?;
-  f.write_all(&data).context("Failed to write cache file")?;
+  let data = toml::to_string(cache).context("Failed to serialize cache")?;
+  f.write_all(data.as_bytes())
+    .context("Failed to write cache file")?;
   Ok(())
 }
 
