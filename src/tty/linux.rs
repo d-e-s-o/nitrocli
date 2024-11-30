@@ -157,6 +157,7 @@ mod tests {
       return;
     }
 
+    #[allow(clippy::zombie_processes)]
     fn test(stdin: process::Stdio, redirection: &str) {
       let mut child = process::Command::new("sh")
         .stdin(stdin)
