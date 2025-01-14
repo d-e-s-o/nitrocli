@@ -403,7 +403,7 @@ fn value_or_stdin<'s>(ctx: &mut Context<'_>, s: &'s str) -> anyhow::Result<borro
 fn ensure_string_lengths(data: &[(&str, &str, usize)]) -> anyhow::Result<()> {
   let mut invalid_strings = Vec::new();
   for (label, value, max_length) in data {
-    let length = value.as_bytes().len();
+    let length = value.len();
     if length > *max_length {
       invalid_strings.push((label, length, max_length));
     }
