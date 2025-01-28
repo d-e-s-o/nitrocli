@@ -1,4 +1,4 @@
-# Copyright (C) 2021-2024 The Nitrocli Developers
+# Copyright (C) 2021-2025 The Nitrocli Developers
 # SPDX-License-Identifier: CC0-1.0
 
 # TODO:
@@ -35,7 +35,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-      - run: sudo apt-get install libhidapi-dev
+      - run: sudo apt-get install --yes --no-install-recommends libhidapi-dev
       - run: cargo build --workspace --bins --tests --verbose
       - run: cargo build --workspace --bins --tests --verbose --release
       - run: cargo test --workspace --verbose
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get install libhidapi-dev
+      - run: sudo apt-get install --yes --no-install-recommends libhidapi-dev
       - name: Install Nightly Rust
         uses: dtolnay/rust-toolchain@nightly
       - run: cargo +nightly -Z minimal-versions update
