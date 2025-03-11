@@ -75,7 +75,7 @@ default-features = false
 version = "1.5.5"
 
 [dependencies.toml]
-version = "0.5.6"
+version = "0.8.20"
 
 [dev-dependencies.nitrokey-test]
 version = "0.5"
