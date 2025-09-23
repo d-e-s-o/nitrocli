@@ -87,7 +87,7 @@ version = "0.1"
 version = "1"
 
 [dev-dependencies.tempfile]
-version = "3.1"
+version = "3.23"
 
 [dev-dependencies]
 # A set of unused dependencies that we require to force correct minimum versions
