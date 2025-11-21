@@ -1,6 +1,6 @@
 // ext.rs
 
-// Copyright (C) 2020-2024 The Nitrocli Developers
+// Copyright (C) 2020-2025 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::env;
@@ -39,7 +39,7 @@ impl Context {
       .context("NITROCLI_VERBOSITY environment variable not present")
       .context("Failed to retrieve nitrocli verbosity")?;
 
-    let verbosity = if verbosity.len() == 0 {
+    let verbosity = if verbosity.is_empty() {
       None
     } else {
       let verbosity = verbosity
