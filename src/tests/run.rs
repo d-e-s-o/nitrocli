@@ -1,6 +1,6 @@
 // run.rs
 
-// Copyright (C) 2019-2024 The Nitrocli Developers
+// Copyright (C) 2019-2025 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::collections;
@@ -18,13 +18,16 @@ use crate::args;
 #[test]
 fn no_command_or_option() {
   let (rc, out, err) = Nitrocli::new().run(&[]);
-
   assert_ne!(rc, 0);
   assert_eq!(out, b"", "{}", String::from_utf8_lossy(&out));
 
-  let s = String::from_utf8_lossy(&err).into_owned();
-  assert!(s.starts_with("nitrocli"), "{}", s);
-  assert!(s.contains("USAGE:\n"), "{}", s);
+  let (rc_h, out_h, err_h) = Nitrocli::new().run(&["--help"]);
+  assert_eq!(rc_h, 0);
+  assert_eq!(err_h, b"", "{}", String::from_utf8_lossy(&out));
+
+  let err = String::from_utf8_lossy(&err);
+  let out_h = String::from_utf8_lossy(&out_h);
+  assert_eq!(err, out_h);
 }
 
 #[test]
@@ -41,8 +44,7 @@ fn help_options() {
     let s = String::from_utf8_lossy(&out).into_owned();
     let mut args = args.to_vec();
     args.insert(0, "nitrocli");
-    assert!(s.starts_with(&args.join("-")), "{}", s);
-    assert!(s.contains("USAGE:\n"), "{}", s);
+    assert!(s.contains("Usage: nitrocli"), "{}", s);
   }
 
   fn test(args: &[&str]) {
@@ -303,7 +305,7 @@ print("success")
   // Make sure that the extension appears in the help text.
   let out = Nitrocli::new().path(&path).handle(&["--help"])?;
   assert!(
-    out.contains("ext            Run the ext extension\n"),
+    out.contains("ext          Run the ext extension\n"),
     "{}",
     out
   );

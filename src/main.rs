@@ -1,6 +1,6 @@
 // main.rs
 
-// Copyright (C) 2017-2024 The Nitrocli Developers
+// Copyright (C) 2017-2025 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #![warn(
@@ -66,9 +66,9 @@ use std::io;
 use std::process;
 use std::str;
 
-use clap::ErrorKind;
+use clap::error::ErrorKind;
+use clap::CommandFactory as _;
 use clap::FromArgMatches;
-use clap::IntoApp;
 
 const NITROCLI_BINARY: &str = "NITROCLI_BINARY";
 const NITROCLI_RESOLVED_USB_PATH: &str = "NITROCLI_RESOLVED_USB_PATH";
@@ -108,8 +108,7 @@ impl error::Error for DirectExitError {}
 
 /// Parse the command-line arguments and execute the selected command.
 fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<()> {
-  let version = get_version_string();
-  let clap = args::Args::into_app().version(version.as_str());
+  let clap = args::Args::command().version(get_version_string());
   let matches = clap.try_get_matches_from(argv.iter());
   let args = matches.and_then(|matches| args::Args::from_arg_matches(&matches));
   match args {
@@ -118,7 +117,9 @@ fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<
       args.cmd.execute(ctx)
     }
     Err(mut err) => {
-      if err.kind == ErrorKind::DisplayHelp {
+      if err.kind() == ErrorKind::DisplayHelp
+        || err.kind() == ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
+      {
         // For the convenience of the user we'd like to list the
         // available extensions in the help text. At the same time, we
         // don't want to unconditionally iterate through PATH (which may
@@ -127,14 +128,14 @@ fn handle_arguments(ctx: &mut Context<'_>, argv: Vec<String>) -> anyhow::Result<
         // help text is actually displayed.
         let path = ctx.path.clone().unwrap_or_default();
         if let Ok(extensions) = commands::discover_extensions(&path) {
-          let mut clap = args::Args::into_app();
+          let mut clap = args::Args::command();
           for name in extensions {
             // Because of clap's brain dead API, we see no other way
             // but to leak the string we created here. That's okay,
             // though, because we exit in a moment anyway.
             let about = Box::leak(format!("Run the {} extension", name).into_boxed_str());
             clap = clap.subcommand(
-              clap::App::new(name)
+              clap::Command::new(name)
                 // Use some magic number here that causes all
                 // extensions to be listed after all other
                 // subcommands.

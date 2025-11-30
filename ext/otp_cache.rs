@@ -1,6 +1,6 @@
 // otp_cache.rs
 
-// Copyright (C) 2020-2024 The Nitrocli Developers
+// Copyright (C) 2020-2025 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::fs;
@@ -8,7 +8,7 @@ use std::io::Write as _;
 use std::path;
 
 use anyhow::Context as _;
-use clap::StructOpt as _;
+use clap::Parser as _;
 
 mod ext;
 
@@ -33,17 +33,17 @@ struct Slot {
 /// `--force-update` option is set. The cache includes the Nitrokey's
 /// serial number so that it is possible to use it with multiple
 /// devices.
-#[derive(Debug, clap::StructOpt)]
-#[structopt(bin_name = "nitrocli otp-cache")]
+#[derive(Debug, clap::Parser)]
+#[clap(bin_name = "nitrocli otp-cache")]
 struct Args {
   /// Always query the slot data even if it is already cached
-  #[structopt(short, long, global = true)]
+  #[clap(short, long, global = true)]
   force_update: bool,
-  #[structopt(subcommand)]
+  #[clap(subcommand)]
   cmd: Command,
 }
 
-#[derive(Debug, clap::StructOpt)]
+#[derive(Debug, clap::Parser)]
 enum Command {
   /// Generates a one-time password
   Get {
@@ -55,12 +55,12 @@ enum Command {
 }
 
 fn main() -> anyhow::Result<()> {
-  let args = Args::from_args();
+  let args = Args::parse();
   let ctx = ext::Context::from_env()?;
 
   let cache = get_cache(&ctx, args.force_update)?;
   match &args.cmd {
-    Command::Get { name } => cmd_get(&ctx, &cache, name)?,
+    Command::Get { name } => cmd_get(&ctx, &cache, &name)?,
     Command::List => cmd_list(&cache),
   }
   Ok(())

@@ -1,6 +1,6 @@
 // config.rs
 
-// Copyright (C) 2019-2021 The Nitrocli Developers
+// Copyright (C) 2019-2025 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use super::*;
@@ -17,9 +17,9 @@ fn mutually_exclusive_set_options() {
     assert!(err.contains("cannot be used with"), "{}", err);
   }
 
-  test("-c", "-C");
+  test("-c1", "-C");
   test("-o", "-O");
-  test("-s", "-S");
+  test("-s1", "-S");
 }
 
 #[test_device]
@@ -49,7 +49,7 @@ fn set_wrong_usage(model: nitrokey::Model) {
     .to_string();
 
   assert!(
-    err.contains("The argument '--num-lock <num-lock>' cannot be used with '--no-num-lock'"),
+    err.contains("the argument '--num-lock <NUM_LOCK>' cannot be used with '--no-num-lock'"),
     "{}",
     err,
   );

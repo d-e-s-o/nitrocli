@@ -1,6 +1,6 @@
 # Cargo.toml
 
-# Copyright (C) 2017-2024 The Nitrocli Developers
+# Copyright (C) 2017-2025 The Nitrocli Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [package]
@@ -47,12 +47,12 @@ version = "1.0"
 version = "0.5.1"
 
 [dependencies.clap]
-version = "3.0"
+version = "4.0"
 default-features = false
-features = ["derive", "std", "unicode"]
+features = ["derive", "error-context", "help", "std", "string", "unicode", "usage"]
 
 [dependencies.clap_complete]
-version = "3.0"
+version = "4.0"
 optional = true
 
 [dependencies.directories]

@@ -1,6 +1,6 @@
 // arg_util.rs
 
-// Copyright (C) 2019-2024 The Nitrocli Developers
+// Copyright (C) 2019-2025 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 macro_rules! count {
@@ -22,7 +22,7 @@ macro_rules! Command {
     $( $(#[$doc:meta])* $var:ident$(($inner:ty))? => $exec:expr, ) *
   ] ) => {
     $(#[$docs])*
-    #[derive(Debug, PartialEq, clap::StructOpt)]
+    #[derive(Debug, PartialEq, clap::Parser)]
     pub enum $name {
       $(
         $(#[$doc])*
@@ -53,7 +53,7 @@ macro_rules! Command {
 macro_rules! Enum {
   ( $(#[$docs:meta])* $name:ident, [ $( $var:ident => $str:expr, ) *] ) => {
     $(#[$docs])*
-    #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+    #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, clap::ValueEnum)]
     pub enum $name {
       $(
         $var,

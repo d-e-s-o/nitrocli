@@ -1,7 +1,9 @@
 #!/bin/sh
 
-# Copyright (C) 2022 The Nitrocli Developers
+# Copyright (C) 2022-2025 The Nitrocli Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+set -e -u -o pipefail
 
 # We support testing both /dev/null and pipe redirection of stdin and
 # the first argument controls which one to use.
