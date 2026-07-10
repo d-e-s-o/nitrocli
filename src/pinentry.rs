@@ -1,6 +1,6 @@
 // pinentry.rs
 
-// Copyright (C) 2017-2022 The Nitrocli Developers
+// Copyright (C) 2017-2026 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
@@ -266,7 +266,7 @@ where
 {
   let cache_id = entry
     .cache_id()
-    .and_then(|id| if ctx.config.no_cache { None } else { Some(id) })
+    .filter(|_id| !ctx.config.no_cache)
     // "X" is a sentinel value indicating that no caching is desired.
     .unwrap_or_else(|| "X".into())
     .into();
