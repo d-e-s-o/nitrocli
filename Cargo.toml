@@ -80,7 +80,7 @@ features = ["derive"]
 version = "1.5.5"
 
 [dependencies.toml]
-version = "0.5.6"
+version = "1.1.4"
 
 [dev-dependencies.nitrokey-test]
 version = "0.5"
