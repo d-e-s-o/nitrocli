@@ -7,7 +7,7 @@
 name = "nitrocli"
 version = "0.4.1"
 edition = "2021"
-rust-version = "1.56"
+rust-version = "1.74"
 authors = ["Daniel Mueller <deso@posteo.net>"]
 license = "GPL-3.0-or-later"
 homepage = "https://github.com/d-e-s-o/nitrocli"

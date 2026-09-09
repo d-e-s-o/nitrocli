@@ -1,4 +1,4 @@
-# Copyright (C) 2021-2025 The Nitrocli Developers
+# Copyright (C) 2021-2026 The Nitrocli Developers
 # SPDX-License-Identifier: CC0-1.0
 
 # TODO:
@@ -53,7 +53,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           # Please adjust README file when bumping version.
-          toolchain: 1.56.1
+          toolchain: 1.74.1
       - name: Build
         run: cargo build --bins --locked
 

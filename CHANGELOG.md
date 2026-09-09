@@ -7,7 +7,7 @@ Unreleased
 - Fixed endless loop when a Nitrokey FIDO2 device is present
 - Added community maintained Nix flake to the repository
 - Adjusted program to use Rust Edition 2021
-- Updated minimum supported Rust version to `1.56.0`
+- Updated minimum supported Rust version to `1.74.0`
 - Updated argument handling to use `clap` `3.0`
 - Bumped `anyhow` dependency to `1.0.89`
 - Bumped `base32` dependency to `0.5.1`
