@@ -1,6 +1,6 @@
 // main.rs
 
-// Copyright (C) 2017-2024 The Nitrocli Developers
+// Copyright (C) 2017-2026 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #![warn(
@@ -12,7 +12,6 @@
   late_bound_lifetime_arguments,
   missing_debug_implementations,
   missing_docs,
-  no_mangle_generic_items,
   non_shorthand_field_patterns,
   nonstandard_style,
   overflowing_literals,
