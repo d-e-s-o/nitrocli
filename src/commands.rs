@@ -1,6 +1,6 @@
 // commands.rs
 
-// Copyright (C) 2018-2024 The Nitrocli Developers
+// Copyright (C) 2018-2026 The Nitrocli Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use std::borrow;
@@ -908,7 +908,7 @@ fn prepare_secret(
       // characters in it, just because that's what libnitrokey
       // expects. So prepend a '0' if that is not the case.
       let mut secret = secret.into_owned();
-      if secret.len() % 2 != 0 {
+      if !secret.len().is_multiple_of(2) {
         secret.insert(0, '0')
       }
       Ok(secret)

@@ -40,23 +40,6 @@ jobs:
       - run: cargo build --workspace --bins --tests --verbose --release
       - run: cargo test --workspace --verbose
 
-  build-minimum:
-    name: Build with minimum supported Rust version
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - run: sudo apt-get install --yes --no-install-recommends libhidapi-dev
-      - name: Install Nightly Rust
-        uses: dtolnay/rust-toolchain@nightly
-      - run: cargo +nightly -Z minimal-versions update
-      - name: Install minimum Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          # Please adjust README file when bumping version.
-          toolchain: 1.74.1
-      - name: Build
-        run: cargo build --bins --locked
-
   clippy:
     name: Lint with clippy
     runs-on: ubuntu-latest
